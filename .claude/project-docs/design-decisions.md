@@ -42,6 +42,23 @@ not possible, the procedure and the real cell's measurements do not exist yet.
 
 Pinned by: nothing yet (the formats come in steps 3–4; their tests will pin unit and order).
 
+## The MIT copyright holder is JIC Smart Factory; the author is Roman Parak
+
+**Decision.** `LICENSE` and every file header read `Copyright (c) 2026 JIC Smart Factory` (the wording of the
+template UR_PathGen_SF_1); the headers' `Author   :` line stays `Roman Parak`. The style checker enforces the
+holder through `.claude/skills/project-style-rpx/references/check_style.json`. Vendored licences keep their own
+holders (`models/aubo_i5/LICENSE_Manipulator-Mujoco`: ian-chuang/Manipulator-Mujoco, MIT). *Corrected
+2026-10-24 (owner): until then the holder was Roman Parak, taken from the first `LICENSE`.*
+
+**Why.** The project is JIC Smart Factory's internal research (SPEC §1); the copyright is the institution's,
+the authorship the person's.
+
+**Alternatives.** Roman Parak as the holder: corrected by the owner.
+
+**Revisit if** the project's ownership changes.
+
+Pinned by the style checker (`holder`), run before every commit.
+
 ## Brand: JIC Smart Factory, collaboration JIC Smart Factory × KINALI, product Test-it-off
 
 **Decision.** An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA). (owner, 2026-10-24). The project carries the JIC Smart Factory brand with the

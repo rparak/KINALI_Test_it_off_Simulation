@@ -419,7 +419,7 @@ The RPX layout (`FEATURES.md` F3, done 2026-10-24):
 ```
 README.md                 the public page (stub until step 7)
 CLAUDE.md                 short: where the internal docs and the skills are, the commands, the language
-LICENSE                   MIT, Copyright (c) 2026 Roman Parak
+LICENSE                   MIT, Copyright (c) 2026 JIC Smart Factory (headers: Author Roman Parak)
 install.sh                macOS (verified) + Ubuntu (unverified), OS detection, Python 3.11
 requirements.txt          pinned
 pytest.ini                import mode and the slow marker (root exception)

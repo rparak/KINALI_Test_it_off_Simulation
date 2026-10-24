@@ -16,9 +16,11 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 
 ## Header and checker
 
-- Holder: **Roman Parak** - `Copyright (c) 2026 Roman Parak`, `Author   : Roman Parak`; licence MIT
-  (`LICENSE`). The `#`-comment header form. `File Name:` examples: `../Scene/Core.py` for
-  `src/Scene/Core.py`, `../Example/Simulation/run_cycle.py`, `../test/Scene/test_core.py`.
+- Holder: **JIC Smart Factory** - `Copyright (c) 2026 JIC Smart Factory` in `LICENSE` and every header (as in
+  the template UR_PathGen_SF_1); the `Author   :` line names the author, **Roman Parak**. The checker enforces
+  the copyright line (`check_style.json` `holder`), not the author line. Vendored licences keep their holders
+  (`models/aubo_i5/LICENSE_Manipulator-Mujoco`). The `#`-comment header form. `File Name:` examples:
+  `../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_cycle.py`, `../test/Scene/test_core.py`.
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
   `Example`, `test`; no exclusions.
 - Command: `.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test`.

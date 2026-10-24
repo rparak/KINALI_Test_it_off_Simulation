@@ -1,6 +1,6 @@
 {
   "licence": "MIT License",
-  "holder": "Roman Parak",
+  "holder": "JIC Smart Factory",
   "class_roots": ["src", "Example"],
   "test_roots": ["test"],
   "check_roots": ["src", "Example", "test"],

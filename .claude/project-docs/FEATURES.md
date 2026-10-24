@@ -212,7 +212,7 @@ as "Re-baseline for pinned Python 3.11 environment" (the old one stays in histor
 ### Header and licence text
 
 Every `.py` (and `install.sh`) opens with `project-style-rpx/assets/header.txt`: `MIT License`,
-`Copyright (c) 2026 Roman Parak`, the MIT text, `Author   : Roman Parak`, `File Name: ../<path>`.
+`Copyright (c) 2026 JIC Smart Factory`, the MIT text, `Author   : Roman Parak`, `File Name: ../<path>`.
 
 ### legacy/
 
@@ -244,7 +244,7 @@ checker) expose the old names on top of `src/`. Kept: `load_plan`, the result di
 
 ### Decisions (answered by the owner, 2026-10-24)
 
-1 Roman Parak. 2 port into `src/Simulation` now; proof: empty report diff against the baseline and
+1 Roman Parak (corrected 2026-10-24: holder JIC Smart Factory, author Roman Parak; design-decisions). 2 port into `src/Simulation` now; proof: empty report diff against the baseline and
 against the frozen legacy run. 3 the look stays in `Scene`. 4 meshes into `models/<name>/`. 5 matplotlib;
 the broken legacy `--render` goes to `KNOWN_ISSUES.md`. 6 keep as *planned*. 7 no bare `python3`: only
 `python3.11` and explicit absolute candidates. 8 simulation now, real-cell transfer planned (SPEC §17).
