@@ -63,6 +63,10 @@ CONST_ARMATURE = [0.2, 0.2, 0.15, 0.04, 0.04, 0.04]
 # Configuration/Cell.yaml, the adhesion force is derived from them.
 #   Unit [int]
 CONST_CUP_N = 4
+# The VGC10's cup block after the build (half sizes): 2 mm shorter than the original so the cups stick out
+# (SPEC §4.10); it hangs 2.1 mm above a PCB the cups hold.
+#   Unit [List<float>] (m)
+CONST_CUP_BLOCK_HALF_SIZE = [0.0525, 0.0293, 0.038]
 # The cup centres in the tool frame.
 #   Unit [List<Tuple<float>>] (m)
 CONST_CUP_XY = [(0.035, 0.018), (-0.035, 0.018), (0.035, -0.018), (-0.035, -0.018)]
@@ -196,7 +200,7 @@ def Build_Cell_Spec(cell: Cell_Configuration_Str) -> mujoco.MjSpec:
     #    the fork. The cup block is 2 mm shorter, so the cups stick out.
     for g in tool.geoms:
         if g.type == mujoco.mjtGeom.mjGEOM_BOX and abs(g.size[0] - 0.0525) < 1e-4:
-            g.size = [0.0525, 0.0293, 0.038]
+            g.size = CONST_CUP_BLOCK_HALF_SIZE
             g.pos = [0, 0, 0.2205]
     # Each cup its own (rigid) body + adhesion actuator: a cup holds only if it touches.
     for i, (x, y) in enumerate(CONST_CUP_XY):
@@ -299,6 +303,23 @@ def _Apply_Look(sc: mujoco.MjSpec) -> None:
                             targetbody='pcb', fovy=40)
     sc.worldbody.add_camera(name='cam_tool', pos=[-0.30, 0.35, 0.80], mode=mujoco.mjtCamLight.mjCAMLIGHT_TARGETBODY,
                             targetbody='aubo/tool/ee_tool', fovy=45)
+
+
+def Cup_Block_Geom(model: mujoco.MjModel) -> int:
+    """
+    Description:
+        The cup block's collision geom in a compiled cell: the box on the tool body with the block's half sizes.
+
+    Args:
+        (1) model [mujoco.MjModel]: The compiled cell.
+
+    Returns:
+        (1) parameter [int]: The geom id.
+    """
+
+    tool = model.body('aubo/tool/ee_tool').id
+    return next(g for g in range(model.ngeom) if model.geom_bodyid[g] == tool and model.geom_type[g] == mujoco.mjtGeom.mjGEOM_BOX
+                and np.allclose(model.geom_size[g], CONST_CUP_BLOCK_HALF_SIZE) and (model.geom_contype[g] or model.geom_conaffinity[g]))
 
 
 def Build_Cell_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:

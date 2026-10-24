@@ -119,6 +119,44 @@ Pinned by: none (text); checked by `git grep` for the old spellings when docs ch
 
 **Decide when** Phase 2 starts.
 
+## The keypoint check measures exact distances, not generated contacts
+
+**Decision.** The keypoint clearance is measured with `mj_geomDistance` for every collidable pair within the
+clearance (`Collision.Close_Pairs`), not read from the contacts MuJoCo generates in a model with an enlarged
+geom margin (the legacy planner's planning model).
+
+**Why.** MuJoCo's box-box collider generates no contact for boxes that are near but not touching, whatever the
+margin: the carried PCB 1.0 mm above the crate floor produced no contact (2026-10-24). The cup pads, the PCB,
+the crate walls are boxes; a margin-based check missed them. Exact distances also found the cup block 2.1 mm
+above a held PCB (now in `cups_pcb`) and the robot's mount (excluded by a code constant).
+
+**Alternatives.** Contacts with a larger margin: rejected, the box-box collider ignores it. Converting the boxes
+to meshes: a model change.
+
+**Revisit if** MuJoCo's box-box collider honours the margin.
+
+Pinned by `test/Collision/test_core.py::test_exact_distances_find_a_near_box_pair_that_contacts_miss`,
+`test/Keypoints/test_core.py`.
+
+## A fork keypoint carries the MG06 state of the recorded path
+
+**Decision.** `Fixture` is required for every keypoint: `Open`, `Closed` or the recorded `{Lid, Handle,
+Source}` of `Data/Paths/fork_close_open_path.npz`; the press plate follows the handle through the model's
+equality. `fork_closed_end` is row 286 (handle 29.13°), `fork_open_join` row 663, `fork_start` row 23; the
+leave / return keypoints are settled `Closed` (owner, 2026-10-24, condition C1).
+
+**Why.** The fork keypoints touch the handle bar, and the contact depends on the handle angle: at
+`fork_closed_end` the bar is 0.33 mm into the fork in the recorded state and 5.95 mm in the settled closed
+state (C1, FEATURES.md F6). Posing or checking in the wrong state reports a collision that is not there, or
+hides one.
+
+**Alternatives.** One MG06 state per program step: rejected, the state changes along the fork path.
+
+**Revisit if** the fork path is re-recorded or replaced by MoveL keypoints (step 4).
+
+Pinned by `test/Keypoints/test_core.py::test_the_fork_keypoints_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre`,
+`::test_fork_closed_end_in_the_wrong_mg06_state_is_reported`.
+
 ## MuJoCo is pinned to 3.16.0
 
 **Decision.** `mujoco==3.16.0` in `requirements.txt`; the installer checks the version.

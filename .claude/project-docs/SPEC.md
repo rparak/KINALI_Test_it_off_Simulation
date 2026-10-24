@@ -447,6 +447,7 @@ src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, th
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
 src/Render/Core.py        offscreen image, viewer start
+src/Keypoints/Core.py     the keypoints: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
 Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
@@ -465,7 +466,8 @@ program YAML) is in the root folder `Configuration/` (the style skill's `<config
 in the template's `Configuration/Cell_SF1.yaml`).
 
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
-`Kinematics`, `Collision` → `Scene`; `Simulation` → `Configuration`, `Scene`, `Collision`. Scripts reach
+`Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
+`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`. Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
@@ -506,6 +508,25 @@ Reads a plan in the legacy planner's format (`Data/Reference/cell_plan.npz`: dt,
 labels); runs it with physics (servo set-point with velocity feed-forward, min-jerk loader profiles,
 vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured
 values; formats the report of §4.6; checks §10.1.
+
+### 7.7 Keypoints
+
+The keypoints at work (`src/Keypoints/Core.py`): the target of a `Relative_To`, the MG06 state of a `Fixture`
+(the press plate on the model's coupling), posing the whole cell at a keypoint (robot, bellows at rest,
+loader axes, jaws, PCB at its location, MG06), the keypoint check and the IK resolution of a keypoint's joints
+(printed, never written). Playback and posing read `Joints` only.
+
+The check (per keypoint, one table row; FAIL on any rule, WARN when wrist_2 is within the family margin):
+joint limits (the model); the family (wrist_2's sign); `Check` within `Clearance.Check_Position`; a
+`Relative_To` target within `Stale_Position` / `Stale_Angle`; the clearance - **exact** distances
+(`Collision.Close_Pairs`, `mj_geomDistance`) from the robot's geoms, and from the PCB's when the cups carry it,
+to every collidable geom: every pair closer than `Clearance.Robot` fails unless its group is in
+`Allow_Contact` and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on the PCB, not
+the fork), `handle_bar` (the tool on the MG06 handle), `pcb_jaws`, `pcb_crate` (the carried PCB). Not checked:
+the robot's mount (its base on the pedestal plate, distance 0 by construction; a code constant, as the
+template's base–stand exclusion). Exact distances because MuJoCo's box–box collider generates no contact for a
+near pair (the carried PCB 1.0 mm above the crate floor), whatever the geom margin
+(`test/Collision/test_core.py`).
 
 ## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`
 

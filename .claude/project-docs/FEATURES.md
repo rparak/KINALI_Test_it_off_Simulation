@@ -519,6 +519,19 @@ Source}`; the press plate follows the handle through the model's equality (`pres
 read from the compiled model). `fork_start` row 23, `fork_closed_end` row 286, `fork_open_join` row 663;
 `fork_bar_centred`, `fork_out_of_bar`, `fork_retreat_up` Closed.
 
+### Implementation findings (2026-10-24)
+
+- `loader_take_press` was posed with the gripper at `clamp` (the force-limited command, 12 mm behind the part):
+  the jaw went 3.53 mm into the tool. The jaws stand at `grip` on the PCB: its Context is `Gripper: grip`.
+- MuJoCo's box-box collider makes no contact for near boxes, whatever the margin: the check uses exact
+  distances (design-decisions). They found the cup block 2.10 mm above a held PCB (0.62 mm while pressing):
+  part of `cups_pcb`; and the robot's base on its plate (the mount, not checked).
+- `pcb_jaws` was declared at the handover and the take but is never present: removed (allow only what is
+  present, C1); a test holds every declared group to being observed.
+- `fork_closed_end` with MG06 **Open**: the handle is rotated away, the fork is in free space (24.6 mm from
+  MG06's base) - no collision, unlike the owner's expectation; with MG06 settled **Closed** the bar is 5.95 mm
+  into the fork and the check fails. Both pinned; open question for the owner.
+
 ### Questions (Part A)
 
 1. Joint limits and loader ranges: keep the model (vendored MJCF, `scene.xml`) as their only source and let

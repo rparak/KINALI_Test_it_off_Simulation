@@ -93,3 +93,24 @@ def test_a_colliding_configuration_is_reported_with_its_pair(planning):
     assert collision.Contacts(np.array(CONST_INTO_MG06), ignore_pcb=True, margin=0.03) == []
     distance, pair = collision.Clearance(np.array(CONST_INTO_MG06))
     assert distance < 0 and pair is not None
+
+
+def test_exact_distances_find_a_near_box_pair_that_contacts_miss(cell_configuration, keypoints):
+    """
+    Description:
+        Posed at output_place, the carried PCB's board is 1.0 mm above the crate floor. MuJoCo's box-box collider
+        generates no contact for it (near but not touching, whatever the margin); Close_Pairs measures it exactly.
+    """
+
+    import mujoco
+    from Configuration.Core import Read_PCB_Meta
+    from Keypoints.Core import Pose_Cell
+    model = Build_Planning_Model(cell_configuration)
+    collision = Robot_Collision_Cls(model)
+    Pose_Cell(Robot_Kinematics_Cls(model, collision.Data), keypoints, cell_configuration, Read_PCB_Meta(), 'output_place')
+    d, pcb = collision.Data, model.body('pcb').id
+    generated = [c for c in d.contact[:d.ncon] if pcb in (model.geom_bodyid[c.geom1], model.geom_bodyid[c.geom2])
+                 and 'workstation' in (model.body(model.geom_bodyid[c.geom1]).name, model.body(model.geom_bodyid[c.geom2]).name)]
+    assert generated == []
+    pairs = collision.Close_Pairs({pcb}, 0.003, d, exclude=collision.Robot_Bodies)
+    assert pairs and pairs[0][2] == 'workstation' and pairs[0][4].startswith('crate_place') and pairs[0][0] == pytest.approx(0.00102, abs=0.00005)

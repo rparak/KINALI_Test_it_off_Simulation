@@ -28,7 +28,7 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 ## Layout and layers (SPEC §6)
 
 ```
-src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation
+src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints
 Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py
 test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
@@ -52,11 +52,12 @@ Configuration, Render     import nothing of the project
 Scene                     → Configuration
 Kinematics, Collision     → Scene
 Simulation                → Configuration, Scene, Collision
+Keypoints                 → Configuration, Scene, Kinematics, Collision
 Example/                  → any of src/
 ```
 
-`Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Keypoints, Program and
-Trajectory are added in steps 3–4 as their own domains; no placeholder module before (skeleton rule).
+`Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Program and Trajectory are added in
+step 4 as their own domains; no placeholder module before (skeleton rule).
 
 ## Root ✅
 

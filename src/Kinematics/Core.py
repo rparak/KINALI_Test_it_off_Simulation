@@ -312,3 +312,23 @@ def TCP_For_PCB(pcb_pos: np.ndarray, pcb_quat: np.ndarray) -> tp.Tuple[np.ndarra
 
     R = Quaternion_To_Matrix(pcb_quat)
     return pcb_pos + R @ CONST_SUCTION_IN_PCB, R @ CONST_R_TOOL_IN_PCB
+
+
+def PCB_For_TCP(tcp_pos: np.ndarray, tcp_mat: np.ndarray) -> tp.Tuple[np.ndarray, np.ndarray]:
+    """
+    Description:
+        The PCB pose held by the cups at a suction TCP pose: the inverse of TCP_For_PCB.
+
+    Args:
+        (1 - 2) tcp_pos, tcp_mat [Vector<float> 1x3, Matrix<float> 3x3]: The TCP pose (m).
+
+    Returns:
+        (1) parameter [Vector<float> 1x3]: The PCB centre (m).
+        (2) parameter [Vector<float> 1x4]: Its quaternion, w first.
+    """
+
+    R = tcp_mat @ CONST_R_TOOL_IN_PCB.T
+    quat = np.zeros(4)
+    mujoco.mju_mat2Quat(quat, R.flatten())
+    return tcp_pos - R @ CONST_SUCTION_IN_PCB, quat
+

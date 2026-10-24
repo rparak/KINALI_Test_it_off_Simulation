@@ -107,7 +107,7 @@ Robot:
     Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, 0.0000]}
     Fixture: Open
     Context: {Loader: home, Gripper: open, PCB: cups}
-    Allow_Contact: [cups_pcb, pcb_jaws]
+    Allow_Contact: [cups_pcb]
     Note: "PCB at the hold pose, no press: 0.3 mm above the finger ledges (SPEC §4.7)."
   loader_take_press:
     Joints: [-24.646931, 4.853708, 123.162497, 25.177060, 81.622298, -69.417507]
@@ -115,8 +115,8 @@ Robot:
     Check: {Frame: suction_tcp, Position: [0.00450, -0.30470, 0.15630]}
     Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, 0.0015]}
     Fixture: Open
-    Context: {Loader: home, Gripper: clamp, PCB: jaws}
-    Allow_Contact: [cups_pcb, pcb_jaws]
+    Context: {Loader: home, Gripper: grip, PCB: jaws}
+    Allow_Contact: [cups_pcb]
     Note: "Cups pressed 1.5 mm onto the PCB held in the jaws, then vacuum on."
   loader_out_of_jaws:
     Joints: [-23.990359, 7.020419, 119.780831, 19.532351, 81.658720, -68.754906]

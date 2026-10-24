@@ -156,6 +156,43 @@ class Robot_Collision_Cls(object):
                             m.geom(c.geom2).name or str(c.geom2)))
         return sorted(out)
 
+    def Close_Pairs(self, bodies: tp.Set[int], cut: float, data: tp.Optional[mujoco.MjData] = None,
+                    exclude: tp.Optional[tp.Set[int]] = None) -> tp.List[tp.Tuple[float, str, str, str, str]]:
+        """
+        Description:
+            Every collidable geom pair with one geom on bodies and the other elsewhere (not on exclude) whose exact
+            signed distance (mj_geomDistance; negative = penetration) is below cut, in the data's current
+            kinematics. Exact distances, not generated contacts: MuJoCo's box-box collider reports no pair that is
+            near but not touching, whatever the geom margin, so contacts alone miss a box 1 mm from another.
+
+        Args:
+            (1) bodies [Set<int>]: The bodies whose geoms are measured (e.g. the robot's, or the PCB's).
+            (2) cut [float]: The distance bound (m).
+            (3) data [mujoco.MjData]: The data, after mj_kinematics or mj_forward (default: the class's).
+            (4) exclude [Set<int>]: Bodies left out as the other side (e.g. the robot, for the PCB).
+
+        Returns:
+            (1) parameter [List<Tuple>]: (distance, body, other body, geom, other geom), closest first.
+        """
+
+        m = self.__model
+        d = self.__data if data is None else data
+        exclude = set() if exclude is None else exclude
+        mine = [g for g in range(m.ngeom) if m.geom_bodyid[g] in bodies and (m.geom_contype[g] or m.geom_conaffinity[g])]
+        others = [g for g in range(m.ngeom) if m.geom_bodyid[g] not in bodies and m.geom_bodyid[g] not in exclude
+                  and (m.geom_contype[g] or m.geom_conaffinity[g])]
+        out, ft = [], np.zeros(6)
+        for a in mine:
+            for b in others:
+                if not ((m.geom_contype[a] & m.geom_conaffinity[b]) or (m.geom_contype[b] & m.geom_conaffinity[a])):
+                    continue
+                if np.linalg.norm(d.geom_xpos[a] - d.geom_xpos[b]) - m.geom_rbound[a] - m.geom_rbound[b] > cut:
+                    continue
+                x = mujoco.mj_geomDistance(m, d, a, b, cut, ft)
+                if x < cut:
+                    out.append((x, m.body(m.geom_bodyid[a]).name, m.body(m.geom_bodyid[b]).name, m.geom(a).name or str(a), m.geom(b).name or str(b)))
+        return sorted(out)
+
     def Clearance(self, q: np.ndarray, data: tp.Optional[mujoco.MjData] = None, cut: float = 0.05,
                   skip: tp.Sequence[str] = ()) -> tp.Tuple[float, tp.Optional[tp.Tuple[str, str]]]:
         """
