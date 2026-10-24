@@ -35,11 +35,14 @@ import mujoco
 #   ../Configuration/Core
 from Configuration.Core import CONST_REFERENCE_PLAN, PCB_Meta_Str, Cell_Configuration_Str
 #   ../Configuration/Program_Parser - a loader position
-from Configuration.Program_Parser import Loader_Position_Str
+from Configuration.Program_Parser import Loader_Position_Str, Program_Str
 #   ../Scene/Core
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, CONST_CRATE_FLOOR, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
-from Collision.Core import CONST_COLLISION_CHECKS, CONST_LOADER_BODIES, Contact_Classifier_Cls, Penetration_Group, Cup_Contacts
+from Collision.Core import (CONST_COLLISION_CHECKS, CONST_LOADER_BODIES, CONST_FORK_PHASES, Contact_Classifier_Cls, Penetration_Group, Cup_Contacts,
+                            Robot_Collision_Cls)
+#   ../Trajectory/Core - a program's trajectory (F11)
+from Trajectory.Core import Trajectory_Str, CONST_DT
 
 """
 Description:
@@ -62,6 +65,10 @@ CONST_PROGRESS_STEPS = 4000
 # SPEC §10.1: the picks and the cups that must touch at each (the limits are in Configuration/Cell.yaml).
 #   Unit [int], [int]
 CONST_PICKS, CONST_CUPS = 2, 4
+# The per-step measurements' period (the TCP's acceleration by second differences, the tool's tilt, the robot-loader distance
+# in a parallel step), and the distance the robot-loader pairs are reported up to.
+#   Unit [float] (s), [float] (m)
+CONST_SAMPLE_PERIOD, CONST_LOADER_CUT = 0.004, 0.05
 
 
 class Simulation_Error_Cls(RuntimeError):
@@ -168,6 +175,9 @@ class Cycle_Result_Str:
     #   Unit [float] (rad)
     Lid_End: float = 0.0
     Handle_End: float = 0.0
+    # The run's steps (a program's steps or a legacy plan's phases), in order (F11).
+    #   Unit [List<Step_Physics_Str>]
+    Steps: tp.List['Step_Physics_Str'] = field(default_factory=list)
 
 
 @dataclass
@@ -292,13 +302,653 @@ def Phase_At(plan: Legacy_Plan_Str, t: float) -> str:
     return ph[-1] if ph else ''
 
 
-def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
-              loader_home: Loader_Position_Str, progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> Cycle_Result_Str:
+class Legacy_Drive_Cls(object):
     """
     Description:
-        The physics run of a plan from the PCB in the input crate to the end of the cycle, with the
-        measurements of SPEC §4.6. MuJoCo resets the state on instability; the run detects the time going
-        backwards and raises instead of continuing (SPEC §4.7).
+        The drive of a physics run from a legacy plan (cell_plan.npz): the servo set-points of the plan's joints with the
+        feed-forward of their np.gradient, the loader's min-jerk moves, the plan's vacuum events and phase labels; the fork
+        may touch the handle in the closing and opening phases; the PCB is placed when the loader goes up to park, MG06 is
+        closed with the robot away in the phase that says so. Run_Cycle's run, unchanged (its report is the old baseline).
+
+    Initialization of the Class:
+        Args:
+            (1) plan [Legacy_Plan_Str(object)]: The plan.
+            (2) loader_home [Loader_Position_Str(object)]: The loader's home (Constants.yaml L_HOME), where it starts.
+
+        Example:
+            Initialization:
+                # Assignment of the variables.
+                drive = Legacy_Drive_Cls(plan, constants.Loader['L_HOME'])
+
+            Features:
+                # Functions of the class (Physics_Run_Cls calls them).
+                drive.Robot(t), drive.Loader(t), drive.Label(t)
+    """
+
+    def __init__(self, plan: Legacy_Plan_Str, loader_home: Loader_Position_Str) -> None:
+        self.Plan, self.T_End = plan, plan.T_End
+        self.__start = {'y': loader_home.Y, 'z': 0.0, 'jaw': plan.Jaw_Open}
+        self.__v_plan = np.gradient(plan.Q, plan.Dt, axis=0)
+        self.__kv_kp = np.zeros(6)
+        self.Events = [(float(t0), name == 'suction_on') for t0, name in plan.Events]
+
+    def Bind(self, kv_kp: np.ndarray) -> None:
+        """
+        Description:
+            The servos' kv / kp, for the feed-forward.
+
+        Args:
+            (1) kv_kp [Vector<float> 1x6]: kv / kp of each servo (s).
+        """
+
+        self.__kv_kp = kv_kp
+
+    def Start(self) -> tp.Tuple[np.ndarray, float, float, float]:
+        """
+        Description:
+            The start: the robot joints, the loader's y and z, the jaws.
+
+        Returns:
+            (1) parameter [Vector<float> 1x6]: The joints (rad).
+            (2 - 4) parameter [float]: y, z, jaw (m).
+        """
+
+        return self.Plan.Q[0], self.__start['y'], self.__start['z'], self.__start['jaw']
+
+    def Robot(self, t: float) -> tp.Tuple[np.ndarray, np.ndarray]:
+        """
+        Description:
+            The servo command and the reference joints at t (Robot_Target).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1 - 2) parameter [Vector<float> 1x6]: The command, q_ref (rad).
+        """
+
+        return Robot_Target(self.Plan, self.__v_plan, self.__kv_kp, t)
+
+    def Loader(self, t: float) -> tp.List[float]:
+        """
+        Description:
+            The loader's y, z and jaw commands at t (Loader_Target).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [List<float>]: y, z, jaw (m).
+        """
+
+        return [Loader_Target(self.Plan, self.__start, 'y', t), Loader_Target(self.Plan, self.__start, 'z', t),
+                Loader_Target(self.Plan, self.__start, 'jaw', t)]
+
+    def Label(self, t: float) -> str:
+        """
+        Description:
+            The phase at t (Phase_At).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: The label.
+        """
+
+        return Phase_At(self.Plan, t)
+
+    def Fork_Allowed(self, label: str) -> bool:
+        """
+        Description:
+            Whether the fork may touch the handle in this phase (the closing and opening ones).
+
+        Args:
+            (1) label [string]: The phase.
+
+        Returns:
+            (1) parameter [bool]: True when allowed.
+        """
+
+        return label.startswith(CONST_FORK_PHASES)
+
+    def Placed(self, label: str, t: float) -> bool:
+        """
+        Description:
+            Whether the PCB is placed in MG06: the loader goes up to park.
+
+        Args:
+            (1) label [string]: The phase.
+            (2) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [bool]: True from then on.
+        """
+
+        return label.startswith('loader: up, to park')
+
+    def Closed(self, label: str, t: float) -> bool:
+        """
+        Description:
+            Whether MG06 is closed with the robot away (the phase that says so).
+
+        Args:
+            (1) label [string]: The phase.
+            (2) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [bool]: True in it.
+        """
+
+        return 'away, MG06 closed' in label
+
+    def Free(self, label: str) -> bool:
+        """
+        Description:
+            Whether the step is a FREE transfer (a legacy plan has none).
+
+        Args:
+            (1) label [string]: The step.
+
+        Returns:
+            (1) parameter [bool]: False.
+        """
+
+        return False
+
+    def Parallel(self, label: str) -> bool:
+        """
+        Description:
+            Whether the robot and the loader may move together in the step (never in a legacy plan's phases).
+
+        Args:
+            (1) label [string]: The step.
+
+        Returns:
+            (1) parameter [bool]: False.
+        """
+
+        return False
+
+
+class Trajectory_Drive_Cls(object):
+    """
+    Description:
+        The drive of a physics run from a program's trajectory (F11): the servo set-points of its joints, linear between
+        the 4 ms samples, with the feed-forward of its stored joint speeds (analytic in MoveJ and MoveSpline); the loader's y
+        and z and the gripper's commands, linear between samples (the jaws stop on the PCB in physics); its vacuum events;
+        its steps as labels. The fork may touch the handle in the steps whose Allow_Contact has handle_bar; the PCB is placed
+        at J_PARK's first sample, MG06 closed at the Test step's first sample; a step is FREE when it runs a MoveSpline and
+        parallel when it starts a loader job.
+
+    Initialization of the Class:
+        Args:
+            (1) trajectory [Trajectory_Str(object)]: The trajectory.
+            (2) program [Program_Str(object)]: Its program (the steps' allowed contacts and lines).
+
+        Example:
+            Initialization:
+                # Assignment of the variables.
+                drive = Trajectory_Drive_Cls(trajectory, program)
+
+            Features:
+                # Functions of the class (Physics_Run_Cls calls them).
+                drive.Robot(t), drive.Loader(t), drive.Label(t)
+    """
+
+    def __init__(self, trajectory: Trajectory_Str, program: Program_Str) -> None:
+        tr = trajectory
+        self.Trajectory, self.T_End, self.Dt, self.N = tr, float(tr.T[-1]), CONST_DT, len(tr.T)
+        self.__kv_kp = np.zeros(6)
+        self.Events = [(float(t0), name.endswith('_on')) for t0, name in tr.Events if name.startswith('vacuum')]
+        allowed = {s.Key for s in program.Segments if 'handle_bar' in s.Allow_Contact}
+        self.__fork = {name for name in tr.Step_Names if name in allowed}
+        lines = {name: [tr.Segment_Command[k] for k in range(len(tr.Segment_Command)) if tr.Step_Names[tr.Segment_Step[k]] == name]
+                 for name in tr.Step_Names}
+        self.__free = {name for name, texts in lines.items() if any(text.startswith('Robot.MoveSpline') for text in texts)}
+        self.__parallel = {name for name, texts in lines.items() if any(text.startswith('Loader.Start') for text in texts)}
+        park = next(k for k, text in enumerate(tr.Segment_Command) if text == 'Loader.Start(J_PARK)' or text.startswith('Loader.Run(J_PARK) >'))
+        test = next(k for k, name in enumerate(tr.Step_Names) if name.endswith('_Test'))
+        self.Placed_Time = float(tr.T[min(int(tr.Segment_Start[park]), self.N - 1)])
+        self.Closed_Time = float(tr.T[int(np.flatnonzero(tr.Step_Index == test)[0])])
+
+    def Bind(self, kv_kp: np.ndarray) -> None:
+        """
+        Description:
+            The servos' kv / kp, for the feed-forward.
+
+        Args:
+            (1) kv_kp [Vector<float> 1x6]: kv / kp of each servo (s).
+        """
+
+        self.__kv_kp = kv_kp
+
+    def Start(self) -> tp.Tuple[np.ndarray, float, float, float]:
+        """
+        Description:
+            The start: sample 0's robot joints, loader y and z, jaws.
+
+        Returns:
+            (1) parameter [Vector<float> 1x6]: The joints (rad).
+            (2 - 4) parameter [float]: y, z, jaw (m).
+        """
+
+        tr = self.Trajectory
+        return tr.Robot_Q[0], float(tr.Loader_Y[0]), float(tr.Loader_Z[0]), float(tr.Gripper[0])
+
+    def __At(self, t: float) -> tp.Tuple[int, int, float]:
+        """
+        Description:
+            The two samples around t and the weight of the second (as Robot_Target).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1 - 2) parameter [int]: The samples.
+            (3) parameter [float]: The weight.
+        """
+
+        x = min(t / self.Dt, self.N - 1.001)
+        i = int(x)
+        return i, min(i + 1, self.N - 1), x - i
+
+    def Robot(self, t: float) -> tp.Tuple[np.ndarray, np.ndarray]:
+        """
+        Description:
+            The servo command q_ref + kv / kp x v_ref and q_ref at t.
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1 - 2) parameter [Vector<float> 1x6]: The command, q_ref (rad).
+        """
+
+        i, j, w = self.__At(t)
+        tr = self.Trajectory
+        q = (1 - w) * tr.Robot_Q[i] + w * tr.Robot_Q[j]
+        v = (1 - w) * tr.Robot_QD[i] + w * tr.Robot_QD[j]
+        return q + self.__kv_kp * v, q
+
+    def Loader(self, t: float) -> tp.List[float]:
+        """
+        Description:
+            The loader's y, z and the gripper's commands at t.
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [List<float>]: y, z, jaw (m).
+        """
+
+        i, j, w = self.__At(t)
+        tr = self.Trajectory
+        return [float((1 - w) * c[i] + w * c[j]) for c in (tr.Loader_Y, tr.Loader_Z, tr.Gripper)]
+
+    def Label(self, t: float) -> str:
+        """
+        Description:
+            The step at t.
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: The step's name.
+        """
+
+        return self.Trajectory.Step_Names[int(self.Trajectory.Step_Index[self.__At(t)[0]])]
+
+    def Command(self, t: float) -> str:
+        """
+        Description:
+            The command line at t (the viewer's overlay).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: The line.
+        """
+
+        return self.Trajectory.Segment_Command[int(self.Trajectory.Segment_Id[self.__At(t)[0]])]
+
+    def Fork_Allowed(self, label: str) -> bool:
+        """
+        Description:
+            Whether the fork may touch the handle in the step (its Allow_Contact has handle_bar).
+
+        Args:
+            (1) label [string]: The step.
+
+        Returns:
+            (1) parameter [bool]: True when allowed.
+        """
+
+        return label in self.__fork
+
+    def Placed(self, label: str, t: float) -> bool:
+        """
+        Description:
+            Whether the PCB is placed in MG06: from J_PARK's first sample on.
+
+        Args:
+            (1) label [string]: The step.
+            (2) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [bool]: True from then on.
+        """
+
+        return t >= self.Placed_Time
+
+    def Closed(self, label: str, t: float) -> bool:
+        """
+        Description:
+            Whether MG06 is closed with the robot away: from the Test step's first sample on.
+
+        Args:
+            (1) label [string]: The step.
+            (2) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [bool]: True from then on.
+        """
+
+        return t >= self.Closed_Time
+
+    def Free(self, label: str) -> bool:
+        """
+        Description:
+            Whether the step is a FREE transfer (it runs a MoveSpline).
+
+        Args:
+            (1) label [string]: The step.
+
+        Returns:
+            (1) parameter [bool]: True for a FREE transfer.
+        """
+
+        return label in self.__free
+
+    def Parallel(self, label: str) -> bool:
+        """
+        Description:
+            Whether the robot and the loader may move together in the step (it starts a loader job).
+
+        Args:
+            (1) label [string]: The step.
+
+        Returns:
+            (1) parameter [bool]: True for a parallel step.
+        """
+
+        return label in self.__parallel
+
+
+@dataclass
+class Step_Physics_Str:
+    """
+    Description:
+        One step of a physics run (a program's step or a legacy plan's phase): its time span, the largest tracking error, the
+        PCB's slip in the cups with the tool's tilt and the TCP's acceleration where it was largest and their maxima, the
+        deepest contact per category, the closest robot-loader distance in a parallel step.
+    """
+
+    # The step and its span.
+    #   Unit [string], [float] (s), [float] (s)
+    Name: str = ''
+    Start: float = 0.0
+    End: float = 0.0
+    # Whether it is a FREE transfer and a parallel step.
+    #   Unit [bool]
+    Free: bool = False
+    Parallel: bool = False
+    # The largest robot tracking error.
+    #   Unit [float] (rad)
+    Track_Error: float = 0.0
+    # The largest PCB slip in the cups (since vacuum on), its time, the tool's tilt from the vertical and the TCP's acceleration
+    # then; the largest tilt and acceleration over the step while the cups hold the PCB.
+    #   Unit [float] (m), [float] (s), [float] (rad), [float] (m/s^2), [float] (rad), [float] (m/s^2)
+    Slip: float = 0.0
+    Slip_T: float = 0.0
+    Slip_Tilt: float = 0.0
+    Slip_Acceleration: float = 0.0
+    Tilt_Max: float = 0.0
+    Acceleration_Max: float = 0.0
+    # The deepest contact per CONST_COLLISION_CHECKS category: (distance, geom 1, geom 2, time).
+    #   Unit [Dict<string, Tuple>] (m, -, -, s)
+    Contacts: tp.Dict[str, tp.Tuple[float, str, str, float]] = field(default_factory=dict)
+    # A parallel step's closest robot-loader distance (exact, every 4 ms): (distance, time, pair), or None.
+    #   Unit [Tuple<float, float, string>] (m, s, -)
+    Robot_Loader: tp.Optional[tp.Tuple[float, float, str]] = None
+
+
+class Physics_Run_Cls(object):
+    """
+    Description:
+        The physics run of a drive (a legacy plan or a program's trajectory) from the PCB in the input crate to the end of the
+        cycle, one step at a time (Step), with the measurements of SPEC §4.6 (Result) and, per step, Step_Physics_Str. MuJoCo
+        resets the state on instability; the run detects the time going backwards and raises instead of continuing (SPEC
+        §4.7). The physics is the model's: the timestep and the solver as compiled.
+
+    Initialization of the Class:
+        Args:
+            (1) model [mujoco.MjModel]: The compiled cell (Scene.Core.Build_Cell_Model).
+            (2) drive [Legacy_Drive_Cls or Trajectory_Drive_Cls (object)]: What drives it.
+            (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+            (4) cell [Cell_Configuration_Str(object)]: The cell configuration (the phase period, the cup touch).
+            (5) progress [function]: Called with (time [s], label) every CONST_PROGRESS_STEPS steps, or None.
+
+        Example:
+            Initialization:
+                # Assignment of the variables.
+                run = Physics_Run_Cls(model, drive, pcb_meta, cell)
+
+            Features:
+                # Functions of the class.
+                while not run.Done: run.Step()
+                result = run.Result()
+    """
+
+    def __init__(self, model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
+                 progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> None:
+        m = model
+        self.Model, self.Drive, self.Meta, self.Cell, self.Progress = m, drive, pcb_meta, cell, progress
+        self.Data = d = mujoco.MjData(m)
+        J = lambda n: m.jnt_qposadr[m.joint(n).id]
+        self.QR = np.array([J('aubo/' + j) for j in CONST_ROBOT_JOINTS])
+        self.qa, self.qh, self.qy, self.qz, self.qjl, self.qjr, self.qpcb = (J(n) for n in ['lid_hinge', 'handle_hinge', 'y_axis', 'z_axis',
+                                                                                            'jaw_L', 'jaw_R', 'pcb_free'])
+        self.TOOL, self.PCB = m.body('aubo/tool/ee_tool').id, m.body('pcb').id
+        self.TCP = m.site('aubo/tool/suction_tcp').id
+        self.CUPS = {m.body(f'aubo/tool/vgc10_cup{i}').id for i in range(CONST_CUP_N)}
+        self.A_VAC = [m.actuator(f'vacuum{i}').id for i in range(CONST_CUP_N)]
+        self.classifier = Contact_Classifier_Cls(m)
+        A_ROBOT = CONST_ROBOT_ACTUATORS
+        drive.Bind(m.actuator_biasprm[A_ROBOT, 2] / m.actuator_biasprm[A_ROBOT, 1])
+        q0, y0, z0, jaw0 = drive.Start()
+        # 1\\ Initial state: MG06 open, the loader where the drive starts with its jaws, the PCB just above the input crate floor,
+        #    the robot at the drive's first joints; the filtered loader drives start where the loader is.
+        mujoco.mj_resetData(m, d)
+        self.Lid_Open = m.jnt_range[m.joint('lid_hinge').id][0]
+        d.qpos[self.qa] = self.Lid_Open
+        d.qpos[self.qy] = y0
+        d.qpos[self.qz] = z0
+        d.qpos[self.qjl] = d.qpos[self.qjr] = jaw0
+        pp, pq = PCB_In_Crate('crate_pick')
+        d.qpos[self.qpcb:self.qpcb + 3], d.qpos[self.qpcb + 3:self.qpcb + 7] = pp + [0, 0, CONST_PCB_DROP], pq
+        d.qpos[self.QR] = q0
+        d.ctrl[:3] = [y0, z0, jaw0]
+        d.ctrl[A_ROBOT] = q0
+        d.ctrl[self.A_VAC] = 0
+        d.act[:] = 0
+        d.act[m.actuator_actadr[0]] = y0
+        d.act[m.actuator_actadr[1]] = z0
+        mujoco.mj_forward(m, d)
+        self.ev = list(drive.Events)
+        self.worst, self.vacuum, self.pen, self.marks = {}, [], {}, {}
+        self.track_err, self.slip, self.fork_force, self.loader_lag = 0.0, 0.0, 0.0, 0.0
+        self.rel0, self.ph = None, ''
+        self.fc = np.zeros(6)
+        # The per-step measurements (F11): the steps by label; the TCP's positions every 4 ms for its acceleration.
+        self.steps: tp.Dict[str, Step_Physics_Str] = {}
+        self.tcp_history: tp.List[np.ndarray] = []
+        self.tcp_acceleration, self.tilt = 0.0, 0.0
+        self.sub = max(1, int(round(CONST_SAMPLE_PERIOD / m.opt.timestep)))
+        robot = {i for i in range(m.nbody) if m.body(i).name.startswith('aubo/')}
+        loader = {m.body(n).id for n in CONST_LOADER_BODIES}
+        self.robot_bodies, self.not_loader = robot, set(range(m.nbody)) - loader
+        self.collision = Robot_Collision_Cls(m, d)
+
+    @property
+    def Done(self) -> bool:
+        """
+        Description:
+            Whether the run has reached the drive's end.
+
+        Returns:
+            (1) parameter [bool]: True at the end.
+        """
+
+        return self.Data.time >= self.Drive.T_End
+
+    def Step(self) -> None:
+        """
+        Description:
+            One physics step: the vacuum events due, the loader, gripper and servo commands, mj_step, the instability guard,
+            the measurements of SPEC §4.6 and the step's (F11).
+        """
+
+        m, d, drive, cell = self.Model, self.Data, self.Drive, self.Cell
+        A_ROBOT, PCB, TOOL, CUPS = CONST_ROBOT_ACTUATORS, self.PCB, self.TOOL, self.CUPS
+        t = d.time
+        while self.ev and t >= self.ev[0][0]:
+            _, on = self.ev.pop(0)
+            d.ctrl[self.A_VAC] = 1.0 if on else 0.0
+            self.rel0 = None
+            self.vacuum.append(Vacuum_Event_Str(T=t, On=on, Cups=Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch) if on else None))
+        d.ctrl[:3] = drive.Loader(t)
+        d.ctrl[A_ROBOT], q_ref = drive.Robot(t)
+        mujoco.mj_step(m, d)
+        ph = self.ph
+        if d.time < t:
+            raise Simulation_Error_Cls('The simulation became unstable at t = %.3f s (phase: %s): MuJoCo reset the state. '
+                                       'Check the plan around that time and the last change to the model.' % (t, ph or 'start'))
+        step = int(round(d.time / m.opt.timestep))
+        if self.Progress is not None and step % CONST_PROGRESS_STEPS == 0:
+            self.Progress(d.time, ph)
+        error = np.max(np.abs(d.qpos[self.QR] - q_ref))
+        self.track_err = max(self.track_err, error)
+        self.loader_lag = max(self.loader_lag, abs(d.qpos[self.qy] - d.ctrl[0]), abs(d.qpos[self.qz] - d.ctrl[1]))
+        # PCB slip in the cups while the vacuum holds it.
+        slip_now = None
+        if d.ctrl[self.A_VAC[0]] > 0.5 and Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch):
+            R = d.xmat[TOOL].reshape(3, 3)
+            rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
+            self.rel0 = rel if self.rel0 is None else self.rel0
+            slip_now = np.linalg.norm(rel - self.rel0)
+            self.slip = max(self.slip, slip_now)
+        ff = 0.0
+        record = self.steps.setdefault(ph, Step_Physics_Str(Name=ph, Start=t, Free=drive.Free(ph), Parallel=drive.Parallel(ph)))
+        for i, c in enumerate(d.contact[:d.ncon]):
+            k = self.classifier.Classify(c.geom1, c.geom2, ph, drive.Fork_Allowed(ph))
+            if k and c.dist < self.worst.get(k, (0,))[0]:
+                self.worst[k] = (c.dist, self.classifier.Geom_Name(c.geom1), self.classifier.Geom_Name(c.geom2), round(d.time, 2))
+            if k and c.dist < record.Contacts.get(k, (0,))[0]:
+                record.Contacts[k] = (c.dist, self.classifier.Geom_Name(c.geom1), self.classifier.Geom_Name(c.geom2), round(d.time, 3))
+            b1, b2 = self.classifier.Body_Name(c.geom1), self.classifier.Body_Name(c.geom2)
+            # The thin board: its penetration into whatever holds it.
+            if 'pcb' in (b1, b2) and not (b1.startswith('aubo/') or b2.startswith('aubo/')):
+                grp = Penetration_Group(b2 if b1 == 'pcb' else b1)
+                if c.dist < self.pen.get(grp, (0,))[0]:
+                    self.pen[grp] = (c.dist, round(d.time, 2))
+            if {b1, b2} == {'aubo/tool/ee_tool', 'mg06_handle'}:
+                mujoco.mj_contactForce(m, d, i, self.fc)
+                ff += self.fc[0]
+        self.fork_force = max(self.fork_force, ff)
+        # The step's measurements (F11): tracking; every 4 ms the TCP's acceleration (second differences) and the tool's tilt
+        # from the vertical; the slip with the tilt and the acceleration then; a parallel step's robot-loader distance.
+        record.End = d.time
+        record.Track_Error = max(record.Track_Error, error)
+        if step % self.sub == 0:
+            self.tcp_history = (self.tcp_history + [d.site_xpos[self.TCP].copy()])[-3:]
+            if len(self.tcp_history) == 3:
+                p0, p1, p2 = self.tcp_history
+                self.tcp_acceleration = float(np.linalg.norm(p2 - 2 * p1 + p0)) / CONST_SAMPLE_PERIOD ** 2
+            self.tilt = float(np.arccos(np.clip(-d.site_xmat[self.TCP].reshape(3, 3)[2, 2], -1.0, 1.0)))
+            if record.Parallel:
+                pairs = self.collision.Close_Pairs(self.robot_bodies, CONST_LOADER_CUT, d, exclude=self.not_loader)
+                found = (pairs[0][0], d.time, '%s / %s' % (pairs[0][1], pairs[0][2])) if pairs else (CONST_LOADER_CUT, d.time, '')
+                if record.Robot_Loader is None or found[0] < record.Robot_Loader[0]:
+                    record.Robot_Loader = found
+        if slip_now is not None:
+            record.Tilt_Max = max(record.Tilt_Max, self.tilt)
+            record.Acceleration_Max = max(record.Acceleration_Max, self.tcp_acceleration)
+            if slip_now > record.Slip:
+                record.Slip, record.Slip_T, record.Slip_Tilt, record.Slip_Acceleration = slip_now, d.time, self.tilt, self.tcp_acceleration
+        if step % cell.Phase_Steps == 0:
+            self.ph = drive.Label(d.time)
+        if drive.Placed(self.ph, d.time) and 'placed' not in self.marks:
+            self.marks['placed'] = (d.qpos[self.qpcb:self.qpcb + 7].copy(), d.time)
+        if drive.Closed(self.ph, d.time) and 'closed' not in self.marks:
+            self.marks['closed'] = (d.qpos[self.qa], d.qpos[self.qh], d.time)
+
+    def Result(self) -> 'Cycle_Result_Str':
+        """
+        Description:
+            The values the report and the acceptance need, at the end of the run.
+
+        Returns:
+            (1) parameter [Cycle_Result_Str(object)]: The measured values.
+        """
+
+        d = self.Data
+        if 'placed' not in self.marks:
+            raise Simulation_Error_Cls("The run never placed the PCB in MG06 (the phase 'loader: up, to park' / J_PARK's first sample).")
+        pm, tm = self.marks['placed']
+        qd, qi = np.zeros(4), np.zeros(4)
+        mujoco.mju_negQuat(qi, np.array(self.Meta.Quat))
+        mujoco.mju_mulQuat(qd, pm[3:], qi)
+        pf = d.qpos[self.qpcb:self.qpcb + 7].copy()
+        return Cycle_Result_Str(Cycle_Time=self.Drive.T_End, Vacuum=self.vacuum, Placed_T=tm, Placed_Error=pm[:3] - np.array(self.Meta.Place_Pos),
+                                Placed_Tilt=2 * np.arccos(min(1, abs(qd[0]))), Closed=self.marks.get('closed'), Final_PCB=pf,
+                                Crate_Centre=Crate_Center('crate_place'),
+                                Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
+                                Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Penetration=self.pen, Contacts=self.worst,
+                                Lid_Open=self.Lid_Open, Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()))
+
+
+def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
+                progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> 'Cycle_Result_Str':
+    """
+    Description:
+        The physics run of a drive to its end (Physics_Run_Cls).
+
+    Args:
+        (1) model [mujoco.MjModel]: The compiled cell.
+        (2) drive [Legacy_Drive_Cls or Trajectory_Drive_Cls (object)]: What drives it.
+        (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+        (4) cell [Cell_Configuration_Str(object)]: The cell configuration.
+        (5) progress [function]: Called with (time [s], label) every CONST_PROGRESS_STEPS steps, or None.
+
+    Returns:
+        (1) parameter [Cycle_Result_Str(object)]: The measured values.
+    """
+
+    run = Physics_Run_Cls(model, drive, pcb_meta, cell, progress)
+    while not run.Done:
+        run.Step()
+    return run.Result()
+
+
+def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
+              loader_home: Loader_Position_Str, progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> 'Cycle_Result_Str':
+    """
+    Description:
+        The physics run of a legacy plan (Run_Physics with Legacy_Drive_Cls): the run of the old baseline report.
 
     Args:
         (1) model [mujoco.MjModel]: The compiled cell (Scene.Core.Build_Cell_Model).
@@ -312,101 +962,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
         (1) parameter [Cycle_Result_Str(object)]: The measured values.
     """
 
-    m = model
-    d = mujoco.MjData(m)
-    J = lambda n: m.jnt_qposadr[m.joint(n).id]
-    QR = np.array([J('aubo/' + j) for j in CONST_ROBOT_JOINTS])
-    qa, qh, qy, qz, qjl, qjr, qpcb = (J(n) for n in ['lid_hinge', 'handle_hinge', 'y_axis', 'z_axis', 'jaw_L', 'jaw_R', 'pcb_free'])
-    TOOL, PCB = m.body('aubo/tool/ee_tool').id, m.body('pcb').id
-    CUPS = {m.body(f'aubo/tool/vgc10_cup{i}').id for i in range(CONST_CUP_N)}
-    A_VAC = [m.actuator(f'vacuum{i}').id for i in range(CONST_CUP_N)]
-    A_ROBOT = CONST_ROBOT_ACTUATORS
-    classifier = Contact_Classifier_Cls(m)
-    kv_kp = m.actuator_biasprm[A_ROBOT, 2] / m.actuator_biasprm[A_ROBOT, 1]
-    v_plan = np.gradient(plan.Q, plan.Dt, axis=0)
-    start = {'y': loader_home.Y, 'z': 0.0, 'jaw': plan.Jaw_Open}
-    # 1\ Initial state: MG06 open, loader home with open jaws, the PCB just above the input crate floor,
-    #    the robot at the plan's first sample; the filtered loader drives start at home.
-    mujoco.mj_resetData(m, d)
-    lid_open = m.jnt_range[m.joint('lid_hinge').id][0]
-    d.qpos[qa] = lid_open
-    d.qpos[qy] = start['y']
-    d.qpos[qjl] = d.qpos[qjr] = start['jaw']
-    pp, pq = PCB_In_Crate('crate_pick')
-    d.qpos[qpcb:qpcb + 3], d.qpos[qpcb + 3:qpcb + 7] = pp + [0, 0, CONST_PCB_DROP], pq
-    d.qpos[QR] = plan.Q[0]
-    d.ctrl[:3] = [start['y'], start['z'], start['jaw']]
-    d.ctrl[A_ROBOT] = plan.Q[0]
-    d.ctrl[A_VAC] = 0
-    d.act[:] = 0
-    d.act[m.actuator_actadr[0]] = start['y']
-    mujoco.mj_forward(m, d)
-    ev = list(plan.Events)
-    worst, vacuum, pen, marks = {}, [], {}, {}
-    track_err, slip, fork_force, loader_lag = 0.0, 0.0, 0.0, 0.0
-    rel0, ph = None, ''
-    fc = np.zeros(6)
-    # 2\ The loop: events, commands, one step, the guard, the measurements.
-    while d.time < plan.T_End:
-        t = d.time
-        while ev and t >= ev[0][0]:
-            _, name = ev.pop(0)
-            on = name == 'suction_on'
-            d.ctrl[A_VAC] = 1.0 if on else 0.0
-            rel0 = None
-            vacuum.append(Vacuum_Event_Str(T=t, On=on, Cups=Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch) if on else None))
-        d.ctrl[:3] = [Loader_Target(plan, start, 'y', t), Loader_Target(plan, start, 'z', t), Loader_Target(plan, start, 'jaw', t)]
-        d.ctrl[A_ROBOT], q_ref = Robot_Target(plan, v_plan, kv_kp, t)
-        mujoco.mj_step(m, d)
-        if d.time < t:
-            raise Simulation_Error_Cls('The simulation became unstable at t = %.3f s (phase: %s): MuJoCo reset the state. '
-                                       'Check the plan around that time and the last change to the model.' % (t, ph or 'start'))
-        step = int(round(d.time / m.opt.timestep))
-        if progress is not None and step % CONST_PROGRESS_STEPS == 0:
-            progress(d.time, ph)
-        track_err = max(track_err, np.max(np.abs(d.qpos[QR] - q_ref)))
-        loader_lag = max(loader_lag, abs(d.qpos[qy] - d.ctrl[0]), abs(d.qpos[qz] - d.ctrl[1]))
-        # PCB slip in the cups while the vacuum holds it.
-        if d.ctrl[A_VAC[0]] > 0.5 and Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch):
-            R = d.xmat[TOOL].reshape(3, 3)
-            rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
-            rel0 = rel if rel0 is None else rel0
-            slip = max(slip, np.linalg.norm(rel - rel0))
-        ff = 0.0
-        for i, c in enumerate(d.contact[:d.ncon]):
-            k = classifier.Classify(c.geom1, c.geom2, ph)
-            if k and c.dist < worst.get(k, (0,))[0]:
-                worst[k] = (c.dist, classifier.Geom_Name(c.geom1), classifier.Geom_Name(c.geom2), round(d.time, 2))
-            b1, b2 = classifier.Body_Name(c.geom1), classifier.Body_Name(c.geom2)
-            # The thin board: its penetration into whatever holds it.
-            if 'pcb' in (b1, b2) and not (b1.startswith('aubo/') or b2.startswith('aubo/')):
-                grp = Penetration_Group(b2 if b1 == 'pcb' else b1)
-                if c.dist < pen.get(grp, (0,))[0]:
-                    pen[grp] = (c.dist, round(d.time, 2))
-            if {b1, b2} == {'aubo/tool/ee_tool', 'mg06_handle'}:
-                mujoco.mj_contactForce(m, d, i, fc)
-                ff += fc[0]
-        fork_force = max(fork_force, ff)
-        if step % cell.Phase_Steps == 0:
-            ph = Phase_At(plan, d.time)
-        if ph.startswith('loader: up, to park') and 'placed' not in marks:
-            marks['placed'] = (d.qpos[qpcb:qpcb + 7].copy(), d.time)
-        if 'away, MG06 closed' in ph and 'closed' not in marks:
-            marks['closed'] = (d.qpos[qa], d.qpos[qh], d.time)
-    # 3\ The values the report and the acceptance need.
-    if 'placed' not in marks:
-        raise Simulation_Error_Cls("The run never reached the phase 'loader: up, to park': the plan does not place the PCB in MG06.")
-    pm, tm = marks['placed']
-    qd, qi = np.zeros(4), np.zeros(4)
-    mujoco.mju_negQuat(qi, np.array(pcb_meta.Quat))
-    mujoco.mju_mulQuat(qd, pm[3:], qi)
-    pf = d.qpos[qpcb:qpcb + 7].copy()
-    return Cycle_Result_Str(Cycle_Time=plan.T_End, Vacuum=vacuum, Placed_T=tm, Placed_Error=pm[:3] - np.array(pcb_meta.Place_Pos),
-                            Placed_Tilt=2 * np.arccos(min(1, abs(qd[0]))), Closed=marks.get('closed'), Final_PCB=pf,
-                            Crate_Centre=Crate_Center('crate_place'),
-                            Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=track_err, Slip=slip,
-                            Loader_Lag=loader_lag, Fork_Force=fork_force, Penetration=pen, Contacts=worst,
-                            Lid_Open=lid_open, Lid_End=d.qpos[qa], Handle_End=d.qpos[qh])
+    return Run_Physics(model, Legacy_Drive_Cls(plan, loader_home), pcb_meta, cell, progress)
 
 
 def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:

@@ -341,7 +341,7 @@ class Contact_Classifier_Cls(object):
 
         return self.__body_name[geom]
 
-    def Classify(self, geom_1: int, geom_2: int, phase: str) -> tp.Optional[str]:
+    def Classify(self, geom_1: int, geom_2: int, phase: str, fork_allowed: tp.Optional[bool] = None) -> tp.Optional[str]:
         """
         Description:
             The category of a contact between two geoms in a phase of the run.
@@ -349,6 +349,8 @@ class Contact_Classifier_Cls(object):
         Args:
             (1 - 2) geom_1, geom_2 [int]: The geom ids.
             (3) phase [string]: The run's current phase label.
+            (4) fork_allowed [bool]: Whether the fork may touch the handle now (a program's step, F11); None: by the phase
+                (CONST_FORK_PHASES).
 
         Returns:
             (1) parameter [string]: A CONST_COLLISION_CHECKS entry, or None for an expected contact.
@@ -373,7 +375,8 @@ class Contact_Classifier_Cls(object):
             self.__cache[key] = k
         k = self.__cache[key]
         if k == 'fork':
-            k = None if phase.startswith(CONST_FORK_PHASES) else 'robot tool <-> handle (outside closing / opening)'
+            allowed = phase.startswith(CONST_FORK_PHASES) if fork_allowed is None else fork_allowed
+            k = None if allowed else 'robot tool <-> handle (outside closing / opening)'
         return k
 
 

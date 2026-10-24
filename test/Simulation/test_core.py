@@ -25,6 +25,8 @@
 import os
 import sys
 import copy
+# Types (Dynamic type creation)
+from types import SimpleNamespace
 # Subprocess (Subprocess management)
 import subprocess
 # Regular expressions (Default)
@@ -35,12 +37,14 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Simulation/Core
-from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report,
+from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report, Trajectory_Drive_Cls,
                              Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
 #   ../Configuration/Core
 from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
 #   ../Scene/Core
 from Scene.Core import Build_Cell_Model
+#   ../Trajectory/Core
+from Trajectory.Core import Trajectory_Str
 
 """
 Description:
@@ -181,6 +185,8 @@ from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Co
 from Configuration.Program_Parser import Load_Constants
 Configure_MuJoCo_Log()
 from Scene.Core import Build_Cell_Model
+#   ../Trajectory/Core
+from Trajectory.Core import Trajectory_Str
 from Simulation.Core import Legacy_Plan_Str, Read_Legacy_Plan, Run_Cycle, Simulation_Error_Cls
 cell = Load_Cell_Configuration()
 model = Build_Cell_Model(cell)
@@ -257,3 +263,59 @@ def test_the_raw_values_of_the_reference_run_are_pinned(reference_run):
     assert r.Fork_Force == pytest.approx(293.694615772405, rel=1e-9)
     assert np.linalg.norm(r.Placed_Error) == pytest.approx(0.0003017790990516208, rel=1e-9)
     assert r.Placed_Tilt == pytest.approx(0.00040800224934629315, rel=1e-9)
+
+
+def _Small_Trajectory():
+    """
+    Description:
+        A four-sample trajectory of three steps: a MoveSpline step that starts a loader job, the handle step with J_PARK, the
+        Test step; and the program's segments (only Key and Allow_Contact are read).
+    """
+
+    tr = Trajectory_Str(T=np.arange(4) * 0.004, Robot_Q=np.array([[0.0] * 6, [1.0] * 6, [2.0] * 6, [3.0] * 6]), Robot_QD=np.full((4, 6), 2.0),
+                        Loader_Y=np.array([0.0, 0.1, 0.2, 0.3]), Loader_Z=np.zeros(4), Gripper=np.full(4, 0.01),
+                        Step_Index=np.array([0, 0, 1, 2], np.int32), Segment_Id=np.array([0, 1, 2, 3], np.int32),
+                        Step_Names=['S1_Move', 'S2_Close', 'S3_Test'], Segment_Step=np.array([0, 0, 1, 2], np.int32),
+                        Segment_Command=['Robot.MoveSpline(W_A, v=0.6)', 'Loader.Start(J_FETCH)', 'Loader.Run(J_PARK) > Path(F)', 'Wait(2.0)'],
+                        Segment_Start=np.array([0, 1, 2, 3], np.int32), Segment_End=np.array([1, 2, 3, 3], np.int32),
+                        Events=[(0.004, 'vacuum_on'), (0.008, 'gripper_open'), (0.012, 'vacuum_off')])
+    program = SimpleNamespace(Segments=[SimpleNamespace(Key='S1_Move', Allow_Contact=[]),
+                                        SimpleNamespace(Key='S2_Close', Allow_Contact=['handle_bar'])])
+    return tr, program
+
+
+def test_the_trajectory_drive_interpolates_its_samples():
+    """
+    Description:
+        Trajectory_Drive_Cls (F11): the servo command is q + kv/kp x qd, linear between the 4 ms samples like Robot_Target; the
+        loader channels likewise; the start is sample 0; the label and the line are those of the sample at or before t; past the
+        end it holds the last sample (the last interval's label); only the vacuum events drive the cups.
+    """
+
+    tr, program = _Small_Trajectory()
+    drive = Trajectory_Drive_Cls(tr, program)
+    drive.Bind(np.full(6, 0.03))
+    command, q = drive.Robot(0.006)
+    assert q == pytest.approx([1.5] * 6) and command == pytest.approx([1.56] * 6)
+    assert drive.Loader(0.002) == pytest.approx([0.05, 0.0, 0.01])
+    assert drive.Robot(1.0)[1] == pytest.approx([3.0] * 6, abs=0.01)
+    assert [s.tolist() if isinstance(s, np.ndarray) else s for s in drive.Start()] == [[0.0] * 6, 0.0, 0.0, 0.01]
+    assert [drive.Label(t) for t in (0.0, 0.0079, 0.008, 0.0119)] == ['S1_Move', 'S1_Move', 'S2_Close', 'S2_Close']
+    assert drive.Command(0.005) == 'Loader.Start(J_FETCH)' and drive.T_End == pytest.approx(0.012)
+    assert drive.Events == [(0.004, True), (0.012, False)]
+
+
+def test_the_trajectory_drive_classifies_its_steps():
+    """
+    Description:
+        The fork may touch the handle only in a step whose segment allows handle_bar; the PCB counts as placed from J_PARK's
+        first sample and MG06 as closed from the Test step's first sample; a MoveSpline step is FREE, a Loader.Start step
+        parallel.
+    """
+
+    drive = Trajectory_Drive_Cls(*_Small_Trajectory())
+    assert [drive.Fork_Allowed(s) for s in ('S1_Move', 'S2_Close', 'S3_Test')] == [False, True, False]
+    assert drive.Placed_Time == pytest.approx(0.008) and drive.Closed_Time == pytest.approx(0.012)
+    assert [drive.Placed('', t) for t in (0.0079, 0.008)] == [False, True]
+    assert [drive.Free(s) for s in ('S1_Move', 'S2_Close')] == [True, False]
+    assert [drive.Parallel(s) for s in ('S1_Move', 'S3_Test')] == [True, False]
