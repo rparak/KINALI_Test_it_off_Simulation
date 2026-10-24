@@ -1,9 +1,9 @@
 # Pinned for Python 3.11 (macOS Apple silicon, Ubuntu Linux); installed and verified 2026-10-24.
-# Simulation, kinematics and collision queries (src/, legacy/); scipy is planned (no user yet)
+# Simulation, kinematics, collision queries, the program (src/); scipy: the table-box derivation test (test/Collision)
 mujoco==3.16.0
 numpy==2.4.6
 scipy==1.17.1
-# Cell configuration (planned: the YAML loader of Phase 1 step 3)
+# Cell configuration, keypoints, program (src/Configuration)
 PyYAML==6.0.3
 # Collision-set build only (planned: this project has no collision-set build yet); the tests never run CoACD
 trimesh==5.1.1

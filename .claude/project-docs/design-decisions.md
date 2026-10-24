@@ -305,8 +305,9 @@ keeps a report, an image and a trajectory from overwriting or hiding each other.
 **Alternatives.** Reports and images in `logger/`: rejected, they are results a reader opens, not run logs.
 Keeping an output folder at the root: rejected by the owner.
 
-**Revisit if** step 4 makes the trajectory a committed deliverable: then `Data/Generated/Trajectories/` (or the
-delivered file) is un-ignored, as the template commits its `Data/Generated/`.
+**Revisit if** step 6 makes the trajectory the regression input: then the delivered file is un-ignored. *Corrected
+2026-10-24 (owner, step 4 answer 11): the trajectories stay git-ignored until step 6; F9's optimized program goes to the
+committed `Data/Optimized/`.*
 
 Pinned by `test/Install/test_install.py::test_the_run_folders_are_created` and the `test/Example` script
 tests (defaults and `--out`).

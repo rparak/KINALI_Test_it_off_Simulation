@@ -679,8 +679,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (99 tests, about 15 s), full `.venv/bin/python -m pytest`
-before a commit (103 tests, about 45 s; Apple M2 Pro, 2026-10-24).
+`.venv/bin/python -m pytest -m "not slow"` (266 tests, about 58 s), full `.venv/bin/python -m pytest`
+before a commit (276 tests, about 112 s; Apple M2 Pro, 2026-10-24, after F8).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
@@ -707,6 +707,12 @@ commands, editing keypoints and program, the file formats.
 - The cycle run's printed report diffs empty against `test/Simulation/data/baseline_report.txt`.
 - Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow: report, §10.1, raw values)
   and `test/Example/Simulation/test_run_cycle.py` (slow: the script's stdout).
+- **Baselines by run** (owner, 2026-10-24, B6): `test/Simulation/data/baseline_report.txt` stays the baseline of the
+  legacy run (`Data/Reference/cell_plan.npz`) and stays valid for it. Step 6 adds a new baseline report for the default
+  program and one for the optimized program, each measured in the pinned environment; neither replaces the legacy one.
+- **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one
+  machine and platform (`test/Program/test_core.py::test_the_build_is_deterministic`); across platforms results agree
+  within numeric tolerance only. The trajectory's metadata records the platform and the versions.
 
 ## 11. Installer — `install.sh`
 
@@ -757,8 +763,8 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 ## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)
 
-The owner's proposals for steps 3–4, kept as the starting point; step 3 and 4 settle them (this
-section is then replaced by the formats in §8 and §9). Quoted verbatim, so they keep the brief's paths: its
+The owner's proposals for steps 3–4, kept as the starting point and now settled: the keypoint and program files are §8,
+the trajectory file §9 (`FEATURES.md` F6, F8); the text below is kept verbatim as the brief's record. Quoted verbatim, so they keep the brief's paths: its
 output folder is now `Data/Generated/` (design-decisions), the trajectory `Data/Generated/Trajectories/`. The CLI of §16.4 is superseded by the
 `Example/` scripts (design-decisions: RPX over brief §5.1); its subcommands map to `run_cycle.py`
 (`run`), `export_cell_scene.py` (`export-xml`), and the scripts of steps 3–5 (`show`, `keypoints --check`,

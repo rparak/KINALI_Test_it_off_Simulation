@@ -92,7 +92,8 @@ look at what changed.
 ## Commits
 
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
-- Never committed: `logger/`, `Data/Generated/` (until step 4 decides on the trajectory), `.venv/`.
+- Never committed: `logger/`, `Data/Generated/` (the trajectories stay git-ignored until step 6, owner 2026-10-24), `.venv/`.
+  F9's optimized program (`Data/Optimized/`) will be committed, with its input hashes.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
   source changed, a new `Data/Reference/cell_plan.npz`, a new baseline report or fingerprint.
 

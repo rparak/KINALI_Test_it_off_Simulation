@@ -602,7 +602,7 @@ within 5 rows; images `Data/Generated/Images/look_A_*.png`, `look_D_*.png`).
       `materials/grid/mat_reflectance`, `mat_shininess`, `mat_specular`, `mat_texrepeat`, `sizes/nlight` 3 → 2),
       `pcb_vis` kept as the one documented difference; the accepted lists back to `pcb_vis` only.
 
-## F8 - Step 4a: the default program, its trajectory and checks (owner, 2026-10-24) - design, awaiting approval
+## F8 - Step 4a: the default program, its trajectory and checks (owner, 2026-10-24) - built, awaiting acceptance
 
 Requirements (restated): a commented, sequential program in `Configuration/` that reads like a teach-pendant
 program (named steps with a comment each; `Movej`, `Movel`, `Path`, `Loader`, `Gripper`, `Vacuum`, `Wait`, `Stop`);
@@ -1024,6 +1024,8 @@ baselines for both programs in step 6 (SPEC).
       axes in turn +1.104, test +1.000, fetch / return +0.600, the rest -0.092). 270 -> 276 collected (the 6 script tests
       slow: each runs the build and check, about 12 s); 8 mutations, all failed. Full suite 276 passed in 112 s, fast 266 in
       58 s. The viewer's live playback (keys, overlay) is for the owner to check under mjpython.
+- [x] F8.7 Docs: SPEC §10 (counts, the B6 baselines, B5 determinism), §16 settled; the README's commands and status
+      (readme-writer); the skill references (feature-manager, project-optimize); requirements.txt's comments.
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 
