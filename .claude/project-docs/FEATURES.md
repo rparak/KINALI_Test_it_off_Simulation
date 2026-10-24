@@ -349,7 +349,7 @@ physics or the model.
 - [x] Test-it-off: the logo is not used (owner, 2026-10-24); the PNG removed, the product named only.
 - [x] The name "Test-it-off Simulation" and the spelling Test-it-off everywhere (design-decisions).
 
-## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - approved, in progress
+## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - done
 
 Requirements (restated): the cell configuration and the named keypoints in YAML in the root `Configuration/`
 (SPEC §6, §8); one loader with validation; IK resolution by family and seed; posing the whole cell at a
@@ -532,16 +532,31 @@ read from the compiled model). `fork_start` row 23, `fork_closed_end` row 286, `
   segment that observes a jaw contact.
 - `fork_closed_end` with MG06 **Open**: the handle is rotated away, the fork is in free space (24.6 mm from
   MG06's base) - no collision, unlike the owner's expectation; with MG06 settled **Closed** the bar is 5.95 mm
-  into the fork and the check fails. Both pinned; open question for the owner.
+  into the fork and the check fails. Both pinned; accepted by the owner (2026-10-24).
 
-### Status (2026-10-24)
+### Status (done 2026-10-24)
 
-- F6.1 done (e78aa8f): `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` and their loader; the moved
-  constants convert to the same floats (fingerprint and cycle report unchanged).
-- F6.2 done (56ae14f): `src/Keypoints/Core.py` (posing, check, resolution), exact clearance
-  (`Collision.Close_Pairs`); the check: 0 FAIL, 1 WARN (`via_mg06_high`, the family switch), 21 PASS.
-- F6.3 done: `Example/Keypoints/` (check, resolve, show, step), `Render_Free_Image`, `Launch_Passive_Viewer`,
-  the script tests. Not verified here: the viewer keys (Page Down / Page Up / `.`) - the owner presses them.
+Checks after every commit: the fingerprint compare (only `geoms/pcb_vis/geom_rgba`), the cycle report diff
+against the baseline, the fast tests, the style checker (0 issues).
+
+- [x] F6.1 `e78aa8f`: `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` and their loader; the moved
+      constants convert to the same floats (fingerprint and cycle report unchanged).
+- [x] F6.2 `56ae14f`: `src/Keypoints/Core.py` (posing, check, resolution), exact clearance
+      (`Collision.Close_Pairs`); the check: 0 FAIL, 1 WARN (`via_mg06_high`, the family switch), 21 PASS.
+- [x] F6.3 `1c011b3`: `Example/Keypoints/` (check, resolve, show, step), `Render_Free_Image`, `Launch_Passive_Viewer`,
+      the script tests. The viewer keys (Page Down / Page Up / `.`) tested by the owner: they work.
+- [x] F6.4 `b15f6ec`: the unused contact group `pcb_jaws` removed (config, loader, check, tests, docs); the check
+      table byte-identical (0 FAIL, 1 WARN, 21 PASS); 191 collected. Fingerprint 1 diff; report diff empty; fast
+      187 passed; style checker 38 files, 0 issues.
+
+Closing answers (owner, 2026-10-24) to the step 3 report:
+
+1. The fixture-state test (`fork_closed_end`: settled Closed fails, the recorded state passes, Open passes):
+   accepted.
+2. The viewer keys Page Down / Page Up / `.`: tested by the owner, they work.
+3. `pcb_jaws`: removed (F6.4); it comes back with a keypoint or step 4 segment that observes a jaw contact.
+4. The resolver against the stored joints (up to 0.003°, within the stale tolerance): the stored values stay.
+5. The Phase 2 toolkit stays open until step 8 (design-decisions).
 
 ### Questions (Part A)
 
