@@ -631,7 +631,9 @@ An offscreen image from a named camera or a free camera, with the studio look's 
 starting the viewer (the passive one with the same flags); the playback loop of a passive viewer (`Playback_Cls`, the
 timeline by the wall clock with queued key actions; `Run_Viewer_Loop`, the mujoco 3.16 viewer rules: `viewer.lock()` only
 while posing, `set_texts` outside it and at most every 0.25 s unless the segment changes, `sync` every frame; `Watchdog_Cls`
-for `--watchdog`). No project imports.
+for `--watchdog`). No project imports. Since F11 the playback has a speed against the wall clock and a `frame` action (one
+sample on, paused), and the loop a `prepare` hook called every frame before the lock (`Example/Simulation/show_physics.py` steps
+its physics run there, at most 50 ms of wall time per frame, and only copies the state under the lock).
 
 ### 7.6 Simulation
 

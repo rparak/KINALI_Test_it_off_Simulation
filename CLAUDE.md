@@ -43,6 +43,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
 .venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~18 s
 .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~17 s
+.venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--time T] [--watchdog S]   # physics in the viewer, real time
+.venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...] [--image [FILE]]   # physics to T; offscreen image
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
 .venv/bin/python Example/Scene/export_cell_scene.py    # models/cell_scene.xml
 .venv/bin/python Example/Render/show_cell.py            # MuJoCo viewer on the cell
@@ -61,8 +63,9 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
 ```
 
-The two viewer scripts use `mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`;
-under `.venv/bin/python` they exit 2 naming the mjpython command. The cell configuration (`Cell.yaml`) and the cell
+The viewer scripts (`show_keypoint.py`, `step_keypoints.py`, `show_program.py`, `show_physics.py`) use
+`mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`; under `.venv/bin/python` they exit 2
+naming the mjpython command. The cell configuration (`Cell.yaml`) and the cell
 program (`Constants.yaml` named values, `Simulation.yaml` simulation-only data, `Program.yaml` the program; read by
 `src/Configuration/Program_Parser.py`) and the optimizer's settings (`Optimization.yaml`) are edited by hand in `Configuration/` (no
 tool writes them). `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Program/optimize_program.py` (committed;

@@ -362,3 +362,33 @@ def test_a_stalled_loop_is_reported_by_the_watchdog():
     result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, timeout=60)
     assert result.returncode == CONST_WATCHDOG_EXIT
     assert 'has not advanced for 0.3 s' in result.stderr and 'in Frame' in result.stderr and 'Thread' in result.stderr
+
+
+def test_a_physics_playback_prepares_outside_the_lock_and_runs_at_its_speed():
+    """
+    Description:
+        F11 (show_physics.py): prepare is called every frame before the lock is taken, the pose under it every frame (the run's
+        state moves even when the sample does not); at speed 0.25 a 1/60 s frame advances one sample (4 ms) where real time
+        advances four; 'frame' steps one sample and pauses; a speed of 0 is refused.
+    """
+
+    viewer, clock = _Fake_Viewer(40), _Clock_Cls()
+    prepared, posed = [], []
+
+    def Prepare(i):
+        assert not viewer.Lock.locked()
+        prepared.append(i)
+
+    def Pose(i):
+        assert viewer.Lock.locked()
+        posed.append(i)
+
+    playback = Playback_Cls(_Timeline(), 0.004, speed=0.25)
+    Run_Viewer_Loop(viewer, playback, Pose, lambda i: ('', '', 0), clock=clock, sleep=clock.Sleep, prepare=Prepare)
+    assert len(prepared) == len(posed) == 40 and prepared == posed
+    assert set(np.diff(prepared).tolist()) <= {1, 2} and abs(prepared[-1] - 39 * CONST_FRAME_PERIOD * 0.25 / 0.004) <= 1
+    playback = Playback_Cls(_Timeline(), 0.004, sample=10)
+    playback.Request('frame')
+    assert playback.Advance(0.0) == 11 and playback.Paused and playback.Advance(1.0) == 11
+    with pytest.raises(ValueError, match='speed must be > 0'):
+        Playback_Cls(_Timeline(), 0.004, speed=0.0)

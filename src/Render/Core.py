@@ -63,7 +63,7 @@ CONST_LOOK_FLAGS = {mujoco.mjtRndFlag.mjRND_FOG: True, mujoco.mjtRndFlag.mjRND_H
 CONST_FRAME_PERIOD, CONST_OVERLAY_PERIOD = 1.0 / 60.0, 0.25
 # The playback's key actions.
 #   Unit [Tuple<string>]
-CONST_PLAYBACK_ACTIONS = ('pause', 'next', 'previous', 'end')
+CONST_PLAYBACK_ACTIONS = ('pause', 'next', 'previous', 'end', 'frame')
 # The exit code of a stalled viewer loop (--watchdog).
 #   Unit [int]
 CONST_WATCHDOG_EXIT = 3
@@ -228,7 +228,8 @@ class Playback_Cls(object):
     """
     Description:
         The playback state of a sampled timeline divided into steps: the sample shown, running or paused. A running
-        playback follows the wall clock, so a slow frame skips samples instead of slowing the playback. The keys' actions
+        playback follows the wall clock times its speed (1 real time, 0.25 four times slower), so a slow frame skips samples
+        instead of slowing the playback. The keys' actions
         arrive on the viewer's thread; they are queued and applied by the loop at the start of a frame (Advance), never
         in the middle of one.
 
@@ -238,6 +239,7 @@ class Playback_Cls(object):
             (2) dt [float]: The time between two samples (s).
             (3) sample [int]: The first sample shown.
             (4) paused [bool]: Start paused.
+            (5) speed [float]: The playback's speed against the wall clock (> 0).
 
         Example:
             Initialization:
@@ -252,9 +254,11 @@ class Playback_Cls(object):
                 playback.Request('next'); playback.Advance(time.perf_counter())
     """
 
-    def __init__(self, step_index: np.ndarray, dt: float, sample: int = 0, paused: bool = False) -> None:
+    def __init__(self, step_index: np.ndarray, dt: float, sample: int = 0, paused: bool = False, speed: float = 1.0) -> None:
+        if not speed > 0:
+            raise ValueError('the playback speed must be > 0, not %r' % (speed,))
         index = np.asarray(step_index)
-        self.Step_Index, self.Dt, self.N = index, float(dt), len(index)
+        self.Step_Index, self.Dt, self.N, self.Speed = index, float(dt), len(index), float(speed)
         self.Starts = [int(np.flatnonzero(index == k)[0]) for k in range(int(index.max()) + 1)]
         self.Ends = [int(np.flatnonzero(index == k)[-1]) for k in range(int(index.max()) + 1)]
         self.Sample, self.Paused = int(sample), bool(paused)
@@ -266,7 +270,7 @@ class Playback_Cls(object):
         Description:
             Queue a key's action (any thread): 'pause' (pause / resume; resuming at the end starts again), 'next' (the
             next step's start), 'previous' (the current step's start, or the previous step's when already there), 'end'
-            (the current step's end).
+            (the current step's end), 'frame' (one sample on, paused).
 
         Args:
             (1) action [string]: One of CONST_PLAYBACK_ACTIONS.
@@ -294,6 +298,8 @@ class Playback_Cls(object):
             self.Sample = self.Starts[(k + 1) % len(self.Starts)]
         elif action == 'previous':
             self.Sample = self.Starts[k] if self.Sample > self.Starts[k] else self.Starts[(k - 1) % len(self.Starts)]
+        elif action == 'frame':
+            self.Sample, self.Paused = min(self.Sample + 1, self.N - 1), True
         else:
             self.Sample = self.Ends[k]
         self._Reference = None
@@ -302,7 +308,7 @@ class Playback_Cls(object):
         """
         Description:
             The sample of this frame: the queued actions applied in order, then, while running, the sample the wall clock
-            has reached since the playback started counting (pausing at the last sample).
+            (times the speed) has reached since the playback started counting (pausing at the last sample).
 
         Args:
             (1) now [float]: The wall-clock time (s).
@@ -319,7 +325,7 @@ class Playback_Cls(object):
         if self._Reference is None:
             self._Reference = (now, self.Sample)
         start_time, start_sample = self._Reference
-        self.Sample = min(start_sample + int((now - start_time) / self.Dt), self.N - 1)
+        self.Sample = min(start_sample + int((now - start_time) * self.Speed / self.Dt), self.N - 1)
         if self.Sample == self.N - 1:
             self.Paused, self._Reference = True, None
         return self.Sample
@@ -417,14 +423,17 @@ def Run_Viewer_Loop(viewer: tp.Any, playback: Playback_Cls, pose: tp.Callable[[i
                     describe: tp.Callable[[int], tp.Tuple[str, str, int]], on_segment: tp.Optional[tp.Callable[[str, str], None]] = None,
                     watchdog: tp.Optional[Watchdog_Cls] = None, frame_period: float = CONST_FRAME_PERIOD,
                     overlay_period: float = CONST_OVERLAY_PERIOD, clock: tp.Callable[[], float] = time.perf_counter,
-                    sleep: tp.Callable[[float], None] = time.sleep) -> Frame_Stats_Str:
+                    sleep: tp.Callable[[float], None] = time.sleep,
+                    prepare: tp.Optional[tp.Callable[[int], None]] = None) -> Frame_Stats_Str:
     """
     Description:
         Play a timeline in a passive viewer until it is closed, by the rules of mujoco 3.16's viewer: viewer.lock() is held
         only while the data is posed (pose); set_texts is called outside it (it waits for the render thread, which needs
         the same lock: called under it, both threads block), only when the text changes - at once on a segment change,
         otherwise at most every overlay_period; sync every frame, paused too, so the window always answers; the sleep fills
-        the frame period, and a frame slower than it skips samples (Playback_Cls follows the wall clock).
+        the frame period, and a frame slower than it skips samples (Playback_Cls follows the wall clock). With prepare (a
+        physics run, F11) every frame first calls prepare(sample) outside the lock (it steps the run towards the sample) and
+        then poses under it (the state copied).
 
     Args:
         (1) viewer [mujoco.viewer.Handle]: The passive viewer (is_running, lock, set_texts, sync).
@@ -435,6 +444,7 @@ def Run_Viewer_Loop(viewer: tp.Any, playback: Playback_Cls, pose: tp.Callable[[i
         (6) watchdog [Watchdog_Cls(object)]: Beaten every frame, or None.
         (7 - 8) frame_period, overlay_period [float]: The frame period and the shortest time between overlay updates (s).
         (9 - 10) clock, sleep [function]: The wall clock (s) and the sleep (tests replace them).
+        (11) prepare [function]: Called with the frame's sample before the lock is taken, or None.
 
     Returns:
         (1) parameter [Frame_Stats_Str(object)]: The frames' work.
@@ -444,7 +454,9 @@ def Run_Viewer_Loop(viewer: tp.Any, playback: Playback_Cls, pose: tp.Callable[[i
     while viewer.is_running():
         start = clock()
         sample = playback.Advance(start)
-        if sample != shown:
+        if prepare is not None:
+            prepare(sample)
+        if sample != shown or prepare is not None:
             with viewer.lock():
                 pose(sample)
             shown = sample
