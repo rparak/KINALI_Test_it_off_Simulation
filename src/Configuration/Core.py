@@ -103,7 +103,7 @@ CONST_FAMILIES = ('wrist_up', 'wrist_down')
 CONST_FRAMES = ('suction_tcp', 'tool_flange')
 CONST_PCB_LOCATIONS = ('input_crate', 'cups', 'jaws', 'mg06', 'output_crate')
 CONST_HOLD_LOCATIONS = ('input_crate', 'jaws', 'output_crate')
-CONST_CONTACT_GROUPS = ('cups_pcb', 'handle_bar', 'pcb_jaws', 'pcb_crate')
+CONST_CONTACT_GROUPS = ('cups_pcb', 'handle_bar', 'pcb_crate')
 CONST_FIXTURE_STATES = ('Open', 'Closed')
 
 

@@ -64,9 +64,6 @@ CONST_WRIST_2 = 4
 # plate's collision geoms.
 #   Unit [Tuple<string>]
 CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX = 'aubo/base_link', 'ws_col_deska_robot'
-# The loader's moving bodies the carried PCB may touch as 'pcb_jaws'.
-#   Unit [Set<string>]
-CONST_JAW_BODIES = {'jaw_L', 'jaw_R'}
 
 
 class Keypoints_Error_Cls(ValueError):
@@ -275,15 +272,13 @@ def _Group(names: tp.Set[str], geoms: tp.Set[str], cup_block: str) -> tp.Optiona
         (3) cup_block [string]: The cup block's geom (its id as text, it has no name).
 
     Returns:
-        (1) parameter [string]: cups_pcb, handle_bar, pcb_jaws, pcb_crate, or None.
+        (1) parameter [string]: cups_pcb, handle_bar, pcb_crate, or None.
     """
 
     if 'pcb' in names and (any(n.startswith('aubo/tool/vgc10_cup') for n in names) or cup_block in geoms):
         return 'cups_pcb'
     if names == {'aubo/tool/ee_tool', 'mg06_handle'}:
         return 'handle_bar'
-    if 'pcb' in names and names & CONST_JAW_BODIES:
-        return 'pcb_jaws'
     if 'pcb' in names and 'workstation' in names and any(g.startswith('crate_') for g in geoms):
         return 'pcb_crate'
     return None

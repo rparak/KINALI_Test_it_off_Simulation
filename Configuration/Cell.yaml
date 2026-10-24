@@ -52,7 +52,6 @@ Clearance:
   Allowed_Depth:
     cups_pcb: 0.0016
     handle_bar: 0.0005
-    pcb_jaws: 0.0005
     pcb_crate: 0.0005
   # A keypoint's FK against its Check value: the SPEC §4.8 table is rounded to 0.1 mm (measured
   # residue of the full-precision joints: at most 0.081 mm). [m] REQUIRED.

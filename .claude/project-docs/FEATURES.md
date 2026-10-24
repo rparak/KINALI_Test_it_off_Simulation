@@ -527,7 +527,9 @@ read from the compiled model). `fork_start` row 23, `fork_closed_end` row 286, `
   distances (design-decisions). They found the cup block 2.10 mm above a held PCB (0.62 mm while pressing):
   part of `cups_pcb`; and the robot's base on its plate (the mount, not checked).
 - `pcb_jaws` was declared at the handover and the take but is never present: removed (allow only what is
-  present, C1); a test holds every declared group to being observed.
+  present, C1); a test holds every declared group to being observed. The group itself is removed too
+  (owner, 2026-10-24: config, loader, check, tests; design-decisions); it comes back with a keypoint or step 4
+  segment that observes a jaw contact.
 - `fork_closed_end` with MG06 **Open**: the handle is rotated away, the fork is in free space (24.6 mm from
   MG06's base) - no collision, unlike the owner's expectation; with MG06 settled **Closed** the bar is 5.95 mm
   into the fork and the check fails. Both pinned; open question for the owner.

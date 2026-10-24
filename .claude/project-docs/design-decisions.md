@@ -157,6 +157,26 @@ hides one.
 Pinned by `test/Keypoints/test_core.py::test_the_fork_keypoints_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre`,
 `::test_fork_closed_end_in_the_wrong_mg06_state_is_reported`.
 
+## The contact groups are only those a keypoint observes
+
+**Decision.** The keypoint check knows three contact groups, `cups_pcb`, `handle_bar` and `pcb_crate`, each
+declared by at least one keypoint and found there within the clearance. `pcb_jaws` (the carried PCB on the
+loader's jaws) is removed from `Configuration/Cell.yaml`, the loader and the check (owner, 2026-10-24); a PCB-jaw
+pair within the clearance now has no group and fails like any other close pair.
+
+**Why.** No keypoint observes a PCB-jaw contact: it was declared at the handover and the take but never present
+(FEATURES.md F6, implementation findings), and a group no keypoint can declare is a field that cannot take
+effect. Allowing only what is present (C1) keeps an unexpected jaw contact visible.
+
+**Alternatives.** Keep `pcb_jaws` for step 4: rejected, nothing would test it until then.
+
+**Revisit if** a keypoint or a step 4 segment really has the PCB on the jaws: the group comes back with that
+keypoint or segment, which observes it.
+
+Pinned by `test/Configuration/test_configuration_files.py::test_an_invalid_keypoint_value_is_named` (`pcb_jaws`
+rejected), `::test_the_shipped_cell_configuration_loads_in_si_units`,
+`test/Keypoints/test_core.py::test_every_declared_contact_is_really_present`.
+
 ## MuJoCo is pinned to 3.16.0
 
 **Decision.** `mujoco==3.16.0` in `requirements.txt`; the installer checks the version.

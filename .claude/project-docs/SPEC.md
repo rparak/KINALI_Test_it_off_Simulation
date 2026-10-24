@@ -526,7 +526,8 @@ joint limits (the model); the family (wrist_2's sign); `Check` within `Clearance
 (`Collision.Close_Pairs`, `mj_geomDistance`) from the robot's geoms, and from the PCB's when the cups carry it,
 to every collidable geom: every pair closer than `Clearance.Robot` fails unless its group is in
 `Allow_Contact` and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on the PCB, not
-the fork), `handle_bar` (the tool on the MG06 handle), `pcb_jaws`, `pcb_crate` (the carried PCB). Not checked:
+the fork), `handle_bar` (the tool on the MG06 handle), `pcb_crate` (the carried PCB in a crate) - only groups a
+keypoint observes; any other pair within the clearance, the carried PCB on the jaws included, fails. Not checked:
 the robot's mount (its base on the pedestal plate, distance 0 by construction; a code constant, as the
 template's base–stand exclusion). Exact distances because MuJoCo's box–box collider generates no contact for a
 near pair (the carried PCB 1.0 mm above the crate floor), whatever the geom margin
