@@ -17,9 +17,9 @@ DEFAULT_OUT = ROOT / 'docs' / 'baseline_model_fingerprint.json'
 
 
 def build_model():
-    sys.path.insert(0, str(ROOT))
-    import cell
-    return cell.build_model()
+    sys.path.insert(0, str(ROOT / 'src'))                 # works without pip install -e
+    from kinali_sim import model
+    return model.build_model()
 
 
 def h(x):

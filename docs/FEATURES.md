@@ -25,12 +25,12 @@ Sub-tasks:
 - [x] A1 baseline report (`docs/baseline_report.txt`)
 - [x] A2 model fingerprint tool + baseline (`tools/model_fingerprint.py`)
 - [x] A3 brief to `docs/PROJECT_BRIEF.md`, `CLAUDE.md`
-- [ ] B1 `git mv` into the target layout
-- [ ] B2 `paths.py`, all asset / data paths updated
-- [ ] B3 `pyproject.toml`, editable install
-- [ ] B4 `cli.py`: `export-xml`, `run`
-- [ ] B5 tests: paths, model fingerprint, legacy regression (slow)
-- [ ] B6 verify: fingerprint 0 differences, report identical
+- [x] B1 `git mv` into the target layout
+- [x] B2 `paths.py`, all asset / data paths updated
+- [x] B3 `pyproject.toml`, editable install
+- [x] B4 `cli.py`: `export-xml`, `run`
+- [x] B5 tests: paths, model fingerprint, legacy regression (slow)
+- [x] B6 verify: fingerprint 0 differences, report identical
 
 ## F2 - Green PCB (brief §7 step 2)
 

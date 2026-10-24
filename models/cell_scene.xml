@@ -1,6 +1,6 @@
 <mujoco model="mg06_loader_scene">
   
-  <compiler angle="radian" meshdir="." />
+  <compiler angle="radian" meshdir="../assets" />
 
   <option timestep="0.0005" impratio="10" cone="elliptic" noslip_iterations="5" />
 
@@ -538,7 +538,7 @@
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.85098 0.839216 0.858824 1" density="0" material="look_alu" mesh="ws_vis_static_217_214_219" />
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.894118 0.913725 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_228_233_237" />
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.898039 0.917647 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_229_234_237" />
-      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.898039 0.921569 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_229_235_237" />
+      <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.898039 0.921569 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_229_235_237" />
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="1 1 1 1" density="0" material="look_alu" mesh="ws_vis_static_255_255_255" />
       <geom name="ws_col_Box_Type_B_ID_1_02" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Box_Type_B_ID_1_02" />
       <geom name="ws_col_deska_robot_03" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_deska_robot_03" />
@@ -788,7 +788,7 @@
         <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.92549 0.92549 0.92549 1" material="look_alu" mesh="m_vis_ycar_236_236_236" />
         <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.937255 0 0 1" material="look_plastic" mesh="m_vis_ycar_239_0_0" />
         <geom class="m_visual" rgba="0.984314 1 0.968627 1" material="look_alu" mesh="m_vis_ycar_251_255_247" />
-        <geom class="m_visual" rgba="1 0 1 1" material="look_plastic" mesh="m_vis_ycar_255_0_255" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0 1 1" material="look_plastic" mesh="m_vis_ycar_255_0_255" />
         <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.247059 0.788235 1" material="look_plastic" mesh="m_vis_ycar_255_63_201" />
         <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_ws_ycar_128_128_128" />
         <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_ws_ycar_228_233_237" />
@@ -917,13 +917,13 @@
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd11" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd0" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd1" />
-          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd2" />
+          <geom class="m_collision" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd2" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd3" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd4" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd5" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd6" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd7" />
-          <geom class="m_collision" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd8" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd9" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd10" />
           <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd11" />
@@ -1052,7 +1052,7 @@
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.753 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_03" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 1 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_04" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 1 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_05" />
-                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.251 0.251 0.251 1" material="look_alu" mesh="aubo/tool/tool_vis_06" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.251 0.251 0.251 1" material="look_alu" mesh="aubo/tool/tool_vis_06" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.286 0.616 0.855 1" material="look_plastic" mesh="aubo/tool/tool_vis_07" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.298 0.298 0.298 1" material="look_alu" mesh="aubo/tool/tool_vis_08" />
                         <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.435 0.769 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_09" />
@@ -1074,7 +1074,7 @@
                         <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="1 0 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_25" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.557 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_26" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.808 0.498 1" material="look_plastic" mesh="aubo/tool/tool_vis_27" />
-                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="1 1 1 1" material="look_alu" mesh="aubo/tool/tool_vis_28" />
+                        <geom class="aubo/tool/tool_visual" rgba="1 1 1 1" material="look_alu" mesh="aubo/tool/tool_vis_28" />
                         <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.157 0.157 0.157 1" material="look_dark" mesh="aubo/tool/tool_vis_opener" />
                         <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_00" />
                         <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_01" />
@@ -1091,7 +1091,7 @@
                         <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_12" />
                         <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_13" />
                         <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_14" />
-                        <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_15" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_15" />
                         <geom class="aubo/tool/tool_collision" size="0.05 0.05 0.096" pos="0 0 0.091" type="box" conaffinity="3" />
                         <geom class="aubo/tool/tool_collision" size="0.0525 0.0293 0.038" pos="0 0 0.2205" type="box" conaffinity="3" />
                         <site name="aubo/tool/tool_flange" size="0.006" group="4" rgba="1 1 0 1" />

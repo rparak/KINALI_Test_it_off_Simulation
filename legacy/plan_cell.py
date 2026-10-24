@@ -1,5 +1,5 @@
 """Plan the whole cell cycle (robot joint trajectory + loader moves + suction events) and save it to
-cell_plan.npz.  The robot motion is computed offline with IK on the same MuJoCo model and every robot
+legacy/cell_plan.npz.  The robot motion is computed offline with IK on the same MuJoCo model and every robot
 segment is checked for collisions against the scene in the state it will have at that time.
 
 Cycle:
@@ -11,11 +11,11 @@ Cycle:
   4. loader: up -> to MG06 -> down -> close jaws (pick) -> up -> home
   5. robot: home -> above the PCB in the loader -> down -> vacuum on | loader opens | robot up -> above crate 2
      -> down -> vacuum off -> up -> home
-usage: python tools/plan_cell.py
+usage: python legacy/plan_cell.py [--out FILE]      (default output: legacy/cell_plan.npz)
 """
 import os, sys, json, numpy as np, mujoco
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); sys.path.insert(0, ROOT)
-import cell, robot_kin as K
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))   # runs without pip install -e
+from kinali_sim import model as cell, kinematics as K, paths
 
 P = cell.P
 DT = 0.004
@@ -26,7 +26,7 @@ Z_TRAVEL, J_CLAMP = ZP + 0.012, P['jaw_grip'] - 0.012
 SPEED = 0.6                                                 # fraction of the AUBO i5 datasheet joint speeds used in the plan
 VMAX = SPEED * cell.VMAX_DATASHEET                          # 2.3 / 2.4 rad/s
 AMAX = np.array([3.0, 3.0, 3.0, 6.0, 6.0, 6.0])             # rad/s^2 (assumption, not in the datasheet)
-FORK = np.load(os.path.join(ROOT, 'robot_tool', 'fork_close_open_path.npz'))
+FORK = np.load(paths.FORK_PATH)
 FLOG, FPH = FORK['log'], FORK['phase']
 
 # family of IK solutions used throughout (elbow up, wrist down) - seeds from an IK survey
@@ -281,7 +281,8 @@ def main():
     print('total %.1f s, worst robot contact %s' % (pl.t, 'none' if pl.worst[1] is None else f'{1000*pl.worst[0]:.1f} mm {pl.worst[1]} ({pl.worst[2]})'))
     print('joint range used:', np.round(q.min(0), 2), np.round(q.max(0), 2))
     v = np.abs(np.diff(q, axis=0)) / DT; print('max joint speed rad/s:', np.round(v.max(0), 2))
-    np.savez(os.path.join(ROOT, 'cell_plan.npz'), dt=DT, q=q, q_home=q_home,
+    out = sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else paths.LEGACY_PLAN
+    np.savez(out, dt=DT, q=q, q_home=q_home,
              loader=json.dumps(pl.loader), events=json.dumps(pl.events), phases=json.dumps(pl.phases),
              J_OPEN=J_OPEN, T=pl.t)
 

@@ -4,16 +4,13 @@ left crate -> robot (vacuum) -> loader -> MG06 -> robot closes / opens MG06 with
 The vacuum is an adhesion actuator on the four D15 cups (force = vacuum x cup area): it only pulls what the cups
 actually touch, so a badly placed tool or a shifted PCB makes the pick fail like in reality.
 
-usage:  python test_cell_cycle.py [--record frames.npz] [--render cell_cycle.mp4] [--progress]
+usage:  python legacy/test_cell_cycle.py [--record frames.npz] [--render cell_cycle.mp4] [--progress]
 """
 import sys, os, json, numpy as np, mujoco
-HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
-import cell
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))   # runs without pip install -e
+from kinali_sim import model as cell, paths
 
 m = cell.build_model(); d = mujoco.MjData(m)
-PL = np.load(os.path.join(HERE, 'cell_plan.npz'))
-DT, QPLAN, T_END = float(PL['dt']), PL['q'], float(PL['T'])
-LOADER, EVENTS, PHASES = json.loads(str(PL['loader'])), json.loads(str(PL['events'])), json.loads(str(PL['phases']))
 P = cell.P
 J = lambda n: m.jnt_qposadr[m.joint(n).id]
 QR = np.array([J('aubo/' + j) for j in cell.ROBOT_JOINTS])
@@ -21,7 +18,6 @@ qa, qh, qy, qz, qjl, qjr, qpcb = (J(n) for n in ['lid_hinge', 'handle_hinge', 'y
 TOOL, PCB = m.body('aubo/tool/ee_tool').id, m.body('pcb').id
 CUPS = {m.body(f'aubo/tool/vgc10_cup{i}').id for i in range(cell.CUP_N)}
 A_ROBOT = slice(3, 9); A_VAC = [m.actuator(f'vacuum{i}').id for i in range(cell.CUP_N)]
-START = {'y': P['y_home'], 'z': 0.0, 'jaw': float(PL['J_OPEN'])}
 GNAME = [m.geom(g).name or (m.mesh(m.geom_dataid[g]).name if m.geom_dataid[g] >= 0 else str(g)) for g in range(m.ngeom)]
 BNAME = [m.body(m.geom_bodyid[g]).name for g in range(m.ngeom)]
 LOADER_B = {'y_carriage', 'z_carriage', 'jaw_L', 'jaw_R'}
@@ -37,8 +33,20 @@ def loader_target(ch, t):
     return v
 
 
-VPLAN = np.gradient(QPLAN, DT, axis=0)
 KV_KP = m.actuator_biasprm[A_ROBOT, 2] / m.actuator_biasprm[A_ROBOT, 1]     # kv/kp of the joint servos
+
+
+def load_plan(path=paths.LEGACY_PLAN):
+    """load a plan file (cell_plan.npz, written by legacy/plan_cell.py) into the module state used by run()"""
+    global PL, DT, QPLAN, T_END, LOADER, EVENTS, PHASES, START, VPLAN
+    PL = np.load(path)
+    DT, QPLAN, T_END = float(PL['dt']), PL['q'], float(PL['T'])
+    LOADER, EVENTS, PHASES = json.loads(str(PL['loader'])), json.loads(str(PL['events'])), json.loads(str(PL['phases']))
+    START = {'y': P['y_home'], 'z': 0.0, 'jaw': float(PL['J_OPEN'])}
+    VPLAN = np.gradient(QPLAN, DT, axis=0)
+
+
+load_plan()
 
 
 def robot_target(t):
@@ -53,6 +61,8 @@ def phase(t):
 
 
 _CLS = {}
+COLLISION_CHECKS = ['robot <-> MG06 / workstation / crates', 'robot tool <-> handle (outside closing / opening)', 'robot <-> loader',
+                    'loader <-> MG06 / workstation', 'PCB <-> lid / press plate']
 
 
 def classify(g1, g2, ph):
@@ -80,14 +90,16 @@ def cup_contacts():
     return len(cg)
 
 
-def run(render=None, record=None):
+def run(render=None, record=None, plan=None):
+    """physics run of the whole cycle; prints the report and returns its values (lengths in mm, angles in deg)"""
+    if plan is not None: load_plan(plan)
     mujoco.mj_resetData(m, d)
     d.qpos[qa] = -0.6974; d.qpos[qy] = START['y']; d.qpos[qjl] = d.qpos[qjr] = START['jaw']
     pp, pq = cell.pcb_in_crate('crate_pick'); d.qpos[qpcb:qpcb + 3], d.qpos[qpcb + 3:qpcb + 7] = pp + [0, 0, 0.0003], pq
     d.qpos[QR] = QPLAN[0]; d.ctrl[:3] = [START['y'], START['z'], START['jaw']]; d.ctrl[A_ROBOT] = QPLAN[0]; d.ctrl[A_VAC] = 0
     d.act[:] = 0; d.act[m.actuator_actadr[0]] = START['y']                    # filtered loader drives start at home
     mujoco.mj_forward(m, d)
-    ev = list(EVENTS); worst = {}; log = []; track_err = 0.0; slip = 0.0; rel0 = None
+    ev = list(EVENTS); worst = {}; log = []; vac = []; track_err = 0.0; slip = 0.0; rel0 = None
     pen = {}; fork_force = 0.0; loader_lag = 0.0; marks = {}; ph = ''
     if render:
         import imageio
@@ -105,7 +117,8 @@ def run(render=None, record=None):
         while ev and t >= ev[0][0]:
             te, name = ev.pop(0); on = name == 'suction_on'
             d.ctrl[A_VAC] = 1.0 if on else 0.0; rel0 = None
-            log.append(f'{t:6.2f}s vacuum {"ON " if on else "OFF"}' + (f' ({cup_contacts()} of 4 cups touch the PCB)' if on else ''))
+            ncups = cup_contacts() if on else None; vac.append({'t': t, 'on': on, 'cups': ncups})
+            log.append(f'{t:6.2f}s vacuum {"ON " if on else "OFF"}' + (f' ({ncups} of 4 cups touch the PCB)' if on else ''))
         d.ctrl[:3] = [loader_target('y', t), loader_target('z', t), loader_target('jaw', t)]
         d.ctrl[A_ROBOT], q_ref = robot_target(t)
         mujoco.mj_step(m, d)
@@ -148,7 +161,8 @@ def run(render=None, record=None):
     for l in log: print(l)
     pm, tm = marks['placed']; e = pm[:3] - np.array(P['place_pos'])
     qd = np.zeros(4); qi = np.zeros(4); mujoco.mju_negQuat(qi, np.array(P['quat'])); mujoco.mju_mulQuat(qd, pm[3:], qi)
-    print(f'PCB in MG06 (t={tm:.1f}s): error {1000*np.linalg.norm(e):.2f} mm (dx {1000*e[0]:.2f} dy {1000*e[1]:.2f} dz {1000*e[2]:.2f}), tilt {np.degrees(2*np.arccos(min(1,abs(qd[0])))):.2f} deg')
+    placed_tilt = np.degrees(2*np.arccos(min(1,abs(qd[0]))))
+    print(f'PCB in MG06 (t={tm:.1f}s): error {1000*np.linalg.norm(e):.2f} mm (dx {1000*e[0]:.2f} dy {1000*e[1]:.2f} dz {1000*e[2]:.2f}), tilt {placed_tilt:.2f} deg')
     if 'closed' in marks: print('MG06 closed with the robot away (t=%.1fs): lid %.1f deg, handle %.1f deg' % (marks['closed'][2], *marks['closed'][:2]))
     pf = d.qpos[qpcb:qpcb + 7]; cc = cell.crate_center('crate_place')
     tilt = np.degrees(np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))))
@@ -156,12 +170,21 @@ def run(render=None, record=None):
     print('robot joint tracking error max %.4f rad, PCB slip in the cups max %.2f mm, loader axis lag max %.1f mm' % (track_err, 1000 * slip, 1000 * loader_lag))
     print('max contact force fork -> handle bar: %.0f N' % fork_force)
     print('deepest PCB penetration: ' + ', '.join(f'{k} {1000*v[0]:.2f} mm (t={v[1]})' for k, v in sorted(pen.items())))
-    for k in ['robot <-> MG06 / workstation / crates', 'robot tool <-> handle (outside closing / opening)', 'robot <-> loader',
-              'loader <-> MG06 / workstation', 'PCB <-> lid / press plate']:
+    for k in COLLISION_CHECKS:
         v = worst.get(k); print(f'{k:50s}: ' + ('no contact' if v is None else f'deepest {1000*v[0]:.2f} mm  {v[1]} / {v[2]}  t={v[3]}'))
     print('MG06 at the end: lid %.1f deg, handle %.1f deg' % (np.degrees(d.qpos[qa]), np.degrees(d.qpos[qh])))
     if render: writer.close(); print('saved video', render, round(nframes / 24, 1), 's')
     if record: np.savez_compressed(record, qpos=np.array(rec_q), text=np.array(rec_txt)); print('recorded', len(rec_q), 'frames ->', record)
+    return {'cycle_time': T_END, 'vacuum': vac,
+            'placed': {'t': tm, 'error_mm': 1000 * np.linalg.norm(e), 'd_mm': (1000 * e).tolist(), 'tilt_deg': placed_tilt},
+            'closed': None if 'closed' not in marks else {'t': marks['closed'][2], 'lid_deg': marks['closed'][0], 'handle_deg': marks['closed'][1]},
+            'final_pcb': {'pos_mm': (1000 * pf[:3]).tolist(), 'crate_centre_mm': (1000 * cc).tolist(),
+                          'dist_xy_mm': 1000 * np.linalg.norm(pf[:2] - cc), 'tilt_deg': tilt},
+            'track_err_rad': track_err, 'slip_mm': 1000 * slip, 'loader_lag_mm': 1000 * loader_lag, 'fork_force_n': fork_force,
+            'penetration_mm': {k: 1000 * v[0] for k, v in pen.items()},
+            'contacts': {k: (None if k not in worst else {'depth_mm': 1000 * worst[k][0], 'geoms': worst[k][1:3], 't': worst[k][3]})
+                         for k in COLLISION_CHECKS},
+            'mg06_end': {'lid_deg': np.degrees(d.qpos[qa]), 'handle_deg': np.degrees(d.qpos[qh])}}
 
 
 if __name__ == '__main__':

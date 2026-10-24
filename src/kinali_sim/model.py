@@ -5,9 +5,11 @@ Frames: everything is in the MG06 fixture frame (origin = centre of the MG06 foo
 front of MG06 = -Y).  The robot base stands on the robot plate (deska_robot) = the CAD origin of the cell.
 """
 import os, json, numpy as np, mujoco
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from kinali_sim import paths
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-P = json.load(open(os.path.join(HERE, 'pcb_meta.json')))
+P = json.loads(paths.PCB_META.read_text())
 
 ROBOT_BASE = np.array([0.42072, -0.33497, 0.16200])   # top of deska_robot (= CAD origin of the cell .blend)
 ROBOT_YAW = np.radians(-135.0)                       # all tasks lie within +-60 deg of the pan-joint zero
@@ -47,7 +49,7 @@ def pcb_in_crate(name):
 
 
 def build_spec():
-    sc = mujoco.MjSpec.from_file(os.path.join(HERE, 'scene.xml'))
+    sc = mujoco.MjSpec.from_file(str(paths.SCENE_XML))
     for k in list(sc.keys): sc.delete(k)
     # crates: replace the filled convex hulls by floor + 4 walls (the robot reaches into them)
     for g in list(sc.geoms):
@@ -62,8 +64,8 @@ def build_spec():
             ws.add_geom(name=f'{n}_{i}', type=mujoco.mjtGeom.mjGEOM_BOX, pos=(lo + hi) / 2, size=(hi - lo) / 2,
                         contype=2, conaffinity=1, group=3, rgba=[.3, .5, .9, .3])   # loader, robot and PCB
     # robot + tool
-    rb = mujoco.MjSpec.from_file(os.path.join(HERE, 'robot', 'aubo_i5', 'aubo_i5.xml'))
-    tl = mujoco.MjSpec.from_file(os.path.join(HERE, 'robot_tool', 'vgc10_opener_free.xml'))
+    rb = mujoco.MjSpec.from_file(str(paths.ROBOT_XML))
+    tl = mujoco.MjSpec.from_file(str(paths.TOOL_XML))
     tool = tl.body('ee_tool')
     for j in list(tool.joints): tl.delete(j)                           # rigidly mounted on the flange
     tool.pos = [0, 0, 0]; tool.gravcomp = 1
@@ -141,11 +143,11 @@ def build_model():
     return sc.compile()
 
 
-def export_xml(path=os.path.join(HERE, 'cell_scene.xml')):
-    """write the assembled cell as one MJCF (for the MuJoCo viewer); mesh paths are made relative to this folder"""
-    import xml.etree.ElementTree as ET
+def export_xml(path=paths.CELL_SCENE_XML):
+    """write the assembled cell as one MJCF (for the MuJoCo viewer); mesh paths are made relative to the assets folder"""
+    path = Path(path).resolve()
     sc = build_spec(); sc.compile(); r = ET.fromstring(sc.to_xml())
-    for c in r.iter('compiler'): c.set('meshdir', '.')
+    for c in r.iter('compiler'): c.set('meshdir', os.path.relpath(paths.ASSETS, path.parent))
     for me in r.iter('mesh'):
         n, f = me.get('name', ''), me.get('file', '')
         if n.startswith('aubo/tool/'): me.set('file', 'robot_tool/assets/' + f)
