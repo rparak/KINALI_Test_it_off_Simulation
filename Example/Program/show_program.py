@@ -43,7 +43,7 @@ from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, S
                                 CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_IMAGES, CONST_PCB_LOCATIONS)
 #   ../Configuration/Program_Parser - the program's three files
 from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
-                                          CONST_PROGRAM_YAML)
+                                          CONST_PROGRAM_YAML, CONST_OPTIMIZED_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the model's robot joints
@@ -52,6 +52,9 @@ from Kinematics.Core import Robot_Kinematics_Cls
 from Program.Core import Pose_Sample, File_Hash
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls, Trajectory_Str, CONST_DT
+#   ../Collision/Core, ../Optimizer/Core - an optimized program's inputs (its planning model's hash)
+from Collision.Core import Build_Planning_Model
+from Optimizer.Core import Stale_Inputs as Stale_Optimized_Inputs
 #   ../Render/Core - the viewer and the image
 from Render.Core import (Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
                          Watchdog_Cls)
@@ -60,9 +63,9 @@ from Render.Core import (Launch_Passive_Viewer, Render_Free_Image, Save_Image, R
 Description:
     Initialization of constants.
 """
-# The program file of each version (the optimized one comes with F9).
+# The program file of each version: the taught one and the optimized one (F9, written by Example/Program/optimize_program.py).
 #   Unit [Dict<string, string>]
-CONST_VERSIONS = {'default': CONST_PROGRAM_YAML}
+CONST_VERSIONS = {'default': CONST_PROGRAM_YAML, 'optimized': CONST_OPTIMIZED_PROGRAM_YAML}
 # The keys (GLFW codes) and their playback actions: Home pause / resume, Page Down or '.' the next step's start, Page Up the
 # current (or previous) step's start, End the current step's end. Every letter and , / ; ' \\ ` toggles a MuJoCo flag and the
 # viewer binds Space, the arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
@@ -89,6 +92,8 @@ def Stale_Inputs(trajectory: Trajectory_Str, program_path: str) -> tp.List[str]:
     built = trajectory.Meta.get('inputs_sha256', {})
     now = {'program': program_path, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
            'fork_path': CONST_FORK_PATH}
+    if 'optimization' in built:
+        now['optimization'] = CONST_OPTIMIZATION_YAML
     return [name for name, path in now.items() if built.get(name) != File_Hash(path)]
 
 
@@ -145,11 +150,11 @@ def main():
 
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('show_program')
-    if args.version not in CONST_VERSIONS:
-        print(log.Line('[ERROR] The optimized program comes with F9; only --version default exists now.'))
+    program_path = CONST_VERSIONS[args.version]
+    if not os.path.isfile(program_path):
+        print(log.Line('[ERROR] There is no %s; make it with .venv/bin/python Example/Program/optimize_program.py' % program_path))
         log.Close()
         return 1
-    program_path = CONST_VERSIONS[args.version]
     try:
         cell, constants = Load_Cell_Configuration(), Load_Constants()
         program = Load_Program(constants, Load_Simulation(constants), cell, program_path)
@@ -161,9 +166,17 @@ def main():
         log.Close()
         return 1
     stale = Stale_Inputs(trajectory, program_path)
+    optimized_stale = Stale_Optimized_Inputs(program, Build_Planning_Model(cell)) if program.Optimized is not None else []
+    if optimized_stale:
+        print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '
+                       'Example/Program/optimize_program.py' % (program_path, ', '.join(optimized_stale))))
+        log.Close()
+        return 1
     if stale:
         print(log.Line('[ERROR] The trajectory %s was built from other inputs (%s changed since); rebuild it: '
-                       '.venv/bin/python Example/Program/build_program.py' % (path, ', '.join(stale))))
+                       '.venv/bin/python Example/Program/build_program.py%s' % (path, ', '.join(stale), '' if program.Optimized is None
+                                                                                 else ' --program ' + os.path.relpath(program_path,
+                                                                                                                      CONST_REPO_ROOT))))
         log.Close()
         return 1
     try:

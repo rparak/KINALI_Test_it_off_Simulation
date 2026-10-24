@@ -54,6 +54,8 @@ from Collision.Core import Robot_Collision_Cls
 from Scene.Core import Cup_Block_Geom
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
+#   ../Planner/Core - a planned spline's time-optimal timing (MoveSpline)
+from Planner.Core import Spline_Path_Cls, Time_Path
 
 """
 Description:
@@ -378,6 +380,10 @@ class _Builder_Cls(object):
             self.__path_logs[name], self.__path_rows[name] = log, rows
         self.__v_max = cell.Speed_Fraction * np.array(cell.Datasheet_Speeds)
         self.__a_max = np.array(cell.Acceleration_Limits)
+        self.__datasheet = np.array(cell.Datasheet_Speeds)
+        self.__grid_points = program.Optimized.Topp_Grid_Points if program.Optimized is not None else 0
+        # The loader's lane: the job started (Loader.Start) and not yet finished, one sample per robot sample.
+        self.__job: tp.Optional[tp.Iterator[None]] = None
         # The jaws' stop on the PCB (Simulation.yaml Jaw_Actual).
         self.__grip = max(simulation.Jaw_Actual.values())
         # The current state.
@@ -474,7 +480,25 @@ class _Builder_Cls(object):
     def Append(self, q: np.ndarray, qd: np.ndarray, step: int, segment: int) -> None:
         """
         Description:
-            Append one sample with the current loader, gripper, vacuum, PCB and MG06 state; the PCB on the cups follows
+            Append one sample: a started loader job (Loader.Start) first moves on by one sample - the loader runs in
+            parallel with the robot's lines - then the sample is recorded (Record).
+
+        Args:
+            (1 - 2) q, qd [Vector<float> 1x6]: The joints (rad) and their speeds (rad/s).
+            (3 - 4) step, segment [int]: The step and segment indices.
+        """
+
+        if self.__job is not None:
+            try:
+                next(self.__job)
+            except StopIteration:
+                self.__job = None
+        self.Record(q, qd, step, segment)
+
+    def Record(self, q: np.ndarray, qd: np.ndarray, step: int, segment: int) -> None:
+        """
+        Description:
+            Record one sample with the current loader, gripper, vacuum, PCB and MG06 state; the PCB on the cups follows
             the joints, the jaws stand at grip while the PCB is between them.
 
         Args:
@@ -719,19 +743,24 @@ class _Builder_Cls(object):
         for _ in range(int(round(duration / CONST_DT))):
             self.Append(self.q, np.zeros(6), step, segment)
 
-    def Loader_Or_Gripper(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
+    def Line_Steps(self, command: Command_Str, step_name: str) -> tp.Iterator[None]:
         """
         Description:
-            A loader axis or the gripper command moved min-jerk over its duration from its current value; the robot holds.
-            The gripper's PCB rules: clamping on the PCB in MG06 takes it into the jaws; opening at MG06 places it there;
-            opening while the cups hold it releases the jaws only; opening with the PCB in the jaws alone would drop it.
+            The samples of one loader job line, as a generator: before each sample it sets the loader's channels. A loader
+            axis or the gripper command moves min-jerk over its duration from its current value; a Wait holds. The
+            gripper's PCB rules apply at the line's start: clamping on the PCB in MG06 takes it into the jaws; opening at
+            MG06 places it there; opening while the cups hold it releases the jaws only; opening with the PCB in the jaws
+            alone would drop it.
 
         Args:
-            (1) command [Command_Str(object)]: The command.
-            (2) step_name [string]: The step.
-            (3 - 4) step, segment [int]: The indices.
+            (1) command [Command_Str(object)]: The job line.
+            (2) step_name [string]: The step, for the errors.
         """
 
+        if command.Kind == 'Wait':
+            for _ in range(int(round(command.Duration / CONST_DT))):
+                yield
+            return
         if command.Kind in ('MoveY', 'MoveZ'):
             channel, target = ('y' if command.Axis == 'Y' else 'z'), command.Position
         else:
@@ -749,7 +778,88 @@ class _Builder_Cls(object):
         n = max(1, int(round(command.Duration / CONST_DT)))
         for i in range(1, n + 1):
             setattr(self, channel, target if i == n else start + (target - start) * float(Min_Jerk(i / n)))
+            yield
+
+    def Loader_Or_Gripper(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
+        """
+        Description:
+            A loader axis or the gripper command of a job run as a whole (Run): its samples (Line_Steps) while the robot
+            holds.
+
+        Args:
+            (1) command [Command_Str(object)]: The command.
+            (2) step_name [string]: The step.
+            (3 - 4) step, segment [int]: The indices.
+        """
+
+        for _ in self.Line_Steps(command, step_name):
             self.Append(self.q, np.zeros(6), step, segment)
+
+    def Start_Job(self, command: Command_Str, step_name: str) -> None:
+        """
+        Description:
+            Loader.Start: the job's lines run on the loader's lane from the next sample on, one sample per robot sample,
+            while the robot's lines go on.
+
+        Args:
+            (1) command [Command_Str(object)]: The Start line.
+            (2) step_name [string]: The step, for the errors.
+        """
+
+        def Job() -> tp.Iterator[None]:
+            """
+            Description:
+                The job's samples, line after line.
+            """
+
+            for line in command.Job:
+                yield from self.Line_Steps(line, step_name)
+
+        self.__job = Job()
+
+    def Wait_Job(self, step: int, segment: int) -> None:
+        """
+        Description:
+            Loader.WaitDone: the robot holds until the started job has taken its last sample.
+
+        Args:
+            (1 - 2) step, segment [int]: The indices.
+        """
+
+        while self.__job is not None:
+            try:
+                next(self.__job)
+            except StopIteration:
+                self.__job = None
+                break
+            self.Record(self.q, np.zeros(6), step, segment)
+
+    def Movespline(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
+        """
+        Description:
+            A planned joint spline (MoveSpline, F9): the cubic spline through its waypoints (Planner.Spline_Path_Cls) timed
+            time-optimally within its v= of the datasheet joint speeds and the acceleration limits, at rest at both ends,
+            on the program's TOPP grid (Planner.Time_Path); the speeds analytic. It must start where the robot stands and
+            ends exactly on its end point's Joints; MG06 moves to the end point's Fixture along the path.
+
+        Args:
+            (1) command [Command_Str(object)]: The command.
+            (2) step_name [string]: The step.
+            (3 - 4) step, segment [int]: The indices.
+        """
+
+        waypoints = np.array(command.Waypoints)
+        if float(np.max(np.abs(self.q - waypoints[0]))) > 1e-9:
+            self.Fail(step_name, command.Text, 'the robot is not at the spline\'s start %s (%.2e rad away).'
+                                               % (command.Path_Start, float(np.max(np.abs(self.q - waypoints[0])))))
+        path = Spline_Path_Cls(waypoints)
+        timed = Time_Path(path, command.Speed * self.__datasheet, self.__a_max, self.__grid_points, CONST_DT)
+        fixture = self.Fixture(command.Path_End)
+        first = len(self.samples['q'])
+        for i in range(1, len(timed.Q)):
+            self.Move_Fixture(fixture, float(timed.S[i] / path.Length))
+            self.Append(timed.Q[i], timed.QD[i], step, segment)
+        self.analytic.append((first, len(self.samples['q'])))
 
     def Vacuum(self, command: Command_Str, step_name: str) -> None:
         """
@@ -828,8 +938,14 @@ def Build_Program(program: Program_Str, cell: Cell_Configuration_Str, pcb_meta: 
             b.Movel(command, step_name, step_index, segment)
         elif command.Kind == 'MovePath':
             b.Path(command, step_name, step_index, segment)
+        elif command.Kind == 'MoveSpline':
+            b.Movespline(command, step_name, step_index, segment)
         elif command.Kind in ('MoveY', 'MoveZ', 'Gripper'):
             b.Loader_Or_Gripper(command, step_name, step_index, segment)
+        elif command.Kind == 'Start':
+            b.Start_Job(command, step_name)
+        elif command.Kind == 'WaitDone':
+            b.Wait_Job(step_index, segment)
         elif command.Kind == 'SetDO':
             b.Vacuum(command, step_name)
         else:
@@ -1141,17 +1257,18 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                                                                                                 found.Time, 1000 * cell.Allowed_Depth[group]))
         for segment, command in enumerate(commands):
             first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
-            if tr.Segment_Step[segment] != step_index or command.Kind not in ('MoveJ', 'MoveL', 'MovePath') or end <= first:
+            if tr.Segment_Step[segment] != step_index or command.Kind not in ('MoveJ', 'MoveL', 'MovePath', 'MoveSpline') or end <= first:
                 continue
             speed, acceleration = _Peaks(tr, max(first, 1), end, cell)
             if command.Kind == 'MovePath':
                 check.Path_Speed, check.Path_Acceleration = max(check.Path_Speed, speed), max(check.Path_Acceleration, acceleration)
                 continue
             check.Peak_Speed, check.Peak_Acceleration = max(check.Peak_Speed, speed), max(check.Peak_Acceleration, acceleration)
-            # A MoveJ runs at its v= (of the datasheet speeds; the limits are at Speed_Fraction) and its rule rounds its duration
-            # to whole samples: up to half a sample shorter, so up to this much faster.
+            # A MoveJ or a MoveSpline runs at its v= (of the datasheet speeds; the limits are at Speed_Fraction); a MoveJ's rule
+            # rounds its duration to whole samples: up to half a sample shorter, so up to this much faster (a MoveSpline's
+            # timing is stretched to whole samples instead).
             rounding = 1.0 + 0.5 / (end - max(first, 1)) if command.Kind == 'MoveJ' else 1.0
-            fraction = command.Speed / cell.Speed_Fraction if command.Kind == 'MoveJ' else 1.0
+            fraction = command.Speed / cell.Speed_Fraction if command.Kind in ('MoveJ', 'MoveSpline') else 1.0
             if speed > fraction * rounding * (1 + CONST_DIFFERENCE_TOLERANCE) or acceleration > rounding**2 * (1 + CONST_DIFFERENCE_TOLERANCE):
                 check.Failures.append('%s: peak joint speed %.3f / acceleration %.3f of the limits (allowed %.3f / %.3f)'
                                       % (texts[segment], speed, acceleration, fraction * rounding, rounding**2))
@@ -1193,7 +1310,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
     used = []
     for command in commands:
         names = [command.Target] if command.Kind in ('MoveJ', 'MoveL') else []
-        names += [command.Path_Start, command.Path_End] if command.Kind == 'MovePath' else []
+        names += [command.Path_Start, command.Path_End] if command.Kind in ('MovePath', 'MoveSpline') else []
         used += [n for n in names if n not in used]
     start = program.Simulation.Start_Robot
     used = [start] + [n for n in used if n != start]

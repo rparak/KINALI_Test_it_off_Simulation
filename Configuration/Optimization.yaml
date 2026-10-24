@@ -1,0 +1,61 @@
+## =========================================================================== ##
+#   Description:
+#     The settings of the optimized program (FEATURES.md F9, SPEC §8): which segments of the taught program
+#     Configuration/Program.yaml are free-space transfers the optimizer replaces (FREE; every other segment is
+#     LOCKED and copied verbatim), and how it plans them - RRT-Connect with a fixed seed, the shortcut, a cubic
+#     spline checked and refitted, time-optimal timing (TOPP) - and the carried PCB's tilt limit. Read only by
+#     src/Configuration/Program_Parser.py (Load_Optimization); written by hand. The robot's joint speed and
+#     acceleration limits stay in Configuration/Cell.yaml (one source for both programs). The optimizer
+#     (Example/Program/optimize_program.py) writes Data/Optimized/Program_Optimized.yaml from it; nothing writes
+#     this file.
+#
+#   REQUIRED: every field is required; a missing or invalid field fails the load, naming it.
+#   Units: angles [deg], lengths [m], times [s].
+## =========================================================================== ##
+
+# The fraction of the AUBO i5 datasheet joint speeds the planned splines run at (their v=). Source: equal to
+# Configuration/Cell.yaml Motion.Speed_Fraction, so both programs move at the same speed limits and compare fairly. [-]
+Speed_Fraction: 0.6
+
+# The seed of the planner's random generator; FREE segment k (from 0) uses Seed + k. Any fixed value: the same seed gives
+# the same program, byte for byte (B5). [-]
+Seed: 20261024
+
+# The FREE segments of Configuration/Program.yaml, by key: joint moves through free space only (MoveJ lines). FREE
+# segments with only loader jobs between them are one FREE transfer, named after the last; the jobs between then run
+# in parallel with it (Loader.Start / Loader.WaitDone). Source: the approved LOCKED / FREE table (FEATURES.md F9).
+Free_Segments: [S1_Approach_Input, S3_To_Loader, S5_Home_After_Handover, S8_To_MG06, S14_Home_After_MG06, S17_To_Take,
+                S19_To_Output, S21_Home_End]
+
+# RRT-Connect: the iteration budget, the tree's step and the edge check's step in joint space [deg], the probability
+# of steering at the other tree's root [-]. Source: chosen 2026-10-24; every FREE transfer connects within 60
+# iterations on the shipped cell (measured), so the budget is a wide margin.
+Rrt:
+  Max_Iterations: 20000
+  Extend_Step: 10.0
+  Edge_Step: 1.0
+  Goal_Bias: 0.1
+
+# The shortcut's tries on the RRT path (then every vertex whose neighbours see each other is removed). [-]
+Shortcut_Iterations: 200
+
+# The spline through the shortened path: checked at configurations no farther apart than Check_Step [deg] in any joint,
+# against the clearance plus Margin [m]; where it fails, a midpoint of the path is inserted (at most Max_Refits times).
+# Source: chosen 2026-10-24 (0.5 deg moves the tool by at most about 9 mm; the exact check at 4 ms follows).
+Spline:
+  Check_Step: 0.5
+  Margin: 0.001
+  Max_Refits: 20
+
+# The TOPP grid's intervals per spline: its time differs from the analytic optimum by < 1e-6 (B3, measured). [-]
+Topp_Grid_Points: 1000
+
+# The planner's margins beyond Cell.yaml Clearance.Robot [m], tried in order: the RRT path and the shortcut keep the
+# clearance plus a margin, so the spline through them has room; when the planned transfer fails the exact check, the
+# next margin is tried. Source: measured 2026-10-24 - 1 mm left the carried PCB's spline to the output crate invalid
+# after 80 refits, 2 mm passes; 10 mm makes P_LOADER_ABOVE itself invalid.
+Margins: [0.002, 0.003, 0.005]
+
+# The largest tilt of the carried PCB from horizontal in a FREE transfer (B4) [deg]. Source: real-cell practice for a
+# board held by four suction cups, ASSUMED (no measurement); P_LOADER_ABOVE itself tilts the board 8.94 deg.
+Carry_Max_Tilt: 30.0

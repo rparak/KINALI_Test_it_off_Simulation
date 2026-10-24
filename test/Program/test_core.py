@@ -498,3 +498,59 @@ def test_the_shipped_constants_match_the_model(program, cell_configuration, tool
 
     kinematics, meta, _ = tools
     assert Validate_Constants(program, kinematics, cell_configuration, meta) == []
+
+
+def test_a_run_is_a_start_and_a_waitdone(tmp_path, program, constants, simulation, cell_configuration, tools, built):
+    """
+    Description:
+        The loader's lane (F9): the taught program with S6's Loader.Run(J_INSERT) written as Loader.Start(J_INSERT) +
+        Loader.WaitDone(J_INSERT) (in a file with an Optimized record, where they are allowed) gives the same samples on
+        every channel and the same events; only the trajectory's segments differ (two lines instead of the job's six).
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_PROGRAM_YAML
+    text = open(CONST_PROGRAM_YAML, encoding='utf-8').read().replace('    - Loader.Run(J_INSERT)\n',
+                                                                     '    - Loader.Start(J_INSERT)\n    - Loader.WaitDone(J_INSERT)\n', 1)
+    text += '\nWaypoints: {}\nOptimized:\n  Inputs: {}\n  Platform: {}\n  Schedule: {}\n  Topp_Grid_Points: 1000\n'
+    path = tmp_path / 'Program_Lane.yaml'
+    path.write_text(text, encoding='utf-8')
+    lane = Load_Program(constants, simulation, cell_configuration, str(path))
+    kinematics, meta, _ = tools
+    trajectory, _ = Build_Program(lane, cell_configuration, meta, kinematics, {})
+    default = built[0]
+    for channel in ('T', 'Robot_Q', 'Robot_QD', 'Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'Step_Index', 'PCB_Location', 'PCB_Pose', 'MG06_Lid',
+                    'MG06_Handle', 'Jaw'):
+        assert np.asarray(getattr(default, channel)).tobytes() == np.asarray(getattr(trajectory, channel)).tobytes(), channel
+    assert trajectory.Events == default.Events and len(trajectory.Segment_Command) == len(default.Segment_Command) - 6 + 2
+
+
+def test_the_optimized_splines_run_within_the_limits(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        Every MoveSpline of the committed optimized program: its finite-difference joint speeds and accelerations within the
+        Cell.yaml limits (its v= is Speed_Fraction), its stored speeds the spline's, at rest at both ends, ending exactly on
+        its end point's Joints.
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_OPTIMIZED_PROGRAM_YAML
+    optimized = Load_Program(constants, simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
+    kinematics, meta, _ = tools
+    trajectory, _ = Build_Program(optimized, cell_configuration, meta, kinematics, {})
+    v_max = cell_configuration.Speed_Fraction * np.array(cell_configuration.Datasheet_Speeds)
+    a_max = np.array(cell_configuration.Acceleration_Limits)
+    splines = [k for k, text in enumerate(trajectory.Segment_Command) if text.startswith('Robot.MoveSpline')]
+    assert len(splines) == 6
+    for k in splines:
+        # Sample 0 is the start state (the first segment's first sample), so a segment's motion begins at sample 1 at the earliest.
+        first, end = max(int(trajectory.Segment_Start[k]), 1), int(trajectory.Segment_End[k])
+        q = np.vstack([trajectory.Robot_Q[first - 1], trajectory.Robot_Q[first:end], trajectory.Robot_Q[end - 1]])
+        qd = np.diff(q, axis=0) / 0.004
+        assert np.all(np.abs(qd) <= v_max * 1.001) and np.all(np.abs(np.diff(qd, axis=0) / 0.004) <= a_max * 1.001)
+        assert np.all(trajectory.Robot_QD[end - 1] == 0.0)
+        # The trajectory's speeds are the spline's (analytic): the central differences of its joints within a sample's
+        # acceleration (a_max x 4 ms), and not zero.
+        central = np.gradient(trajectory.Robot_Q[first - 1:end], 0.004, axis=0)[1:-1]
+        assert np.all(np.abs(trajectory.Robot_QD[first:end - 1] - central) <= a_max * 0.004 + 1e-9)
+        assert float(np.max(np.abs(trajectory.Robot_QD[first:end]))) > 0.1
+        target = next(c for s in optimized.Segments for c in s.Commands if c.Text == trajectory.Segment_Command[k])
+        assert np.array_equal(trajectory.Robot_Q[end - 1], np.array(constants.Points[target.Path_End].Joints))

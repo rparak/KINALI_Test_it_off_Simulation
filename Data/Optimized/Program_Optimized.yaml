@@ -1,0 +1,237 @@
+## =========================================================================== ##
+#   Description:
+#     The OPTIMIZED program of the Test-it-off cell (FEATURES.md F9), WRITTEN by Example/Program/optimize_program.py
+#     from Configuration/Program.yaml and Configuration/Optimization.yaml - never edit it by hand: change those and
+#     run the optimizer again. Read by src/Configuration/Program_Parser.py (Load_Program), the same format as
+#     Program.yaml plus Robot.MoveSpline, Loader.Start / Loader.WaitDone, Waypoints and the Optimized record.
+#     LOCKED segments are copied verbatim from Program.yaml (renumbered); each FREE transfer is a planned joint
+#     spline (RRT-Connect from a fixed seed, shortcut, spline, time-optimal timing) with the loader jobs between
+#     its taught segments running in parallel. A build refuses this file when an input changed (Optimized.Inputs).
+#     Simulation results only: NOT validated for driving the real cell (KNOWN_ISSUES.md: MoveSpline on the
+#     controller).
+#   Units: Waypoints [deg], v= the fraction of the datasheet joint speeds, Schedule [s].
+## =========================================================================== ##
+
+# The robot's program: the whole cycle.
+Program:
+  # FREE (planned, F9): P_HOME to P_INPUT_ABOVE, replacing the taught S1_Approach_Input.
+  S1_Approach_Input:
+    - Robot.MoveSpline(W_APPROACH_INPUT, v=0.6)
+
+  # Straight down to 15 mm above the PCB, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto it
+  # (SPEC §4.7), vacuum on, wait for it, straight up until the board clears the crate's 149 mm walls.
+  S2_Pick_Input:
+    - Robot.MoveL(P_INPUT_APPROACH, v=0.20)               # legacy: linear_move(..., 'down into crate 1', speed=0.20)
+    - Robot.MoveL(P_INPUT_PICK, v=0.03)                   # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, ON)                          # legacy: event('suction_on')
+    - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # legacy: hold(0.3)
+    - Robot.MoveL(P_INPUT_CLEAR, v=0.20)                  # legacy: linear_move(..., 'up out of the crate', speed=0.20), to 170 mm (F8.5)
+
+  # FREE (planned, F9): P_INPUT_CLEAR to P_LOADER_ABOVE, replacing the taught S3_To_Loader.
+  S3_To_Loader:
+    - Robot.MoveSpline(W_TO_LOADER, v=0.6)
+
+  # Down along the plate normal into the open jaws, the last 15 mm at 30 mm/s, to the hold pose with no press: the
+  # board stays 0.3 mm above the finger ledges (SPEC §4.7). The jaws clamp, vacuum off, straight back up.
+  S4_Handover:
+    - Robot.MoveL(P_LOADER_APPROACH, v=0.20)              # legacy: linear_move(..., 'down to the loader', speed=0.20)
+    - Robot.MoveL(P_LOADER_PLACE, v=0.03)                 # legacy: linear_move(..., 'PCB into the open jaws', speed=0.03)
+    - Loader.Run(J_CLAMP)
+    - Wait(0.25)                                          # legacy: hold(0.25)
+    - Robot.SetDO(DO_VACUUM, OFF)                         # legacy: event('suction_off')
+    - Wait(0.2)                                           # legacy: hold(0.2)
+    - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'robot up from the loader', speed=0.20)
+
+  # FREE (planned, F9): P_LOADER_ABOVE to P_MG06_FORK_START, replacing the taught S5_Home_After_Handover,
+  # S6_Loader_Insert, S7_Loader_Park, S8_To_MG06. The loader runs J_INSERT, J_PARK in parallel.
+  S5_To_MG06:
+    - Loader.Start(J_INSERT)
+    - Robot.MoveSpline(W_TO_MG06, v=0.6)
+    - Loader.WaitDone(J_INSERT)
+    - Loader.Start(J_PARK)
+    - Loader.WaitDone(J_PARK)
+
+  # The recorded closing path (lid down, handle to 29 deg; SPEC §4.9), then the bar to the centre of the fork slot,
+  # 2 mm off its bottom, at 20 mm/s (SPEC §4.10).
+  S6_Close_MG06:
+    - Robot.MovePath(PATH_FORK_CLOSE)                     # legacy: replay(..., 'close MG06')
+    - Robot.MoveL(P_MG06_BAR_CENTRE, v=0.02)              # legacy: linear_move(p_c, ..., 'bar to the slot centre', speed=0.02)
+
+  # Out of the bar 90 mm along the slot, then 120 mm up; MG06 stays closed (SPEC §4.10).
+  S7_Leave_MG06:
+    - Robot.MoveL(P_MG06_SLOT_EXIT, v=0.12)               # legacy: linear_move(p_out, ..., speed=0.12)
+    - Robot.MoveL(P_MG06_WAIT, v=0.25)                    # legacy: linear_move(p_up, ..., 'up', speed=0.25)
+
+  # MG06 closed, the PCB inside, the robot away above the slot exit: the tester runs.
+  S8_Test:
+    - Tester.Run(J_TEST)
+
+  # Back down and along the slot onto the bar centre, the same path as the leave, MG06 still closed.
+  S9_Return_MG06:
+    - Robot.MoveL(P_MG06_SLOT_EXIT, v=0.25)               # legacy: linear_move(p_out, ..., 'down', speed=0.25)
+    - Robot.MoveL(P_MG06_BAR_CENTRE, v=0.12)              # legacy: linear_move(p_c, ..., 'fork onto the bar', speed=0.12)
+
+  # The slot wall onto the bar from below at 30 mm/s, where the recorded opening path's handle is already below the
+  # real closed angle (the handle is never pushed down, SPEC §4.7), then the recorded opening path.
+  S10_Open_MG06:
+    - Robot.MoveL(P_MG06_OPEN_JOIN, v=0.03)               # legacy: linear_move(..., 'slot wall onto the bar (upwards)', speed=0.03)
+    - Robot.MovePath(PATH_FORK_OPEN)                      # legacy: replay(i_open[i_open > k], 'open MG06')
+
+  # FREE (planned, F9): P_MG06_FORK_START to P_LOADER_ABOVE, replacing the taught S14_Home_After_MG06,
+  # S15_Loader_Fetch, S16_Loader_Return, S17_To_Take. The loader runs J_FETCH, J_RETURN in parallel.
+  S11_To_Take:
+    - Loader.Start(J_FETCH)
+    - Loader.WaitDone(J_FETCH)
+    - Loader.Start(J_RETURN)
+    - Robot.MoveSpline(W_TO_TAKE, v=0.6)
+    - Loader.WaitDone(J_RETURN)
+
+  # Down along the plate normal, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto the PCB in the
+  # jaws, vacuum on, the jaws open, slowly out of the jaws, then up.
+  S12_Take_From_Loader:
+    - Robot.MoveL(P_LOADER_APPROACH, v=0.20)              # legacy: linear_move(..., 'down to the loader', speed=0.20)
+    - Robot.MoveL(P_LOADER_PICK, v=0.03)                  # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, ON)                          # legacy: event('suction_on')
+    - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # legacy: hold(0.3)
+    - Loader.Run(J_RELEASE)
+    - Wait(0.15)                                          # legacy: hold(0.15)
+    - Robot.MoveL(P_LOADER_EXIT, v=0.05)                  # legacy: linear_move(..., 'up out of the jaws', speed=0.05)
+    - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'up', speed=0.20)
+
+  # FREE (planned, F9): P_LOADER_ABOVE to P_OUTPUT_ABOVE, replacing the taught S19_To_Output.
+  S13_To_Output:
+    - Robot.MoveSpline(W_TO_OUTPUT, v=0.6)
+
+  # Straight down into the output crate, the last 15 mm at 30 mm/s, to 1 mm above the crate floor, vacuum off,
+  # straight up out of the crate.
+  S14_Place_Output:
+    - Robot.MoveL(P_OUTPUT_APPROACH, v=0.20)              # legacy: linear_move(..., 'down into crate 2', speed=0.20)
+    - Robot.MoveL(P_OUTPUT_PLACE, v=0.03)                 # legacy: linear_move(..., 'PCB down to the crate floor', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, OFF)                         # legacy: event('suction_off')
+    - Wait(0.3)                                           # legacy: hold(0.3)
+    - Robot.MoveL(P_OUTPUT_ABOVE, v=0.20)                 # legacy: linear_move(..., 'up', speed=0.20)
+
+  # FREE (planned, F9): P_OUTPUT_ABOVE to P_HOME, replacing the taught S21_Home_End.
+  S15_Home_End:
+    - Robot.MoveSpline(W_HOME_END, v=0.6)
+
+# The loader's jobs (its PLC): one axis after the other.
+Loader_Jobs:
+  # Clamp the PCB the robot holds at the handover.
+  J_CLAMP:
+    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+
+  # Lift the PCB to the travel height, carry it to MG06, lower it into the holder, open.
+  J_INSERT:
+    - MoveZ(L_TRAVEL, t=0.8)                              # legacy: loader_move('z', Z_TRAVEL, 0.8)
+    - MoveY(L_TRAVEL, t=2.0)                              # legacy: loader_move('y', YP, 2.0)
+    - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+
+  # Rise out of MG06 and park behind it (y -199.5 mm, z +20 mm).
+  J_PARK:
+    - MoveZ(L_TRAVEL, t=0.5)                              # legacy: loader_move('z', Z_TRAVEL, 0.5)
+    - MoveY(L_PARK, t=1.8)                                # legacy: loader_move('y', Y_PARK, 1.8)
+    - MoveZ(L_PARK, t=0.8)                                # legacy: loader_move('z', Z_PARK, 0.8)
+    - Wait(0.15)                                          # legacy: hold(0.15)
+
+  # Back to MG06 at the travel height, down into the holder, clamp the tested PCB.
+  J_FETCH:
+    - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
+    - MoveY(L_TRAVEL, t=2.2)                              # legacy: loader_move('y', YP, 2.2)
+    - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Wait(0.2)                                           # legacy: hold(0.2)
+
+  # Lift the PCB out of MG06 and bring it home to the take position.
+  J_RETURN:
+    - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
+    - MoveY(L_HOME, t=2.0)                                # legacy: loader_move('y', Y0, 2.0)
+    - MoveZ(L_HOME, t=0.8)                                # legacy: loader_move('z', 0.0, 0.8)
+    - Wait(0.2)                                           # legacy: hold(0.2)
+
+  # Release the PCB the robot has taken (the vacuum holds it).
+  J_RELEASE:
+    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+
+# The tester's job (MG06).
+Tester_Jobs:
+  # The MG06 test, for Cell.yaml's Process.Test_Duration (a placeholder, KNOWN_ISSUES.md).
+  J_TEST:
+    - Test(Process.Test_Duration)                         # legacy held 1.0 s here (owner, 2026-10-24: 2.0 s)
+
+# The planned splines: From and To the end points, Points the interior waypoints [deg] (the planner's output).
+Waypoints:
+  W_APPROACH_INPUT:
+    From: P_HOME
+    To: P_INPUT_ABOVE
+    Points: []
+  W_TO_LOADER:
+    From: P_INPUT_CLEAR
+    To: P_LOADER_ABOVE
+    Points:
+      - [14.195594521, -0.544135684, 102.291871649, 16.219522161, 82.155313636, -33.943015806]
+      - [12.415514110, 0.043509525, 102.035107924, 15.246451390, 81.872962197, -35.738357724]
+  W_TO_MG06:
+    From: P_LOADER_ABOVE
+    To: P_MG06_FORK_START
+    Points:
+      - [-9.000565276, 3.637418305, 74.855310994, -17.137627224, 39.207092793, -43.291733703]
+      - [-11.899524486, 3.595901892, 74.007995702, -24.926693146, 26.234056499, -36.183946566]
+  W_TO_TAKE:
+    From: P_MG06_FORK_START
+    To: P_LOADER_ABOVE
+    Points:
+      - [-24.680679080, -3.640050746, 62.352128103, -5.628990501, 48.980213642, -10.741233507]
+      - [-19.062756326, -4.222099774, 73.405924974, -9.385999248, 52.526887083, -24.649920163]
+  W_TO_OUTPUT:
+    From: P_LOADER_ABOVE
+    To: P_OUTPUT_ABOVE
+    Points:
+      - [-2.143949557, 10.071601421, 106.983886240, 6.722664830, 83.704723808, -47.667516108]
+      - [7.441631165, 9.675256132, 109.122923360, 10.971138245, 84.647868712, -38.473056162]
+      - [17.027211887, 9.278910842, 111.261960480, 15.219611660, 85.591013616, -29.278596217]
+      - [60.943850966, 5.603561175, 123.580978169, 33.980434993, 90.001090378, 14.273022554]
+  W_HOME_END:
+    From: P_OUTPUT_ABOVE
+    To: P_HOME
+    Points: []
+
+# The record of this file: the sha256 of its inputs (a build refuses it when one changed), the platform and versions it
+# was made with, each segment's start time (compared at a build), the TOPP grid.
+Optimized:
+  Inputs:
+    program: "7851a8954d624bef4a493dc2674d6a8331ef83fec778a39bb1825134da9aea65"
+    constants: "a91f145519c14280d35eedbe2fda7068ee1034438259f637a6bd27fe30ef6411"
+    simulation: "c96f29ecd111ce37c42402f015d3e1e5e500998f8788df601de508d5d69ca9db"
+    cell: "807be9aa353ff85e4af570fcdec1771525333517d9a7edac02bf276f6a947cbf"
+    optimization: "81f1085283d491ce901823929f839b60af7ca197791140be391e96492a0fb6af"
+    fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
+    planning_model: "9deab253ff8e791ecd1f53001f0f21a68d6e7cbd6e0c8f2f5117566133d09684"
+  Platform:
+    system: "Darwin"
+    machine: "arm64"
+    python: "3.11.2"
+    numpy: "2.4.6"
+    scipy: "1.17.1"
+    mujoco: "3.16.0"
+  Schedule:
+    S1_Approach_Input: 0.000
+    S2_Pick_Input: 1.060
+    S3_To_Loader: 4.984
+    S4_Handover: 6.132
+    S5_To_MG06: 10.724
+    S6_Close_MG06: 17.924
+    S7_Leave_MG06: 24.996
+    S8_Test: 27.304
+    S9_Return_MG06: 29.304
+    S10_Open_MG06: 31.612
+    S11_To_Take: 37.036
+    S12_Take_From_Loader: 44.684
+    S13_To_Output: 50.276
+    S14_Place_Output: 52.068
+    S15_Home_End: 55.412
+  Topp_Grid_Points: 1000

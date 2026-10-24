@@ -49,7 +49,7 @@ from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, R
                                 CONST_CELL_YAML, CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_REPORTS, CONST_REFERENCE_PLAN)
 #   ../Configuration/Program_Parser - the program's three files
 from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
-                                          CONST_PROGRAM_YAML)
+                                          CONST_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
 #   ../Scene/Core - the cell's errors
 from Scene.Core import Scene_Error_Cls
 #   ../Kinematics/Core, ../Collision/Core - FK, IK and exact distances on the planning model (the table included)
@@ -59,6 +59,8 @@ from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Program.Core import Build_Program, Check_Trajectory, Format_Check_Report, File_Hash, Program_Error_Cls
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Trajectory_Str, Write_Trajectory, CONST_DT
+#   ../Optimizer/Core - an optimized program's inputs and schedule
+from Optimizer.Core import Stale_Inputs, Schedule_Differences
 #   ../Simulation/Core - the reference plan (the legacy diagnostic)
 from Simulation.Core import Read_Legacy_Plan, Simulation_Error_Cls
 
@@ -99,14 +101,16 @@ def Git_State() -> tp.Tuple[str, bool]:
         return 'unknown', True
 
 
-def Build_Meta(program_path: str) -> tp.Dict[str, tp.Any]:
+def Build_Meta(program_path: str, optimized: bool = False) -> tp.Dict[str, tp.Any]:
     """
     Description:
-        The trajectory's metadata: the sha256 of every input file, the git commit, the platform and the versions (B5: byte-
-        identical outputs are promised on one machine and platform only).
+        The trajectory's metadata: the sha256 of every input file (an optimized program's also Configuration/
+        Optimization.yaml's), the git commit, the platform and the versions (B5: byte-identical outputs are promised on one
+        machine and platform only).
 
     Args:
         (1) program_path [string]: The program file.
+        (2) optimized [bool]: Whether it is an optimized program.
 
     Returns:
         (1) parameter [Dict<string, Any>]: The metadata.
@@ -116,6 +120,8 @@ def Build_Meta(program_path: str) -> tp.Dict[str, tp.Any]:
     inputs = {name: File_Hash(path) for name, path in (('program', program_path), ('constants', CONST_CONSTANTS_YAML),
                                                         ('simulation', CONST_SIMULATION_YAML), ('cell', CONST_CELL_YAML), ('fork_path',
                                                                                                                            CONST_FORK_PATH))}
+    if optimized:
+        inputs['optimization'] = File_Hash(CONST_OPTIMIZATION_YAML)
     return {'inputs_sha256': inputs, 'git_commit': commit, 'git_dirty': dirty,
             'platform': {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version(),
                          'numpy': np.__version__, 'mujoco': mujoco.__version__}}
@@ -199,7 +205,19 @@ def main():
         model = Build_Planning_Model(cell)
         collision = Robot_Collision_Cls(model)
         kinematics = Robot_Kinematics_Cls(model, collision.Data)
-        trajectory, notes = Build_Program(program, cell, meta, kinematics, Build_Meta(args.program))
+        stale = Stale_Inputs(program, model)
+        if stale:
+            print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '
+                           'Example/Program/optimize_program.py' % (args.program, ', '.join(stale))))
+            log.Close()
+            return 1
+        trajectory, notes = Build_Program(program, cell, meta, kinematics, Build_Meta(args.program, program.Optimized is not None))
+        differences = Schedule_Differences(program, trajectory)
+        if differences:
+            print(log.Line('[ERROR] The build of %s does not match its recorded Schedule (another platform, or the file was edited): %s; make '
+                           'it again: .venv/bin/python Example/Program/optimize_program.py' % (args.program, '; '.join(differences))))
+            log.Close()
+            return 1
     except (Configuration_Error_Cls, Scene_Error_Cls, Program_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()

@@ -31,8 +31,10 @@ import pytest
 # Custom Lib.: the parser under test, the YAML reader
 #   ../Configuration/Program_Parser, ../Configuration/Core
 from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, Parse_Line, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
-                                          CONST_PROGRAM_YAML)
+                                          CONST_PROGRAM_YAML,
+                                          Load_Optimization, CONST_OPTIMIZED_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
 from Configuration.Core import Read_YAML, Configuration_Error_Cls
+import Configuration.Program_Parser as Program_Parser
 
 """
 Description:
@@ -277,8 +279,8 @@ def test_invalid_simulation_data_is_named_with_its_file_and_line(tmp_path, const
     ('Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveJ(P_INPUT_ABOVE, v=1.5)', 'MoveJ v= is a fraction of the datasheet joint speeds in (0, 1], not 1.5'),
     ('Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveJ(P_INPUT_ABOVE, v=0)', 'MoveJ v= is a fraction of the datasheet joint speeds in (0, 1], not 0'),
     ('Robot.MoveL(P_INPUT_PICK, v=0.03)', 'Robot.MoveL(P_INPUT_PICK, v=2.0)', 'MoveL v= is the tool speed in m/s within [0.001, 1], not 2.0'),
-    ('Loader.Run(J_INSERT)', 'Loader.Start(J_INSERT)', 'Loader.Start is reserved for F9'),
-    ('Tester.Run(J_TEST)', 'Tester.WaitDone(J_TEST)', 'Tester.WaitDone is reserved for F9'),
+    ('Loader.Run(J_INSERT)', 'Loader.Start(J_INSERT)', 'Loader.Start is only in an optimized program (Data/Optimized/Program_Optimized.yaml'),
+    ('Tester.Run(J_TEST)', 'Tester.WaitDone(J_TEST)', "Tester.WaitDone is reserved (the tester's job runs as a whole)"),
     ('Loader.Run(J_INSERT)', 'Loader.Run(J_NOPE)',
      "Loader.Run takes a job of Loader_Jobs (J_CLAMP, J_INSERT, J_PARK, J_FETCH, J_RETURN, J_RELEASE), not 'J_NOPE'"),
     ('Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)', 'Robot.WaitDI(DI_VACUUM_OK)', 'Robot.WaitDI needs timeout= (REQUIRED)'),
@@ -398,3 +400,104 @@ def test_a_path_must_start_where_the_robot_stands(tmp_path, cell_configuration):
     start = "    - Robot.MoveJ(P_MG06_FORK_START)                      # legacy: joint_move(q_f0, '-> fork start pose')\n"
     message = _Error(lambda: _Load(cell_configuration, program=_Edited(tmp_path, CONST_PROGRAM_YAML, start, '')))
     assert 'S9_Close_MG06' in message and 'PATH_FORK_CLOSE starts at P_MG06_FORK_START, but the robot stands at P_MG06_ABOVE' in message
+
+
+def test_the_optimized_program_loads_with_its_record(constants, simulation, cell_configuration):
+    """
+    Description:
+        The committed optimized program loads: 15 segments, its splines resolved (end points' joints at both ends of the
+        waypoints), its parallel jobs as Loader.Start / Loader.WaitDone, its record (inputs, platform, schedule, TOPP grid).
+    """
+
+    program = Load_Program(constants, simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
+    assert len(program.Segments) == 15 and program.Optimized.Topp_Grid_Points == 1000
+    assert set(program.Optimized.Schedule) == {s.Key for s in program.Segments}
+    spline = next(c for s in program.Segments for c in s.Commands if c.Kind == 'MoveSpline' and c.Target == 'W_TO_MG06')
+    assert (spline.Path_Start, spline.Path_End, spline.Speed) == ('P_LOADER_ABOVE', 'P_MG06_FORK_START', 0.6)
+    assert spline.Waypoints[0] == constants.Points['P_LOADER_ABOVE'].Joints and spline.Waypoints[-1] == constants.Points['P_MG06_FORK_START'].Joints
+    kinds = [(c.Kind, c.Target) for c in program.Segments[4].Commands]
+    assert kinds == [('Start', 'J_INSERT'), ('MoveSpline', 'W_TO_MG06'), ('WaitDone', 'J_INSERT'), ('Start', 'J_PARK'), ('WaitDone', 'J_PARK')]
+
+
+CONST_OPTIMIZED_ERRORS = [
+    ('    - Loader.WaitDone(J_INSERT)\n    - Loader.Start(J_PARK)', '    - Loader.Start(J_PARK)',
+     "Loader.Start(J_PARK)': Start while J_INSERT runs: wait for it first (Loader.WaitDone(J_INSERT))"),
+    ('    - Loader.Start(J_INSERT)\n', '', "Loader.WaitDone(J_INSERT)': WaitDone(J_INSERT) without its Start (no job runs)"),
+    ('    - Loader.WaitDone(J_RETURN)\n', '', 'J_RETURN is started but never waited for (Loader.WaitDone(J_RETURN))'),
+    ('    From: P_HOME\n', '    From: P_INPUT_CLEAR\n', 'W_APPROACH_INPUT starts at P_INPUT_CLEAR, but the robot stands at P_HOME'),
+    ('Robot.MoveSpline(W_TO_LOADER, v=0.6)', 'Robot.MoveSpline(W_NOWHERE, v=0.6)',
+     'Robot.MoveSpline takes a W_ waypoint set of the Waypoints section'),
+    ('Robot.MoveSpline(W_TO_LOADER, v=0.6)', 'Robot.MoveSpline(W_TO_LOADER)', 'Robot.MoveSpline needs v= (REQUIRED)'),
+    ('Robot.MoveSpline(W_TO_LOADER, v=0.6)', 'Robot.MoveSpline(W_TO_LOADER, v=1.5)', 'MoveSpline v= is a fraction of the datasheet joint speeds'),
+    ('    To: P_INPUT_ABOVE\n', '    To: P_ATTIC\n', "Waypoints.W_APPROACH_INPUT.To: 'P_ATTIC' is not a point"),
+    ('  Topp_Grid_Points: 1000', '  Topp_Grid_Points: 3', 'Optimized.Topp_Grid_Points: must be a whole number within [10, 100000]'),
+    ('    S2_Pick_Input: ', '    S2_Pick_Up: ', 'Optimized.Schedule.S2_Pick_Up: is not a segment of this program'),
+]
+
+
+@pytest.mark.parametrize('old, new, text', CONST_OPTIMIZED_ERRORS)
+def test_an_invalid_optimized_program_is_named(tmp_path, constants, simulation, cell_configuration, old, new, text):
+    """
+    Description:
+        The optimized program's own rules, each broken in a copy of the committed file: a job started while another runs, a
+        WaitDone without its Start, a job never waited for, a spline that does not start where the robot stands, an unknown
+        waypoint set, MoveSpline's v= missing or out of range, an unknown end point, the record's TOPP grid, a schedule key
+        that is not a segment.
+    """
+
+    path = _Edited(tmp_path, CONST_OPTIMIZED_PROGRAM_YAML, old, new)
+    message = _Error(lambda: Load_Program(constants, simulation, cell_configuration, path))
+    assert text in message and 'Program_Optimized.yaml:' in message
+
+
+def test_the_optimized_commands_are_only_in_an_optimized_program(tmp_path, monkeypatch, constants, simulation, cell_configuration):
+    """
+    Description:
+        Configuration/Program.yaml is taught: Robot.MoveSpline in it is refused (use MoveJ), an Optimized section in it is
+        refused (the rule is by the file's place: the place is pointed at a copy here); Tester.Start stays reserved in either.
+    """
+
+    path = _Edited(tmp_path, CONST_PROGRAM_YAML, 'Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveSpline(W_X, v=0.6)')
+    assert 'Robot.MoveSpline is only in an optimized program' in _Error(lambda: Load_Program(constants, simulation, cell_configuration, path))
+    taught = tmp_path / 'Program.yaml'
+    taught.write_text(open(CONST_PROGRAM_YAML, encoding='utf-8').read() + '\nOptimized:\n  Inputs: {}\n', encoding='utf-8')
+    monkeypatch.setattr(Program_Parser, 'CONST_PROGRAM_YAML', str(taught))
+    message = _Error(lambda: Load_Program(constants, simulation, cell_configuration, str(taught)))
+    assert 'Configuration/Program.yaml is the taught program: it holds no Optimized section' in message
+    path = _Edited(tmp_path, CONST_OPTIMIZED_PROGRAM_YAML, 'Robot.MoveSpline(W_TO_LOADER, v=0.6)', 'Tester.Start(J_TEST)', 'reserved.yaml')
+    assert "Tester.Start is reserved (the tester's job runs as a whole)" in _Error(lambda: Load_Program(constants, simulation,
+                                                                                                        cell_configuration, path))
+
+
+CONST_OPTIMIZATION_ERRORS = [
+    ('S1_Approach_Input, S3_To_Loader', 'S1_Approach_Input, S2_Pick_Input', 'S2_Pick_Input is not a free-space transfer: it has Robot.MoveL'),
+    ('S1_Approach_Input, S3_To_Loader', 'S1_Approach_Input, S99_Nowhere', "'S99_Nowhere' is not a segment of Program.yaml"),
+    ('Margins: [0.002, 0.003, 0.005]', 'Margins: [0.003, 0.002]', 'Margins: must increase'),
+    ('Speed_Fraction: 0.6', 'Speed_Fraction: 0.0', 'Speed_Fraction: 0.0 is outside [0.01, 1]'),
+    ('Seed: 20261024', 'Seed: -1', 'Seed: must be a whole number within [0, 2147483647]'),
+    ('  Max_Refits: 20', '  Max_Refits: 2.5', 'Spline.Max_Refits: must be a whole number within [0, 1000]'),
+    ('Carry_Max_Tilt: 30.0\n', '', 'Carry_Max_Tilt: missing (REQUIRED)'),
+]
+
+
+@pytest.mark.parametrize('old, new, text', CONST_OPTIMIZATION_ERRORS)
+def test_an_invalid_optimization_setting_is_named(tmp_path, program, old, new, text):
+    """
+    Description:
+        Configuration/Optimization.yaml's checks: a FREE segment that is not a free-space transfer or not a segment, margins
+        that do not increase, out-of-range numbers, a missing field - each named with the file.
+    """
+
+    message = _Error(lambda: Load_Optimization(program, _Edited(tmp_path, CONST_OPTIMIZATION_YAML, old, new)))
+    assert text in message and 'Optimization.yaml:' in message
+
+
+def test_the_shipped_optimization_settings_load(program):
+    """
+    Description:
+        Configuration/Optimization.yaml loads in SI units: the eight FREE segments, the margins, 30 deg of tilt.
+    """
+
+    o = Load_Optimization(program)
+    assert len(o.Free_Segments) == 8 and o.Margins == [0.002, 0.003, 0.005] and o.Speed_Fraction == 0.6
+    assert math.isclose(o.Carry_Max_Tilt, math.radians(30.0)) and math.isclose(o.Rrt_Edge_Step, math.radians(1.0))

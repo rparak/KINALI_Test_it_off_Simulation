@@ -35,7 +35,8 @@ import typing as tp
 from dataclasses import dataclass, field
 # Custom Lib.:
 #   ../Configuration/Core - the YAML reader, the repository's files, the cell's closed sets and errors
-from Configuration.Core import (Read_YAML, Configuration_Error_Cls, Cell_Configuration_Str, CONST_ROOT, CONST_CONFIGURATION, CONST_PCB_LOCATIONS,
+from Configuration.Core import (Read_YAML, Configuration_Error_Cls, Cell_Configuration_Str, CONST_ROOT, CONST_CONFIGURATION, CONST_DATA,
+                                CONST_PCB_LOCATIONS,
                                 CONST_CONTACT_GROUPS, CONST_FIXTURE_STATES, CONST_PROCESS_KEYS)
 
 """
@@ -55,6 +56,10 @@ Description:
 CONST_CONSTANTS_YAML = os.path.join(CONST_CONFIGURATION, 'Constants.yaml')
 CONST_SIMULATION_YAML = os.path.join(CONST_CONFIGURATION, 'Simulation.yaml')
 CONST_PROGRAM_YAML = os.path.join(CONST_CONFIGURATION, 'Program.yaml')
+# The optimizer's settings (hand-written) and the optimized program (written by Example/Program/optimize_program.py only).
+#   Unit [string]
+CONST_OPTIMIZATION_YAML = os.path.join(CONST_CONFIGURATION, 'Optimization.yaml')
+CONST_OPTIMIZED_PROGRAM_YAML = os.path.join(CONST_DATA, 'Optimized', 'Program_Optimized.yaml')
 # The sections of Constants.yaml and the prefixes of their names.
 #   Unit [Dict<string, Tuple<string>>]
 CONST_SECTIONS = {'Tools': ('T_',), 'Points': ('P_',), 'Loader_Positions': ('L_',), 'Gripper_Commands': ('G_',), 'Paths': ('PATH_',),
@@ -83,9 +88,13 @@ CONST_ROBOT_COMMANDS = {'Robot.MoveJ': (['P'], {'v': False, 'a': False, 'r': Fal
                         'Loader.Run': (['JL'], {}), 'Tester.Run': (['JT'], {}), 'Wait': (['NUMBER'], {})}
 CONST_LOADER_COMMANDS = {'MoveY': (['L'], {'t': True}), 'MoveZ': (['L'], {'t': True}), 'Gripper': (['G'], {'t': True}), 'Wait': (['NUMBER'], {})}
 CONST_TESTER_COMMANDS = {'Test': (['PROCESS'], {})}
-# The station calls reserved for F9's synchronisation (Run = Start + WaitDone).
+# The commands only an optimized program has (a file with an Optimized section; F9): a planned joint spline, and the loader
+# started and waited for apart (Run = Start + WaitDone), so the robot moves while the loader runs. W a Waypoints entry.
+#   Unit [Dict<string, Tuple<List<string>, Dict<string, bool>>>]
+CONST_OPTIMIZED_COMMANDS = {'Robot.MoveSpline': (['W'], {'v': True}), 'Loader.Start': (['JL'], {}), 'Loader.WaitDone': (['JL'], {})}
+# The station calls reserved for a later step (the tester's job always runs as a whole).
 #   Unit [Tuple<string>]
-CONST_RESERVED = ('Loader.Start', 'Loader.WaitDone', 'Tester.Start', 'Tester.WaitDone')
+CONST_RESERVED = ('Tester.Start', 'Tester.WaitDone')
 # What each argument kind is, for the messages; the section a constant kind is declared in.
 #   Unit [Dict<string, string>]
 CONST_KIND_WORDS = {'P': 'a P_ point', 'PATH': 'a PATH_ path', 'DO': 'a DO_ output', 'DI': 'a DI_ input', 'L': 'an L_ loader position',
@@ -359,9 +368,12 @@ class Command_Str:
     Path_Start: str = ''
     Path_End: str = ''
     End_Joints: tp.List[float] = field(default_factory=list)
-    # Run: the job's commands.
+    # Run, Start, WaitDone: the job's commands.
     #   Unit [List<Command_Str>]
     Job: tp.List['Command_Str'] = field(default_factory=list)
+    # MoveSpline: its waypoints, the start (Path_Start's joints) and the end (Path_End's) included.
+    #   Unit [List<Vector<float> 1x6>] (rad)
+    Waypoints: tp.List[tp.List[float]] = field(default_factory=list)
 
 
 @dataclass
@@ -386,6 +398,31 @@ class Segment_Str:
 
 
 @dataclass
+class Optimized_Str:
+    """
+    Description:
+        An optimized program's record (its Optimized section, written by the optimizer): the inputs it was planned from,
+        the platform it ran on, each segment's start time, the TOPP grid its splines are timed on.
+    """
+
+    # The section's line.
+    #   Unit [int]
+    Line: int = 0
+    # The sha256 of each input, by name.
+    #   Unit [Dict<string, string>]
+    Inputs: tp.Dict[str, str] = field(default_factory=dict)
+    # The platform and the versions.
+    #   Unit [Dict<string, string>]
+    Platform: tp.Dict[str, str] = field(default_factory=dict)
+    # Each segment's start time, by key.
+    #   Unit [Dict<string, float>] (s)
+    Schedule: tp.Dict[str, float] = field(default_factory=dict)
+    # The TOPP grid's intervals per spline.
+    #   Unit [int]
+    Topp_Grid_Points: int = 0
+
+
+@dataclass
 class Program_Str:
     """
     Description:
@@ -406,6 +443,9 @@ class Program_Str:
     #   Unit [Constants_Str(object)], [Simulation_Str(object)]
     Constants: Constants_Str = field(default_factory=Constants_Str)
     Simulation: Simulation_Str = field(default_factory=Simulation_Str)
+    # An optimized program's record (None for a taught program).
+    #   Unit [Optimized_Str(object)]
+    Optimized: tp.Optional[Optimized_Str] = None
     # The loader's notes.
     #   Unit [List<Tuple<string>>]
     Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
@@ -983,6 +1023,9 @@ class _Program_Parser_Cls(object):
         self.Used: tp.Set[str] = set()
         self.Loader_Jobs: tp.Dict[str, tp.List[Command_Str]] = {}
         self.Tester_Jobs: tp.Dict[str, tp.List[Command_Str]] = {}
+        # An optimized program's waypoint sets: name -> (from, to, interior waypoints (rad)), or None when the set is invalid
+        # (its problem named already).
+        self.Waypoints: tp.Dict[str, tp.Optional[tp.Tuple[str, str, tp.List[tp.List[float]]]]] = {}
 
     def Command(self, text: tp.Any, owner: str, grammar: tp.Dict[str, tp.Tuple[tp.List[str], tp.Dict[str, bool]]],
                 station: str) -> tp.Optional[Command_Str]:
@@ -1024,7 +1067,11 @@ class _Program_Parser_Cls(object):
             Fail(str(error))
             return None
         if name in CONST_RESERVED:
-            Fail('%s is reserved for F9 (the robot and the stations in parallel); use %s.Run (Run = Start + WaitDone)' % (name, name.split('.')[0]))
+            Fail('%s is reserved (the tester\'s job runs as a whole); use Tester.Run' % name)
+            return None
+        if name in CONST_OPTIMIZED_COMMANDS and name not in grammar:
+            Fail('%s is only in an optimized program (Data/Optimized/Program_Optimized.yaml, written by Example/Program/optimize_program.py); '
+                 'a taught program uses %s' % (name, 'Robot.MoveJ' if name == 'Robot.MoveSpline' else 'Loader.Run (Run = Start + WaitDone)'))
             return None
         if name not in grammar:
             Fail("'%s' is not a command here; the commands are %s" % (name, ', '.join(grammar)))
@@ -1064,6 +1111,12 @@ class _Program_Parser_Cls(object):
                 if form != 'name' or value not in references:
                     Fail('%s takes %s (a Cell.yaml duration), not %r' % (name, ' or '.join(references), value))
                     return None
+                values.append(value)
+            elif kind == 'W':
+                if form != 'name' or value not in self.Waypoints:
+                    Fail('%s takes a W_ waypoint set of the Waypoints section (%s), not %r' % (name, ', '.join(self.Waypoints) or 'none', value))
+                    return None
+                self.Used.add(value)
                 values.append(value)
             elif kind in ('JL', 'JT'):
                 jobs = self.Loader_Jobs if kind == 'JL' else self.Tester_Jobs
@@ -1122,7 +1175,19 @@ class _Program_Parser_Cls(object):
                 Fail('the simulated response of %s (%g s) exceeds the timeout %g s: the wait would fail' % (command.Target,
                                                                                                             command.Duration, command.Timeout))
                 return None
-        elif command.Kind == 'Run':
+        elif command.Kind == 'MoveSpline':
+            if self.Waypoints[values[0]] is None:
+                return None
+            start, end, points = self.Waypoints[values[0]]
+            v = kwargs['v']
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not CONST_MOVEJ_SPEED[0] < v <= CONST_MOVEJ_SPEED[1]:
+                Fail('MoveSpline v= is a fraction of the datasheet joint speeds in (0, 1], not %r' % (v,))
+                return None
+            command.Target, command.Path_Start, command.Path_End, command.Speed = values[0], start, end, float(v)
+            command.Joints = list(c.Points[end].Joints)
+            command.Waypoints = [list(c.Points[start].Joints)] + [list(q) for q in points] + [list(c.Points[end].Joints)]
+            self.Used.update((start, end))
+        elif command.Kind in ('Run', 'Start', 'WaitDone'):
             command.Target = values[0]
             command.Job = (self.Loader_Jobs if command.Station == 'Loader' else self.Tester_Jobs)[command.Target]
         elif command.Kind == 'Wait':
@@ -1161,6 +1226,59 @@ def _Family(point: Point_Str) -> int:
     return 1 if point.Joints[CONST_WRIST_2] > 0 else -1
 
 
+def _Load_Optimized(p: _Problems_Cls, root: tp.Dict[str, tp.Any], parser: _Program_Parser_Cls, constants: Constants_Str) -> Optimized_Str:
+    """
+    Description:
+        An optimized program's Optimized section (Inputs, Platform, Schedule, Topp_Grid_Points) and its Waypoints section
+        (W_<NAME>: From and To points, Points the interior waypoints [deg]) into the parser.
+
+    Args:
+        (1) p [_Problems_Cls(object)]: The problems.
+        (2) root [Dict<string, Any>]: The file.
+        (3) parser [_Program_Parser_Cls(object)]: Takes the waypoint sets.
+        (4) constants [Constants_Str(object)]: The points.
+
+    Returns:
+        (1) parameter [Optimized_Str(object)]: The record.
+    """
+
+    line = _Line(root, 'Optimized', 1)
+    section = _Mapping(p, root, 'Optimized', 'Optimized', 1, ('Inputs', 'Platform', 'Schedule', 'Topp_Grid_Points'))
+    record = Optimized_Str(Line=line)
+    for key in ('Inputs', 'Platform'):
+        value = _Mapping(p, section, key, 'Optimized.%s' % key, line)
+        setattr(record, key, {str(k): str(v) for k, v in value.items()})
+    for key, value in _Mapping(p, section, 'Schedule', 'Optimized.Schedule', line).items():
+        record.Schedule[str(key)] = _Number(p, value, 'Optimized.Schedule.%s' % key, getattr(key, 'Line', line), 0.0, 3600.0)
+    grid = _Field(p, section, 'Topp_Grid_Points', 'Optimized', line)
+    if grid is not None:
+        if isinstance(grid, bool) or not isinstance(grid, int) or not 10 <= grid <= 100000:
+            p.Add(_Line(section, 'Topp_Grid_Points', line), 'Optimized.Topp_Grid_Points',
+                  'must be a whole number within [10, 100000], not %r' % (grid,))
+        else:
+            record.Topp_Grid_Points = grid
+    for name, entry in _Mapping(p, root, 'Waypoints', 'Waypoints', 1).items():
+        at, where = getattr(name, 'Line', 0), 'Waypoints.%s' % name
+        if not re.match(r'^W_[A-Z0-9_]+$', str(name)):
+            p.Add(at, where, 'a waypoint set is W_ and UPPERCASE')
+        if not isinstance(entry, dict):
+            p.Add(at, where, 'must be a mapping with From, To and Points')
+            continue
+        ends = []
+        for key in ('From', 'To'):
+            value = _Field(p, entry, key, where, at)
+            if value is not None and value not in constants.Points:
+                p.Add(_Line(entry, key, at), '%s.%s' % (where, key), '%r is not a point' % (value,))
+            ends.append(str(value) if value in constants.Points else None)
+        points = _Field(p, entry, 'Points', where, at)
+        if points is not None and not isinstance(points, list):
+            p.Add(_Line(entry, 'Points', at), '%s.Points' % where, 'must be a list of joint vectors [deg] (empty for a direct move)')
+            points = []
+        values = [_Vector(p, q, '%s.Points[%d]' % (where, i), _Line(entry, 'Points', at), 6, -360.0, 360.0) for i, q in enumerate(points or [])]
+        parser.Waypoints[str(name)] = None if None in ends else (ends[0], ends[1], [[math.radians(v) for v in q] for q in values])
+    return record
+
+
 def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cell_Configuration_Str, path: str = CONST_PROGRAM_YAML) -> Program_Str:
     """
     Description:
@@ -1172,6 +1290,10 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
         and job declared and used (across Program.yaml and Simulation.yaml); the IK family changing only across
         CONST_FAMILY_SWITCH_POINT and never in a MoveL; a MovePath starting where the robot stands (its Start) and the robot
         standing at its End after it. Every problem at once with its file, line, segment or job and the line's text.
+        An optimized program (a file with an Optimized section; never Configuration/Program.yaml) may also hold Waypoints,
+        Robot.MoveSpline (it may change the IK family: a joint-space motion) and Loader.Start / Loader.WaitDone: a job is
+        started while none runs and waited for before the next Start, Run or the program's end; its constants are shared
+        with the taught program, so they need not all be used.
 
     Args:
         (1) constants [Constants_Str(object)]: The constants.
@@ -1186,11 +1308,18 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
     p = _Problems_Cls(path)
     root = Read_YAML(path)
     root = root if isinstance(root, dict) else {}
+    optimized = 'Optimized' in root
     for k in root:
-        if k not in ('Program', 'Loader_Jobs', 'Tester_Jobs'):
+        if k not in ('Program', 'Loader_Jobs', 'Tester_Jobs') + (('Optimized', 'Waypoints') if optimized else ()):
             p.Notes.append(('WARNING', '%s:%d: %s: unknown section, ignored (misspelt?)' % (p.File, getattr(k, 'Line', 0), k)))
     parser = _Program_Parser_Cls(constants, simulation, cell, p)
     program = Program_Str(Name=os.path.splitext(os.path.basename(path))[0], Path=path, Constants=constants, Simulation=simulation)
+    if optimized and os.path.abspath(path) == os.path.abspath(CONST_PROGRAM_YAML):
+        p.Add(_Line(root, 'Optimized', 1), 'Optimized', 'Configuration/Program.yaml is the taught program: it holds no Optimized section '
+                                                       '(the optimized program is Data/Optimized/Program_Optimized.yaml)')
+    elif optimized:
+        program.Optimized = _Load_Optimized(p, root, parser, constants)
+    robot_grammar = dict(CONST_ROBOT_COMMANDS, **CONST_OPTIMIZED_COMMANDS) if program.Optimized is not None else CONST_ROBOT_COMMANDS
     for section, jobs, grammar, station in (('Loader_Jobs', parser.Loader_Jobs, CONST_LOADER_COMMANDS, 'Loader'),
                                             ('Tester_Jobs', parser.Tester_Jobs, CONST_TESTER_COMMANDS, 'Tester')):
         for name, lines in _Mapping(p, root, section, section, 1).items():
@@ -1218,7 +1347,7 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
         if not isinstance(lines, list) or not lines:
             p.Add(at, 'Program.%s' % key, 'must be a list of command lines')
             continue
-        commands = [command for command in (parser.Command(text, str(key), CONST_ROBOT_COMMANDS, '') for text in lines) if command is not None]
+        commands = [command for command in (parser.Command(text, str(key), robot_grammar, '') for text in lines) if command is not None]
         program.Segments.append(Segment_Str(Key=str(key), Name=name, Number=number, Line=at, Commands=commands,
                                             Allow_Contact=list(simulation.Allow_Contact.get(name, []))))
     program.Loader_Jobs, program.Tester_Jobs = parser.Loader_Jobs, parser.Tester_Jobs
@@ -1242,18 +1371,41 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
     for section, table in (('Tools', constants.Tools), ('Points', constants.Points), ('Loader_Positions', constants.Loader),
                            ('Gripper_Commands', constants.Gripper), ('Paths', constants.Paths), ('Signals', constants.Signals)):
         for name, entry in table.items():
-            if name not in used:
+            if name not in used and program.Optimized is None:
                 p.Add(entry.Line, '%s.%s' % (section, name), 'declared but used by neither Program.yaml nor Simulation.yaml; remove it or use it',
                       file=constants.Path)
     for section, jobs in (('Loader_Jobs', program.Loader_Jobs), ('Tester_Jobs', program.Tester_Jobs)):
         for name in jobs:
             if name not in parser.Used:
                 p.Add(_Line(root.get(section, {}), name), '%s.%s' % (section, name), 'a job no segment runs; remove it or run it')
+    for name in parser.Waypoints:
+        if name not in parser.Used:
+            p.Add(_Line(root.get('Waypoints', {}), name), 'Waypoints.%s' % name, 'a waypoint set no MoveSpline uses; remove it or use it')
+    if program.Optimized is not None:
+        keys = [s.Key for s in program.Segments]
+        for key in program.Optimized.Schedule:
+            if key not in keys:
+                p.Add(program.Optimized.Line, 'Optimized.Schedule.%s' % key, 'is not a segment of this program')
     # The robot's flow: where it stands before each motion (by name).
-    here = simulation.Start_Robot
+    here, running = simulation.Start_Robot, None
     for segment in program.Segments:
         for command in segment.Commands:
-            if command.Kind in ('MoveJ', 'MoveL') and here in constants.Points:
+            if command.Kind in ('Start', 'Run') and command.Station == 'Loader' and running is not None:
+                p.Add(command.Line, segment.Key, '%s while %s runs: wait for it first (Loader.WaitDone(%s))' % (command.Kind, running, running),
+                      command.Text)
+            elif command.Kind == 'Start':
+                running = command.Target
+            elif command.Kind == 'WaitDone':
+                if running != command.Target:
+                    p.Add(command.Line, segment.Key, 'WaitDone(%s) without its Start (%s)' % (command.Target, 'no job runs' if running is None
+                                                                                            else '%s runs' % running), command.Text)
+                running = None
+            if command.Kind == 'MoveSpline':
+                if here != command.Path_Start:
+                    p.Add(command.Line, segment.Key, '%s starts at %s, but the robot stands at %s' % (command.Target, command.Path_Start, here),
+                          command.Text)
+                here = command.Path_End
+            elif command.Kind in ('MoveJ', 'MoveL') and here in constants.Points:
                 target = constants.Points[command.Target]
                 if _Family(constants.Points[here]) != _Family(target):
                     if command.Kind == 'MoveL':
@@ -1268,6 +1420,9 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
                     p.Add(command.Line, segment.Key, '%s starts at %s, but the robot stands at %s' % (command.Target, command.Path_Start,
                                                                                                       here), command.Text)
                 here = command.Path_End
+    if running is not None:
+        p.Add(program.Segments[-1].Line if program.Segments else 1, 'Program', '%s is started but never waited for (Loader.WaitDone(%s))'
+              % (running, running))
     p.Finish()
     program.Notes = constants.Notes + simulation.Notes + p.Notes
     return program
@@ -1303,3 +1458,158 @@ def Parse_Commands(lines: tp.Sequence[str], owner: str, constants: Constants_Str
     commands = [command for command in (parser.Command(text, owner, CONST_ROBOT_COMMANDS, '') for text in lines) if command is not None]
     p.Finish()
     return commands
+
+
+@dataclass
+class Optimization_Str:
+    """
+    Description:
+        Configuration/Optimization.yaml: the FREE segments and the planner's settings (FEATURES.md F9). Built by
+        Load_Optimization.
+    """
+
+    # The file.
+    #   Unit [string]
+    Path: str = ''
+    # The planned splines' fraction of the datasheet joint speeds; the seed.
+    #   Unit [float] (-), [int]
+    Speed_Fraction: float = 0.0
+    Seed: int = 0
+    # The FREE segments of the taught program, by key.
+    #   Unit [List<string>]
+    Free_Segments: tp.List[str] = field(default_factory=list)
+    # RRT-Connect: iterations, tree step, edge check step, goal bias.
+    #   Unit [int], [float] (rad), [float] (rad), [float] (-)
+    Rrt_Max_Iterations: int = 0
+    Rrt_Extend_Step: float = 0.0
+    Rrt_Edge_Step: float = 0.0
+    Rrt_Goal_Bias: float = 0.0
+    # The shortcut's tries.
+    #   Unit [int]
+    Shortcut_Iterations: int = 0
+    # The spline's check step and margin, and its refits.
+    #   Unit [float] (rad), [float] (m), [int]
+    Spline_Check_Step: float = 0.0
+    Spline_Margin: float = 0.0
+    Spline_Max_Refits: int = 0
+    # The TOPP grid's intervals.
+    #   Unit [int]
+    Topp_Grid_Points: int = 0
+    # The planner's margins beyond the clearance, tried in order.
+    #   Unit [List<float>] (m)
+    Margins: tp.List[float] = field(default_factory=list)
+    # The carried PCB's largest tilt from horizontal.
+    #   Unit [float] (rad)
+    Carry_Max_Tilt: float = 0.0
+    # The loader's notes.
+    #   Unit [List<Tuple<string>>]
+    Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
+
+
+def Load_Optimization(program: Program_Str, path: str = CONST_OPTIMIZATION_YAML) -> Optimization_Str:
+    """
+    Description:
+        Load Configuration/Optimization.yaml, its only reader: every field REQUIRED and validated; each FREE segment a
+        segment of the taught program made of joint moves only (MoveJ lines); degrees converted to radians; every problem at
+        once with its line.
+
+    Args:
+        (1) program [Program_Str(object)]: The taught program the FREE segments are named in.
+        (2) path [string]: The file (default Configuration/Optimization.yaml).
+
+    Returns:
+        (1) parameter [Optimization_Str(object)]: The settings.
+    """
+
+    p = _Problems_Cls(path)
+    root = Read_YAML(path)
+    root = root if isinstance(root, dict) else {}
+    keys = ('Speed_Fraction', 'Seed', 'Free_Segments', 'Rrt', 'Shortcut_Iterations', 'Spline', 'Topp_Grid_Points', 'Margins', 'Carry_Max_Tilt')
+    for k in root:
+        if k not in keys:
+            p.Notes.append(('WARNING', '%s:%d: %s: unknown key, ignored (misspelt?)' % (p.File, getattr(k, 'Line', 0), k)))
+    o = Optimization_Str(Path=path)
+
+    def Whole(tree: tp.Dict[str, tp.Any], key: str, where: str, low: int, high: int) -> int:
+        """
+        Description:
+            A required whole number within [low, high], or 0 with a problem.
+
+        Args:
+            (1) tree [Dict<string, Any>]: The mapping.
+            (2) key [string]: The field.
+            (3) where [string]: Its key path.
+            (4 - 5) low, high [int]: The range.
+
+        Returns:
+            (1) parameter [int]: The value.
+        """
+
+        if key not in tree:
+            p.Add(1, where, 'missing (REQUIRED)')
+            return 0
+        value = tree[key]
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.Add(_Line(tree, key, 1), where, 'must be a whole number within [%d, %d], not %r' % (low, high, value))
+            return 0
+        return value
+
+    def Real(tree: tp.Dict[str, tp.Any], key: str, where: str, low: float, high: float) -> float:
+        """
+        Description:
+            A required number within [low, high], or NaN with a problem.
+
+        Args:
+            (1) tree [Dict<string, Any>]: The mapping.
+            (2) key [string]: The field.
+            (3) where [string]: Its key path.
+            (4 - 5) low, high [float]: The range.
+
+        Returns:
+            (1) parameter [float]: The value.
+        """
+
+        if key not in tree:
+            p.Add(1, where, 'missing (REQUIRED)')
+            return math.nan
+        return _Number(p, tree[key], where, _Line(tree, key, 1), low, high)
+
+    o.Speed_Fraction = Real(root, 'Speed_Fraction', 'Speed_Fraction', 0.01, 1.0)
+    o.Seed = Whole(root, 'Seed', 'Seed', 0, 2 ** 31 - 1)
+    rrt = _Mapping(p, root, 'Rrt', 'Rrt', 1, ('Max_Iterations', 'Extend_Step', 'Edge_Step', 'Goal_Bias'))
+    o.Rrt_Max_Iterations = Whole(rrt, 'Max_Iterations', 'Rrt.Max_Iterations', 1, 10 ** 7)
+    o.Rrt_Extend_Step = math.radians(Real(rrt, 'Extend_Step', 'Rrt.Extend_Step', 0.1, 90.0))
+    o.Rrt_Edge_Step = math.radians(Real(rrt, 'Edge_Step', 'Rrt.Edge_Step', 0.01, 10.0))
+    o.Rrt_Goal_Bias = Real(rrt, 'Goal_Bias', 'Rrt.Goal_Bias', 0.0, 1.0)
+    o.Shortcut_Iterations = Whole(root, 'Shortcut_Iterations', 'Shortcut_Iterations', 0, 10 ** 6)
+    spline = _Mapping(p, root, 'Spline', 'Spline', 1, ('Check_Step', 'Margin', 'Max_Refits'))
+    o.Spline_Check_Step = math.radians(Real(spline, 'Check_Step', 'Spline.Check_Step', 0.01, 10.0))
+    o.Spline_Margin = Real(spline, 'Margin', 'Spline.Margin', 0.0, 0.05)
+    o.Spline_Max_Refits = Whole(spline, 'Max_Refits', 'Spline.Max_Refits', 0, 1000)
+    o.Topp_Grid_Points = Whole(root, 'Topp_Grid_Points', 'Topp_Grid_Points', 10, 100000)
+    o.Carry_Max_Tilt = math.radians(Real(root, 'Carry_Max_Tilt', 'Carry_Max_Tilt', 0.0, 90.0))
+    margins = root.get('Margins')
+    if not isinstance(margins, list) or not margins:
+        p.Add(_Line(root, 'Margins', 1), 'Margins', 'must be a list of margins [m], tried in order (REQUIRED)')
+    else:
+        o.Margins = [_Number(p, m, 'Margins', _Line(root, 'Margins', 1), 0.0, 0.05) for m in margins]
+        if any(b <= a for a, b in zip(o.Margins, o.Margins[1:])):
+            p.Add(_Line(root, 'Margins', 1), 'Margins', 'must increase (each a wider margin than the one before), not %r' % (margins,))
+    free = root.get('Free_Segments')
+    keys = {s.Key: s for s in program.Segments}
+    if not isinstance(free, list) or not free:
+        p.Add(_Line(root, 'Free_Segments', 1), 'Free_Segments', 'must be a list of segment keys of %s (REQUIRED)' % os.path.basename(program.Path))
+    else:
+        for key in free:
+            if key not in keys:
+                p.Add(_Line(root, 'Free_Segments', 1), 'Free_Segments', '%r is not a segment of %s' % (key, os.path.basename(program.Path)))
+            elif any(c.Kind != 'MoveJ' for c in keys[key].Commands):
+                p.Add(_Line(root, 'Free_Segments', 1), 'Free_Segments', '%s is not a free-space transfer: it has %s (a FREE segment holds MoveJ '
+                      'lines only)' % (key, ', '.join(c.Text for c in keys[key].Commands if c.Kind != 'MoveJ')))
+            elif key in o.Free_Segments:
+                p.Add(_Line(root, 'Free_Segments', 1), 'Free_Segments', '%s is listed twice' % key)
+            else:
+                o.Free_Segments.append(str(key))
+    p.Finish()
+    o.Notes = p.Notes
+    return o

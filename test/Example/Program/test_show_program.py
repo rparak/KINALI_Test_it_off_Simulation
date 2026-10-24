@@ -86,8 +86,8 @@ def test_the_image_is_written(trajectory, tmp_path, run_script):
 def test_bad_requests_are_error_lines(trajectory, tmp_path, run_script):
     """
     Description:
-        An unknown step, a missing trajectory, a trajectory built from other inputs (its input hashes changed) and the
-        optimized version (F9) are [ERROR] lines, exit 1.
+        An unknown step, a missing trajectory, a trajectory built from other inputs (its input hashes changed; also the
+        taught trajectory played as the optimized version) are [ERROR] lines, exit 1.
     """
 
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'dance', '--headless'], tmp_path)
@@ -100,8 +100,8 @@ def test_bad_requests_are_error_lines(trajectory, tmp_path, run_script):
     np.savez(stale, **data)
     result = run_script('Program/show_program.py', ['--trajectory', stale, '--headless'], tmp_path)
     assert result.returncode == 1 and 'was built from other inputs (cell changed since); rebuild it' in result.stdout
-    result = run_script('Program/show_program.py', ['--version', 'optimized', '--headless'], tmp_path)
-    assert result.returncode == 1 and '[ERROR] The optimized program comes with F9' in result.stdout
+    result = run_script('Program/show_program.py', ['--version', 'optimized', '--trajectory', trajectory, '--headless'], tmp_path)
+    assert result.returncode == 1 and 'was built from other inputs (program changed since); rebuild it' in result.stdout
 
 
 @pytest.mark.slow
@@ -136,3 +136,20 @@ def test_a_frame_of_the_playback_fits_the_frame_period(trajectory, cell_configur
     work = np.asarray(stats.Work)
     assert len(work) == 120
     assert work.mean() < CONST_FRAME_PERIOD / 2 and np.percentile(work, 95) < CONST_FRAME_PERIOD, stats.Summary()
+
+
+@pytest.mark.slow
+def test_the_optimized_version_is_posed(tmp_path_factory, run_script, root):
+    """
+    Description:
+        --version optimized poses the optimized program's trajectory (built with build_program.py --program): its segment
+        S5_To_MG06 ends with the loader's park waited for.
+    """
+
+    out = tmp_path_factory.mktemp('optimized')
+    optimized = os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml')
+    run_script('Program/build_program.py', ['--program', optimized, '--out', str(out)], out)
+    result = run_script('Program/show_program.py', ['--version', 'optimized', '--trajectory', str(out / 'Program_Optimized.npz'), '--step',
+                                                    'S5_To_MG06', '--headless'], out)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert '[INFO] step 5/16 S5_To_MG06   t = 17.920 s / 57.132 s   PCB mg06 (sample 4480): Loader.WaitDone(J_PARK)' in result.stdout

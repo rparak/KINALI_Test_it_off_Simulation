@@ -1,0 +1,231 @@
+## =========================================================================== ##
+# MIT License
+# Copyright (c) 2026 JIC Smart Factory
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+## =========================================================================== ##
+# Author   : Roman Parak
+# File Name: ../test/Optimizer/test_core.py
+## =========================================================================== ##
+
+# Copy (Shallow and deep copy operations)
+import copy
+# Math (Mathematical functions)
+import math
+# Numpy (Array computing) [pip3 install numpy]
+import numpy as np
+# Pytest (Testing framework) [pip3 install pytest]
+import pytest
+# Custom Lib.: the module under test and what it works on
+#   ../Optimizer/Core
+from Optimizer.Core import (Free_Transfers, Compare_Locked, Interlocks, Carried_Tilt, Step_Bounds, Stale_Inputs, Schedule_Differences, Free_Space_Cls,
+                            CONST_INPUTS)
+from Configuration.Program_Parser import Load_Program, Load_Optimization, CONST_OPTIMIZED_PROGRAM_YAML
+from Configuration.Core import Read_PCB_Meta
+from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
+from Kinematics.Core import Robot_Kinematics_Cls
+from Program.Core import Build_Program, Check_Trajectory
+
+"""
+Description:
+    The optimized program (FEATURES.md F9) on the shipped files: the FREE transfers, the committed
+    Data/Optimized/Program_Optimized.yaml current and passing every check, faster than the taught program, its interlocks,
+    its LOCKED parts against the taught program, the carried PCB's tilt (B4), the stale and schedule refusals.
+"""
+# The LOCKED parts that follow a taught MoveJ: the MoveJ ends at q0 + (q1 - q0) x 1.0, within one rounding of its point's
+# stored joints, where a spline ends exactly on them, so these differ in the last bits (at most 1.6e-15 rad, measured
+# 2026-10-24) - the owner's decision is pending (FEATURES.md F9); strict byte identity stays the rule.
+#   Unit [List<string>]
+CONST_AFTER_MOVEJ = ['S4_Handover', 'S18_Take_From_Loader', 'S20_Place_Output', 'End_Settle']
+
+
+@pytest.fixture(scope='module')
+def built(cell_configuration, program, constants, simulation):
+    model = Build_Planning_Model(cell_configuration)
+    collision = Robot_Collision_Cls(model)
+    kinematics = Robot_Kinematics_Cls(model, collision.Data)
+    meta = Read_PCB_Meta()
+    default, _ = Build_Program(program, cell_configuration, meta, kinematics, {})
+    optimized = Load_Program(constants, simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
+    trajectory, notes = Build_Program(optimized, cell_configuration, meta, kinematics, {})
+    return {'model': model, 'collision': collision, 'kinematics': kinematics, 'meta': meta, 'default': default, 'optimized': optimized,
+            'trajectory': trajectory, 'notes': notes, 'optimization': Load_Optimization(program)}
+
+
+def test_the_free_transfers_merge_across_the_loader_jobs(built, program):
+    """
+    Description:
+        The eight FREE segments make six transfers; S5 + S8 (the loader's insert and park between) and S14 + S17 (fetch and
+        return between) are one each, with those jobs in parallel; the cups carry the PCB in To_Loader and To_Output.
+    """
+
+    transfers = Free_Transfers(program, built['optimization'], built['default'])
+    assert [(t.Name, t.Start, t.End, t.Jobs, t.Carrying) for t in transfers] == [
+        ('Approach_Input', 'P_HOME', 'P_INPUT_ABOVE', [], False), ('To_Loader', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', [], True),
+        ('To_MG06', 'P_LOADER_ABOVE', 'P_MG06_FORK_START', ['J_INSERT', 'J_PARK'], False),
+        ('To_Take', 'P_MG06_FORK_START', 'P_LOADER_ABOVE', ['J_FETCH', 'J_RETURN'], False),
+        ('To_Output', 'P_LOADER_ABOVE', 'P_OUTPUT_ABOVE', [], True), ('Home_End', 'P_OUTPUT_ABOVE', 'P_HOME', [], False)]
+    assert transfers[2].Keys == ['S5_Home_After_Handover', 'S8_To_MG06'] and transfers[2].Job_Keys == ['S6_Loader_Insert', 'S7_Loader_Park']
+
+
+def test_the_shipped_optimized_program_is_current_and_matches_its_schedule(built):
+    """
+    Description:
+        B5: the committed optimized program was made from the current inputs (every hash of Optimized.Inputs, the planning
+        model's included) and its build starts every segment at its recorded Schedule time.
+    """
+
+    assert set(built['optimized'].Optimized.Inputs) == set(CONST_INPUTS) | {'planning_model'}
+    assert Stale_Inputs(built['optimized'], built['model']) == []
+    assert Schedule_Differences(built['optimized'], built['trajectory']) == []
+
+
+def test_a_changed_input_or_schedule_is_named(built):
+    """
+    Description:
+        An optimized program whose recorded input hash differs is stale, naming the input; a recorded start that the build
+        does not reproduce is named with both times.
+    """
+
+    stale = copy.deepcopy(built['optimized'])
+    stale.Optimized.Inputs['cell'] = '0' * 64
+    assert Stale_Inputs(stale, built['model']) == ['cell']
+    stale.Optimized.Schedule['S6_Close_MG06'] += 0.5
+    assert Schedule_Differences(stale, built['trajectory']) == ['S6_Close_MG06: recorded 18.424 s, built 17.924 s']
+
+
+@pytest.mark.slow
+def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_configuration):
+    """
+    Description:
+        The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.132 s against
+        68.852 s, measured 2026-10-24).
+    """
+
+    check = Check_Trajectory(built['trajectory'], built['optimized'], built['notes'], built['kinematics'], built['collision'], cell_configuration,
+                             built['meta'])
+    assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
+    assert built['trajectory'].T[-1] < built['default'].T[-1]
+    assert round(float(built['trajectory'].T[-1]), 3) == 57.132
+
+
+def test_the_interlocks_hold(built, cell_configuration):
+    """
+    Description:
+        I1-I8 hold on the optimized trajectory, each with its times (I8: the robot at least the clearance from the loader
+        wherever both may move).
+    """
+
+    found = Interlocks(built['trajectory'], built['kinematics'], built['collision'], cell_configuration, built['optimized'])
+    assert [name for name, _, _ in found] == ['I%d' % k for k in range(1, 9)]
+    assert all(ok for _, ok, _ in found), [text for _, ok, text in found if not ok]
+
+
+def test_the_loader_moves_while_the_robot_moves(built):
+    """
+    Description:
+        Parallel motion is real: samples where the robot's joints and the loader's axes both change exist in To_MG06 and
+        To_Take, and none in the taught program.
+    """
+
+    for trajectory, expected in ((built['trajectory'], True), (built['default'], False)):
+        robot = np.max(np.abs(np.diff(trajectory.Robot_Q, axis=0)), axis=1) > 1e-9
+        loader = (np.abs(np.diff(trajectory.Loader_Y)) + np.abs(np.diff(trajectory.Loader_Z))) > 1e-12
+        assert bool(np.any(robot & loader)) == expected
+
+
+def _Locked(built, program):
+    return {c.Name: c for c in Compare_Locked(built['default'], built['trajectory'], program,
+                                              Free_Transfers(program, built['optimization'], built['default']))}
+
+
+@pytest.mark.parametrize('part', ['S2_Pick_Input', 'J_INSERT', 'J_PARK', 'S9_Close_MG06', 'S10_Leave_MG06', 'S11_Test', 'S12_Return_MG06',
+                                  'S13_Open_MG06', 'J_FETCH', 'J_RETURN'] + [pytest.param(name, marks=pytest.mark.xfail(
+                                      strict=True, reason='after a taught MoveJ ending one rounding off its stored joints: owner decision '
+                                      'pending (FEATURES.md F9)')) for name in CONST_AFTER_MOVEJ])
+def test_a_locked_part_is_byte_identical_from_its_start(built, program, part):
+    """
+    Description:
+        Every LOCKED part of the taught program, from its own start: a robot segment on every channel, a parallel loader job
+        on the loader's channels - the same bytes in the optimized program (its start time moves). The four parts after a
+        taught MoveJ are expected to fail (strict: they must start passing only by a decision).
+    """
+
+    found = _Locked(built, program)
+    assert found[part].Identical
+
+
+def test_the_locked_parts_after_a_movej_differ_by_rounding_only(built, program):
+    """
+    Description:
+        The four LOCKED parts after a taught MoveJ differ from the taught program by at most 2e-15 rad in the joints - the
+        rounding of the MoveJ's end - and nowhere in the loader, gripper, vacuum, PCB location or MG06 channels.
+    """
+
+    d, o = built['default'], built['trajectory']
+    for name in CONST_AFTER_MOVEJ:
+        a = np.flatnonzero(d.Step_Index == d.Step_Names.index(name))
+        first, last = Step_Bounds(o, name.split('_', 1)[1] if name.startswith('S') else name)
+        b = np.arange(first, last + 1)
+        assert float(np.max(np.abs(d.Robot_Q[a] - o.Robot_Q[b]))) <= 2e-15
+        for channel in ('Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'PCB_Location', 'MG06_Lid', 'MG06_Handle', 'Jaw'):
+            assert np.asarray(getattr(d, channel))[a].tobytes() == np.asarray(getattr(o, channel))[b].tobytes(), (name, channel)
+
+
+def test_the_carried_pcb_keeps_its_tilt_limit(built):
+    """
+    Description:
+        B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (30 deg): 8.94 deg
+        (To_Loader, P_LOADER_ABOVE's own tilt) and 28.98 deg (To_Output), measured 2026-10-24.
+    """
+
+    limit = built['optimization'].Carry_Max_Tilt
+    tilts = {name: Carried_Tilt(built['trajectory'], *Step_Bounds(built['trajectory'], name)) for name in ('To_Loader', 'To_Output')}
+    assert all(t <= limit for t in tilts.values())
+    assert round(math.degrees(tilts['To_Loader']), 2) == 8.94 and round(math.degrees(tilts['To_Output']), 2) == 28.98
+
+
+def test_the_free_space_keeps_the_clearance_and_the_tilt(built, cell_configuration, program):
+    """
+    Description:
+        A transfer's validity: its end points valid at the first planner margin; the start of the carrying transfer tilted
+        beyond a stricter limit is invalid; a configuration inside the input crate is invalid.
+    """
+
+    transfers = Free_Transfers(program, built['optimization'], built['default'])
+    carry = transfers[1]
+    space = Free_Space_Cls(built['kinematics'], built['collision'], built['default'], carry, cell_configuration.Clearance,
+                           built['optimization'].Carry_Max_Tilt)
+    end = np.array(built['optimized'].Constants.Points[carry.End].Joints)
+    assert space.Valid(end, built['optimization'].Margins[0])
+    strict = Free_Space_Cls(built['kinematics'], built['collision'], built['default'], carry, cell_configuration.Clearance, math.radians(5.0))
+    assert not strict.Valid(end, 0.0)
+    pick = np.array(built['optimized'].Constants.Points['P_INPUT_PICK'].Joints)
+    assert not space.Valid(pick, 0.0)
+
+
+def test_the_optimized_build_is_deterministic(built, cell_configuration):
+    """
+    Description:
+        B5: the optimized program built twice gives the same bytes on every array (its splines timed again from the written
+        waypoints).
+    """
+
+    again, _ = Build_Program(built['optimized'], cell_configuration, built['meta'], built['kinematics'], {})
+    for channel in ('T', 'Robot_Q', 'Robot_QD', 'Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'PCB_Pose', 'MG06_Lid', 'MG06_Handle', 'Jaw',
+                    'Segment_Id'):
+        assert np.asarray(getattr(again, channel)).tobytes() == np.asarray(getattr(built['trajectory'], channel)).tobytes(), channel
