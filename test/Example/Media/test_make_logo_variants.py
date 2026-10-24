@@ -46,8 +46,7 @@ CONST_OUTPUTS = ['JIC_Smart_Factory_Black.svg', 'JIC_Smart_Factory_White.svg', '
 # assets/logos/jic-smart-factory.svg, the brand's source of truth (design-decisions: the brand).
 #   Unit [Dict<string, string>]
 CONST_ORIGINALS = {'jic-smart-factory.svg': '05cc6e18366cb91b4316b7d06fbcaf6290ac98526720dc019dcb7e2a1c75c9e1',
-                   'kinali.svg': '676152befa0ec31abd6e9dbe403fb0ec5ebaf5175e14b9a358054776e20d2a23',
-                   'test-it-off.png': '99166b25800758de2acf22d0e3095e4f4d86d3961b5fb8cf002d2bd0299807ce'}
+                   'kinali.svg': '676152befa0ec31abd6e9dbe403fb0ec5ebaf5175e14b9a358054776e20d2a23'}
 # The SVG namespace.
 #   Unit [string]
 CONST_NS = '{http://www.w3.org/2000/svg}'

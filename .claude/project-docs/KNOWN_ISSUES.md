@@ -68,16 +68,17 @@ What the simulation does not model; whoever compares it with the real cell check
   on the chosen 60 % speed and the assumed accelerations.
 - **What would close it:** the real-cell validation procedure (item above), measured joint data.
 
-## The Test it off logo exists only as a raster
+## The JIC Smart Factory logo is a recoloured copy, not an official monochrome file
 
-The owner's Test it off logo is `Media/Original/test-it-off.png` (2608 × 1768 px, opaque, a colour logo on
-white: #35404A with blue and teal accents). There is no vector original, so there is no
-`Media/Test_it_off_Black.svg` / `_White.svg` yet, and the README header shows the JIC Smart Factory and KINALI
-logos only. A PNG is never wrapped into an SVG.
+`Media/JIC_Smart_Factory_Black.svg` and `_White.svg` are recolourings of the official purple vector (path
+and viewBox unchanged), a temporary project departure from jic-sf-ui-style ("never recoloured"), accepted
+by the owner (2026-10-24, design-decisions: the brand). An official monochrome JIC file has been requested
+from JIC.
 
-- **Impact:** the Test it off logo is missing from the README header and the planned Phase 2 header.
-- **What would close it:** an official vector (SVG) from KINALI (recommended), or a traced vector with a
-  tracing tool the owner approves (not in `requirements.txt`).
+- **Impact:** the JIC logo in the README header (and later the Phase 2 header) is not the brand's own file.
+- **Pinned by:** `test/Example/Media/test_make_logo_variants.py` (one colour, original geometry).
+- **What would close it:** the official monochrome file from JIC replaces the recoloured one (in
+  `Media/Original/`, made into `_Black` / `_White` by the script, or used as it is).
 
 ## The PCB is one green mesh: board and components are not told apart
 

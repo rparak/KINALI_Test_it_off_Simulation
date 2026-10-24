@@ -39,7 +39,8 @@ the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (light: 
 
 - Root layout: `.claude/skills/project-style-rpx/references/project.md` > Root.
 - Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content.
-- The logo header at the top: JIC Smart Factory, KINALI (and Test it off when its vector exists), each a
+- The title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo" (design-decisions: the name).
+- The logo header at the top: JIC Smart Factory and KINALI (Test-it-off by name only, no logo), each a
   `<picture>` with `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
 - The project context in the introduction uses only the owner's sentence (SPEC §1); nothing about funding,
   partners or claims beyond it.

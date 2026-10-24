@@ -34,8 +34,7 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
 Configuration/         (step 3) the cell, keypoint and program YAML; created with its first file
-Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI; Test_it_off
-                       when a vector exists), written by Example/Media/make_logo_variants.py; Original/ the owner's files
+Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -125,7 +124,7 @@ returned list, printed by the script, exit code 1.
 ## Departures from the generic skill
 
 - The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
-  says its logos are "never recoloured" and the purple JIC logo is for white grounds (design-decisions: the
-  brand). Replace them with official monochrome vectors when supplied.
+  says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure
+  until the official monochrome JIC file (requested from JIC) replaces it (design-decisions: the brand).
 - `.claude/project-docs/FEATURES.md`: a fourth internal document, the feature tracker the owner asked
   for; the generic skill defines three.

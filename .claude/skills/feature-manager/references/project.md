@@ -7,7 +7,7 @@ project skill of the same name). Style rules come from project-style-rpx and its
 
 ## What the output is
 
-A MuJoCo simulation of the KINALI "Test it off" cell (SPEC §1): the compiled cell model, the cycle run
+Test-it-off Simulation, a MuJoCo simulation of KINALI's Test-it-off cell (SPEC §1): the compiled cell model, the cycle run
 with its report and acceptance verdict, and from steps 3–4 the keypoint file, the program and the
 trajectory file. The owner and whoever writes the robot program act on it.
 

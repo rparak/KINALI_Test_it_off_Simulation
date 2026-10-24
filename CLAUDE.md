@@ -1,6 +1,8 @@
-# KINALI_Test_it_off_Simulation
+# Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo
 
-MuJoCo simulation of the KINALI "Test it off" PCBA test cell (AUBO i5 + VGC10/fork, MG06 tester, two-axis
+Repository `KINALI_Test_it_off_Simulation`; project name **Test-it-off Simulation** (product spelling: Test-it-off).
+
+MuJoCo simulation of KINALI's Test-it-off PCBA test cell (AUBO i5 + VGC10/fork, MG06 tester, two-axis
 loader, crates). The internal docs are in `.claude/project-docs/`: the specification `SPEC.md`, the open
 limitations `KNOWN_ISSUES.md`, the reasons behind choices `design-decisions.md`, and the feature tracker
 `FEATURES.md`. `README.md` is the public page; it does not mention the internal docs or the skills.

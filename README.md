@@ -1,4 +1,4 @@
-# KINALI Test it off – cell simulation (MuJoCo)
+# Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo
 
 <p align="center">
   <picture>
@@ -12,12 +12,12 @@
   </picture>
 </p>
 
-MuJoCo simulation of the KINALI "Test it off" automated PCBA test cell: an AUBO i5 robot with an OnRobot VGC10 vacuum
+Test-it-off Simulation is a MuJoCo simulation of KINALI's Test-it-off automated PCBA test cell: an AUBO i5 robot with an OnRobot VGC10 vacuum
 gripper and fork picks a PCB from the input crate and hands it to a two-axis loader, which inserts it into the MG06 test
 fixture. The robot closes and opens MG06, and the PCB goes back to the output crate. The physics is verified against
 a regression baseline. A keypoint-based robot program is in progress. A full README follows in Phase 1 step 7.
 
-An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test it off system, an automated workcell for testing assembled printed circuit boards (PCBA).
+An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA).
 
 > [!WARNING]
 > **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.

@@ -1,4 +1,6 @@
-# KINALI_Test_it_off_Simulation — Specification
+# Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo — Specification
+
+Repository: `KINALI_Test_it_off_Simulation`.
 
 Status: Approved 2026-10-24
 
@@ -8,10 +10,10 @@ removed from the tree when this SPEC replaced it; §15) and from the verified st
 
 ## 1. Goal
 
-**Project context** (owner, 2026-10-24): An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test it off system, an automated workcell for testing assembled printed circuit boards (PCBA). The project has no external or public
-funding. Brand: JIC Smart Factory, in collaboration with KINALI, product Test it off (design-decisions).
+**Project context** (owner, 2026-10-24): An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA). The project has no external or public
+funding. Brand: JIC Smart Factory, in collaboration with KINALI, product Test-it-off, referenced by name only (design-decisions).
 
-Simulate the robotic workcell **"Test it off"** by KINALI (automated PCBA testing for electronics
+**Test-it-off Simulation** (design-decisions: the name) simulates the robotic workcell **Test-it-off** by KINALI (automated PCBA testing for electronics
 manufacturers, https://www.testitoff.cz/en/about-test-it-off/) in MuJoCo, so that a robot program for
 the whole process - PCB from the input crate, through the MG06 tester, to the output crate - can be
 written, checked and played back before it is run anywhere else.
@@ -53,7 +55,7 @@ joints / TCP, IK family, save), the program list (run from a step, step by step)
 a timeline, camera selection (`free`, `cam_pcb`, `cam_tool`) and the check results, with mouse camera
 control; the simulation runs in a worker thread or a QTimer with fixed real-time stepping. The Phase 1
 core has no GUI dependency, so the Qt application reuses it unchanged. The application carries the project's
-brand (design-decisions: the brand): the JIC Smart Factory, KINALI and Test it off logos in black or white SVG
+brand (design-decisions: the brand) and the window title **Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo**: the JIC Smart Factory and KINALI logos in black or white SVG
 (`Media/`), no funding band. The brief's outline, verbatim:
 
 - `QOpenGLWidget` hosting MuJoCo rendering (`MjvScene`, `MjrContext` in the widget's GL context) or offscreen
@@ -603,13 +605,13 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 ## 15. Sources
 
-- Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test it off – Automated PCBA Testing Cell (MuJoCo)", git
+- Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test-it-off – Automated PCBA Testing Cell (MuJoCo)", git
   `427e076:docs/PROJECT_BRIEF.md` (2026-10-24).
 - The previous Czech description of the cell (git `legacy-planner-reference:docs/README_cs_mg06_cell.md`,
   originally `5e5ee62:README.md`); its content is in §4.10, KNOWN_ISSUES and design-decisions (F4.2).
 - AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/Scene/Core.py`.
 - OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/Scene/Core.py`.
-- KINALI "Test it off": https://www.testitoff.cz/en/about-test-it-off/
+- KINALI Test-it-off: https://www.testitoff.cz/en/about-test-it-off/
 
 ## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)
 
