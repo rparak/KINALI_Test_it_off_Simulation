@@ -1,0 +1,1140 @@
+{
+ "source": "git e5ec42c (F8 closed), captured 2026-10-24 by the procedure in FEATURES.md F10",
+ "cycle_time": 68.852,
+ "samples": 17214,
+ "arrays": {
+  "t": {
+   "sha256": "816a84226459e406d3eb0d3ccddee0a0f0ddb7110492409b74156efe287acb0c",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "robot_q": {
+   "sha256": "e58b3f5820b14dc035323471d4da99c2af73a377bb90447012d81408eabc2c1e",
+   "dtype": "float64",
+   "shape": [
+    17214,
+    6
+   ]
+  },
+  "robot_qd": {
+   "sha256": "ed204c260818e736bc71516fe26dba33cc7cb65e41a30a95d9b2cce3ad8e8492",
+   "dtype": "float64",
+   "shape": [
+    17214,
+    6
+   ]
+  },
+  "loader_y": {
+   "sha256": "d2cb9212ce778510c1ea360f3ef1bccb32a3b41ce7a29fb4d4ae16a380c6166d",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "loader_z": {
+   "sha256": "7afeaa3ffdac6a97c88b2d463bf7753541b71ea6f838cc23442edac2ac155df8",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "gripper": {
+   "sha256": "d0ca53934807ac3c70bca80692c05faefe0e9e595aec1c01716f2a2b33d8f6e2",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "vacuum": {
+   "sha256": "441ea0f9b8ac688de9fd5f6901f9a79411c74b1ab1ca74b45de26ea75d736051",
+   "dtype": "int8",
+   "shape": [
+    17214
+   ]
+  },
+  "pcb_location": {
+   "sha256": "3dc8c7f769999fe0c182fbdf14d2bd69f88695c9d327e54e1db023352a02c0cc",
+   "dtype": "int8",
+   "shape": [
+    17214
+   ]
+  },
+  "pcb_pose": {
+   "sha256": "f1335e895e76d5ddd43dc980f2df2aa013ad2eb99b19cb3dd55f75e1957127ee",
+   "dtype": "float64",
+   "shape": [
+    17214,
+    7
+   ]
+  },
+  "mg06_lid": {
+   "sha256": "309c8c71352f4e98a29f7499acb9391437f376a0ac2995d1d0be50648075af8d",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "mg06_handle": {
+   "sha256": "6bd16899250c46ddd49effe579d45f882377223be0e1ad930e92ab3342b1bdc6",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "jaw": {
+   "sha256": "331dea9c4849a101b6cbfff0f15babe19a26515ef4b31c417f693e933537f2b6",
+   "dtype": "float64",
+   "shape": [
+    17214
+   ]
+  },
+  "step_index": {
+   "sha256": "e39830c572b7418794d7e070df2492668337cad071903f1f41f293cd45ab6c01",
+   "dtype": "int32",
+   "shape": [
+    17214
+   ]
+  },
+  "segment_id": {
+   "sha256": "cee178f84153c46bca5785e63be8cf69934435650681b0a5a4bb353f5a26b9c8",
+   "dtype": "int32",
+   "shape": [
+    17214
+   ]
+  }
+ },
+ "events": [
+  [
+   "0x1.a353f7ced9168p+1",
+   "vacuum_on"
+  ],
+  [
+   "0x1.2a1cac083126fp+3",
+   "gripper_clamp"
+  ],
+  [
+   "0x1.3d2f1a9fbe76dp+3",
+   "vacuum_off"
+  ],
+  [
+   "0x1.09ba5e353f7cfp+4",
+   "gripper_open"
+  ],
+  [
+   "0x1.8e872b020c49cp+5",
+   "gripper_clamp"
+  ],
+  [
+   "0x1.ced0e56041893p+5",
+   "vacuum_on"
+  ],
+  [
+   "0x1.d1374bc6a7efap+5",
+   "gripper_open"
+  ],
+  [
+   "0x1.061cac083126fp+6",
+   "vacuum_off"
+  ]
+ ],
+ "step_names": [
+  "approach_input",
+  "pick_input",
+  "to_loader",
+  "handover",
+  "home_after_handover",
+  "loader_insert",
+  "loader_park",
+  "to_mg06",
+  "close_mg06",
+  "leave_mg06",
+  "test",
+  "return_mg06",
+  "open_mg06",
+  "home_after_mg06",
+  "loader_fetch",
+  "loader_return",
+  "to_take",
+  "take_from_loader",
+  "to_output",
+  "place_output",
+  "home_end",
+  "settle"
+ ],
+ "segment_commands": [
+  "Movej above_input_pcb",
+  "Movel input_pcb_approach 0.2",
+  "Movel input_pcb_press 0.03",
+  "Vacuum On",
+  "Wait 0.3",
+  "Movel input_pcb_clear 0.2",
+  "Movej via_input_to_loader",
+  "Movej above_loader",
+  "Movel loader_approach 0.2",
+  "Movel loader_handover 0.03",
+  "Gripper clamp 0.35",
+  "Wait 0.25",
+  "Vacuum Off",
+  "Wait 0.2",
+  "Movel above_loader 0.2",
+  "Movej home",
+  "Loader Z travel_place 0.8",
+  "Loader Y travel_place 2",
+  "Loader Z place 0.6",
+  "Wait 0.1",
+  "Gripper open 0.35",
+  "Wait 0.1",
+  "Loader Z travel_place 0.5",
+  "Loader Y park 1.8",
+  "Loader Z park 0.8",
+  "Wait 0.15",
+  "Movej via_mg06_high",
+  "Movej above_handle",
+  "Movej fork_start",
+  "Path Fork_Close",
+  "Movel fork_bar_centred 0.02",
+  "Movel fork_out_of_bar 0.12",
+  "Movel fork_retreat_up 0.25",
+  "Test Process.Test_Duration (2 s)",
+  "Movel fork_out_of_bar 0.25",
+  "Movel fork_bar_centred 0.12",
+  "Movel fork_open_join 0.03",
+  "Path Fork_Open",
+  "Movej above_handle",
+  "Movej via_mg06_high",
+  "Movej home",
+  "Loader Z travel_place 0.6",
+  "Loader Y travel_place 2.2",
+  "Loader Z place 0.6",
+  "Wait 0.1",
+  "Gripper clamp 0.35",
+  "Wait 0.2",
+  "Loader Z travel_place 0.6",
+  "Loader Y home 2",
+  "Loader Z home 0.8",
+  "Wait 0.2",
+  "Movej above_loader",
+  "Movel loader_approach 0.2",
+  "Movel loader_take_press 0.03",
+  "Vacuum On",
+  "Wait 0.3",
+  "Gripper open 0.35",
+  "Wait 0.15",
+  "Movel loader_out_of_jaws 0.05",
+  "Movel above_loader 0.2",
+  "Movej via_loader_to_output",
+  "Movej above_output",
+  "Movel output_approach 0.2",
+  "Movel output_place 0.03",
+  "Vacuum Off",
+  "Wait 0.3",
+  "Movel above_output 0.2",
+  "Movej home",
+  "Wait 0.8"
+ ],
+ "commands": [
+  {
+   "step": "approach_input",
+   "kind": "Movej",
+   "text": "Movej above_input_pcb",
+   "target": "above_input_pcb",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.dc18c2e842450p-2",
+    "-0x1.1181d392ee674p-3",
+    "0x1.0048b16fd3819p+1",
+    "0x1.2143d01b83fd0p-1",
+    "0x1.921fb54442d18p+0",
+    "-0x1.4826a7a0435e0p-2"
+   ]
+  },
+  {
+   "step": "pick_input",
+   "kind": "Movel",
+   "text": "Movel input_pcb_approach 0.2",
+   "target": "input_pcb_approach",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.dc18c53ff30ddp-2",
+    "-0x1.4de331e010ed5p-2",
+    "0x1.0f3d70165f17fp+1",
+    "0x1.bfa7eec0ff335p-1",
+    "0x1.921fb54442d18p+0",
+    "-0x1.4826a54892953p-2"
+   ]
+  },
+  {
+   "step": "pick_input",
+   "kind": "Movel",
+   "text": "Movel input_pcb_press 0.03",
+   "target": "input_pcb_press",
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.dc18c53ff30ddp-2",
+    "-0x1.73f41b65cd5fbp-2",
+    "0x1.10b15661b3fd0p+1",
+    "0x1.d87ffcb13100fp-1",
+    "0x1.921fb54442d18p+0",
+    "-0x1.4826a54892953p-2"
+   ]
+  },
+  {
+   "step": "pick_input",
+   "kind": "Vacuum",
+   "text": "Vacuum On",
+   "target": "On",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "pick_input",
+   "kind": "Wait",
+   "text": "Wait 0.3",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-2",
+   "axis": ""
+  },
+  {
+   "step": "pick_input",
+   "kind": "Movel",
+   "text": "Movel input_pcb_clear 0.2",
+   "target": "input_pcb_clear",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.dc18cc4705686p-2",
+    "-0x1.21d2c762f996fp-4",
+    "0x1.ebfab2b76934ep+0",
+    "0x1.afe0c87102eefp-2",
+    "0x1.921fb4f94cb87p+0",
+    "-0x1.48269e41803aap-2"
+   ]
+  },
+  {
+   "step": "to_loader",
+   "kind": "Movej",
+   "text": "Movej via_input_to_loader",
+   "target": "via_input_to_loader",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.7c9a742162d57p-5",
+    "0x1.cf10e2f24f516p-5",
+    "0x1.76b533ea42d08p+0",
+    "-0x1.8fb6858b0e8acp-3",
+    "0x1.7fd8948bcc28bp+0",
+    "-0x1.792e3260ea665p-1"
+   ]
+  },
+  {
+   "step": "to_loader",
+   "kind": "Movej",
+   "text": "Movej above_loader",
+   "target": "above_loader",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.7cf2839388f18p-2",
+    "0x1.8456445bf3e7ap-3",
+    "0x1.cae4db62d4b17p+0",
+    "-0x1.fb5d46735c975p-6",
+    "0x1.6d917a447ba83p+0",
+    "-0x1.27249aeb69bc7p+0"
+   ]
+  },
+  {
+   "step": "handover",
+   "kind": "Movel",
+   "text": "Movel loader_approach 0.2",
+   "target": "loader_approach",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.b2566a0562326p-2",
+    "0x1.b0f5cc317997ap-4",
+    "0x1.0f46a80d227a5p+1",
+    "0x1.8c98f34dc0726p-2",
+    "0x1.6cc6d585156c1p+0",
+    "-0x1.349b672a62fe5p+0"
+   ]
+  },
+  {
+   "step": "handover",
+   "kind": "Movel",
+   "text": "Movel loader_handover 0.03",
+   "target": "loader_handover",
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.b7ef7209f3503p-2",
+    "0x1.6339b9feeb00ep-4",
+    "0x1.12ce0362b1675p+1",
+    "0x1.bd1548f9d821bp-2",
+    "0x1.6cb316e6c48fap+0",
+    "-0x1.3604f6d3d27ebp+0"
+   ]
+  },
+  {
+   "step": "handover",
+   "kind": "Gripper",
+   "text": "Gripper clamp 0.35",
+   "target": "clamp",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.6666666666666p-2",
+   "axis": "",
+   "value_hex": "0x1.78d4fdf3b645cp-8"
+  },
+  {
+   "step": "handover",
+   "kind": "Wait",
+   "text": "Wait 0.25",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p-2",
+   "axis": ""
+  },
+  {
+   "step": "handover",
+   "kind": "Vacuum",
+   "text": "Vacuum Off",
+   "target": "Off",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "handover",
+   "kind": "Wait",
+   "text": "Wait 0.2",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-3",
+   "axis": ""
+  },
+  {
+   "step": "handover",
+   "kind": "Movel",
+   "text": "Movel above_loader 0.2",
+   "target": "above_loader",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.7cf2839388f18p-2",
+    "0x1.8456445bf3e7ap-3",
+    "0x1.cae4db62d4b17p+0",
+    "-0x1.fb5d46735c975p-6",
+    "0x1.6d917a447ba83p+0",
+    "-0x1.27249aeb69bc7p+0"
+   ]
+  },
+  {
+   "step": "home_after_handover",
+   "kind": "Movej",
+   "text": "Movej home",
+   "target": "home",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.944b216c13956p-1",
+    "0x1.61cf6eee3cbcfp-1",
+    "0x1.d550cfb233889p+0",
+    "-0x1.b6da48ce701a0p-2",
+    "0x1.921f9f03335d7p+0",
+    "0x1.15c134701bf50p-8"
+   ]
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Loader",
+   "text": "Loader Z travel_place 0.8",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-1",
+   "axis": "Z",
+   "value_hex": "0x1.44795edc46b23p-4"
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Loader",
+   "text": "Loader Y travel_place 2",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p+1",
+   "axis": "Y",
+   "value_hex": "0x1.92c19c25f5d13p-3"
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Loader",
+   "text": "Loader Z place 0.6",
+   "target": "place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-1",
+   "axis": "Z",
+   "value_hex": "0x1.1352756371b44p-4"
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Wait",
+   "text": "Wait 0.1",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-4",
+   "axis": ""
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Gripper",
+   "text": "Gripper open 0.35",
+   "target": "open",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.6666666666666p-2",
+   "axis": "",
+   "value_hex": "0x1.1eb851eb851ecp-5"
+  },
+  {
+   "step": "loader_insert",
+   "kind": "Wait",
+   "text": "Wait 0.1",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-4",
+   "axis": ""
+  },
+  {
+   "step": "loader_park",
+   "kind": "Loader",
+   "text": "Loader Z travel_place 0.5",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p-1",
+   "axis": "Z",
+   "value_hex": "0x1.44795edc46b23p-4"
+  },
+  {
+   "step": "loader_park",
+   "kind": "Loader",
+   "text": "Loader Y park 1.8",
+   "target": "park",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.ccccccccccccdp+0",
+   "axis": "Y",
+   "value_hex": "-0x1.989374bc6a7f0p-3"
+  },
+  {
+   "step": "loader_park",
+   "kind": "Loader",
+   "text": "Loader Z park 0.8",
+   "target": "park",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-1",
+   "axis": "Z",
+   "value_hex": "0x1.47ae147ae147bp-6"
+  },
+  {
+   "step": "loader_park",
+   "kind": "Wait",
+   "text": "Wait 0.15",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-3",
+   "axis": ""
+  },
+  {
+   "step": "to_mg06",
+   "kind": "Movej",
+   "text": "Movej via_mg06_high",
+   "target": "via_mg06_high",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.c2f69536a539bp-7",
+    "0x1.9dbe59e5a2833p-3",
+    "0x1.8f98d6ecc9a91p-1",
+    "-0x1.b3079153c0f8cp+0",
+    "-0x1.0d0f21bd1118ep-6",
+    "0x1.ffa3c6fba4eaap-2"
+   ]
+  },
+  {
+   "step": "to_mg06",
+   "kind": "Movej",
+   "text": "Movej above_handle",
+   "target": "above_handle",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.a41e3c43c8dd4p-1",
+    "0x1.a50ff1e820894p-3",
+    "0x1.eef1ad94b8904p-1",
+    "-0x1.30b441ab8e426p+1",
+    "-0x1.9b1f1e3f1264fp+0",
+    "0x1.26e407502312fp+0"
+   ]
+  },
+  {
+   "step": "to_mg06",
+   "kind": "Movej",
+   "text": "Movej fork_start",
+   "target": "fork_start",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.22019c3852d08p+0",
+    "0x1.bf43c1c88a590p-7",
+    "0x1.224c7b7a72313p+0",
+    "-0x1.02b893c10b060p+1",
+    "-0x1.eb11638701c04p+0",
+    "0x1.26e4325b737d7p+0"
+   ]
+  },
+  {
+   "step": "close_mg06",
+   "kind": "Path",
+   "text": "Path Fork_Close",
+   "target": "Fork_Close",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "close_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_bar_centred 0.02",
+   "target": "fork_bar_centred",
+   "speed": "0x1.47ae147ae147bp-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.0608137bfdd0cp-1",
+    "0x1.9e9199ce029dbp-5",
+    "0x1.32b4a838b36aep+1",
+    "-0x1.97918652e9bfcp-1",
+    "-0x1.4c14b31ad18dbp+0",
+    "0x1.26ddcd81ab495p+0"
+   ]
+  },
+  {
+   "step": "leave_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_out_of_bar 0.12",
+   "target": "fork_out_of_bar",
+   "speed": "0x1.eb851eb851eb8p-4",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.a6040c1f8d5e1p-1",
+    "0x1.dd1fd5cc25aaep-5",
+    "0x1.23261f5bb8348p+1",
+    "-0x1.d9b4b0aa148e6p-1",
+    "-0x1.9c12af21a33b4p+0",
+    "0x1.26de628cfb341p+0"
+   ]
+  },
+  {
+   "step": "leave_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_retreat_up 0.25",
+   "target": "fork_retreat_up",
+   "speed": "0x1.0000000000000p-2",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.a60a51ef6f2d0p-1",
+    "0x1.b5932dfbd2d20p-3",
+    "0x1.06087235fa8a7p+1",
+    "-0x1.4edf19fc94e18p+0",
+    "-0x1.9c15d2548a3bdp+0",
+    "0x1.26de628cfb341p+0"
+   ]
+  },
+  {
+   "step": "test",
+   "kind": "Test",
+   "text": "Test Process.Test_Duration (2 s)",
+   "target": "Process.Test_Duration",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p+1",
+   "axis": ""
+  },
+  {
+   "step": "return_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_out_of_bar 0.25",
+   "target": "fork_out_of_bar",
+   "speed": "0x1.0000000000000p-2",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.a6040c1f8d5e1p-1",
+    "0x1.dd1fd5cc25aaep-5",
+    "0x1.23261f5bb8348p+1",
+    "-0x1.d9b4b0aa148e6p-1",
+    "-0x1.9c12af21a33b4p+0",
+    "0x1.26de628cfb341p+0"
+   ]
+  },
+  {
+   "step": "return_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_bar_centred 0.12",
+   "target": "fork_bar_centred",
+   "speed": "0x1.eb851eb851eb8p-4",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.0608137bfdd0cp-1",
+    "0x1.9e9199ce029dbp-5",
+    "0x1.32b4a838b36aep+1",
+    "-0x1.97918652e9bfcp-1",
+    "-0x1.4c14b31ad18dbp+0",
+    "0x1.26ddcd81ab495p+0"
+   ]
+  },
+  {
+   "step": "open_mg06",
+   "kind": "Movel",
+   "text": "Movel fork_open_join 0.03",
+   "target": "fork_open_join",
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.01bcaf7306583p-1",
+    "0x1.bbc5b6219cc01p-5",
+    "0x1.32a88ab264ac9p+1",
+    "-0x1.999d287db4fd8p-1",
+    "-0x1.49ec1cd81de68p+0",
+    "0x1.26e7c0ba3262cp+0"
+   ]
+  },
+  {
+   "step": "open_mg06",
+   "kind": "Path",
+   "text": "Path Fork_Open",
+   "target": "Fork_Open",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "home_after_mg06",
+   "kind": "Movej",
+   "text": "Movej above_handle",
+   "target": "above_handle",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.a41e3c43c8dd4p-1",
+    "0x1.a50ff1e820894p-3",
+    "0x1.eef1ad94b8904p-1",
+    "-0x1.30b441ab8e426p+1",
+    "-0x1.9b1f1e3f1264fp+0",
+    "0x1.26e407502312fp+0"
+   ]
+  },
+  {
+   "step": "home_after_mg06",
+   "kind": "Movej",
+   "text": "Movej via_mg06_high",
+   "target": "via_mg06_high",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.c2f69536a539bp-7",
+    "0x1.9dbe59e5a2833p-3",
+    "0x1.8f98d6ecc9a91p-1",
+    "-0x1.b3079153c0f8cp+0",
+    "-0x1.0d0f21bd1118ep-6",
+    "0x1.ffa3c6fba4eaap-2"
+   ]
+  },
+  {
+   "step": "home_after_mg06",
+   "kind": "Movej",
+   "text": "Movej home",
+   "target": "home",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.944b216c13956p-1",
+    "0x1.61cf6eee3cbcfp-1",
+    "0x1.d550cfb233889p+0",
+    "-0x1.b6da48ce701a0p-2",
+    "0x1.921f9f03335d7p+0",
+    "0x1.15c134701bf50p-8"
+   ]
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Loader",
+   "text": "Loader Z travel_place 0.6",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-1",
+   "axis": "Z",
+   "value_hex": "0x1.44795edc46b23p-4"
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Loader",
+   "text": "Loader Y travel_place 2.2",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.199999999999ap+1",
+   "axis": "Y",
+   "value_hex": "0x1.92c19c25f5d13p-3"
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Loader",
+   "text": "Loader Z place 0.6",
+   "target": "place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-1",
+   "axis": "Z",
+   "value_hex": "0x1.1352756371b44p-4"
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Wait",
+   "text": "Wait 0.1",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-4",
+   "axis": ""
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Gripper",
+   "text": "Gripper clamp 0.35",
+   "target": "clamp",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.6666666666666p-2",
+   "axis": "",
+   "value_hex": "0x1.78d4fdf3b645cp-8"
+  },
+  {
+   "step": "loader_fetch",
+   "kind": "Wait",
+   "text": "Wait 0.2",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-3",
+   "axis": ""
+  },
+  {
+   "step": "loader_return",
+   "kind": "Loader",
+   "text": "Loader Z travel_place 0.6",
+   "target": "travel_place",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-1",
+   "axis": "Z",
+   "value_hex": "0x1.44795edc46b23p-4"
+  },
+  {
+   "step": "loader_return",
+   "kind": "Loader",
+   "text": "Loader Y home 2",
+   "target": "home",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p+1",
+   "axis": "Y",
+   "value_hex": "-0x1.999999999999ap-4"
+  },
+  {
+   "step": "loader_return",
+   "kind": "Loader",
+   "text": "Loader Z home 0.8",
+   "target": "home",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-1",
+   "axis": "Z",
+   "value_hex": "0x0.0p+0"
+  },
+  {
+   "step": "loader_return",
+   "kind": "Wait",
+   "text": "Wait 0.2",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-3",
+   "axis": ""
+  },
+  {
+   "step": "to_take",
+   "kind": "Movej",
+   "text": "Movej above_loader",
+   "target": "above_loader",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.7cf2839388f18p-2",
+    "0x1.8456445bf3e7ap-3",
+    "0x1.cae4db62d4b17p+0",
+    "-0x1.fb5d46735c975p-6",
+    "0x1.6d917a447ba83p+0",
+    "-0x1.27249aeb69bc7p+0"
+   ]
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Movel",
+   "text": "Movel loader_approach 0.2",
+   "target": "loader_approach",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.b2566a0562326p-2",
+    "0x1.b0f5cc317997ap-4",
+    "0x1.0f46a80d227a5p+1",
+    "0x1.8c98f34dc0726p-2",
+    "0x1.6cc6d585156c1p+0",
+    "-0x1.349b672a62fe5p+0"
+   ]
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Movel",
+   "text": "Movel loader_take_press 0.03",
+   "target": "loader_take_press",
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.b87e828015591p-2",
+    "0x1.5afc369649bb5p-4",
+    "0x1.1325ccfe911fap+1",
+    "0x1.c1f7ff07c17f4p-2",
+    "0x1.6cb1222ee8dd1p+0",
+    "-0x1.36290fdc23718p+0"
+   ]
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Vacuum",
+   "text": "Vacuum On",
+   "target": "On",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Wait",
+   "text": "Wait 0.3",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-2",
+   "axis": ""
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Gripper",
+   "text": "Gripper open 0.35",
+   "target": "open",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.6666666666666p-2",
+   "axis": "",
+   "value_hex": "0x1.1eb851eb851ecp-5"
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Wait",
+   "text": "Wait 0.15",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-3",
+   "axis": ""
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Movel",
+   "text": "Movel loader_out_of_jaws 0.05",
+   "target": "loader_out_of_jaws",
+   "speed": "0x1.999999999999ap-5",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.acc282ff60d1fp-2",
+    "0x1.f5e16a74509e2p-4",
+    "0x1.0b97cb3c01687p+1",
+    "0x1.5d15e5240573bp-2",
+    "0x1.6cdacb3020b85p+0",
+    "-0x1.33332a96290e4p+0"
+   ]
+  },
+  {
+   "step": "take_from_loader",
+   "kind": "Movel",
+   "text": "Movel above_loader 0.2",
+   "target": "above_loader",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "-0x1.7cf2839388f18p-2",
+    "0x1.8456445bf3e7ap-3",
+    "0x1.cae4db62d4b17p+0",
+    "-0x1.fb5d46735c975p-6",
+    "0x1.6d917a447ba83p+0",
+    "-0x1.27249aeb69bc7p+0"
+   ]
+  },
+  {
+   "step": "to_output",
+   "kind": "Movej",
+   "text": "Movej via_loader_to_output",
+   "target": "via_loader_to_output",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.6b2d57a07873ap-1",
+    "0x1.6804a7c90d535p-1",
+    "0x1.d5bf3f3db40fep+0",
+    "-0x1.fa3dd7b730b92p-2",
+    "0x1.8409320335f0dp+0",
+    "-0x1.2cb3bb22f193fp-4"
+   ]
+  },
+  {
+   "step": "to_output",
+   "kind": "Movej",
+   "text": "Movej above_output",
+   "target": "above_output",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.0bd7c66dea067p+0",
+    "0x1.f497c21008727p-5",
+    "0x1.19f492217f981p+1",
+    "0x1.244978b373dc4p-1",
+    "0x1.921fc47e3feb0p+0",
+    "0x1.0b1fbe691f903p-2"
+   ]
+  },
+  {
+   "step": "place_output",
+   "kind": "Movel",
+   "text": "Movel output_approach 0.2",
+   "target": "output_approach",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.0bd6f26deb060p+0",
+    "-0x1.5b9f0c1be2c90p-3",
+    "0x1.2b533632bf4f3p+1",
+    "0x1.dff530b38419bp-1",
+    "0x1.921fb54442d18p+0",
+    "0x1.0b1c5f2f2674fp-2"
+   ]
+  },
+  {
+   "step": "place_output",
+   "kind": "Movel",
+   "text": "Movel output_place 0.03",
+   "target": "output_place",
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.0bd6f26deb060p+0",
+    "-0x1.b21ad5bc1dff3p-3",
+    "0x1.2ced33520de3fp+1",
+    "0x1.fbfc182eb96c7p-1",
+    "0x1.921fb54442d18p+0",
+    "0x1.0b1c5f2f2674fp-2"
+   ]
+  },
+  {
+   "step": "place_output",
+   "kind": "Vacuum",
+   "text": "Vacuum Off",
+   "target": "Off",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": ""
+  },
+  {
+   "step": "place_output",
+   "kind": "Wait",
+   "text": "Wait 0.3",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-2",
+   "axis": ""
+  },
+  {
+   "step": "place_output",
+   "kind": "Movel",
+   "text": "Movel above_output 0.2",
+   "target": "above_output",
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.0bd7c66dea067p+0",
+    "0x1.f497c21008727p-5",
+    "0x1.19f492217f981p+1",
+    "0x1.244978b373dc4p-1",
+    "0x1.921fc47e3feb0p+0",
+    "0x1.0b1fbe691f903p-2"
+   ]
+  },
+  {
+   "step": "home_end",
+   "kind": "Movej",
+   "text": "Movej home",
+   "target": "home",
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "axis": "",
+   "joints_rad_hex": [
+    "0x1.944b216c13956p-1",
+    "0x1.61cf6eee3cbcfp-1",
+    "0x1.d550cfb233889p+0",
+    "-0x1.b6da48ce701a0p-2",
+    "0x1.921f9f03335d7p+0",
+    "0x1.15c134701bf50p-8"
+   ]
+  },
+  {
+   "step": "settle",
+   "kind": "Wait",
+   "text": "Wait 0.8",
+   "target": "",
+   "speed": "0x0.0p+0",
+   "duration": "0x1.999999999999ap-1",
+   "axis": ""
+  }
+ ]
+}

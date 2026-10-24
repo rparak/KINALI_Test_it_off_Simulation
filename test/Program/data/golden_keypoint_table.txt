@@ -1,0 +1,25 @@
+keypoint              family     limits    check      stale closest (not allowed)                  allowed contacts             verdict
+home                  wrist_up   ok     0.009 mm          - >= 3.0 mm                              -                            PASS
+above_input_pcb       wrist_up   ok     0.050 mm   0.000 mm >= 3.0 mm                              -                            PASS
+input_pcb_approach    wrist_up   ok     0.009 mm   0.009 mm >= 3.0 mm                              -                            PASS
+input_pcb_press       wrist_up   ok     0.024 mm   0.024 mm >= 3.0 mm                              cups_pcb -1.48               PASS
+input_pcb_clear       wrist_up   ok     0.001 mm   0.001 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+via_input_to_loader   wrist_up   ok     0.051 mm          - >= 3.0 mm                              cups_pcb 0.00                PASS
+above_loader          wrist_up   ok     0.056 mm   0.004 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+loader_approach       wrist_up   ok     0.081 mm   0.008 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+loader_handover       wrist_up   ok     0.073 mm   0.019 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+loader_take_press     wrist_up   ok     0.058 mm   0.024 mm >= 3.0 mm                              cups_pcb -1.48               PASS
+loader_out_of_jaws    wrist_up   ok     0.074 mm   0.020 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+via_mg06_high         wrist_down? ok     0.041 mm          - >= 3.0 mm                              -                            WARN
+above_handle          wrist_down ok     0.040 mm          - >= 3.0 mm                              -                            PASS
+fork_start            wrist_down ok     0.029 mm          - >= 3.0 mm                              -                            PASS
+fork_closed_end       wrist_down ok     0.011 mm          - >= 3.0 mm                              handle_bar -0.33             PASS
+fork_bar_centred      wrist_down ok     0.020 mm          - >= 3.0 mm                              -                            PASS
+fork_out_of_bar       wrist_down ok     0.037 mm          - >= 3.0 mm                              -                            PASS
+fork_retreat_up       wrist_down ok     0.031 mm          - >= 3.0 mm                              -                            PASS
+fork_open_join        wrist_down ok     0.033 mm          - >= 3.0 mm                              handle_bar 0.08              PASS
+via_loader_to_output  wrist_up   ok     0.028 mm          - >= 3.0 mm                              cups_pcb 0.00                PASS
+above_output          wrist_up   ok     0.045 mm   0.006 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+output_approach       wrist_up   ok     0.009 mm   0.009 mm >= 3.0 mm                              cups_pcb 0.00                PASS
+output_place          wrist_up   ok     0.019 mm   0.019 mm >= 3.0 mm                              cups_pcb 0.00, pcb_crate 1.0 PASS
+  via_mg06_high: WARNING wrist_2 within the family margin of zero (the family switch, SPEC §4.7)
