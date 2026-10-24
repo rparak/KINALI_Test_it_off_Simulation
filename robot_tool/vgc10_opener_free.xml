@@ -1,0 +1,120 @@
+<mujoco model="vgc10_opener">
+  <!-- OnRobot VGC10 + fork "opener" (from untitled.blend).
+       Body origin = robot flange (tool0), +Z = tool axis towards the suction cups.
+       (test variant with a free joint, driven by a mocap weld)
+       Attach: put <body name="ee_tool"> under the robot's flange/attachment body (or use the MjSpec attach API). -->
+  <compiler angle="radian" meshdir="assets" autolimits="true"/>
+  <default>
+    <default class="tool">
+      <default class="tool_visual"><geom type="mesh" contype="0" conaffinity="0" group="2" density="0"/></default>
+      <default class="tool_collision"><geom type="mesh" group="3" density="0" friction="0.6 0.01 0.0001" condim="3" rgba=".9 .4 .1 .4"/></default>
+    </default>
+  </default>
+  <asset>
+    <mesh name="tool_vis_00" file="tool/vis_00.stl" inertia="shell"/>
+    <mesh name="tool_vis_01" file="tool/vis_01.stl" inertia="shell"/>
+    <mesh name="tool_vis_02" file="tool/vis_02.stl" inertia="shell"/>
+    <mesh name="tool_vis_03" file="tool/vis_03.stl" inertia="shell"/>
+    <mesh name="tool_vis_04" file="tool/vis_04.stl" inertia="shell"/>
+    <mesh name="tool_vis_05" file="tool/vis_05.stl" inertia="shell"/>
+    <mesh name="tool_vis_06" file="tool/vis_06.stl" inertia="shell"/>
+    <mesh name="tool_vis_07" file="tool/vis_07.stl" inertia="shell"/>
+    <mesh name="tool_vis_08" file="tool/vis_08.stl" inertia="shell"/>
+    <mesh name="tool_vis_09" file="tool/vis_09.stl" inertia="shell"/>
+    <mesh name="tool_vis_10" file="tool/vis_10.stl" inertia="shell"/>
+    <mesh name="tool_vis_11" file="tool/vis_11.stl" inertia="shell"/>
+    <mesh name="tool_vis_12" file="tool/vis_12.stl" inertia="shell"/>
+    <mesh name="tool_vis_13" file="tool/vis_13.stl" inertia="shell"/>
+    <mesh name="tool_vis_14" file="tool/vis_14.stl" inertia="shell"/>
+    <mesh name="tool_vis_15" file="tool/vis_15.stl" inertia="shell"/>
+    <mesh name="tool_vis_16" file="tool/vis_16.stl" inertia="shell"/>
+    <mesh name="tool_vis_17" file="tool/vis_17.stl" inertia="shell"/>
+    <mesh name="tool_vis_18" file="tool/vis_18.stl" inertia="shell"/>
+    <mesh name="tool_vis_19" file="tool/vis_19.stl" inertia="shell"/>
+    <mesh name="tool_vis_20" file="tool/vis_20.stl" inertia="shell"/>
+    <mesh name="tool_vis_21" file="tool/vis_21.stl" inertia="shell"/>
+    <mesh name="tool_vis_22" file="tool/vis_22.stl" inertia="shell"/>
+    <mesh name="tool_vis_23" file="tool/vis_23.stl" inertia="shell"/>
+    <mesh name="tool_vis_24" file="tool/vis_24.stl" inertia="shell"/>
+    <mesh name="tool_vis_25" file="tool/vis_25.stl" inertia="shell"/>
+    <mesh name="tool_vis_26" file="tool/vis_26.stl" inertia="shell"/>
+    <mesh name="tool_vis_27" file="tool/vis_27.stl" inertia="shell"/>
+    <mesh name="tool_vis_28" file="tool/vis_28.stl" inertia="shell"/>
+    <mesh name="tool_vis_opener" file="tool/vis_opener.stl" inertia="shell"/>
+    <mesh name="tool_col_opener_00" file="tool/col_opener_00.stl"/>
+    <mesh name="tool_col_opener_01" file="tool/col_opener_01.stl"/>
+    <mesh name="tool_col_opener_02" file="tool/col_opener_02.stl"/>
+    <mesh name="tool_col_opener_03" file="tool/col_opener_03.stl"/>
+    <mesh name="tool_col_opener_04" file="tool/col_opener_04.stl"/>
+    <mesh name="tool_col_opener_05" file="tool/col_opener_05.stl"/>
+    <mesh name="tool_col_opener_06" file="tool/col_opener_06.stl"/>
+    <mesh name="tool_col_opener_07" file="tool/col_opener_07.stl"/>
+    <mesh name="tool_col_opener_08" file="tool/col_opener_08.stl"/>
+    <mesh name="tool_col_opener_09" file="tool/col_opener_09.stl"/>
+    <mesh name="tool_col_opener_10" file="tool/col_opener_10.stl"/>
+    <mesh name="tool_col_opener_11" file="tool/col_opener_11.stl"/>
+    <mesh name="tool_col_opener_12" file="tool/col_opener_12.stl"/>
+    <mesh name="tool_col_opener_13" file="tool/col_opener_13.stl"/>
+    <mesh name="tool_col_opener_14" file="tool/col_opener_14.stl"/>
+    <mesh name="tool_col_opener_15" file="tool/col_opener_15.stl"/>
+  </asset>
+  <worldbody>
+    <body name="ee_tool" childclass="tool" pos="0 -0.6 0.5" gravcomp="1">
+      <freejoint name="tool_free"/>
+      <inertial pos="0 0.01 0.09" mass="1.0" diaginertia="0.004 0.004 0.0015"/>
+      <geom class="tool_visual" mesh="tool_vis_00" rgba="0.000 0.000 0.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_01" rgba="0.000 0.000 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_02" rgba="0.000 0.600 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_03" rgba="0.000 0.753 0.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_04" rgba="0.000 1.000 0.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_05" rgba="0.000 1.000 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_06" rgba="0.251 0.251 0.251 1"/>
+      <geom class="tool_visual" mesh="tool_vis_07" rgba="0.286 0.616 0.855 1"/>
+      <geom class="tool_visual" mesh="tool_vis_08" rgba="0.298 0.298 0.298 1"/>
+      <geom class="tool_visual" mesh="tool_vis_09" rgba="0.435 0.769 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_10" rgba="0.529 0.549 0.549 1"/>
+      <geom class="tool_visual" mesh="tool_vis_11" rgba="0.580 0.580 0.482 1"/>
+      <geom class="tool_visual" mesh="tool_vis_12" rgba="0.616 0.643 0.675 1"/>
+      <geom class="tool_visual" mesh="tool_vis_13" rgba="0.647 0.620 0.588 1"/>
+      <geom class="tool_visual" mesh="tool_vis_14" rgba="0.667 0.698 0.769 1"/>
+      <geom class="tool_visual" mesh="tool_vis_15" rgba="0.686 0.686 0.686 1"/>
+      <geom class="tool_visual" mesh="tool_vis_16" rgba="0.698 0.698 0.698 1"/>
+      <geom class="tool_visual" mesh="tool_vis_17" rgba="0.729 0.357 0.055 1"/>
+      <geom class="tool_visual" mesh="tool_vis_18" rgba="0.745 0.737 0.729 1"/>
+      <geom class="tool_visual" mesh="tool_vis_19" rgba="0.749 0.749 0.749 1"/>
+      <geom class="tool_visual" mesh="tool_vis_20" rgba="0.753 0.753 0.753 1"/>
+      <geom class="tool_visual" mesh="tool_vis_21" rgba="0.792 0.820 0.933 1"/>
+      <geom class="tool_visual" mesh="tool_vis_22" rgba="0.898 0.918 0.929 1"/>
+      <geom class="tool_visual" mesh="tool_vis_23" rgba="0.910 0.443 0.031 1"/>
+      <geom class="tool_visual" mesh="tool_vis_24" rgba="0.957 0.949 0.961 1"/>
+      <geom class="tool_visual" mesh="tool_vis_25" rgba="1.000 0.000 0.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_26" rgba="1.000 0.557 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_27" rgba="1.000 0.808 0.498 1"/>
+      <geom class="tool_visual" mesh="tool_vis_28" rgba="1.000 1.000 1.000 1"/>
+      <geom class="tool_visual" mesh="tool_vis_opener" rgba="0.157 0.157 0.157 1"/>
+      <geom class="tool_collision" mesh="tool_col_opener_00"/>
+      <geom class="tool_collision" mesh="tool_col_opener_01"/>
+      <geom class="tool_collision" mesh="tool_col_opener_02"/>
+      <geom class="tool_collision" mesh="tool_col_opener_03"/>
+      <geom class="tool_collision" mesh="tool_col_opener_04"/>
+      <geom class="tool_collision" mesh="tool_col_opener_05"/>
+      <geom class="tool_collision" mesh="tool_col_opener_06"/>
+      <geom class="tool_collision" mesh="tool_col_opener_07"/>
+      <geom class="tool_collision" mesh="tool_col_opener_08"/>
+      <geom class="tool_collision" mesh="tool_col_opener_09"/>
+      <geom class="tool_collision" mesh="tool_col_opener_10"/>
+      <geom class="tool_collision" mesh="tool_col_opener_11"/>
+      <geom class="tool_collision" mesh="tool_col_opener_12"/>
+      <geom class="tool_collision" mesh="tool_col_opener_13"/>
+      <geom class="tool_collision" mesh="tool_col_opener_14"/>
+      <geom class="tool_collision" mesh="tool_col_opener_15"/>
+      <!-- simple primitives for the gripper body and the suction cups -->
+      <geom class="tool_collision" type="box" size="0.05 0.05 0.096" pos="0 0 0.091"/>
+      <geom class="tool_collision" type="box" size="0.0525 0.0293 0.039" pos="0 0 0.2215"/>
+      <site name="tool_flange" pos="0 0 0" size="0.006" rgba="1 1 0 1" group="4"/>
+      <!-- centre of the fork slot: bar centre sits here when engaged; slot opens towards +Y, bottom at y=0.048 -->
+      <site name="fork_center" pos="0.12 0.07 0.015" size="0.006" rgba="0 1 0 1" group="4"/>
+      <site name="suction_tcp" pos="0 0 0.2606" size="0.006" rgba="0 .6 1 1" group="4"/>
+    </body>
+  </worldbody>
+</mujoco>

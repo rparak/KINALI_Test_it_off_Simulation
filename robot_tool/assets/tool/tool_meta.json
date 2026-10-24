@@ -1,0 +1,262 @@
+{
+ "visual": [
+  {
+   "file": "vis_00.stl",
+   "rgb": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "file": "vis_01.stl",
+   "rgb": [
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "file": "vis_02.stl",
+   "rgb": [
+    0,
+    153,
+    255
+   ]
+  },
+  {
+   "file": "vis_03.stl",
+   "rgb": [
+    0,
+    192,
+    0
+   ]
+  },
+  {
+   "file": "vis_04.stl",
+   "rgb": [
+    0,
+    255,
+    0
+   ]
+  },
+  {
+   "file": "vis_05.stl",
+   "rgb": [
+    0,
+    255,
+    255
+   ]
+  },
+  {
+   "file": "vis_06.stl",
+   "rgb": [
+    64,
+    64,
+    64
+   ]
+  },
+  {
+   "file": "vis_07.stl",
+   "rgb": [
+    73,
+    157,
+    218
+   ]
+  },
+  {
+   "file": "vis_08.stl",
+   "rgb": [
+    76,
+    76,
+    76
+   ]
+  },
+  {
+   "file": "vis_09.stl",
+   "rgb": [
+    111,
+    196,
+    255
+   ]
+  },
+  {
+   "file": "vis_10.stl",
+   "rgb": [
+    135,
+    140,
+    140
+   ]
+  },
+  {
+   "file": "vis_11.stl",
+   "rgb": [
+    148,
+    148,
+    123
+   ]
+  },
+  {
+   "file": "vis_12.stl",
+   "rgb": [
+    157,
+    164,
+    172
+   ]
+  },
+  {
+   "file": "vis_13.stl",
+   "rgb": [
+    165,
+    158,
+    150
+   ]
+  },
+  {
+   "file": "vis_14.stl",
+   "rgb": [
+    170,
+    178,
+    196
+   ]
+  },
+  {
+   "file": "vis_15.stl",
+   "rgb": [
+    175,
+    175,
+    175
+   ]
+  },
+  {
+   "file": "vis_16.stl",
+   "rgb": [
+    178,
+    178,
+    178
+   ]
+  },
+  {
+   "file": "vis_17.stl",
+   "rgb": [
+    186,
+    91,
+    14
+   ]
+  },
+  {
+   "file": "vis_18.stl",
+   "rgb": [
+    190,
+    188,
+    186
+   ]
+  },
+  {
+   "file": "vis_19.stl",
+   "rgb": [
+    191,
+    191,
+    191
+   ]
+  },
+  {
+   "file": "vis_20.stl",
+   "rgb": [
+    192,
+    192,
+    192
+   ]
+  },
+  {
+   "file": "vis_21.stl",
+   "rgb": [
+    202,
+    209,
+    238
+   ]
+  },
+  {
+   "file": "vis_22.stl",
+   "rgb": [
+    229,
+    234,
+    237
+   ]
+  },
+  {
+   "file": "vis_23.stl",
+   "rgb": [
+    232,
+    113,
+    8
+   ]
+  },
+  {
+   "file": "vis_24.stl",
+   "rgb": [
+    244,
+    242,
+    245
+   ]
+  },
+  {
+   "file": "vis_25.stl",
+   "rgb": [
+    255,
+    0,
+    0
+   ]
+  },
+  {
+   "file": "vis_26.stl",
+   "rgb": [
+    255,
+    142,
+    255
+   ]
+  },
+  {
+   "file": "vis_27.stl",
+   "rgb": [
+    255,
+    206,
+    127
+   ]
+  },
+  {
+   "file": "vis_28.stl",
+   "rgb": [
+    255,
+    255,
+    255
+   ]
+  },
+  {
+   "file": "vis_opener.stl",
+   "rgb": [
+    40,
+    40,
+    40
+   ]
+  }
+ ],
+ "collision_opener": [
+  "col_opener_00.stl",
+  "col_opener_01.stl",
+  "col_opener_02.stl",
+  "col_opener_03.stl",
+  "col_opener_04.stl",
+  "col_opener_05.stl",
+  "col_opener_06.stl",
+  "col_opener_07.stl",
+  "col_opener_08.stl",
+  "col_opener_09.stl",
+  "col_opener_10.stl",
+  "col_opener_11.stl",
+  "col_opener_12.stl",
+  "col_opener_13.stl",
+  "col_opener_14.stl",
+  "col_opener_15.stl"
+ ]
+}

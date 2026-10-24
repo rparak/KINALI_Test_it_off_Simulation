@@ -1,0 +1,1178 @@
+<mujoco model="mg06_loader_scene">
+  
+  <compiler angle="radian" meshdir="." />
+
+  <option timestep="0.0005" impratio="10" cone="elliptic" noslip_iterations="5" />
+
+  <size memory="200M" />
+
+  <visual>
+    <global offwidth="1280" offheight="960" />
+    <quality shadowsize="8192" />
+    <headlight ambient="0.25 0.25 0.25" diffuse="0.35 0.35 0.35" />
+  </visual>
+
+  <default>
+    <default class="mg06">
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" density="0" />
+      </default>
+      <default class="collision">
+        <geom type="mesh" condim="4" group="3" friction="1 0.02 0.001" rgba="0.5 0.7 0.9 0.3" density="0" />
+        <default class="col_base">
+          <geom contype="2" conaffinity="3" />
+        </default>
+        <default class="col_handle">
+          <geom contype="4" />
+        </default>
+      </default>
+    </default>
+    <default class="loader">
+      <joint armature="0.05" damping="5" />
+      <default class="m_visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" density="0" />
+      </default>
+      <default class="m_collision">
+        <geom type="mesh" contype="16" conaffinity="3" group="3" rgba="0.9 0.4 0.2 0.3" density="0" />
+      </default>
+      <default class="m_pad">
+        <geom type="mesh" contype="16" conaffinity="3" condim="4" group="3" friction="0.8 0.02 0.001" solref="0.002" solimp="0.95 0.99 0.0005" rgba="0.2 0.9 0.3 0.4" density="0" />
+      </default>
+    </default>
+    <default class="aubo/main">
+      <default class="aubo/visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" density="0" />
+      </default>
+      <default class="aubo/collision">
+        <geom type="mesh" group="3" density="2700" />
+      </default>
+      <default class="aubo/tool/main">
+        <default class="aubo/tool/tool">
+          <default class="aubo/tool/tool_visual">
+            <geom type="mesh" contype="0" conaffinity="0" group="2" density="0" />
+          </default>
+          <default class="aubo/tool/tool_collision">
+            <geom type="mesh" group="3" friction="0.6 0.01" rgba="0.9 0.4 0.1 0.4" density="0" />
+          </default>
+        </default>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="skybox" colorspace="auto" name="sky" builtin="gradient" rgb1="0.55 0.62 0.7" rgb2="0.12 0.14 0.17" width="256" height="1536" />
+    <texture type="2d" colorspace="auto" name="grid" builtin="flat" mark="random" rgb1="0.62 0.62 0.6" rgb2="0.62 0.62 0.6" markrgb="0.55 0.55 0.53" random="0.25" width="1024" height="1024" />
+    <material name="grid" texture="grid" texrepeat="6 6" specular="0.1" />
+    <material name="table" rgba="0.55 0.57 0.6 1" />
+    <material name="aubo/Opaque(63,63,63)" rgba="0.25098 0.25098 0.25098 1" />
+    <material name="aubo/Opaque(229,234,237)" rgba="0.898039 0.917647 0.929412 1" />
+    <material name="aubo/Opaque(232,133,0)" rgba="0.909804 0.521569 0 1" />
+    <material name="aubo/Opaque(202,209,238)" rgba="0.792157 0.819608 0.933333 1" />
+    <material name="aubo/Opaque(255,255,255)" />
+    <material name="look_alu" specular="0.75" shininess="0.65" />
+    <material name="look_plastic" specular="0.25" shininess="0.3" />
+    <material name="look_dark" specular="0.15" shininess="0.2" />
+    <mesh name="pcb_local" file="mg06/assets/visual/pcb_local.stl" />
+    <mesh name="vis_base_26_26_26" file="mg06/assets/visual/base_26_26_26.stl" />
+    <mesh name="vis_base_76_76_76" file="mg06/assets/visual/base_76_76_76.stl" />
+    <mesh name="vis_base_77_78_74" file="mg06/assets/visual/base_77_78_74.stl" />
+    <mesh name="vis_base_135_140_140" file="mg06/assets/visual/base_135_140_140.stl" />
+    <mesh name="vis_base_164_157_153" file="mg06/assets/visual/base_164_157_153.stl" />
+    <mesh name="vis_base_165_158_150" file="mg06/assets/visual/base_165_158_150.stl" />
+    <mesh name="vis_base_202_209_238" file="mg06/assets/visual/base_202_209_238.stl" />
+    <mesh name="vis_base_215_208_192" file="mg06/assets/visual/base_215_208_192.stl" />
+    <mesh name="vis_base_229_234_237" file="mg06/assets/visual/base_229_234_237.stl" />
+    <mesh name="vis_base_235_235_235" file="mg06/assets/visual/base_235_235_235.stl" />
+    <mesh name="vis_handle_164_157_153" file="mg06/assets/visual/handle_164_157_153.stl" />
+    <mesh name="vis_lid_26_26_26" file="mg06/assets/visual/lid_26_26_26.stl" />
+    <mesh name="vis_lid_164_157_153" file="mg06/assets/visual/lid_164_157_153.stl" />
+    <mesh name="vis_lid_202_209_238" file="mg06/assets/visual/lid_202_209_238.stl" />
+    <mesh name="vis_press_240_245_247" file="mg06/assets/visual/press_240_245_247.stl" />
+    <mesh name="vis_black_plate" file="mg06/assets/visual/base_black_plate.stl" />
+    <mesh name="col_holder_00" file="mg06/assets/collision/holder_00.stl" />
+    <mesh name="col_holder_01" file="mg06/assets/collision/holder_01.stl" />
+    <mesh name="col_holder_02" file="mg06/assets/collision/holder_02.stl" />
+    <mesh name="col_holder_03" file="mg06/assets/collision/holder_03.stl" />
+    <mesh name="col_holder_04" file="mg06/assets/collision/holder_04.stl" />
+    <mesh name="col_holder_05" file="mg06/assets/collision/holder_05.stl" />
+    <mesh name="col_holder_06" file="mg06/assets/collision/holder_06.stl" />
+    <mesh name="col_holder_07" file="mg06/assets/collision/holder_07.stl" />
+    <mesh name="col_holder_08" file="mg06/assets/collision/holder_08.stl" />
+    <mesh name="col_holder_09" file="mg06/assets/collision/holder_09.stl" />
+    <mesh name="col_holder_10" file="mg06/assets/collision/holder_10.stl" />
+    <mesh name="col_holder_11" file="mg06/assets/collision/holder_11.stl" />
+    <mesh name="col_holder_12" file="mg06/assets/collision/holder_12.stl" />
+    <mesh name="col_holder_13" file="mg06/assets/collision/holder_13.stl" />
+    <mesh name="col_holder_14" file="mg06/assets/collision/holder_14.stl" />
+    <mesh name="col_holder_15" file="mg06/assets/collision/holder_15.stl" />
+    <mesh name="col_holder_16" file="mg06/assets/collision/holder_16.stl" />
+    <mesh name="col_holder_17" file="mg06/assets/collision/holder_17.stl" />
+    <mesh name="col_holder_18" file="mg06/assets/collision/holder_18.stl" />
+    <mesh name="col_plate_00" file="mg06/assets/collision/plate_00.stl" />
+    <mesh name="col_plate_01" file="mg06/assets/collision/plate_01.stl" />
+    <mesh name="col_plate_02" file="mg06/assets/collision/plate_02.stl" />
+    <mesh name="col_plate_03" file="mg06/assets/collision/plate_03.stl" />
+    <mesh name="col_plate_04" file="mg06/assets/collision/plate_04.stl" />
+    <mesh name="col_plate_05" file="mg06/assets/collision/plate_05.stl" />
+    <mesh name="col_plate_06" file="mg06/assets/collision/plate_06.stl" />
+    <mesh name="col_plate_07" file="mg06/assets/collision/plate_07.stl" />
+    <mesh name="col_plate_08" file="mg06/assets/collision/plate_08.stl" />
+    <mesh name="col_plate_09" file="mg06/assets/collision/plate_09.stl" />
+    <mesh name="col_plate_10" file="mg06/assets/collision/plate_10.stl" />
+    <mesh name="col_plate_11" file="mg06/assets/collision/plate_11.stl" />
+    <mesh name="col_plate_12" file="mg06/assets/collision/plate_12.stl" />
+    <mesh name="col_plate_13" file="mg06/assets/collision/plate_13.stl" />
+    <mesh name="col_plate_14" file="mg06/assets/collision/plate_14.stl" />
+    <mesh name="col_plate_15" file="mg06/assets/collision/plate_15.stl" />
+    <mesh name="col_plate_16" file="mg06/assets/collision/plate_16.stl" />
+    <mesh name="col_plate_17" file="mg06/assets/collision/plate_17.stl" />
+    <mesh name="col_plate_18" file="mg06/assets/collision/plate_18.stl" />
+    <mesh name="col_plate_19" file="mg06/assets/collision/plate_19.stl" />
+    <mesh name="col_plate_20" file="mg06/assets/collision/plate_20.stl" />
+    <mesh name="col_plate_21" file="mg06/assets/collision/plate_21.stl" />
+    <mesh name="col_plate_22" file="mg06/assets/collision/plate_22.stl" />
+    <mesh name="col_plate_23" file="mg06/assets/collision/plate_23.stl" />
+    <mesh name="col_plate_24" file="mg06/assets/collision/plate_24.stl" />
+    <mesh name="col_plate_25" file="mg06/assets/collision/plate_25.stl" />
+    <mesh name="col_plate_26" file="mg06/assets/collision/plate_26.stl" />
+    <mesh name="col_plate_27" file="mg06/assets/collision/plate_27.stl" />
+    <mesh name="col_plate_28" file="mg06/assets/collision/plate_28.stl" />
+    <mesh name="col_plate_29" file="mg06/assets/collision/plate_29.stl" />
+    <mesh name="col_plate_30" file="mg06/assets/collision/plate_30.stl" />
+    <mesh name="col_plate_31" file="mg06/assets/collision/plate_31.stl" />
+    <mesh name="col_plate_32" file="mg06/assets/collision/plate_32.stl" />
+    <mesh name="col_plate_33" file="mg06/assets/collision/plate_33.stl" />
+    <mesh name="col_plate_34" file="mg06/assets/collision/plate_34.stl" />
+    <mesh name="col_plate_35" file="mg06/assets/collision/plate_35.stl" />
+    <mesh name="col_plate_36" file="mg06/assets/collision/plate_36.stl" />
+    <mesh name="col_plate_37" file="mg06/assets/collision/plate_37.stl" />
+    <mesh name="col_plate_38" file="mg06/assets/collision/plate_38.stl" />
+    <mesh name="col_plate_39" file="mg06/assets/collision/plate_39.stl" />
+    <mesh name="col_base_KS0010160" file="mg06/assets/collision/base_KS0010160.stl" />
+    <mesh name="col_base_KS0010162" file="mg06/assets/collision/base_KS0010162.stl" />
+    <mesh name="col_base_VVE01_00115_t_rkis_STEP" file="mg06/assets/collision/base_VVE01_00115_t_rkis_STEP.stl" />
+    <mesh name="col_base_VVE02_00070_STEP" file="mg06/assets/collision/base_VVE02_00070_STEP.stl" />
+    <mesh name="col_base_VVE03_00038_STEP" file="mg06/assets/collision/base_VVE03_00038_STEP.stl" />
+    <mesh name="col_press_VVE04_00030_STEP" file="mg06/assets/collision/press_VVE04_00030_STEP.stl" />
+    <mesh name="col_lid_VVE90_01177_STEP" file="mg06/assets/collision/lid_VVE90_01177_STEP.stl" />
+    <mesh name="col_lid_VVE90_01177_STEP_1" file="mg06/assets/collision/lid_VVE90_01177_STEP_1.stl" />
+    <mesh name="col_lid_VVE90_01292_STEP" file="mg06/assets/collision/lid_VVE90_01292_STEP.stl" />
+    <mesh name="col_lid_VVE90_01293_STEP" file="mg06/assets/collision/lid_VVE90_01293_STEP.stl" />
+    <mesh name="col_lid_VVE90_01304_STEP" file="mg06/assets/collision/lid_VVE90_01304_STEP.stl" />
+    <mesh name="col_lid_VVE90_01304_STEP_1" file="mg06/assets/collision/lid_VVE90_01304_STEP_1.stl" />
+    <mesh name="col_lid_VVE90_01308_STEP" file="mg06/assets/collision/lid_VVE90_01308_STEP.stl" />
+    <mesh name="col_base_VVE90_01393_STEP" file="mg06/assets/collision/base_VVE90_01393_STEP.stl" />
+    <mesh name="col_base_VVE90_01394_STEP" file="mg06/assets/collision/base_VVE90_01394_STEP.stl" />
+    <mesh name="col_handle_VVE90_01395_STEP" file="mg06/assets/collision/handle_VVE90_01395_STEP.stl" />
+    <mesh name="col_handle_VVE90_01396_STEP" file="mg06/assets/collision/handle_VVE90_01396_STEP.stl" />
+    <mesh name="col_lid_VVE90_01397_STEP" file="mg06/assets/collision/lid_VVE90_01397_STEP.stl" />
+    <mesh name="col_lid_VVE90_01398_STEP" file="mg06/assets/collision/lid_VVE90_01398_STEP.stl" />
+    <mesh name="col_lid_VVE90_01401_STEP" file="mg06/assets/collision/lid_VVE90_01401_STEP.stl" />
+    <mesh name="col_lid_VVE90_01402_STEP" file="mg06/assets/collision/lid_VVE90_01402_STEP.stl" />
+    <mesh name="col_lid_VVE90_01412_STEP" file="mg06/assets/collision/lid_VVE90_01412_STEP.stl" />
+    <mesh name="col_lid_VVE90_01413_STEP" file="mg06/assets/collision/lid_VVE90_01413_STEP.stl" />
+    <mesh name="col_lid_VVE90_01414_STEP" file="mg06/assets/collision/lid_VVE90_01414_STEP.stl" />
+    <mesh name="m_vis_base_0_0_0" file="machine/assets/visual/base_0_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_base_15_7_255" file="machine/assets/visual/base_15_7_255.stl" inertia="shell" />
+    <mesh name="m_vis_base_49_39_255" file="machine/assets/visual/base_49_39_255.stl" inertia="shell" />
+    <mesh name="m_vis_base_128_128_128" file="machine/assets/visual/base_128_128_128.stl" inertia="shell" />
+    <mesh name="m_vis_base_154_154_154" file="machine/assets/visual/base_154_154_154.stl" inertia="shell" />
+    <mesh name="m_vis_base_169_79_255" file="machine/assets/visual/base_169_79_255.stl" inertia="shell" />
+    <mesh name="m_vis_base_192_192_192" file="machine/assets/visual/base_192_192_192.stl" inertia="shell" />
+    <mesh name="m_vis_base_202_202_202" file="machine/assets/visual/base_202_202_202.stl" inertia="shell" />
+    <mesh name="m_vis_base_210_210_210" file="machine/assets/visual/base_210_210_210.stl" inertia="shell" />
+    <mesh name="m_vis_base_221_232_255" file="machine/assets/visual/base_221_232_255.stl" inertia="shell" />
+    <mesh name="m_vis_base_228_232_237" file="machine/assets/visual/base_228_232_237.stl" inertia="shell" />
+    <mesh name="m_vis_base_228_233_237" file="machine/assets/visual/base_228_233_237.stl" inertia="shell" />
+    <mesh name="m_vis_base_229_234_237" file="machine/assets/visual/base_229_234_237.stl" inertia="shell" />
+    <mesh name="m_vis_base_236_236_236" file="machine/assets/visual/base_236_236_236.stl" inertia="shell" />
+    <mesh name="m_vis_base_239_0_0" file="machine/assets/visual/base_239_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_base_251_255_247" file="machine/assets/visual/base_251_255_247.stl" inertia="shell" />
+    <mesh name="m_vis_base_255_63_201" file="machine/assets/visual/base_255_63_201.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_0_0_0" file="machine/assets/visual/jawL_0_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_0_60_106" file="machine/assets/visual/jawL_0_60_106.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_0_158_223" file="machine/assets/visual/jawL_0_158_223.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_35_35_35" file="machine/assets/visual/jawL_35_35_35.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_128_128_0" file="machine/assets/visual/jawL_128_128_0.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_128_128_128" file="machine/assets/visual/jawL_128_128_128.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_192_192_192" file="machine/assets/visual/jawL_192_192_192.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_229_234_237" file="machine/assets/visual/jawL_229_234_237.stl" inertia="shell" />
+    <mesh name="m_vis_jawL_255_255_255" file="machine/assets/visual/jawL_255_255_255.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_0_0_0" file="machine/assets/visual/jawR_0_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_0_60_106" file="machine/assets/visual/jawR_0_60_106.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_0_158_223" file="machine/assets/visual/jawR_0_158_223.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_35_35_35" file="machine/assets/visual/jawR_35_35_35.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_128_128_0" file="machine/assets/visual/jawR_128_128_0.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_128_128_128" file="machine/assets/visual/jawR_128_128_128.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_192_192_192" file="machine/assets/visual/jawR_192_192_192.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_229_234_237" file="machine/assets/visual/jawR_229_234_237.stl" inertia="shell" />
+    <mesh name="m_vis_jawR_255_255_255" file="machine/assets/visual/jawR_255_255_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_0_0_0" file="machine/assets/visual/ycar_0_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_15_7_255" file="machine/assets/visual/ycar_15_7_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_49_39_255" file="machine/assets/visual/ycar_49_39_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_128_128_128" file="machine/assets/visual/ycar_128_128_128.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_169_79_255" file="machine/assets/visual/ycar_169_79_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_192_192_192" file="machine/assets/visual/ycar_192_192_192.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_210_210_210" file="machine/assets/visual/ycar_210_210_210.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_221_232_255" file="machine/assets/visual/ycar_221_232_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_228_232_237" file="machine/assets/visual/ycar_228_232_237.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_228_233_237" file="machine/assets/visual/ycar_228_233_237.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_229_234_237" file="machine/assets/visual/ycar_229_234_237.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_236_236_236" file="machine/assets/visual/ycar_236_236_236.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_239_0_0" file="machine/assets/visual/ycar_239_0_0.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_251_255_247" file="machine/assets/visual/ycar_251_255_247.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_255_0_255" file="machine/assets/visual/ycar_255_0_255.stl" inertia="shell" />
+    <mesh name="m_vis_ycar_255_63_201" file="machine/assets/visual/ycar_255_63_201.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_0_61_106" file="machine/assets/visual/zcar_0_61_106.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_0_158_224" file="machine/assets/visual/zcar_0_158_224.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_30_30_30" file="machine/assets/visual/zcar_30_30_30.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_50_50_50" file="machine/assets/visual/zcar_50_50_50.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_59_59_59" file="machine/assets/visual/zcar_59_59_59.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_165_158_150" file="machine/assets/visual/zcar_165_158_150.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_167_167_167" file="machine/assets/visual/zcar_167_167_167.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_176_176_176" file="machine/assets/visual/zcar_176_176_176.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_192_192_192" file="machine/assets/visual/zcar_192_192_192.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_202_209_238" file="machine/assets/visual/zcar_202_209_238.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_214_190_40" file="machine/assets/visual/zcar_214_190_40.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_228_233_237" file="machine/assets/visual/zcar_228_233_237.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_229_229_229" file="machine/assets/visual/zcar_229_229_229.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_229_234_237" file="machine/assets/visual/zcar_229_234_237.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_229_235_237" file="machine/assets/visual/zcar_229_235_237.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_255_0_255" file="machine/assets/visual/zcar_255_0_255.stl" inertia="shell" />
+    <mesh name="m_vis_zcar_255_255_255" file="machine/assets/visual/zcar_255_255_255.stl" inertia="shell" />
+    <mesh name="m_ws_base_128_128_128" file="workstation/assets/visual/base_128_128_128.stl" inertia="shell" />
+    <mesh name="m_ws_base_216_214_214" file="workstation/assets/visual/base_216_214_214.stl" inertia="shell" />
+    <mesh name="m_ws_base_228_233_237" file="workstation/assets/visual/base_228_233_237.stl" inertia="shell" />
+    <mesh name="m_ws_base_255_0_0" file="workstation/assets/visual/base_255_0_0.stl" inertia="shell" />
+    <mesh name="m_ws_base_255_0_255" file="workstation/assets/visual/base_255_0_255.stl" inertia="shell" />
+    <mesh name="m_ws_ycar_128_128_128" file="workstation/assets/visual/ycar_128_128_128.stl" inertia="shell" />
+    <mesh name="m_ws_ycar_228_233_237" file="workstation/assets/visual/ycar_228_233_237.stl" inertia="shell" />
+    <mesh name="m_ws_ycar_255_0_0" file="workstation/assets/visual/ycar_255_0_0.stl" inertia="shell" />
+    <mesh name="m_ws_ycar_255_0_255" file="workstation/assets/visual/ycar_255_0_255.stl" inertia="shell" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd0" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd0.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd1" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd1.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd2" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd2.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd3" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd3.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd4" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd4.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd5" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd5.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd6" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd6.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd7" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd7.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd8" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd8.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd9" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd9.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd10" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd10.stl" />
+    <mesh name="m_col_zcar_DS08_Drehscheibe_V_choz__cd11" file="machine/assets/collision/zcar_DS08_Drehscheibe_V_choz__cd11.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd0" file="machine/assets/collision/ycar_KS0010105_cd0.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd1" file="machine/assets/collision/ycar_KS0010105_cd1.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd2" file="machine/assets/collision/ycar_KS0010105_cd2.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd3" file="machine/assets/collision/ycar_KS0010105_cd3.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd4" file="machine/assets/collision/ycar_KS0010105_cd4.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd5" file="machine/assets/collision/ycar_KS0010105_cd5.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd6" file="machine/assets/collision/ycar_KS0010105_cd6.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd7" file="machine/assets/collision/ycar_KS0010105_cd7.stl" />
+    <mesh name="m_col_ycar_KS0010105_cd8" file="machine/assets/collision/ycar_KS0010105_cd8.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd0" file="machine/assets/collision/zcar_KS0010170_cd0.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd1" file="machine/assets/collision/zcar_KS0010170_cd1.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd2" file="machine/assets/collision/zcar_KS0010170_cd2.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd3" file="machine/assets/collision/zcar_KS0010170_cd3.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd4" file="machine/assets/collision/zcar_KS0010170_cd4.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd5" file="machine/assets/collision/zcar_KS0010170_cd5.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd6" file="machine/assets/collision/zcar_KS0010170_cd6.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd7" file="machine/assets/collision/zcar_KS0010170_cd7.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd8" file="machine/assets/collision/zcar_KS0010170_cd8.stl" />
+    <mesh name="m_col_zcar_KS0010170_cd9" file="machine/assets/collision/zcar_KS0010170_cd9.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd0" file="machine/assets/collision/zcar_KS0010171_cd0.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd1" file="machine/assets/collision/zcar_KS0010171_cd1.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd2" file="machine/assets/collision/zcar_KS0010171_cd2.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd3" file="machine/assets/collision/zcar_KS0010171_cd3.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd4" file="machine/assets/collision/zcar_KS0010171_cd4.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd5" file="machine/assets/collision/zcar_KS0010171_cd5.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd6" file="machine/assets/collision/zcar_KS0010171_cd6.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd7" file="machine/assets/collision/zcar_KS0010171_cd7.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd8" file="machine/assets/collision/zcar_KS0010171_cd8.stl" />
+    <mesh name="m_col_zcar_KS0010171_cd9" file="machine/assets/collision/zcar_KS0010171_cd9.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd0" file="machine/assets/collision/zcar_KS0010172_cd0.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd1" file="machine/assets/collision/zcar_KS0010172_cd1.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd2" file="machine/assets/collision/zcar_KS0010172_cd2.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd3" file="machine/assets/collision/zcar_KS0010172_cd3.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd4" file="machine/assets/collision/zcar_KS0010172_cd4.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd5" file="machine/assets/collision/zcar_KS0010172_cd5.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd6" file="machine/assets/collision/zcar_KS0010172_cd6.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd7" file="machine/assets/collision/zcar_KS0010172_cd7.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd8" file="machine/assets/collision/zcar_KS0010172_cd8.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd9" file="machine/assets/collision/zcar_KS0010172_cd9.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd10" file="machine/assets/collision/zcar_KS0010172_cd10.stl" />
+    <mesh name="m_col_zcar_KS0010172_cd11" file="machine/assets/collision/zcar_KS0010172_cd11.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd0" file="machine/assets/collision/jawR_KS0010175_cd0.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd1" file="machine/assets/collision/jawR_KS0010175_cd1.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd2" file="machine/assets/collision/jawR_KS0010175_cd2.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd3" file="machine/assets/collision/jawR_KS0010175_cd3.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd4" file="machine/assets/collision/jawR_KS0010175_cd4.stl" />
+    <mesh name="m_col_jawR_KS0010175_cd5" file="machine/assets/collision/jawR_KS0010175_cd5.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd0" file="machine/assets/collision/jawR_KS0010175_1_cd0.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd1" file="machine/assets/collision/jawR_KS0010175_1_cd1.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd2" file="machine/assets/collision/jawR_KS0010175_1_cd2.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd3" file="machine/assets/collision/jawR_KS0010175_1_cd3.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd4" file="machine/assets/collision/jawR_KS0010175_1_cd4.stl" />
+    <mesh name="m_col_jawR_KS0010175_1_cd5" file="machine/assets/collision/jawR_KS0010175_1_cd5.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd0" file="machine/assets/collision/jawL_KS0010175_2_cd0.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd1" file="machine/assets/collision/jawL_KS0010175_2_cd1.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd2" file="machine/assets/collision/jawL_KS0010175_2_cd2.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd3" file="machine/assets/collision/jawL_KS0010175_2_cd3.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd4" file="machine/assets/collision/jawL_KS0010175_2_cd4.stl" />
+    <mesh name="m_col_jawL_KS0010175_2_cd5" file="machine/assets/collision/jawL_KS0010175_2_cd5.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd0" file="machine/assets/collision/jawL_KS0010175_3_cd0.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd1" file="machine/assets/collision/jawL_KS0010175_3_cd1.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd2" file="machine/assets/collision/jawL_KS0010175_3_cd2.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd3" file="machine/assets/collision/jawL_KS0010175_3_cd3.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd4" file="machine/assets/collision/jawL_KS0010175_3_cd4.stl" />
+    <mesh name="m_col_jawL_KS0010175_3_cd5" file="machine/assets/collision/jawL_KS0010175_3_cd5.stl" />
+    <mesh name="m_col_jawL_KS0010176" file="machine/assets/collision/jawL_KS0010176.stl" />
+    <mesh name="m_col_jawR_KS0010277" file="machine/assets/collision/jawR_KS0010277.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd0" file="machine/assets/collision/jawR_KS0010278_cd0.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd1" file="machine/assets/collision/jawR_KS0010278_cd1.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd2" file="machine/assets/collision/jawR_KS0010278_cd2.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd3" file="machine/assets/collision/jawR_KS0010278_cd3.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd4" file="machine/assets/collision/jawR_KS0010278_cd4.stl" />
+    <mesh name="m_col_jawR_KS0010278_cd5" file="machine/assets/collision/jawR_KS0010278_cd5.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd0" file="machine/assets/collision/jawL_KS0010278_1_cd0.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd1" file="machine/assets/collision/jawL_KS0010278_1_cd1.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd2" file="machine/assets/collision/jawL_KS0010278_1_cd2.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd3" file="machine/assets/collision/jawL_KS0010278_1_cd3.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd4" file="machine/assets/collision/jawL_KS0010278_1_cd4.stl" />
+    <mesh name="m_col_jawL_KS0010278_1_cd5" file="machine/assets/collision/jawL_KS0010278_1_cd5.stl" />
+    <mesh name="m_col_jawL_KS0010279" file="machine/assets/collision/jawL_KS0010279.stl" />
+    <mesh name="m_col_jawR_KS0010279_1" file="machine/assets/collision/jawR_KS0010279_1.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd0" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd0.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd1" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd1.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd2" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd2.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd3" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd3.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd4" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd4.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd5" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd5.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd6" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd6.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd7" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd7.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd8" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd8.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd9" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd9.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd10" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd10.stl" />
+    <mesh name="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd11" file="machine/assets/collision/ycar_MSMF042L1U2_STEP_V_choz__cd11.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd0" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd0.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd1" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd1.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd2" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd2.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd3" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd3.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd4" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd4.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd5" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd5.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd6" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd6.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd7" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd7.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd8" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd8.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd9" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd9.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd10" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd10.stl" />
+    <mesh name="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd11" file="machine/assets/collision/ycar_QF12_25________jj_____300_STEP_V_choz__cd11.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd0" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd0.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd1" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd1.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd2" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd2.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd3" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd3.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd4" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd4.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd5" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd5.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd6" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd6.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd7" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd7.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd8" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd8.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd9" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd9.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd10" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd10.stl" />
+    <mesh name="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd11" file="machine/assets/collision/ycar_QF12___60____BL___________STEP_V_choz__cd11.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd0" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd0.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd1" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd1.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd2" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd2.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd3" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd3.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd4" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd4.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd5" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd5.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd6" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd6.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd7" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd7.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd8" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd8.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd9" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd9.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd10" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd10.stl" />
+    <mesh name="m_col_zcar_QF12_______jj___STEP_V_choz__cd11" file="machine/assets/collision/zcar_QF12_______jj___STEP_V_choz__cd11.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd0" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd0.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd1" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd1.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd2" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd2.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd3" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd3.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd4" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd4.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd5" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd5.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd6" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd6.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd7" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd7.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd8" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd8.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd9" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd9.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd10" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd10.stl" />
+    <mesh name="m_col_ycar_QF12_______jj___V_choz__cd11" file="machine/assets/collision/ycar_QF12_______jj___V_choz__cd11.stl" />
+    <mesh name="m_col_jawR_SCHUNK_1313899_BSWS_BM_50" file="machine/assets/collision/jawR_SCHUNK_1313899_BSWS_BM_50.stl" />
+    <mesh name="m_col_jawL_SCHUNK_1313899_BSWS_BM_50_1" file="machine/assets/collision/jawL_SCHUNK_1313899_BSWS_BM_50_1.stl" />
+    <mesh name="m_col_zcar_T_leso1" file="machine/assets/collision/zcar_T_leso1.stl" />
+    <mesh name="m_col_jawL_T_leso3" file="machine/assets/collision/jawL_T_leso3.stl" />
+    <mesh name="m_col_jawR_T_leso4" file="machine/assets/collision/jawR_T_leso4.stl" />
+    <mesh name="ws_vis_static_0_132_255" file="workstation/assets/visual/static_0_132_255.stl" inertia="shell" />
+    <mesh name="ws_vis_static_26_26_26" file="workstation/assets/visual/static_26_26_26.stl" inertia="shell" />
+    <mesh name="ws_vis_static_51_51_51" file="workstation/assets/visual/static_51_51_51.stl" inertia="shell" />
+    <mesh name="ws_vis_static_58_58_58" file="workstation/assets/visual/static_58_58_58.stl" inertia="shell" />
+    <mesh name="ws_vis_static_64_112_191" file="workstation/assets/visual/static_64_112_191.stl" inertia="shell" />
+    <mesh name="ws_vis_static_75_75_75" file="workstation/assets/visual/static_75_75_75.stl" inertia="shell" />
+    <mesh name="ws_vis_static_76_76_76" file="workstation/assets/visual/static_76_76_76.stl" inertia="shell" />
+    <mesh name="ws_vis_static_127_127_127" file="workstation/assets/visual/static_127_127_127.stl" inertia="shell" />
+    <mesh name="ws_vis_static_128_128_128" file="workstation/assets/visual/static_128_128_128.stl" inertia="shell" />
+    <mesh name="ws_vis_static_135_140_140" file="workstation/assets/visual/static_135_140_140.stl" inertia="shell" />
+    <mesh name="ws_vis_static_143_150_153" file="workstation/assets/visual/static_143_150_153.stl" inertia="shell" />
+    <mesh name="ws_vis_static_165_158_150" file="workstation/assets/visual/static_165_158_150.stl" inertia="shell" />
+    <mesh name="ws_vis_static_192_192_192" file="workstation/assets/visual/static_192_192_192.stl" inertia="shell" />
+    <mesh name="ws_vis_static_202_209_238" file="workstation/assets/visual/static_202_209_238.stl" inertia="shell" />
+    <mesh name="ws_vis_static_202_225_255" file="workstation/assets/visual/static_202_225_255.stl" inertia="shell" />
+    <mesh name="ws_vis_static_217_214_219" file="workstation/assets/visual/static_217_214_219.stl" inertia="shell" />
+    <mesh name="ws_vis_static_228_233_237" file="workstation/assets/visual/static_228_233_237.stl" inertia="shell" />
+    <mesh name="ws_vis_static_229_234_237" file="workstation/assets/visual/static_229_234_237.stl" inertia="shell" />
+    <mesh name="ws_vis_static_229_235_237" file="workstation/assets/visual/static_229_235_237.stl" inertia="shell" />
+    <mesh name="ws_vis_static_255_255_255" file="workstation/assets/visual/static_255_255_255.stl" inertia="shell" />
+    <mesh name="ws_col_Box_Type_A_ID_1_00" file="workstation/assets/collision/Box_Type_A_ID_1_00.stl" />
+    <mesh name="ws_col_Box_Type_A_ID_2_01" file="workstation/assets/collision/Box_Type_A_ID_2_01.stl" />
+    <mesh name="ws_col_Box_Type_B_ID_1_02" file="workstation/assets/collision/Box_Type_B_ID_1_02.stl" />
+    <mesh name="ws_col_deska_robot_03" file="workstation/assets/collision/deska_robot_03.stl" />
+    <mesh name="ws_col_Drzak_kamera_kolmy_04" file="workstation/assets/collision/Drzak_kamera_kolmy_04.stl" />
+    <mesh name="ws_col_N30_602_16_stp_V_choz__05" file="workstation/assets/collision/N30_602_16_stp_V_choz__05.stl" />
+    <mesh name="ws_col_Profile_8_240x160_8EN_L_150_V_choz__06" file="workstation/assets/collision/Profile_8_240x160_8EN_L_150_V_choz__06.stl" />
+    <mesh name="ws_col_Profile_8_40x40_light_L_340_V_choz__07" file="workstation/assets/collision/Profile_8_40x40_light_L_340_V_choz__07.stl" />
+    <mesh name="ws_col_Profile_8_40x40_light_L_900_V_choz__08" file="workstation/assets/collision/Profile_8_40x40_light_L_900_V_choz__08.stl" />
+    <mesh name="ws_col_WTGovde_1_2mm_600x600x300_stp_V_choz__09" file="workstation/assets/collision/WTGovde_1_2mm_600x600x300_stp_V_choz__09.stl" />
+    <mesh name="aubo/base_link_0" file="robot/aubo_i5/meshes/visual/base_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/base_link_1" file="robot/aubo_i5/meshes/visual/base_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_0" file="robot/aubo_i5/meshes/visual/shoulder_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_1" file="robot/aubo_i5/meshes/visual/shoulder_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_0" file="robot/aubo_i5/meshes/visual/upper_arm_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_1" file="robot/aubo_i5/meshes/visual/upper_arm_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_0" file="robot/aubo_i5/meshes/visual/forearm_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_1" file="robot/aubo_i5/meshes/visual/forearm_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_0" file="robot/aubo_i5/meshes/visual/wrist_1_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_1" file="robot/aubo_i5/meshes/visual/wrist_1_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_0" file="robot/aubo_i5/meshes/visual/wrist_2_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_1" file="robot/aubo_i5/meshes/visual/wrist_2_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_0" file="robot/aubo_i5/meshes/visual/wrist_3_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_1" file="robot/aubo_i5/meshes/visual/wrist_3_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_2" file="robot/aubo_i5/meshes/visual/wrist_3_link_2.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_3" file="robot/aubo_i5/meshes/visual/wrist_3_link_3.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/base_link_collision" file="robot/aubo_i5/meshes/collision/base_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_collision" file="robot/aubo_i5/meshes/collision/shoulder_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_0" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_0.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_1" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_1.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_2" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_2.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_0" file="robot/aubo_i5/meshes/collision/forearm_link_collision_0.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_1" file="robot/aubo_i5/meshes/collision/forearm_link_collision_1.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_2" file="robot/aubo_i5/meshes/collision/forearm_link_collision_2.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_collision" file="robot/aubo_i5/meshes/collision/wrist_1_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_collision" file="robot/aubo_i5/meshes/collision/wrist_2_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_collision" file="robot/aubo_i5/meshes/collision/wrist_3_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/tool/tool_vis_00" file="robot_tool/assets/tool/vis_00.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_01" file="robot_tool/assets/tool/vis_01.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_02" file="robot_tool/assets/tool/vis_02.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_03" file="robot_tool/assets/tool/vis_03.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_04" file="robot_tool/assets/tool/vis_04.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_05" file="robot_tool/assets/tool/vis_05.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_06" file="robot_tool/assets/tool/vis_06.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_07" file="robot_tool/assets/tool/vis_07.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_08" file="robot_tool/assets/tool/vis_08.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_09" file="robot_tool/assets/tool/vis_09.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_10" file="robot_tool/assets/tool/vis_10.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_11" file="robot_tool/assets/tool/vis_11.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_12" file="robot_tool/assets/tool/vis_12.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_13" file="robot_tool/assets/tool/vis_13.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_14" file="robot_tool/assets/tool/vis_14.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_15" file="robot_tool/assets/tool/vis_15.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_16" file="robot_tool/assets/tool/vis_16.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_17" file="robot_tool/assets/tool/vis_17.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_18" file="robot_tool/assets/tool/vis_18.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_19" file="robot_tool/assets/tool/vis_19.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_20" file="robot_tool/assets/tool/vis_20.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_21" file="robot_tool/assets/tool/vis_21.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_22" file="robot_tool/assets/tool/vis_22.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_23" file="robot_tool/assets/tool/vis_23.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_24" file="robot_tool/assets/tool/vis_24.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_25" file="robot_tool/assets/tool/vis_25.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_26" file="robot_tool/assets/tool/vis_26.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_27" file="robot_tool/assets/tool/vis_27.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_28" file="robot_tool/assets/tool/vis_28.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_vis_opener" file="robot_tool/assets/tool/vis_opener.stl" inertia="shell" />
+    <mesh name="aubo/tool/tool_col_opener_00" file="robot_tool/assets/tool/col_opener_00.stl" />
+    <mesh name="aubo/tool/tool_col_opener_01" file="robot_tool/assets/tool/col_opener_01.stl" />
+    <mesh name="aubo/tool/tool_col_opener_02" file="robot_tool/assets/tool/col_opener_02.stl" />
+    <mesh name="aubo/tool/tool_col_opener_03" file="robot_tool/assets/tool/col_opener_03.stl" />
+    <mesh name="aubo/tool/tool_col_opener_04" file="robot_tool/assets/tool/col_opener_04.stl" />
+    <mesh name="aubo/tool/tool_col_opener_05" file="robot_tool/assets/tool/col_opener_05.stl" />
+    <mesh name="aubo/tool/tool_col_opener_06" file="robot_tool/assets/tool/col_opener_06.stl" />
+    <mesh name="aubo/tool/tool_col_opener_07" file="robot_tool/assets/tool/col_opener_07.stl" />
+    <mesh name="aubo/tool/tool_col_opener_08" file="robot_tool/assets/tool/col_opener_08.stl" />
+    <mesh name="aubo/tool/tool_col_opener_09" file="robot_tool/assets/tool/col_opener_09.stl" />
+    <mesh name="aubo/tool/tool_col_opener_10" file="robot_tool/assets/tool/col_opener_10.stl" />
+    <mesh name="aubo/tool/tool_col_opener_11" file="robot_tool/assets/tool/col_opener_11.stl" />
+    <mesh name="aubo/tool/tool_col_opener_12" file="robot_tool/assets/tool/col_opener_12.stl" />
+    <mesh name="aubo/tool/tool_col_opener_13" file="robot_tool/assets/tool/col_opener_13.stl" />
+    <mesh name="aubo/tool/tool_col_opener_14" file="robot_tool/assets/tool/col_opener_14.stl" />
+    <mesh name="aubo/tool/tool_col_opener_15" file="robot_tool/assets/tool/col_opener_15.stl" />
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="3 3 0.1" pos="0 0 -0.873" type="plane" contype="0" conaffinity="0" material="grid" />
+    <camera name="cam_pcb" target="pcb" pos="-0.55 -0.85 0.75" mode="targetbody" fovy="40" />
+    <camera name="cam_tool" target="aubo/tool/ee_tool" pos="-0.3 0.35 0.8" mode="targetbody" />
+    <light pos="1.2 -2 2.6" dir="-0.3114 0.544949 -0.778499" diffuse="0.55 0.55 0.55" specular="0.25 0.25 0.25" type="directional" />
+    <light pos="-1.5 -1 2" dir="0.486664 0.324443 -0.811107" diffuse="0.3 0.3 0.3" specular="0.25 0.25 0.25" type="directional" />
+    <light castshadow="false" pos="0 1.5 2.2" dir="0 -0.514496 -0.857493" diffuse="0.2 0.2 0.2" specular="0.25 0.25 0.25" type="directional" />
+    <body name="workstation">
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0 0.517647 1 1" density="0" material="look_plastic" mesh="ws_vis_static_0_132_255" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.101961 0.101961 0.101961 1" density="0" material="look_dark" mesh="ws_vis_static_26_26_26" />
+      <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.2 0.2 0.2 1" density="0" material="look_dark" mesh="ws_vis_static_51_51_51" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.227451 0.227451 0.227451 1" density="0" material="look_dark" mesh="ws_vis_static_58_58_58" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.25098 0.439216 0.74902 1" density="0" material="look_plastic" mesh="ws_vis_static_64_112_191" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.294118 0.294118 0.294118 1" density="0" material="look_alu" mesh="ws_vis_static_75_75_75" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.298039 0.298039 0.298039 1" density="0" material="look_alu" mesh="ws_vis_static_76_76_76" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.498039 0.498039 0.498039 1" density="0" material="look_alu" mesh="ws_vis_static_127_127_127" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.501961 0.501961 0.501961 1" density="0" material="look_alu" mesh="ws_vis_static_128_128_128" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.529412 0.54902 0.54902 1" density="0" material="look_alu" mesh="ws_vis_static_135_140_140" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.560784 0.588235 0.6 1" density="0" material="look_alu" mesh="ws_vis_static_143_150_153" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.647059 0.619608 0.588235 1" density="0" material="look_alu" mesh="ws_vis_static_165_158_150" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.752941 0.752941 0.752941 1" density="0" material="look_alu" mesh="ws_vis_static_192_192_192" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.792157 0.819608 0.933333 1" density="0" material="look_alu" mesh="ws_vis_static_202_209_238" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.792157 0.882353 1 1" density="0" material="look_plastic" mesh="ws_vis_static_202_225_255" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.85098 0.839216 0.858824 1" density="0" material="look_alu" mesh="ws_vis_static_217_214_219" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.894118 0.913725 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_228_233_237" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.898039 0.917647 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_229_234_237" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.898039 0.921569 0.929412 1" density="0" material="look_alu" mesh="ws_vis_static_229_235_237" />
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="1 1 1 1" density="0" material="look_alu" mesh="ws_vis_static_255_255_255" />
+      <geom name="ws_col_Box_Type_B_ID_1_02" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Box_Type_B_ID_1_02" />
+      <geom name="ws_col_deska_robot_03" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_deska_robot_03" />
+      <geom name="ws_col_Drzak_kamera_kolmy_04" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Drzak_kamera_kolmy_04" />
+      <geom name="ws_col_N30_602_16_stp_V_choz__05" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_N30_602_16_stp_V_choz__05" />
+      <geom name="ws_col_Profile_8_240x160_8EN_L_150_V_choz__06" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Profile_8_240x160_8EN_L_150_V_choz__06" />
+      <geom name="ws_col_Profile_8_40x40_light_L_340_V_choz__07" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Profile_8_40x40_light_L_340_V_choz__07" />
+      <geom name="ws_col_Profile_8_40x40_light_L_900_V_choz__08" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_Profile_8_40x40_light_L_900_V_choz__08" />
+      <geom name="ws_col_WTGovde_1_2mm_600x600x300_stp_V_choz__09" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="2" conaffinity="0" group="3" rgba="0.3 0.9 0.3 0.3" density="0" mesh="ws_col_WTGovde_1_2mm_600x600x300_stp_V_choz__09" />
+      <geom name="crate_pick_0" size="0.0985 0.1485 0.001" pos="0.1572 -0.7516 0.003" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_pick_1" size="0.0075 0.1485 0.0745" pos="0.0662 -0.7516 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_pick_2" size="0.0075 0.1485 0.0745" pos="0.2482 -0.7516 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_pick_3" size="0.0835 0.0115 0.0745" pos="0.1572 -0.8886 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_pick_4" size="0.0835 0.0115 0.0745" pos="0.1572 -0.6146 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_place_0" size="0.0985 0.1485 0.001" pos="0.4062 -0.7516 0.003" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_place_1" size="0.0075 0.1485 0.0745" pos="0.3152 -0.7516 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_place_2" size="0.0075 0.1485 0.0745" pos="0.4972 -0.7516 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_place_3" size="0.0835 0.0115 0.0745" pos="0.4062 -0.8886 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+      <geom name="crate_place_4" size="0.0835 0.0115 0.0745" pos="0.4062 -0.6146 0.0745" type="box" contype="2" group="3" rgba="0.3 0.5 0.9 0.3" />
+    </body>
+    <body name="mg06_base" childclass="mg06">
+      <inertial pos="0.011686 0.019662 0.084405" quat="-0.0449588 0.713791 -0.0518559 0.696988" mass="22.33" diaginertia="0.826628 0.633595 0.450767" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.102 0.102 0.102 1" material="look_dark" mesh="vis_base_26_26_26" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.298 0.298 0.298 1" material="look_alu" mesh="vis_base_76_76_76" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.302 0.306 0.29 1" material="look_alu" mesh="vis_base_77_78_74" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.529 0.549 0.549 1" material="look_alu" mesh="vis_base_135_140_140" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.643 0.616 0.6 1" material="look_alu" mesh="vis_base_164_157_153" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.647 0.62 0.588 1" material="look_alu" mesh="vis_base_165_158_150" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.792 0.82 0.933 1" material="look_alu" mesh="vis_base_202_209_238" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.843 0.816 0.753 1" material="look_alu" mesh="vis_base_215_208_192" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898 0.918 0.929 1" material="look_alu" mesh="vis_base_229_234_237" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.922 0.922 0.922 1" material="look_alu" mesh="vis_base_235_235_235" />
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.102 0.102 0.102 1" material="look_dark" mesh="vis_black_plate" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_00" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_01" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_02" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_03" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_04" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_05" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_06" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_07" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_08" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_09" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_10" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_11" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_12" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_13" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_14" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_15" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_16" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_17" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_holder_18" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_00" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_01" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_02" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_03" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_04" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_05" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_06" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_07" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_08" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_09" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_10" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_11" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_12" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_13" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_14" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_15" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_16" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_17" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_18" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_19" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_20" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_21" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_22" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_23" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_24" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_25" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_26" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_27" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_28" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_29" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_30" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_31" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_32" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_33" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_34" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_35" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_36" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_37" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_38" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" conaffinity="2" mesh="col_plate_39" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_base_KS0010160" />
+      <geom class="col_base" quat="1 0 0 0" mesh="col_base_KS0010162" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_base_VVE01_00115_t_rkis_STEP" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_base_VVE02_00070_STEP" />
+      <geom class="col_base" pos="0 0 0" quat="1 0 0 0" mesh="col_base_VVE03_00038_STEP" />
+      <geom name="black_plate" class="col_base" size="0.21161 0.23121 0.0050732" pos="0.005715 -0.018125 0.1735" quat="0.996958 0.0779369 0 0" type="box" contype="32" conaffinity="1" />
+      <geom class="col_base" mesh="col_base_VVE90_01393_STEP" />
+      <geom class="col_base" quat="1 0 0 0" mesh="col_base_VVE90_01394_STEP" />
+      <geom name="lock_pin_L" size="0.005 0.009" pos="-0.166 -0.07 0.178" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" />
+      <geom name="lock_pin_R" size="0.005 0.009" pos="0.166 -0.07 0.178" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" />
+      <site name="gas_base_L" size="0.006" pos="-0.15 -0.1 0.13" group="4" rgba="1 0.5 0 1" />
+      <site name="gas_base_R" size="0.006" pos="0.15 -0.1 0.13" group="4" rgba="1 0.5 0 1" />
+      <body name="mg06_lid" pos="0 0.15653 0.3027">
+        <inertial pos="0.0048897 -0.12008 -0.010154" quat="-0.0662264 0.703614 -0.083861 0.702501" mass="5.797" diaginertia="0.179691 0.0981924 0.093575" />
+        <joint name="lid_hinge" solreflimit="0.004" range="-0.6974 0" armature="0.02" damping="8" frictionloss="0.3" axis="1 0 0" />
+        <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.102 0.102 0.102 1" material="look_dark" mesh="vis_lid_26_26_26" />
+        <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.643 0.616 0.6 1" material="look_alu" mesh="vis_lid_164_157_153" />
+        <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.792 0.82 0.933 1" material="look_alu" mesh="vis_lid_202_209_238" />
+        <geom class="collision" mesh="col_lid_VVE90_01177_STEP" />
+        <geom class="collision" mesh="col_lid_VVE90_01177_STEP_1" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01292_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01293_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01304_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01304_STEP_1" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01308_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01397_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01398_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01401_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01402_STEP" />
+        <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_lid_VVE90_01412_STEP" />
+        <geom class="collision" quat="1 0 0 0" mesh="col_lid_VVE90_01413_STEP" />
+        <geom class="collision" quat="1 0 0 0" mesh="col_lid_VVE90_01414_STEP" />
+        <site name="gas_lid_L" size="0.006" pos="-0.15 -0.2 -0.09" group="4" rgba="1 0.5 0 1" />
+        <site name="gas_lid_R" size="0.006" pos="0.15 -0.2 -0.09" group="4" rgba="1 0.5 0 1" />
+        <site name="tog_lid_L" pos="-0.172 -0.3307 0.017437" group="4" rgba="0 0.6 1 1" />
+        <site name="tog_lid_R" pos="0.172 -0.3307 0.017437" group="4" rgba="0 0.6 1 1" />
+        <body name="mg06_press">
+          <inertial pos="0.005715 -0.15231 -0.01502" quat="0.459613 0.53736 -0.537359 0.459614" mass="1.179" diaginertia="0.0173391 0.0098013 0.00755764" />
+          <joint name="press_slide" type="slide" range="0 0.012" damping="20" axis="0 0.154989 -0.987916" />
+          <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.941 0.961 0.969 1" material="look_alu" mesh="vis_press_240_245_247" />
+          <geom class="collision" pos="0 0 0" quat="1 0 0 0" mesh="col_press_VVE04_00030_STEP" />
+        </body>
+        <body name="mg06_handle" pos="0 -0.27193 -0.063471">
+          <inertial pos="0.0057607 -0.10442 0.02215" quat="0.115623 0.697598 0.11544 0.697612" mass="0.7856" diaginertia="0.0204476 0.0162464 0.0050608" />
+          <joint name="handle_hinge" solreflimit="0.004" range="0 1.047" armature="0.005" damping="4" frictionloss="0.6" axis="1 0 0" />
+          <geom name="lock_hook0_L" size="0.004 0.009" pos="-0.166 0.01141 -0.08597" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook0_R" size="0.004 0.009" pos="0.166 0.01141 -0.08597" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook1_L" size="0.004 0.009" pos="-0.166 0.00986 -0.08617" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook1_R" size="0.004 0.009" pos="0.166 0.00986 -0.08617" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook2_L" size="0.004 0.009" pos="-0.166 0.0083 -0.08633" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook2_R" size="0.004 0.009" pos="0.166 0.0083 -0.08633" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook3_L" size="0.004 0.009" pos="-0.166 0.00674 -0.08646" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook3_R" size="0.004 0.009" pos="0.166 0.00674 -0.08646" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook4_L" size="0.004 0.009" pos="-0.166 0.00519 -0.08657" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook4_R" size="0.004 0.009" pos="0.166 0.00519 -0.08657" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook5_L" size="0.004 0.009" pos="-0.166 0.00362 -0.08665" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook5_R" size="0.004 0.009" pos="0.166 0.00362 -0.08665" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook6_L" size="0.004 0.009" pos="-0.166 0.00206 -0.0867" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook6_R" size="0.004 0.009" pos="0.166 0.00206 -0.0867" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook7_L" size="0.004 0.009" pos="-0.166 0.0005 -0.08673" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook7_R" size="0.004 0.009" pos="0.166 0.0005 -0.08673" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook8_L" size="0.004 0.009" pos="-0.166 -0.00107 -0.08672" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook8_R" size="0.004 0.009" pos="0.166 -0.00107 -0.08672" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook9_L" size="0.004 0.009" pos="-0.166 -0.00263 -0.08669" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook9_R" size="0.004 0.009" pos="0.166 -0.00263 -0.08669" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook10_L" size="0.004 0.009" pos="-0.166 -0.00419 -0.08663" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook10_R" size="0.004 0.009" pos="0.166 -0.00419 -0.08663" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook11_L" size="0.004 0.009" pos="-0.166 -0.00575 -0.08654" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook11_R" size="0.004 0.009" pos="0.166 -0.00575 -0.08654" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook12_L" size="0.004 0.009" pos="-0.166 -0.00731 -0.08642" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook12_R" size="0.004 0.009" pos="0.166 -0.00731 -0.08642" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook13_L" size="0.004 0.009" pos="-0.166 -0.00887 -0.08627" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook13_R" size="0.004 0.009" pos="0.166 -0.00887 -0.08627" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook14_L" size="0.004 0.009" pos="-0.166 -0.01042 -0.0861" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook14_R" size="0.004 0.009" pos="0.166 -0.01042 -0.0861" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook15_L" size="0.004 0.009" pos="-0.166 -0.01197 -0.0859" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook15_R" size="0.004 0.009" pos="0.166 -0.01197 -0.0859" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook16_L" size="0.004 0.009" pos="-0.166 -0.01352 -0.08567" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook16_R" size="0.004 0.009" pos="0.166 -0.01352 -0.08567" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook17_L" size="0.004 0.009" pos="-0.166 -0.01506 -0.08541" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook17_R" size="0.004 0.009" pos="0.166 -0.01506 -0.08541" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook18_L" size="0.004 0.009" pos="-0.166 -0.0166 -0.08512" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook18_R" size="0.004 0.009" pos="0.166 -0.0166 -0.08512" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook19_L" size="0.004 0.009" pos="-0.166 -0.01813 -0.08481" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook19_R" size="0.004 0.009" pos="0.166 -0.01813 -0.08481" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook20_L" size="0.004 0.009" pos="-0.166 -0.01966 -0.08447" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook20_R" size="0.004 0.009" pos="0.166 -0.01966 -0.08447" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook21_L" size="0.004 0.009" pos="-0.166 -0.02118 -0.0841" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook21_R" size="0.004 0.009" pos="0.166 -0.02118 -0.0841" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook22_L" size="0.004 0.009" pos="-0.166 -0.02269 -0.08371" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook22_R" size="0.004 0.009" pos="0.166 -0.02269 -0.08371" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook23_L" size="0.004 0.009" pos="-0.166 -0.02419 -0.08328" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook23_R" size="0.004 0.009" pos="0.166 -0.02419 -0.08328" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook24_L" size="0.004 0.009" pos="-0.166 -0.02569 -0.08283" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook24_R" size="0.004 0.009" pos="0.166 -0.02569 -0.08283" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook25_L" size="0.004 0.009" pos="-0.166 -0.02718 -0.08236" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook25_R" size="0.004 0.009" pos="0.166 -0.02718 -0.08236" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook26_L" size="0.004 0.009" pos="-0.166 -0.02866 -0.08185" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook26_R" size="0.004 0.009" pos="0.166 -0.02866 -0.08185" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook27_L" size="0.004 0.009" pos="-0.166 -0.03013 -0.08132" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook27_R" size="0.004 0.009" pos="0.166 -0.03013 -0.08132" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook28_L" size="0.004 0.009" pos="-0.166 -0.03159 -0.08077" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook28_R" size="0.004 0.009" pos="0.166 -0.03159 -0.08077" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook29_L" size="0.004 0.009" pos="-0.166 -0.03304 -0.08019" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook29_R" size="0.004 0.009" pos="0.166 -0.03304 -0.08019" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook30_L" size="0.004 0.009" pos="-0.166 -0.03448 -0.07958" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom name="lock_hook30_R" size="0.004 0.009" pos="0.166 -0.03448 -0.07958" quat="0.707107 0 -0.707107 0" type="capsule" contype="8" conaffinity="8" group="3" friction="0.1" rgba="1 0 1 0.8" density="0" />
+          <geom class="visual" pos="0 0 0" quat="1 0 0 0" rgba="0.643 0.616 0.6 1" material="look_alu" mesh="vis_handle_164_157_153" />
+          <geom class="col_handle" pos="0 0 0" quat="1 0 0 0" mesh="col_handle_VVE90_01395_STEP" />
+          <geom class="col_handle" pos="0 0 0" quat="1 0 0 0" mesh="col_handle_VVE90_01396_STEP" />
+          <geom name="handle_bar" size="0.015 0.1555" pos="0.0005 -0.1838 0.0392" quat="0.707107 0 -0.707107 0" type="capsule" condim="6" group="3" friction="1.2 0.02 0.1" rgba="0.2 0.8 0.2 0.4" density="0" />
+          <site name="tog_hdl_L" pos="-0.172 0 0.04" group="4" rgba="0 0.6 1 1" />
+          <site name="tog_hdl_R" pos="0.172 0 0.04" group="4" rgba="0 0.6 1 1" />
+          <site name="handle_grasp" size="0.008" pos="0.0005 -0.1838 0.0392" group="4" rgba="0 1 0 1" />
+        </body>
+      </body>
+    </body>
+    <body name="loader_base" childclass="loader" pos="0.00095 0.1 0">
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.08 0.08 0.08 1" material="look_dark" mesh="m_vis_base_0_0_0" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.0588235 0.027451 1 1" material="look_plastic" mesh="m_vis_base_15_7_255" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.192157 0.152941 1 1" material="look_plastic" mesh="m_vis_base_49_39_255" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_vis_base_128_128_128" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.603922 0.603922 0.603922 1" material="look_alu" mesh="m_vis_base_154_154_154" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.662745 0.309804 1 1" material="look_plastic" mesh="m_vis_base_169_79_255" />
+      <geom class="m_visual" rgba="0.752941 0.752941 0.752941 1" material="look_alu" mesh="m_vis_base_192_192_192" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.792157 0.792157 0.792157 1" material="look_alu" mesh="m_vis_base_202_202_202" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.823529 0.823529 0.823529 1" material="look_alu" mesh="m_vis_base_210_210_210" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.866667 0.909804 1 1" material="look_alu" mesh="m_vis_base_221_232_255" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.909804 0.929412 1" material="look_alu" mesh="m_vis_base_228_232_237" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_vis_base_228_233_237" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898039 0.917647 0.929412 1" material="look_alu" mesh="m_vis_base_229_234_237" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.92549 0.92549 0.92549 1" material="look_alu" mesh="m_vis_base_236_236_236" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.937255 0 0 1" material="look_plastic" mesh="m_vis_base_239_0_0" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.984314 1 0.968627 1" material="look_alu" mesh="m_vis_base_251_255_247" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.247059 0.788235 1" material="look_plastic" mesh="m_vis_base_255_63_201" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_ws_base_128_128_128" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.847059 0.839216 0.839216 1" material="look_alu" mesh="m_ws_base_216_214_214" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_ws_base_228_233_237" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0 0 1" material="look_plastic" mesh="m_ws_base_255_0_0" />
+      <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0 1 1" material="look_plastic" mesh="m_ws_base_255_0_255" />
+      <body name="y_carriage">
+        <inertial pos="-0.07011 -0.429031 -0.305605" mass="4" diaginertia="0.123338 0.0976138 0.0363668" />
+        <joint name="y_axis" type="slide" range="-0.1995 0.2205" damping="40" axis="0 1 0" />
+        <geom class="m_visual" rgba="0.08 0.08 0.08 1" material="look_dark" mesh="m_vis_ycar_0_0_0" />
+        <geom class="m_visual" rgba="0.0588235 0.027451 1 1" material="look_plastic" mesh="m_vis_ycar_15_7_255" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.192157 0.152941 1 1" material="look_plastic" mesh="m_vis_ycar_49_39_255" />
+        <geom class="m_visual" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_vis_ycar_128_128_128" />
+        <geom class="m_visual" rgba="0.662745 0.309804 1 1" material="look_plastic" mesh="m_vis_ycar_169_79_255" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.752941 0.752941 0.752941 1" material="look_alu" mesh="m_vis_ycar_192_192_192" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.823529 0.823529 0.823529 1" material="look_alu" mesh="m_vis_ycar_210_210_210" />
+        <geom class="m_visual" rgba="0.866667 0.909804 1 1" material="look_alu" mesh="m_vis_ycar_221_232_255" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.909804 0.929412 1" material="look_alu" mesh="m_vis_ycar_228_232_237" />
+        <geom class="m_visual" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_vis_ycar_228_233_237" />
+        <geom class="m_visual" rgba="0.898039 0.917647 0.929412 1" material="look_alu" mesh="m_vis_ycar_229_234_237" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.92549 0.92549 0.92549 1" material="look_alu" mesh="m_vis_ycar_236_236_236" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.937255 0 0 1" material="look_plastic" mesh="m_vis_ycar_239_0_0" />
+        <geom class="m_visual" rgba="0.984314 1 0.968627 1" material="look_alu" mesh="m_vis_ycar_251_255_247" />
+        <geom class="m_visual" rgba="1 0 1 1" material="look_plastic" mesh="m_vis_ycar_255_0_255" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.247059 0.788235 1" material="look_plastic" mesh="m_vis_ycar_255_63_201" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_ws_ycar_128_128_128" />
+        <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_ws_ycar_228_233_237" />
+        <geom class="m_visual" rgba="1 0 0 1" material="look_plastic" mesh="m_ws_ycar_255_0_0" />
+        <geom class="m_visual" rgba="1 0 1 1" material="look_plastic" mesh="m_ws_ycar_255_0_255" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd0" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd1" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd2" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd3" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd4" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_KS0010105_cd5" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_KS0010105_cd6" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd7" />
+        <geom class="m_collision" mesh="m_col_ycar_KS0010105_cd8" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd0" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd1" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd2" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd3" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd4" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd5" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd6" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd7" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd8" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd9" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd10" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_MSMF042L1U2_STEP_V_choz__cd11" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd0" />
+        <geom class="m_collision" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd1" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd2" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd3" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd4" />
+        <geom class="m_collision" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd5" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd6" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd7" />
+        <geom class="m_collision" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd8" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd9" />
+        <geom class="m_collision" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd10" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_25________jj_____300_STEP_V_choz__cd11" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd0" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd1" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd2" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd3" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd4" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd5" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd6" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd7" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd8" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd9" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd10" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12___60____BL___________STEP_V_choz__cd11" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd0" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd1" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd2" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd3" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd4" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd5" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd6" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd7" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd8" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd9" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd10" />
+        <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_ycar_QF12_______jj___V_choz__cd11" />
+        <body name="z_carriage" gravcomp="1">
+          <inertial pos="0.00919002 -0.545622 -0.11825" mass="1.6" diaginertia="0.0793316 0.0762742 0.00859085" />
+          <joint name="z_axis" type="slide" range="-0.0035 0.2965" damping="40" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.239216 0.415686 1" material="look_plastic" mesh="m_vis_zcar_0_61_106" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.619608 0.878431 1" material="look_plastic" mesh="m_vis_zcar_0_158_224" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.117647 0.117647 0.117647 1" material="look_dark" mesh="m_vis_zcar_30_30_30" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.196078 0.196078 0.196078 1" material="look_dark" mesh="m_vis_zcar_50_50_50" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.231373 0.231373 0.231373 1" material="look_dark" mesh="m_vis_zcar_59_59_59" />
+          <geom class="m_visual" rgba="0.647059 0.619608 0.588235 1" material="look_alu" mesh="m_vis_zcar_165_158_150" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.654902 0.654902 0.654902 1" material="look_alu" mesh="m_vis_zcar_167_167_167" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.690196 0.690196 0.690196 1" material="look_alu" mesh="m_vis_zcar_176_176_176" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.752941 0.752941 0.752941 1" material="look_alu" mesh="m_vis_zcar_192_192_192" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.792157 0.819608 0.933333 1" material="look_alu" mesh="m_vis_zcar_202_209_238" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.839216 0.745098 0.156863 1" material="look_plastic" mesh="m_vis_zcar_214_190_40" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.894118 0.913725 0.929412 1" material="look_alu" mesh="m_vis_zcar_228_233_237" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898039 0.898039 0.898039 1" material="look_alu" mesh="m_vis_zcar_229_229_229" />
+          <geom class="m_visual" rgba="0.898039 0.917647 0.929412 1" material="look_alu" mesh="m_vis_zcar_229_234_237" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898039 0.921569 0.929412 1" material="look_alu" mesh="m_vis_zcar_229_235_237" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0 1 1" material="look_plastic" mesh="m_vis_zcar_255_0_255" />
+          <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 1 1 1" material="look_alu" mesh="m_vis_zcar_255_255_255" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd0" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd1" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd2" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd3" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd4" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd5" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd6" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd7" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd9" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd10" />
+          <geom class="m_collision" mesh="m_col_zcar_DS08_Drehscheibe_V_choz__cd11" />
+          <geom class="m_collision" mesh="m_col_zcar_KS0010170_cd0" />
+          <geom class="m_collision" mesh="m_col_zcar_KS0010170_cd1" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd2" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd3" />
+          <geom class="m_collision" mesh="m_col_zcar_KS0010170_cd4" />
+          <geom class="m_collision" mesh="m_col_zcar_KS0010170_cd5" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd6" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd7" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010170_cd9" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd0" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd1" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd2" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd3" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd4" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd5" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd6" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd7" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010171_cd9" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd0" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd1" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd2" />
+          <geom class="m_collision" mesh="m_col_zcar_KS0010172_cd3" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd4" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd5" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd6" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd7" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd9" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd10" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_KS0010172_cd11" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd0" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd1" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd2" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd3" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd4" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd5" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd6" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd7" />
+          <geom class="m_collision" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd8" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd9" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd10" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_QF12_______jj___STEP_V_choz__cd11" />
+          <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_zcar_T_leso1" />
+          <body name="jaw_L" gravcomp="1">
+            <inertial pos="-0.03131 -0.387768 0.163295" mass="0.09" diaginertia="0.000248088 4.71185e-05 0.000256876" />
+            <joint name="jaw_L" type="slide" range="0 0.04" armature="0.01" damping="2" axis="-1 0 0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.08 0.08 0.08 1" material="look_dark" mesh="m_vis_jawL_0_0_0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.235294 0.415686 1" material="look_plastic" mesh="m_vis_jawL_0_60_106" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.619608 0.87451 1" material="look_plastic" mesh="m_vis_jawL_0_158_223" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.137255 0.137255 0.137255 1" material="look_dark" mesh="m_vis_jawL_35_35_35" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0 1" material="look_plastic" mesh="m_vis_jawL_128_128_0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_vis_jawL_128_128_128" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.752941 0.752941 0.752941 1" material="look_alu" mesh="m_vis_jawL_192_192_192" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898039 0.917647 0.929412 1" material="look_alu" mesh="m_vis_jawL_229_234_237" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 1 1 1" material="look_alu" mesh="m_vis_jawL_255_255_255" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawL_KS0010176" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawL_KS0010279" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawL_SCHUNK_1313899_BSWS_BM_50_1" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawL_T_leso3" />
+            <geom class="m_pad" size="0.0045 0.005 0.00125" pos="-0.037 -0.342785 0.141703" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.00325 0.005 0.0015" pos="-0.04075 -0.343212 0.144419" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.002 0.005 0.00814325" pos="-0.0419034 -0.344554 0.15295" quat="0.984849 0.0769904 -0.154916 -0.0121106" type="box" />
+            <geom class="m_pad" size="0.0059 0.005 0.0057" pos="-0.0489 -0.345574 0.159435" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.0045 0.005 0.00125" pos="-0.037 -0.315125 0.146054" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.00325 0.005 0.0015" pos="-0.04075 -0.315552 0.14877" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.002 0.005 0.00814325" pos="-0.0419034 -0.316894 0.157302" quat="0.984849 0.0769904 -0.154916 -0.0121106" type="box" />
+            <geom class="m_pad" size="0.0059 0.005 0.0057" pos="-0.0489 -0.317914 0.163786" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.005 0.005 0.00975" pos="-0.0375 -0.353984 0.148545" quat="0.996958 0.0779371 0 0" type="box" />
+          </body>
+          <body name="jaw_R" gravcomp="1">
+            <inertial pos="0.04074 -0.387768 0.163295" mass="0.09" diaginertia="0.000248088 4.71185e-05 0.000256876" />
+            <joint name="jaw_R" type="slide" range="0 0.04" armature="0.01" damping="2" axis="1 0 0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.08 0.08 0.08 1" material="look_dark" mesh="m_vis_jawR_0_0_0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.235294 0.415686 1" material="look_plastic" mesh="m_vis_jawR_0_60_106" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.619608 0.87451 1" material="look_plastic" mesh="m_vis_jawR_0_158_223" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.137255 0.137255 0.137255 1" material="look_dark" mesh="m_vis_jawR_35_35_35" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0 1" material="look_plastic" mesh="m_vis_jawR_128_128_0" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.501961 0.501961 0.501961 1" material="look_alu" mesh="m_vis_jawR_128_128_128" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.752941 0.752941 0.752941 1" material="look_alu" mesh="m_vis_jawR_192_192_192" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.898039 0.917647 0.929412 1" material="look_alu" mesh="m_vis_jawR_229_234_237" />
+            <geom class="m_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 1 1 1" material="look_alu" mesh="m_vis_jawR_255_255_255" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawR_KS0010277" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawR_KS0010279_1" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawR_SCHUNK_1313899_BSWS_BM_50" />
+            <geom class="m_collision" pos="0 0 0" quat="1 0 0 0" mesh="m_col_jawR_T_leso4" />
+            <geom class="m_pad" size="0.0045 0.005 0.00125" pos="0.0465 -0.342785 0.141703" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.00325 0.005 0.0015" pos="0.05025 -0.343212 0.144419" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.002 0.005 0.00814325" pos="0.0514034 -0.344554 0.15295" quat="0.984849 0.0769904 0.154916 0.0121106" type="box" />
+            <geom class="m_pad" size="0.0059 0.005 0.0057" pos="0.0584 -0.345574 0.159435" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.0045 0.005 0.00125" pos="0.0465 -0.315125 0.146054" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.00325 0.005 0.0015" pos="0.05025 -0.315552 0.14877" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.002 0.005 0.00814325" pos="0.0514034 -0.316894 0.157302" quat="0.984849 0.0769904 0.154916 0.0121106" type="box" />
+            <geom class="m_pad" size="0.0059 0.005 0.0057" pos="0.0584 -0.317914 0.163786" quat="0.996958 0.0779371 0 0" type="box" />
+            <geom class="m_pad" size="0.005 0.005 0.00975" pos="0.047 -0.353984 0.148545" quat="0.996958 0.0779371 0 0" type="box" />
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="pcb" pos="0.0057 -0.308294 0.149609" quat="0.996958 0.0779371 0 0">
+      <inertial pos="0 0 0" mass="0.06" diaginertia="3.13794e-05 7.1537e-05 0.000102884" />
+      <joint name="pcb_free" type="free" />
+      <geom name="pcb_vis" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.91 0.45 0.03 1" mesh="pcb_local" />
+      <geom name="pcb_board" size="0.0598 0.0396 0.0009" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />
+      <geom name="pcb_rear_l" size="0.00205 0.0019 0.0009" pos="-0.05775 0.0415 0" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />
+      <geom name="pcb_rear_r" size="0.00225 0.0019 0.0009" pos="0.05755 0.0415 0" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />
+      <geom name="pcb_comp" size="0.05675 0.0378 0.00315" pos="-0.00125 0.0046 0.00435" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.2" />
+      <site name="pcb_center" size="0.002" />
+    </body>
+    <frame pos="0.42072 -0.33497 0.162" quat="0.382683 0 0 -0.92388">
+      <body name="aubo/base_link" gravcomp="1">
+        <inertial pos="5.28033e-09 0.00159669 0.0165705" quat="0.495398 0.50456 -0.50456 0.495398" mass="1.43822" diaginertia="0.0055319 0.003103 0.0028571" />
+        <geom class="aubo/visual" pos="0 0 0" quat="1 0 0 0" material="aubo/Opaque(229,234,237)" mesh="aubo/base_link_0" />
+        <geom class="aubo/visual" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/base_link_1" />
+        <geom class="aubo/collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/base_link_collision" />
+        <body name="aubo/shoulder_link" pos="0 0 0.0435" gravcomp="1">
+          <inertial pos="-4.18504e-07 -0.00538388 0.0698852" quat="0.997139 0.0755851 0 0" mass="3.99774" diaginertia="0.010612 0.0103292 0.00776575" />
+          <joint name="aubo/shoulder_pan_joint" range="-3.04 3.04" armature="0.2" damping="2" />
+          <geom class="aubo/visual" pos="0 0 -0.0435" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/shoulder_link_0" />
+          <geom class="aubo/visual" pos="0 0 -0.0435" quat="1 0 0 0" material="aubo/Opaque(232,133,0)" mesh="aubo/shoulder_link_1" />
+          <geom class="aubo/collision" pos="0 0 -0.0435" quat="1 0 0 0" conaffinity="3" mesh="aubo/shoulder_link_collision" />
+          <body name="aubo/upper_arm_link" pos="0 -0.062 0.0785" gravcomp="1">
+            <inertial pos="4.51558e-10 -0.0717894 0.204" quat="1 0 -1.45662e-06 0" mass="10.2644" diaginertia="0.367413 0.361705 0.024156" />
+            <joint name="aubo/shoulder_lift_joint" range="-3.04 3.04" armature="0.2" damping="2" axis="0 -1 0" />
+            <geom class="aubo/visual" pos="0 0.062 -0.122" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/upper_arm_link_0" />
+            <geom class="aubo/visual" pos="0 0.062 -0.122" quat="1 0 0 0" material="aubo/Opaque(232,133,0)" mesh="aubo/upper_arm_link_1" />
+            <geom class="aubo/collision" pos="0 0.062 -0.122" quat="1 0 0 0" conaffinity="3" mesh="aubo/upper_arm_link_collision_0" />
+            <geom class="aubo/collision" pos="0 0.062 -0.122" conaffinity="3" mesh="aubo/upper_arm_link_collision_1" />
+            <geom class="aubo/collision" pos="0 0.062 -0.122" quat="1 0 0 0" conaffinity="3" mesh="aubo/upper_arm_link_collision_2" />
+            <body name="aubo/forearm_link" pos="0 0 0.408" gravcomp="1">
+              <inertial pos="-8.5989e-08 0.0377796 0.186257" quat="0.999989 -0.00464387 0 0" mass="5.71706" diaginertia="0.110129 0.109714 0.00516198" />
+              <joint name="aubo/elbow_joint" range="-3.04 3.04" armature="0.15" damping="2" axis="0 1 0" />
+              <geom class="aubo/visual" pos="0 0.062 -0.53" material="aubo/Opaque(63,63,63)" mesh="aubo/forearm_link_0" />
+              <geom class="aubo/visual" pos="0 0.062 -0.53" material="aubo/Opaque(232,133,0)" mesh="aubo/forearm_link_1" />
+              <geom class="aubo/collision" pos="0 0.062 -0.53" quat="1 0 0 0" conaffinity="3" mesh="aubo/forearm_link_collision_0" />
+              <geom class="aubo/collision" pos="0 0.062 -0.53" conaffinity="3" mesh="aubo/forearm_link_collision_1" />
+              <geom class="aubo/collision" pos="0 0.062 -0.53" quat="1 0 0 0" conaffinity="3" mesh="aubo/forearm_link_collision_2" />
+              <body name="aubo/wrist_1_link" pos="0 -0.0175 0.376" gravcomp="1">
+                <inertial pos="4.04369e-07 -0.0378176 0.010378" quat="0.996128 0.0879183 0 0" mass="1.19598" diaginertia="0.001481 0.00143005 0.000971945" />
+                <joint name="aubo/wrist_1_joint" range="-3.04 3.04" armature="0.04" damping="2" axis="0 -1 0" />
+                <geom class="aubo/visual" pos="0 0.0795 -0.906" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/wrist_1_link_0" />
+                <geom class="aubo/visual" pos="0 0.0795 -0.906" material="aubo/Opaque(232,133,0)" mesh="aubo/wrist_1_link_1" />
+                <geom class="aubo/collision" pos="0 0.0795 -0.906" quat="1 0 0 0" conaffinity="3" mesh="aubo/wrist_1_link_collision" />
+                <body name="aubo/wrist_2_link" pos="0 -0.042 0.06056" gravcomp="1">
+                  <inertial pos="-3.83591e-07 -0.0103783 0.0378173" quat="0.766536 0.642201 0 0" mass="1.19598" diaginertia="0.001481 0.00143005 0.000971945" />
+                  <joint name="aubo/wrist_2_joint" range="-3.04 3.04" armature="0.04" damping="2" />
+                  <geom class="aubo/visual" pos="0 0.1215 -0.96656" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/wrist_2_link_0" />
+                  <geom class="aubo/visual" pos="0 0.1215 -0.96656" quat="1 0 0 0" material="aubo/Opaque(232,133,0)" mesh="aubo/wrist_2_link_1" />
+                  <geom class="aubo/collision" pos="0 0.1215 -0.96656" quat="1 0 0 0" conaffinity="3" mesh="aubo/wrist_2_link_collision" />
+                  <body name="aubo/wrist_3_link" pos="0 -0.06056 0.042" gravcomp="1">
+                    <inertial pos="4.15409e-09 -0.0185535 0.000352259" quat="0.707088 -0.00519777 0.00519777 0.707088" mass="0.192478" diaginertia="0.000169015 0.000104 0.000100985" />
+                    <joint name="aubo/wrist_3_joint" range="-3.04 3.04" armature="0.04" damping="2" axis="0 -1 0" />
+                    <geom class="aubo/visual" pos="0 0.18206 -1.00856" quat="1 0 0 0" material="aubo/Opaque(229,234,237)" mesh="aubo/wrist_3_link_0" />
+                    <geom class="aubo/visual" pos="0 0.18206 -1.00856" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/wrist_3_link_1" />
+                    <geom class="aubo/visual" pos="0 0.18206 -1.00856" quat="1 0 0 0" material="aubo/Opaque(63,63,63)" mesh="aubo/wrist_3_link_2" />
+                    <geom class="aubo/visual" pos="0 0.18206 -1.00856" material="aubo/Opaque(63,63,63)" mesh="aubo/wrist_3_link_3" />
+                    <geom class="aubo/collision" pos="0 0.18206 -1.00856" quat="1 0 0 0" conaffinity="3" mesh="aubo/wrist_3_link_collision" />
+                    <body name="aubo/tool0_link" pos="0 -0.0335 0" quat="0.707107 0.707107 0 0" gravcomp="1">
+                      <site name="aubo/attachment_site" group="3" />
+                      <site name="aubo/eef_site" pos="0 0 0.2" quat="0 -0.707107 -0.707107 0" group="3" />
+                      <body name="aubo/tool/ee_tool" childclass="aubo/tool/tool" gravcomp="1">
+                        <inertial pos="0 0.01 0.09" mass="1" diaginertia="0.004 0.004 0.0015" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0 0 1" material="look_dark" mesh="aubo/tool/tool_vis_00" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_01" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.6 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_02" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 0.753 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_03" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 1 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_04" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0 1 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_05" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.251 0.251 0.251 1" material="look_alu" mesh="aubo/tool/tool_vis_06" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.286 0.616 0.855 1" material="look_plastic" mesh="aubo/tool/tool_vis_07" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.298 0.298 0.298 1" material="look_alu" mesh="aubo/tool/tool_vis_08" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.435 0.769 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_09" />
+                        <geom class="aubo/tool/tool_visual" rgba="0.529 0.549 0.549 1" material="look_alu" mesh="aubo/tool/tool_vis_10" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.58 0.58 0.482 1" material="look_alu" mesh="aubo/tool/tool_vis_11" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.616 0.643 0.675 1" material="look_alu" mesh="aubo/tool/tool_vis_12" />
+                        <geom class="aubo/tool/tool_visual" rgba="0.647 0.62 0.588 1" material="look_alu" mesh="aubo/tool/tool_vis_13" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.667 0.698 0.769 1" material="look_alu" mesh="aubo/tool/tool_vis_14" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.686 0.686 0.686 1" material="look_alu" mesh="aubo/tool/tool_vis_15" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.698 0.698 0.698 1" material="look_alu" mesh="aubo/tool/tool_vis_16" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.729 0.357 0.055 1" material="look_plastic" mesh="aubo/tool/tool_vis_17" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.745 0.737 0.729 1" material="look_alu" mesh="aubo/tool/tool_vis_18" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.749 0.749 0.749 1" material="look_alu" mesh="aubo/tool/tool_vis_19" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.753 0.753 0.753 1" material="look_alu" mesh="aubo/tool/tool_vis_20" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.792 0.82 0.933 1" material="look_alu" mesh="aubo/tool/tool_vis_21" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="0.898 0.918 0.929 1" material="look_alu" mesh="aubo/tool/tool_vis_22" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.91 0.443 0.031 1" material="look_plastic" mesh="aubo/tool/tool_vis_23" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.957 0.949 0.961 1" material="look_alu" mesh="aubo/tool/tool_vis_24" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="1 0 0 1" material="look_plastic" mesh="aubo/tool/tool_vis_25" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.557 1 1" material="look_plastic" mesh="aubo/tool/tool_vis_26" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="1 0.808 0.498 1" material="look_plastic" mesh="aubo/tool/tool_vis_27" />
+                        <geom class="aubo/tool/tool_visual" quat="1 0 0 0" rgba="1 1 1 1" material="look_alu" mesh="aubo/tool/tool_vis_28" />
+                        <geom class="aubo/tool/tool_visual" pos="0 0 0" quat="1 0 0 0" rgba="0.157 0.157 0.157 1" material="look_dark" mesh="aubo/tool/tool_vis_opener" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_00" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_01" />
+                        <geom class="aubo/tool/tool_collision" conaffinity="3" mesh="aubo/tool/tool_col_opener_02" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_03" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_04" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_05" />
+                        <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_06" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_07" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_08" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_09" />
+                        <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_10" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_11" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_12" />
+                        <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_13" />
+                        <geom class="aubo/tool/tool_collision" pos="0 0 0" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_14" />
+                        <geom class="aubo/tool/tool_collision" quat="1 0 0 0" conaffinity="3" mesh="aubo/tool/tool_col_opener_15" />
+                        <geom class="aubo/tool/tool_collision" size="0.05 0.05 0.096" pos="0 0 0.091" type="box" conaffinity="3" />
+                        <geom class="aubo/tool/tool_collision" size="0.0525 0.0293 0.038" pos="0 0 0.2205" type="box" conaffinity="3" />
+                        <site name="aubo/tool/tool_flange" size="0.006" group="4" rgba="1 1 0 1" />
+                        <site name="aubo/tool/fork_center" size="0.006" pos="0.12 0.07 0.015" group="4" rgba="0 1 0 1" />
+                        <site name="aubo/tool/suction_tcp" size="0.006" pos="0 0 0.2606" group="4" rgba="0 0.6 1 1" />
+                        <body name="aubo/tool/vgc10_cup0" gravcomp="1">
+                          <joint name="aubo/tool/cup0_bellows" type="slide" stiffness="3000" range="-0.003 0.0005" armature="0.005" damping="20" />
+                          <geom name="aubo/tool/cup0_mass" size="0.004" pos="0.035 0.018 0.25" contype="0" conaffinity="0" group="4" mass="0.02" />
+                          <geom name="aubo/tool/cup0" size="0.0066467 0.0066467 0.00155" pos="0.035 0.018 0.25905" type="box" conaffinity="3" condim="4" group="1" friction="2 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="0.15 0.15 0.15 1" />
+                        </body>
+                        <body name="aubo/tool/vgc10_cup1" gravcomp="1">
+                          <joint name="aubo/tool/cup1_bellows" type="slide" stiffness="3000" range="-0.003 0.0005" armature="0.005" damping="20" />
+                          <geom name="aubo/tool/cup1_mass" size="0.004" pos="-0.035 0.018 0.25" contype="0" conaffinity="0" group="4" mass="0.02" />
+                          <geom name="aubo/tool/cup1" size="0.0066467 0.0066467 0.00155" pos="-0.035 0.018 0.25905" type="box" conaffinity="3" condim="4" group="1" friction="2 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="0.15 0.15 0.15 1" />
+                        </body>
+                        <body name="aubo/tool/vgc10_cup2" gravcomp="1">
+                          <joint name="aubo/tool/cup2_bellows" type="slide" stiffness="3000" range="-0.003 0.0005" armature="0.005" damping="20" />
+                          <geom name="aubo/tool/cup2_mass" size="0.004" pos="0.035 -0.018 0.25" contype="0" conaffinity="0" group="4" mass="0.02" />
+                          <geom name="aubo/tool/cup2" size="0.0066467 0.0066467 0.00155" pos="0.035 -0.018 0.25905" type="box" conaffinity="3" condim="4" group="1" friction="2 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="0.15 0.15 0.15 1" />
+                        </body>
+                        <body name="aubo/tool/vgc10_cup3" gravcomp="1">
+                          <joint name="aubo/tool/cup3_bellows" type="slide" stiffness="3000" range="-0.003 0.0005" armature="0.005" damping="20" />
+                          <geom name="aubo/tool/cup3_mass" size="0.004" pos="-0.035 -0.018 0.25" contype="0" conaffinity="0" group="4" mass="0.02" />
+                          <geom name="aubo/tool/cup3" size="0.0066467 0.0066467 0.00155" pos="-0.035 -0.018 0.25905" type="box" conaffinity="3" condim="4" group="1" friction="2 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="0.15 0.15 0.15 1" />
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </frame>
+  </worldbody>
+
+  <contact>
+    <exclude body1="aubo/base_link" body2="aubo/shoulder_link" />
+    <exclude body1="aubo/wrist_3_link" body2="aubo/tool/ee_tool" />
+    <exclude body1="aubo/wrist_2_link" body2="aubo/tool/ee_tool" />
+    <exclude body1="aubo/wrist_1_link" body2="aubo/wrist_3_link" />
+  </contact>
+
+  <tendon>
+    <spatial name="gas_L" width="0.006" stiffness="37.442" rgba="0.9 0.5 0.1 1" springlength="1">
+      <site site="gas_base_L" />
+      <site site="gas_lid_L" />
+    </spatial>
+    <spatial name="gas_R" width="0.006" stiffness="37.442" rgba="0.9 0.5 0.1 1" springlength="1">
+      <site site="gas_base_R" />
+      <site site="gas_lid_R" />
+    </spatial>
+    <spatial name="toggle_L" width="0.004" stiffness="64.516" rgba="0.1 0.6 1 0" springlength="1">
+      <site site="tog_lid_L" />
+      <site site="tog_hdl_L" />
+    </spatial>
+    <spatial name="toggle_R" width="0.004" stiffness="64.516" rgba="0.1 0.6 1 0" springlength="1">
+      <site site="tog_lid_R" />
+      <site site="tog_hdl_R" />
+    </spatial>
+  </tendon>
+
+  <equality>
+    <joint name="press_coupling" joint1="press_slide" joint2="handle_hinge" polycoef="0 0 0 0.0104554 0" solref="0.004" solimp="0.99 0.999" />
+    <joint name="jaw_sync" joint1="jaw_R" joint2="jaw_L" solref="0.004" />
+  </equality>
+
+  <actuator>
+    <general name="y_servo" joint="y_axis" ctrlrange="-0.1995 0.2205" forcerange="-800 800" dyntype="filterexact" dynprm="0.03" input="pos" biastype="affine" gainprm="40000" biasprm="0 -40000 -965.816" />
+    <general name="z_servo" joint="z_axis" ctrlrange="-0.0035 0.2965" forcerange="-800 800" dyntype="filterexact" dynprm="0.03" input="pos" biastype="affine" gainprm="40000" biasprm="0 -40000 -541.11" />
+    <general name="gripper" joint="jaw_L" ctrlrange="-0.01 0.04" forcerange="-80 80" input="pos" biastype="affine" gainprm="8000" biasprm="0 -8000 -60" />
+    <general name="robot_shoulder_pan_joint" joint="aubo/shoulder_pan_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-180 180" input="pos" biastype="affine" gainprm="5000" biasprm="0 -5000 -150" />
+    <general name="robot_shoulder_lift_joint" joint="aubo/shoulder_lift_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-180 180" input="pos" biastype="affine" gainprm="5000" biasprm="0 -5000 -150" />
+    <general name="robot_elbow_joint" joint="aubo/elbow_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-150 150" input="pos" biastype="affine" gainprm="4000" biasprm="0 -4000 -100" />
+    <general name="robot_wrist_1_joint" joint="aubo/wrist_1_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-60 60" input="pos" biastype="affine" gainprm="2000" biasprm="0 -2000 -25" />
+    <general name="robot_wrist_2_joint" joint="aubo/wrist_2_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-60 60" input="pos" biastype="affine" gainprm="2000" biasprm="0 -2000 -25" />
+    <general name="robot_wrist_3_joint" joint="aubo/wrist_3_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-60 60" input="pos" biastype="affine" gainprm="1500" biasprm="0 -1500 -15" />
+    <general name="vacuum0" body="aubo/tool/vgc10_cup0" ctrlrange="0 1" ctrllimited="true" gainprm="7.06858" />
+    <general name="vacuum1" body="aubo/tool/vgc10_cup1" ctrlrange="0 1" ctrllimited="true" gainprm="7.06858" />
+    <general name="vacuum2" body="aubo/tool/vgc10_cup2" ctrlrange="0 1" ctrllimited="true" gainprm="7.06858" />
+    <general name="vacuum3" body="aubo/tool/vgc10_cup3" ctrlrange="0 1" ctrllimited="true" gainprm="7.06858" />
+  </actuator>
+</mujoco>
