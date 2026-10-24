@@ -730,3 +730,30 @@ seed search to choose.
 **Revisit if** a FREE segment ever ends at a point no LOCKED segment fixes.
 
 Pinned by nothing yet (F9 is designed, not built).
+
+## The viewer loop holds the lock only while posing; the overlay is set outside it
+
+**Decision.** A passive-viewer playback (`Render.Run_Viewer_Loop`) holds `viewer.lock()` only while it writes the viewer's
+data (posing); `set_texts` and `sync` are called outside it. The overlay is set only when its text changes: at once on a
+segment change, otherwise at most every 0.25 s (`CONST_OVERLAY_PERIOD`). `sync` runs every frame, paused too; the frame
+period is 1/60 s and a slower frame skips samples by the wall clock (`Playback_Cls`); keys are queued by the viewer's
+thread and applied at the start of the next frame. `--watchdog S` dumps every thread's traceback and exits 3 when the loop
+stops advancing.
+
+**Why.** mujoco 3.16's `Handle.set_texts` (viewer.py line 168) hands the texts to the render thread and waits until it has
+taken them; the render loop (`simulate.render_loop()`, viewer.py line 525) needs the simulate mutex to do so. Called inside
+`with viewer.lock():` the script thread holds that mutex while it waits: both threads block and the window freezes
+(reproduced 2026-10-24 under mjpython: the owner's traceback; outside the lock `set_texts` returns in 0.1 ms). Rate-limiting
+keeps the waits few: the text changes every frame (the time).
+
+**Alternatives.** The overlay drawn through `user_scn` labels: more code for the same text. The terminal line only: loses
+the overlay the owner asked for (both kept: the terminal prints each segment).
+
+**Revisit if** mujoco's `set_texts` stops waiting for the render thread, or the viewer loop gains other Handle calls (each
+checked against the lock rule).
+
+Pinned by `test/Render/test_core.py::test_the_overlay_is_never_set_under_the_viewer_lock`,
+`::test_the_playback_follows_the_wall_clock_and_skips_samples_on_slow_frames`, `::test_keys_arriving_mid_frame_apply_at_the_next_frame`,
+`::test_the_overlay_updates_at_most_four_times_a_second_and_at_once_on_a_segment_change`,
+`::test_a_stalled_loop_is_reported_by_the_watchdog`,
+`test/Example/Program/test_show_program.py::test_a_frame_of_the_playback_fits_the_frame_period`.

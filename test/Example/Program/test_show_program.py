@@ -28,8 +28,19 @@ import sys
 import numpy as np
 # Matplotlib (Plotting) [pip3 install matplotlib]
 import matplotlib.image as mpimg
+# Threading (Thread-based parallelism)
+import threading
+# Types (Dynamic type creation and names for built-in types)
+import types
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
+# Custom Lib.:
+#   ../Render/Core, ../Program/Core, ../Trajectory/Core, ../Scene/Core, ../Kinematics/Core - the viewer loop and the posing it runs
+from Render.Core import Playback_Cls, Run_Viewer_Loop, CONST_FRAME_PERIOD
+from Program.Core import Pose_Sample
+from Trajectory.Core import Read_Trajectory, CONST_DT
+from Scene.Core import Build_Cell_Model
+from Kinematics.Core import Robot_Kinematics_Cls
 
 
 @pytest.fixture(scope='module')
@@ -105,3 +116,23 @@ def test_the_viewer_under_python_on_macos_names_mjpython(trajectory, tmp_path, r
     result = run_script('Program/show_program.py', ['--trajectory', trajectory], tmp_path)
     assert result.returncode == 2
     assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/Program/show_program.py --version default' in result.stdout
+
+
+@pytest.mark.slow
+def test_a_frame_of_the_playback_fits_the_frame_period(trajectory, cell_configuration):
+    """
+    Description:
+        The work of a playback frame on the real cell (posing every sample of 2 s of the default program at 1/60 s frames,
+        the overlay text) stays within the frame period: mean below half of it, the 95th percentile below it (measured
+        2026-10-24 on an Apple M2 Pro with the real viewer: 4.22 ms mean). The viewer's own sync is not part of it.
+    """
+
+    data = Read_Trajectory(trajectory)
+    kinematics = Robot_Kinematics_Cls(Build_Cell_Model(cell_configuration))
+    frames = iter(range(121))
+    viewer = types.SimpleNamespace(is_running=lambda: next(frames) < 120, lock=threading.Lock, set_texts=lambda texts: None, sync=lambda: None)
+    stats = Run_Viewer_Loop(viewer, Playback_Cls(data.Step_Index, CONST_DT), lambda i: Pose_Sample(kinematics, data, i),
+                            lambda i: ('t = %.3f s' % data.T[i], data.Segment_Command[int(data.Segment_Id[i])], int(data.Segment_Id[i])))
+    work = np.asarray(stats.Work)
+    assert len(work) == 120
+    assert work.mean() < CONST_FRAME_PERIOD / 2 and np.percentile(work, 95) < CONST_FRAME_PERIOD, stats.Summary()

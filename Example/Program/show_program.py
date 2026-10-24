@@ -33,14 +33,10 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
-# Time (Time access)
-import time
 # Typing (Support for type hints)
 import typing as tp
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
-# MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
-import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
 from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_CELL_YAML,
@@ -57,7 +53,8 @@ from Program.Core import Pose_Sample, File_Hash
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls, Trajectory_Str, CONST_DT
 #   ../Render/Core - the viewer and the image
-from Render.Core import Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls
+from Render.Core import (Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
+                         Watchdog_Cls)
 
 """
 Description:
@@ -66,11 +63,11 @@ Description:
 # The program file of each version (the optimized one comes with F9).
 #   Unit [Dict<string, string>]
 CONST_VERSIONS = {'default': CONST_PROGRAM_YAML}
-# The keys (GLFW codes): Home pause / resume, Page Down or '.' the next step's start, Page Up the current (or previous) step's
-# start, End the current step's end. Every letter and , / ; ' \\ ` toggles a MuJoCo flag and the viewer binds Space, the
-# arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
-#   Unit [int]
-CONST_KEY_PAUSE, CONST_KEY_NEXT, CONST_KEY_DOT, CONST_KEY_PREVIOUS, CONST_KEY_END = 268, 267, 46, 266, 269
+# The keys (GLFW codes) and their playback actions: Home pause / resume, Page Down or '.' the next step's start, Page Up the
+# current (or previous) step's start, End the current step's end. Every letter and , / ; ' \\ ` toggles a MuJoCo flag and the
+# viewer binds Space, the arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
+#   Unit [Dict<int, string>]
+CONST_KEY_ACTIONS = {268: 'pause', 267: 'next', 46: 'next', 266: 'previous', 269: 'end'}
 # The image camera: the cell's centre (the studio look's statistic, SPEC §4.10) seen from the front right.
 #   Unit [Vector<float> 1x3] (m), [float] (m), [float] (deg), [float] (deg)
 CONST_IMAGE_LOOKAT, CONST_IMAGE_DISTANCE, CONST_IMAGE_AZIMUTH, CONST_IMAGE_ELEVATION = [0.15, -0.40, 0.25], 1.9, 135.0, -28.0
@@ -127,9 +124,11 @@ def main():
         Page Down or '.' jumps to the
         next step, Page Up back to the current step's start, End to its end. --step N / --time T pose one moment; --headless
         prints it; --image writes an offscreen render. Reads the trajectory Example/Program/build_program.py wrote and refuses
-        one whose inputs changed since. The viewer needs mjpython on macOS (the passive viewer).
+        one whose inputs changed since. The viewer needs mjpython on macOS (the passive viewer); it follows the viewer rules
+        of Render.Run_Viewer_Loop (the lock only for posing, the overlay outside it) and prints its frame times when closed;
+        --watchdog S dumps every thread's traceback and exits 3 when the loop stalls for S seconds.
 
-            .venv/bin/mjpython Example/Program/show_program.py [--version default] [--step N | --time T]
+            .venv/bin/mjpython Example/Program/show_program.py [--version default] [--step N | --time T] [--watchdog S]
             .venv/bin/python Example/Program/show_program.py [--step N | --time T] --headless [--image [FILE]]
     """
 
@@ -140,6 +139,8 @@ def main():
     parser.add_argument('--time', type=float, help='pose the cell at this time [s]')
     parser.add_argument('--headless', action='store_true', help='pose and print, no window')
     parser.add_argument('--image', nargs='?', const='', help='write an offscreen render (default Data/Generated/Images/<program>_<sample>.png)')
+    parser.add_argument('--watchdog', type=float, metavar='S', help='debug: when the viewer loop stalls for S seconds, print every '
+                        "thread's traceback and exit 3")
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
@@ -204,27 +205,34 @@ def main():
     if args.headless or args.image is not None:
         log.Close()
         return 0
-    starts = [int(np.flatnonzero(trajectory.Step_Index == k)[0]) for k in range(len(trajectory.Step_Names))]
-    state = {'sample': sample, 'paused': args.step is not None or args.time is not None}
+    playback = Playback_Cls(trajectory.Step_Index, CONST_DT, sample, paused=args.step is not None or args.time is not None)
 
     def On_Key(key: int) -> None:
         """
         Description:
-            Pause / resume, or jump between steps (the main loop poses the new sample).
+            Queue the key's playback action (the viewer's thread; the loop applies it at its next frame).
 
         Args:
             (1) key [int]: The GLFW key code.
         """
 
-        k = int(trajectory.Step_Index[state['sample']])
-        if key == CONST_KEY_PAUSE:
-            state['paused'] = not state['paused']
-        elif key in (CONST_KEY_NEXT, CONST_KEY_DOT):
-            state['sample'] = starts[(k + 1) % len(starts)]
-        elif key == CONST_KEY_PREVIOUS:
-            state['sample'] = starts[k] if state['sample'] > starts[k] else starts[(k - 1) % len(starts)]
-        elif key == CONST_KEY_END:
-            state['sample'] = int(np.flatnonzero(trajectory.Step_Index == k)[-1])
+        if key in CONST_KEY_ACTIONS:
+            playback.Request(CONST_KEY_ACTIONS[key])
+
+    def Overlay(i: int) -> tp.Tuple[str, str, int]:
+        """
+        Description:
+            The overlay's text and the segment of sample i.
+
+        Args:
+            (1) i [int]: The sample.
+
+        Returns:
+            (1 - 2) parameter [string]: The two text columns (Describe).
+            (3) parameter [int]: The segment.
+        """
+
+        return Describe(i) + (int(trajectory.Segment_Id[i]),)
 
     try:
         viewer = Launch_Passive_Viewer(model, kinematics.Data, On_Key, 'Example/Program/show_program.py --version %s' % args.version)
@@ -233,24 +241,13 @@ def main():
         log.Close()
         return 2
     print(log.Line('[INFO] Home = pause / resume, Page Down or . = next step, Page Up = step start / previous step, End = step end.'))
-    shown, clock = -1, time.perf_counter()
+    watchdog = Watchdog_Cls(args.watchdog) if args.watchdog else None
     with viewer:
-        while viewer.is_running():
-            now = time.perf_counter()
-            if not state['paused']:
-                state['sample'] = min(state['sample'] + int(round((now - clock) / CONST_DT)), len(trajectory.T) - 1)
-                state['paused'] = state['sample'] == len(trajectory.T) - 1
-            clock = now if not state['paused'] or int(round((now - clock) / CONST_DT)) else clock
-            if state['sample'] != shown:
-                with viewer.lock():
-                    Pose_Sample(kinematics, trajectory, state['sample'])
-                    title, comment = Describe(state['sample'])
-                    viewer.set_texts((mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT, title, comment))
-                if int(trajectory.Segment_Id[state['sample']]) != int(trajectory.Segment_Id[max(shown, 0)]) or shown < 0:
-                    print(log.Line('[INFO] %s: %s' % (title, comment)), flush=True)
-                shown = state['sample']
-            viewer.sync()
-            time.sleep(CONST_DT)
+        stats = Run_Viewer_Loop(viewer, playback, lambda i: Pose_Sample(kinematics, trajectory, i), Overlay,
+                                lambda title, comment: print(log.Line('[INFO] %s: %s' % (title, comment)), flush=True), watchdog)
+    if watchdog is not None:
+        watchdog.Stop()
+    print(log.Line('[INFO] Viewer: %s.' % stats.Summary()))
     log.Close()
     return 0
 

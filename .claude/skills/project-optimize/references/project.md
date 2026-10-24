@@ -41,7 +41,7 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 | Path | Time | Machine, date |
 |---|---|---|
 | cycle run (65.8 s simulated) | 15–16 s | Apple M2 Pro, 2026-10-24 |
-| test suite, `-m "not slow"` / full | about 68 s / about 123 s (289 / 299 tests) | Apple M2 Pro, 2026-10-24 (after F10) |
+| test suite, `-m "not slow"` / full | about 70 s / about 124 s (294 / 305 tests) | Apple M2 Pro, 2026-10-24 (after F10.4) |
 | program build / check (default program) | 1.2 s / 8 s | Apple M2 Pro, 2026-10-24 |
 
 ## Interpreter and tools

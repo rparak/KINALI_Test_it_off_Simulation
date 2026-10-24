@@ -1249,6 +1249,13 @@ frames).
 - [x] F10.3 Docs: SPEC §4.8.1 (the name table), §6, §7.1, §7.7, §7.9, §8 (the three files and the grammar), §9, §10, §16,
       §17; design-decisions (nine entries); KNOWN_ISSUES (three items); F9 updated to the new format (FREE segment names,
       `Loader.Start` / `WaitDone`); CLAUDE.md, the README's commands (readme-writer), the skill references.
+- [x] F10.4 Fix (owner, 2026-10-24): `show_program.py` hung under mjpython - `set_texts` was called inside
+      `with viewer.lock():`; mujoco 3.16's `set_texts` waits for the render thread, which waits for that lock (reproduced:
+      the owner's traceback, viewer.py lines 168 and 525). The loop moved to `Render.Run_Viewer_Loop` (the lock only for
+      posing, the overlay outside it and rate-limited, sync every frame, frames skip samples by the wall clock, keys queued
+      to the next frame) with `--watchdog S`; `step_keypoints.py` prints outside the lock. Live: 409 frames in 8 s, 4.22 ms
+      mean / 15.30 ms max work per frame (budget 16.7 ms). 6 tests (one slow); 6 mutations, each test passing first and
+      failing mutated - the old pattern among them.
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 

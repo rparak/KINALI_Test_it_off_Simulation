@@ -98,17 +98,18 @@ def main():
     def Show(index: int) -> None:
         """
         Description:
-            Pose the cell at the keypoint of index and print it.
+            Print the keypoint of index.
 
         Args:
             (1) index [int]: The keypoint's position in the file.
         """
 
-        point = Pose_Cell(kinematics, constants, simulation, cell, meta, names[index])
+        point = constants.Points[names[index]]
         print(log.Line('[INFO] %2d/%d %s: %s' % (index + 1, len(names), point.Name, point.Description)), flush=True)
 
     if args.headless:
         for index in range(len(names)):
+            Pose_Cell(kinematics, constants, simulation, cell, meta, names[index])
             Show(index)
         log.Close()
         return 0
@@ -136,9 +137,11 @@ def main():
     with viewer:
         while viewer.is_running():
             if state['pending']:
+                # The lock only while the data is posed; printing (and any other viewer call) outside it (Render.Run_Viewer_Loop).
+                state['pending'], index = False, state['index']
                 with viewer.lock():
-                    Show(state['index'])
-                state['pending'] = False
+                    Pose_Cell(kinematics, constants, simulation, cell, meta, names[index])
+                Show(index)
             viewer.sync()
             time.sleep(0.05)
     log.Close()

@@ -48,7 +48,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/mjpython Example/Keypoints/step_keypoints.py [--start K]   # Page Down / '.' next, Page Up previous
 .venv/bin/python Example/Program/build_program.py [--program F] [--out DIR] [--compare-legacy]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
-.venv/bin/mjpython Example/Program/show_program.py [--version default]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
+.venv/bin/mjpython Example/Program/show_program.py [--version default] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
 ```
 
 The two viewer scripts use `mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`;

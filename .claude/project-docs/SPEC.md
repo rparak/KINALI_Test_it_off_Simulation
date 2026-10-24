@@ -563,7 +563,7 @@ Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpyth
 Example/Keypoints/step_keypoints.py    steps through the points in the viewer (mjpython): Page Down / . / Page Up
 Example/Program/build_program.py       the program -> its trajectory (npz + csv) and check report (exit 0 / 1); --compare-legacy
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
-                                       segment and its current line), --step / --time / --image
+                                       segment and its current line), --step / --time / --image, --watchdog S (debug)
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
@@ -616,7 +616,10 @@ categories of §4.6.
 ### 7.5 Render
 
 An offscreen image from a named camera or a free camera, with the studio look's fog and haze flags on;
-starting the viewer (the passive one with the same flags). No project imports.
+starting the viewer (the passive one with the same flags); the playback loop of a passive viewer (`Playback_Cls`, the
+timeline by the wall clock with queued key actions; `Run_Viewer_Loop`, the mujoco 3.16 viewer rules: `viewer.lock()` only
+while posing, `set_texts` outside it and at most every 0.25 s unless the segment changes, `sync` every frame; `Watchdog_Cls`
+for `--watchdog`). No project imports.
 
 ### 7.6 Simulation
 
@@ -804,8 +807,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (289 tests, about 68 s), full `.venv/bin/python -m pytest`
-before a commit (299 tests, about 123 s; Apple M2 Pro, 2026-10-24, after F10).
+`.venv/bin/python -m pytest -m "not slow"` (294 tests, about 70 s), full `.venv/bin/python -m pytest`
+before a commit (305 tests, about 124 s; Apple M2 Pro, 2026-10-24, after F10.4).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
