@@ -188,3 +188,160 @@ class Robot_Collision_Cls(object):
                 if x < best[0]:
                     best = (x, (m.body(m.geom_bodyid[a]).name, m.geom(b).name or m.body(m.geom_bodyid[b]).name))
         return best
+
+
+"""
+Description:
+    The checked contact categories of a cycle run (SPEC §4.6), in report order, and the bodies they
+    are made of.
+"""
+# The five contact categories every run reports (no contact = pass, SPEC §10.1 item 1).
+#   Unit [List<string>]
+CONST_COLLISION_CHECKS = ['robot <-> MG06 / workstation / crates', 'robot tool <-> handle (outside closing / opening)',
+                          'robot <-> loader', 'loader <-> MG06 / workstation', 'PCB <-> lid / press plate']
+# The loader's moving bodies.
+#   Unit [Set<string>]
+CONST_LOADER_BODIES = {'y_carriage', 'z_carriage', 'jaw_L', 'jaw_R'}
+# The MG06 parts the PCB must never touch.
+#   Unit [Set<string>]
+CONST_MG06_UPPER_BODIES = {'mg06_lid', 'mg06_press', 'mg06_handle'}
+# The fork touches the handle bar on purpose only in these phases of a run.
+#   Unit [Tuple<string>]
+CONST_FORK_PHASES = ('robot: close MG06', 'robot: open MG06')
+# A cup counts as touching the PCB below this contact distance.
+#   Unit [float] (m)
+CONST_CUP_TOUCH = 0.0005
+
+
+class Contact_Classifier_Cls(object):
+    """
+    Description:
+        Sorts a run's contacts into the categories of CONST_COLLISION_CHECKS (or None: an expected
+        contact) by the bodies of the two geoms; the fork on the handle counts only outside the closing
+        and opening phases. Also names geoms and groups the PCB's penetrations.
+
+    Initialization of the Class:
+        Args:
+            (1) model [mujoco.MjModel]: The compiled cell.
+
+        Example:
+            Initialization:
+                # Initialization of the class.
+                Cls = Contact_Classifier_Cls(model)
+
+            Features:
+                # The category of a contact in the current phase.
+                category = Cls.Classify(contact.geom1, contact.geom2, phase)
+    """
+
+    def __init__(self, model: mujoco.MjModel) -> None:
+        # << PRIVATE >> #
+        self.__geom_name = [model.geom(g).name or (model.mesh(model.geom_dataid[g]).name if model.geom_dataid[g] >= 0 else str(g))
+                            for g in range(model.ngeom)]
+        self.__body_name = [model.body(model.geom_bodyid[g]).name for g in range(model.ngeom)]
+        self.__cache = {}
+
+    def Geom_Name(self, geom: int) -> str:
+        """
+        Description:
+            A geom's name, else its mesh's name, else its id.
+
+        Args:
+            (1) geom [int]: The geom id.
+
+        Returns:
+            (1) parameter [string]: The name.
+        """
+
+        return self.__geom_name[geom]
+
+    def Body_Name(self, geom: int) -> str:
+        """
+        Description:
+            The name of a geom's body.
+
+        Args:
+            (1) geom [int]: The geom id.
+
+        Returns:
+            (1) parameter [string]: The body name.
+        """
+
+        return self.__body_name[geom]
+
+    def Classify(self, geom_1: int, geom_2: int, phase: str) -> tp.Optional[str]:
+        """
+        Description:
+            The category of a contact between two geoms in a phase of the run.
+
+        Args:
+            (1 - 2) geom_1, geom_2 [int]: The geom ids.
+            (3) phase [string]: The run's current phase label.
+
+        Returns:
+            (1) parameter [string]: A CONST_COLLISION_CHECKS entry, or None for an expected contact.
+        """
+
+        key = (geom_1, geom_2)
+        if key not in self.__cache:
+            s = {self.__body_name[geom_1], self.__body_name[geom_2]}
+            robot = any(b.startswith('aubo/') for b in s)
+            if robot and 'pcb' in s:
+                k = None
+            elif s == {'aubo/tool/ee_tool', 'mg06_handle'}:
+                k = 'fork'
+            elif robot:
+                k = 'robot <-> ' + ('loader' if s & CONST_LOADER_BODIES else 'MG06 / workstation / crates')
+            elif s & CONST_LOADER_BODIES and 'pcb' not in s:
+                k = 'loader <-> MG06 / workstation'
+            elif 'pcb' in s and s & CONST_MG06_UPPER_BODIES:
+                k = 'PCB <-> lid / press plate'
+            else:
+                k = None
+            self.__cache[key] = k
+        k = self.__cache[key]
+        if k == 'fork':
+            k = None if phase.startswith(CONST_FORK_PHASES) else 'robot tool <-> handle (outside closing / opening)'
+        return k
+
+
+def Penetration_Group(other_body: str) -> str:
+    """
+    Description:
+        The group of a PCB penetration by the body the PCB touches (the report's groups).
+
+    Args:
+        (1) other_body [string]: The other body's name.
+
+    Returns:
+        (1) parameter [string]: 'crate', 'loader jaws', 'MG06 holder' or the body name.
+    """
+
+    if other_body == 'workstation':
+        return 'crate'
+    if other_body in CONST_LOADER_BODIES:
+        return 'loader jaws'
+    return 'MG06 holder' if other_body == 'mg06_base' else other_body
+
+
+def Cup_Contacts(model: mujoco.MjModel, data: mujoco.MjData, pcb_body: int, cup_bodies: tp.Set[int]) -> int:
+    """
+    Description:
+        How many suction cups touch the PCB (contact distance below CONST_CUP_TOUCH).
+
+    Args:
+        (1) model [mujoco.MjModel]: The model.
+        (2) data [mujoco.MjData]: The data after a step.
+        (3) pcb_body [int]: The PCB's body id.
+        (4) cup_bodies [Set<int>]: The cups' body ids.
+
+    Returns:
+        (1) parameter [int]: The number of cups touching.
+    """
+
+    touching = set()
+    for c in data.contact[:data.ncon]:
+        b = {model.geom_bodyid[c.geom1], model.geom_bodyid[c.geom2]}
+        if pcb_body in b and b & cup_bodies and c.dist < CONST_CUP_TOUCH:
+            touching.add(c.geom1 if model.geom_bodyid[c.geom1] in cup_bodies else c.geom2)
+    return len(touching)
