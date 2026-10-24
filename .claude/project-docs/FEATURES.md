@@ -11,11 +11,11 @@ Status: `[ ]` open, `[x]` done and verified, `[~]` deferred.
 
 Requirements:
 
-1. Layout of brief §5.1: `src/kinali_sim/`, `models/`, `assets/`, `data/`, `config/`, `output/`, `legacy/`, `tests/`.
+1. Layout of brief §5.1: `src/kinali_sim/`, `models/`, `assets/`, `data/`, `config/`, the output folder, `legacy/`, `tests/`.
 2. Every move is a `git mv` (history kept).
 3. All file paths resolve through `kinali_sim.paths`, relative to the package, never to the working directory.
 4. The compiled model is unchanged: fingerprint compare against the baseline reports 0 differences.
-5. `kinali-sim run` reproduces `docs/baseline_report.txt` line for line, writes `output/report.txt`, and exits non-zero
+5. `kinali-sim run` reproduces `docs/baseline_report.txt` line for line, writes the report into the output folder, and exits non-zero
    on instability or a failed check.
 6. `kinali-sim export-xml` writes `models/cell_scene.xml`, loadable from the repository root.
 7. `legacy/test_cell_cycle.py` and `legacy/plan_cell.py` stay runnable; only imports and paths change.
@@ -41,7 +41,7 @@ Requirements:
 2. PCB collision geoms untouched.
 3. Fingerprint compare shows exactly one difference: `geoms/pcb_vis/geom_rgba`.
 4. `kinali-sim run` still reproduces the baseline report.
-5. Proof image `output/pcb_green.png` from camera `cam_pcb` at the initial state.
+5. Proof image `pcb_green.png` (then in the output folder; now `Data/Generated/Images/`) from camera `cam_pcb` at the initial state.
 6. README stub: install, `kinali-sim run`, `kinali-sim export-xml`, viewer command. The previous Czech README is kept
    as `docs/README_cs_mg06_cell.md` until the full README (brief §7 step 7).
 
@@ -99,7 +99,7 @@ Requirements:
 | `src/kinali_sim/kinematics.py` | `src/Kinematics/Core.py` (`git mv`); its contact half into `src/Collision/Core.py` |
 | `src/kinali_sim/paths.py` | `src/Configuration/Core.py` (`git mv`) |
 | `src/kinali_sim/cli.py` | split: `Example/run_cycle.py` (`git mv`), `Example/export_cell_scene.py`; `acceptance` → `Simulation.Core.Check_Acceptance` |
-| `src/kinali_sim/__init__.py`, `pyproject.toml`, `config/.gitkeep`, `output/.gitkeep`, `src/kinali_sim.egg-info` | removed |
+| `src/kinali_sim/__init__.py`, `pyproject.toml`, `config/.gitkeep`, the output folder's `.gitkeep`, `src/kinali_sim.egg-info` | removed |
 | `tools/model_fingerprint.py` | `Example/model_fingerprint.py` (`git mv`) |
 | (new) | `Example/show_cell.py`, `Example/render_image.py`, `src/Collision/Core.py`, `src/Render/Core.py`, `src/Simulation/Core.py` |
 | `assets/mg06/`, `assets/machine/`, `assets/workstation/` | `models/mg06/`, `models/machine/`, `models/workstation/` (`scene.xml` meshdir `../assets` → `.`) |
@@ -137,7 +137,7 @@ Requirements:
 
 | Script | Replaces | Does |
 |---|---|---|
-| `run_cycle.py [--plan FILE] [--out DIR]` | `kinali-sim run`, `python legacy/test_cell_cycle.py` | physics run of a plan; prints the report (stdout) and the acceptance (`[INFO]`/`[ERROR]` lines); writes `DIR/report.txt` (default `output/`); exit 0 / 1 / 2 |
+| `run_cycle.py [--plan FILE] [--out DIR]` | `kinali-sim run`, `python legacy/test_cell_cycle.py` | physics run of a plan; prints the report (stdout) and the acceptance (`[INFO]`/`[ERROR]` lines); writes `DIR/report.txt` (default then the output folder, now `Data/Generated/Reports/`); exit 0 / 1 / 2 |
 | `export_cell_scene.py [--out DIR]` | `kinali-sim export-xml` | writes `cell_scene.xml` (default `models/`) |
 | `show_cell.py [--headless]` | `python -m mujoco.viewer --mjcf=…` | the cell in the viewer (blocking `launch`, works under `python` on macOS); `--headless` builds and exits (for the test) |
 | `render_image.py [--camera NAME] [--out DIR]` | the green-PCB proof | offscreen image, saved with matplotlib (`pcb_green.png` by default, decision 5) |
@@ -198,7 +198,7 @@ project-style-rpx references/shell.md and the template (`Log`, `Die`, `Detect_Pl
 log lines `YYYY-MM-DD HH:MM:SS [LEVEL  ] message`. Options `--detect-only`, `--recreate`. Steps: detect
 Darwin / Linux; find Python 3.11 (decision 7); create or reuse `.venv`; `pip install --upgrade pip` and
 `-r requirements.txt`; import mujoco, numpy, scipy, yaml and print the versions, fail unless mujoco is
-3.16.0; create `logger/`, `output/`; print the next commands (cycle run, tests, viewer). No sudo, no
+3.16.0; create `logger/` and the output folder (now `Data/Generated/`); print the next commands (cycle run, tests, viewer). No sudo, no
 global installs, re-runnable. Tested on this machine with `--recreate`.
 
 ### Re-baseline (addendum D)
@@ -299,7 +299,7 @@ Mutations that changed nothing (findings about the code, not the tests): the pha
 instead of 20 steps, and a 0.1 mm instead of 0.5 mm cup-touch threshold, change no output of the legacy
 plan (every phase starts on a 20-step boundary; the cups sit deeper than 0.1 mm).
 
-## F4 - Root clean-up: legacy/, docs/, output/ removed; Data/ and Example/ in subfolders (owner, 2026-10-24)
+## F4 - Root clean-up: legacy, docs and the output folder removed; Data/ and Example/ in subfolders (owner, 2026-10-24)
 
 Requirements:
 
@@ -311,7 +311,7 @@ Requirements:
    (or into a step 7 README note here); then deleted.
 4. `Data/` and `Example/` in subfolders by domain or purpose (style skill), the step 3 YAML location decided
    (no files); `test/Example/` mirrors `Example/`.
-5. `output/` replaced by one rule for generated artefacts, recorded in design-decisions; no `output/` left.
+5. The root output folder replaced by one rule for generated artefacts, recorded in design-decisions; none left.
 6. Every move a `git mv`; after every commit: fingerprint (only pcb_vis rgba), fast tests, the cycle diff,
    the style checker 0 issues. Final check in a fresh clone.
 
@@ -320,7 +320,7 @@ Sub-tasks:
 - [x] F4.1 Tag and remove legacy planner
 - [x] F4.2 Remove docs/ after moving remaining content
 - [x] F4.3 Structure Data/ and Example/ into subfolders
-- [ ] F4.4 Replace output/ with the generated-artefacts rule
+- [x] F4.4 Replace the output folder with the generated-artefacts rule (logger/ + Data/Generated/<Kind>/)
 - [ ] F4.5 Fresh-clone check
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)

@@ -49,7 +49,7 @@ def test_the_cycle_prints_the_baseline_report_and_passes(root, tmp_path, run_scr
     """
     Description:
         The default run exits 0; stdout is test/Simulation/data/baseline_report.txt byte for byte, and so is
-        --out/report.txt; stderr has ten PASS lines and the not-validated sentence; the log in logger/ holds
+        report.txt in the --out folder; stderr has ten PASS lines and the not-validated sentence; the log in logger/ holds
         the report; nothing is written to the working directory.
     """
 

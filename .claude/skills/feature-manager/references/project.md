@@ -92,7 +92,7 @@ look at what changed.
 ## Commits
 
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
-- Never committed: `logger/`, `output/`, `.venv/`, the local copies of the generic skills.
+- Never committed: `logger/`, `Data/Generated/` (until step 4 decides on the trajectory), `.venv/`.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
   source changed, a new `Data/Reference/cell_plan.npz`, a new baseline report or fingerprint.
 

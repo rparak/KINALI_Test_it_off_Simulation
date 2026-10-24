@@ -120,6 +120,28 @@ With 1.5 mm the handle closes to 28.7° (SPEC §4.6) and the lid rises 0.5° in 
 Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`) and the report's
 "MG06 closed" line (`test/Simulation/test_core.py`).
 
+## Logs go to logger/, generated artefacts to Data/Generated/<Kind>/
+
+**Decision.** One place per kind of file a run produces: logs (`logger/<script>.log`, MuJoCo's
+`logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the cycle report in
+`Reports/`, proof images (`pcb_green.png`, later `logo_check.png`) in `Images/`, the step 4 trajectory in
+`Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
+`--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it). The root
+output folder is gone (owner, 2026-10-24, F4.4).
+
+**Why.** The root holds only declared entries (style skill); `Data/Generated/` is the template's place for
+generated output beside the inputs; logs are not results and keep their own folder. One folder per kind
+keeps a report, an image and a trajectory from overwriting or hiding each other.
+
+**Alternatives.** Reports and images in `logger/`: rejected, they are results a reader opens, not run logs.
+Keeping an output folder at the root: rejected by the owner.
+
+**Revisit if** step 4 makes the trajectory a committed deliverable: then `Data/Generated/Trajectories/` (or the
+delivered file) is un-ignored, as the template commits its `Data/Generated/`.
+
+Pinned by `test/Install/test_install.py::test_the_run_folders_are_created` and the `test/Example` script
+tests (defaults and `--out`).
+
 ## The PCB is drawn in solder-mask green
 
 **Decision.** The visual geom `pcb_vis` has rgba `0.05 0.42 0.18 1` in `models/scene.xml`; no material

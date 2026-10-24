@@ -375,7 +375,7 @@ LICENSE                   MIT, Copyright (c) 2026 Roman Parak
 install.sh                macOS (verified) + Ubuntu (unverified), OS detection, Python 3.11
 requirements.txt          pinned
 pytest.ini                import mode and the slow marker (root exception)
-.gitignore                .venv, caches, .DS_Store, logger/, output/, any SKILL.md under .claude/skills/
+.gitignore                .venv, caches, .DS_Store, logger/, Data/Generated/, any SKILL.md under .claude/skills/
 .claude/settings.json     commit attribution off
 .claude/project-docs/     SPEC.md, KNOWN_ISSUES.md, design-decisions.md, FEATURES.md (the tracker)
 .claude/skills/<skill>/references/   the project layer of each personal skill (no SKILL.md tracked)
@@ -387,6 +387,7 @@ models/robot_tool/        VGC10 + fork MJCF and meshes
 Data/PCB/pcb_meta.json    PCB poses and loader axis positions
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
+Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
 src/Configuration/Core.py the repository paths, the PCB meta reader, the MuJoCo log route
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
@@ -397,11 +398,10 @@ Example/Simulation/run_cycle.py        the physics run of a plan + report + acce
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Render/show_cell.py            opens the viewer on the cell
-Example/Render/render_image.py         offscreen image from a camera into output/
+Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
-output/                   generated reports and images (git-ignored)
 ```
 
 `Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`; later
@@ -475,7 +475,7 @@ sources in `src/Scene/Core.py`.
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
-| the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `output/`) |
+| the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file (step 4) | to be specified in step 4: `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`, `vacuum`, `step_index`, `step_label`, sampled at 4 ms |
@@ -522,7 +522,7 @@ find Python 3.11 among explicit candidates only (macOS `/opt/homebrew/bin/python
 never a bare `python3`) or fail with the install command; create `.venv` if absent, reuse a working one
 (a broken one is reported, deleted only with `--recreate`); upgrade pip and install `requirements.txt`;
 verify the install (import mujoco, numpy, scipy, yaml and print the versions; mujoco must be 3.16.0);
-create `logger/` and `output/`; print the next commands. `--detect-only` stops after the plan.
+create `logger/` and `Data/Generated/`; print the next commands. `--detect-only` stops after the plan.
 Re-runnable, `set -euo pipefail`, no sudo, no global installs. Verified with `--recreate` on macOS
 26.6.2, Apple M2 Pro (2026-10-24). Ubuntu path: written, tested only against stubs, unverified. Pinned
 by `test/Install/test_install.py`.
@@ -564,7 +564,8 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 ## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)
 
 The owner's proposals for steps 3–4, kept as the starting point; step 3 and 4 settle them (this
-section is then replaced by the formats in §8 and §9). The CLI of §16.4 is superseded by the
+section is then replaced by the formats in §8 and §9). Quoted verbatim, so they keep the brief's paths: its
+output folder is now `Data/Generated/` (design-decisions), the trajectory `Data/Generated/Trajectories/`. The CLI of §16.4 is superseded by the
 `Example/` scripts (design-decisions: RPX over brief §5.1); its subcommands map to `run_cycle.py`
 (`run`), `export_cell_scene.py` (`export-xml`), and the scripts of steps 3–5 (`show`, `keypoints --check`,
 `build`, `play`).

@@ -49,9 +49,12 @@ CONST_MODELS = os.path.join(CONST_ROOT, 'models')
 # Input data by purpose: PCB/ (the PCB poses), Paths/ (recorded robot paths), Reference/ (the regression plan).
 #   Unit [string]
 CONST_DATA = os.path.join(CONST_ROOT, 'Data')
-# Generated reports and images (git-ignored, created by install.sh or on first use).
+# Generated artefacts, one subfolder per kind (git-ignored; design-decisions: logs in logger/, generated
+# artefacts in Data/Generated/): Reports/ (the cycle report), Images/ (proof images); step 4 adds Trajectories/.
 #   Unit [string]
-CONST_OUTPUT = os.path.join(CONST_ROOT, 'output')
+CONST_GENERATED = os.path.join(CONST_ROOT, 'Data', 'Generated')
+CONST_REPORTS = os.path.join(CONST_GENERATED, 'Reports')
+CONST_IMAGES = os.path.join(CONST_GENERATED, 'Images')
 # Run logs: each script's printed lines and MuJoCo's own log (git-ignored, created on first use).
 #   Unit [string]
 CONST_LOGGER = os.path.join(CONST_ROOT, 'logger')
@@ -74,7 +77,7 @@ CONST_FORK_PATH = os.path.join(CONST_DATA, 'Paths', 'fork_close_open_path.npz')
 # with the keypoint program; its planner is in git tag legacy-planner-reference (design-decisions).
 #   Unit [string]
 CONST_REFERENCE_PLAN = os.path.join(CONST_DATA, 'Reference', 'cell_plan.npz')
-# The file name of the cycle report (written into output/ or a script's --out folder).
+# The file name of the cycle report (written into Data/Generated/Reports/ or a script's --out folder).
 #   Unit [string]
 CONST_REPORT_NAME = 'report.txt'
 # MuJoCo's log file; MuJoCo writes MUJOCO_LOG.TXT into the working directory unless told otherwise.

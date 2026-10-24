@@ -37,7 +37,7 @@ import argparse
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - paths, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_OUTPUT
+from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_IMAGES, CONST_ROOT
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Render/Core - the image
@@ -56,7 +56,7 @@ def main():
     """
     Description:
         An offscreen image of the cell at its initial state from a camera, through Render.Core, saved as a
-        PNG (matplotlib) into DIR (default output/pcb_green.png from cam_pcb).
+        PNG (matplotlib) into DIR (default Data/Generated/Images/pcb_green.png from cam_pcb).
 
             .venv/bin/python Example/Render/render_image.py [--camera cam_pcb] [--name pcb_green.png] [--out DIR]
     """
@@ -64,7 +64,7 @@ def main():
     parser = argparse.ArgumentParser(description='Offscreen image of the cell from a camera.')
     parser.add_argument('--camera', default=CONST_CAMERA, help='the camera (default: %s)' % CONST_CAMERA)
     parser.add_argument('--name', default=CONST_IMAGE_NAME, help='the file name (default: %s)' % CONST_IMAGE_NAME)
-    parser.add_argument('--out', default=CONST_OUTPUT, help='write into this directory (default: output/)')
+    parser.add_argument('--out', default=CONST_IMAGES, help='write into this directory (default: %s)' % os.path.relpath(CONST_IMAGES, CONST_ROOT))
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()

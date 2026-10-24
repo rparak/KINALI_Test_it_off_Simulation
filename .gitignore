@@ -5,9 +5,9 @@ __pycache__/
 .DS_Store
 MUJOCO_LOG.TXT
 
-# Run-time output, created by install.sh and the scripts
+# Logs, and generated artefacts (design-decisions), created by install.sh and the scripts
 logger/
-output/
+Data/Generated/
 
 # The personal skills live in ~/.claude/skills/; this repository keeps only their project layer
 # (.claude/skills/<skill>/references/). A SKILL.md here would be ignored in favour of the personal

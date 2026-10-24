@@ -24,7 +24,7 @@
 
 # Description:
 #   Install the KINALI_Test_it_off_Simulation environment: a .venv with the pinned requirements,
-#   checked by importing them, and the run-time folders logger/ and output/.
+#   checked by importing them, and the run-time folders logger/ and Data/Generated/.
 #
 #   Steps, cheapest check first:
 #     1. Detect the platform: macOS on Apple silicon (verified) or Ubuntu Linux (written and tested
@@ -36,7 +36,7 @@
 #        command to remove it; it is deleted only with --recreate.
 #     4. Upgrade pip and pip install -r requirements.txt (every version pinned).
 #     5. Verify: import mujoco, numpy, scipy and yaml, print their versions, require MuJoCo 3.16.0.
-#     6. Create logger/ and output/ (both git-ignored).
+#     6. Create logger/ (logs) and Data/Generated/ (generated artefacts), both git-ignored.
 #     7. Print the next commands.
 #   No sudo, no global installs; every step is re-runnable.
 #
@@ -78,9 +78,9 @@ CONST_INSTALL_LINUX="sudo apt install python3.11 python3.11-venv (Ubuntu; older 
 # The supported platforms, as the failure message names them.
 #   Unit [string]
 CONST_PLATFORMS_TEXT="macOS (Apple silicon), Ubuntu Linux"
-# The folders created for run-time output, relative to the root (git-ignored).
+# The folders created for logs and generated artefacts, relative to the root (git-ignored; design-decisions).
 #   Unit [string] (space-separated)
-CONST_RUN_FOLDERS="logger output"
+CONST_RUN_FOLDERS="logger Data/Generated"
 # Width the level is padded to, so the messages line up.
 #   Unit [int]
 CONST_LEVEL_WIDTH=7

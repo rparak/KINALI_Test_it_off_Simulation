@@ -241,13 +241,13 @@ def test_another_mujoco_version_is_refused(root, stubs, tmp_path):
 def test_the_run_folders_are_created(root, stubs, tmp_path):
     """
     Description:
-        logger/ and output/ are created under the root, and creating them again is harmless.
+        logger/ and Data/Generated/ are created under the root, and creating them again is harmless.
     """
 
     for _ in range(2):
         code, _, _ = _Run(root, stubs, 'CONST_ROOT="%s"; Make_Folders' % tmp_path)
         assert code == 0
-    assert (tmp_path / 'logger').is_dir() and (tmp_path / 'output').is_dir()
+    assert (tmp_path / 'logger').is_dir() and (tmp_path / 'Data' / 'Generated').is_dir()
 
 
 def test_an_unknown_option_is_refused_and_detect_only_changes_nothing(root, stubs, tmp_path):

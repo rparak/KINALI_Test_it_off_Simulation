@@ -37,7 +37,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
 .venv/bin/python Example/Scene/export_cell_scene.py    # models/cell_scene.xml
 .venv/bin/python Example/Render/show_cell.py            # MuJoCo viewer on the cell
-.venv/bin/python Example/Render/render_image.py         # output/pcb_green.png
+.venv/bin/python Example/Render/render_image.py         # Data/Generated/Images/pcb_green.png
 ```
 
-Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT` (git-ignored).
+Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).

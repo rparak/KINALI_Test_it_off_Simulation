@@ -31,7 +31,7 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
 Configuration/         (step 3) the cell, keypoint and program YAML; created with its first file
-logger/, output/       git-ignored, created at run time / by install.sh
+logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
 The scripts folder is `Example/`, one subfolder per `src/` domain a script belongs to (later `Keypoints`,
@@ -56,8 +56,8 @@ Trajectory are added in steps 3–4 as their own domains; no placeholder module 
 
 The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
 `pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`.
-Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
-entries. Pinned by `test/Docs/test_layout.py`.
+Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` exists on disk
+but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`.
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
 
@@ -68,7 +68,7 @@ entries. Pinned by `test/Docs/test_layout.py`.
 | `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
-| the cycle report | `Simulation.Core.Format_Report`; printed and copied to `output/report.txt` by `Example/Simulation/run_cycle.py` |
+| the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
@@ -92,7 +92,7 @@ returned list, printed by the script, exit code 1.
 
 - Targets: macOS on Apple silicon (verified), Ubuntu Linux (unverified, stubs only).
 - Interpreter: Python 3.11, `/opt/homebrew/bin/python3.11` on macOS, `python3.11` on Linux.
-- Verification step: import mujoco, numpy, scipy, yaml; mujoco == 3.16.0. Creates `logger/`, `output/`.
+- Verification step: import mujoco, numpy, scipy, yaml; mujoco == 3.16.0. Creates `logger/`, `Data/Generated/`.
 - `requirements.txt`: direct dependencies pinned `==` (the owner's list), grouped by user; no lock file.
 - Test: `test/Install/test_install.py`.
 

@@ -36,7 +36,7 @@ import argparse
 # Custom Lib.:
 #   ../Configuration/Core - paths, the PCB data, the logs
 from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_REFERENCE_PLAN,
-                                CONST_OUTPUT, CONST_REPORT_NAME, CONST_ROOT)
+                                CONST_REPORTS, CONST_REPORT_NAME, CONST_ROOT)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Simulation/Core - the run, the report, the acceptance
@@ -59,12 +59,13 @@ def main():
         [INFO] / [ERROR] lines on stderr, everything also in logger/run_cycle.log. Exit 0 when every
         criterion is met, 1 when one fails, 2 when the run cannot start or becomes unstable.
 
-            .venv/bin/python Example/Simulation/run_cycle.py [--plan Data/Reference/cell_plan.npz] [--out output/] [--progress]
+            .venv/bin/python Example/Simulation/run_cycle.py [--plan Data/Reference/cell_plan.npz] [--out Data/Generated/Reports/] [--progress]
     """
 
     parser = argparse.ArgumentParser(description='Physics run of a cell plan: report and acceptance checks.')
     parser.add_argument('--plan', default=CONST_REFERENCE_PLAN, help='the plan (default: %s)' % os.path.relpath(CONST_REFERENCE_PLAN, CONST_ROOT))
-    parser.add_argument('--out', default=CONST_OUTPUT, help='write %s into this directory (default: output/)' % CONST_REPORT_NAME)
+    parser.add_argument('--out', default=CONST_REPORTS,
+                        help='write %s into this directory (default: %s)' % (CONST_REPORT_NAME, os.path.relpath(CONST_REPORTS, CONST_ROOT)))
     parser.add_argument('--progress', action='store_true', help='print the simulated time and phase every 2 s (stderr)')
     args = parser.parse_args()
 

@@ -32,7 +32,7 @@ None yet.
 
 ## Figures
 
-None yet. `output/` images are run outputs, not README figures.
+None yet. `Data/Generated/Images/` holds run outputs (proof images), not README figures.
 
 ## Rules
 
