@@ -38,7 +38,9 @@ None yet. `output/` images are run outputs, not README figures.
 
 - Root layout: `.claude/skills/project-style-rpx/references/project.md` > Root.
 - Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content.
-- A safety alert at the top once SPEC §14 question 1 is answered.
+- The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening
+  (outputs are simulation results, not validated for the real cell; the validation procedure, reduced
+  speed, the controller's safety limits).
 
 ## README tests
 

@@ -6,6 +6,9 @@ fixture. The robot closes and opens MG06, and the PCB goes back to the output cr
 a regression baseline. A keypoint-based robot program is in progress. A full README follows in Phase 1 step 7. The
 previous Czech description of the cell is in [docs/README_cs_mg06_cell.md](docs/README_cs_mg06_cell.md).
 
+> [!WARNING]
+> **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
+
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"     # install (MuJoCo 3.16.0)
 .venv/bin/kinali-sim run                                        # headless physics run of the cycle + report (output/report.txt)

@@ -13,10 +13,11 @@ trajectory file. The owner and whoever writes the robot program act on it.
 
 ## Physical system and safety
 
-Today the output drives nothing real. Whether a program will be exported to the real AUBO i5 or the
-loader is open (SPEC §14). Until decided, every result carries: **"Simulation passed ≠ safe on the real
-cell."** If an export is added, it becomes a proposal run first at reduced speed with someone at the
-stop button, and this section gets the owner's safe conditions.
+Today the output drives nothing real; a transfer to the real AUBO i5 is planned (SPEC §17,
+design-decisions). Every result carries: **"Outputs (keypoints, programs, trajectories) are simulation
+results and are NOT validated for driving the real cell."** Before any use on real hardware they go
+through the real-cell validation procedure (to be defined, `KNOWN_ISSUES.md`), at reduced speed with the
+robot controller's own safety limits active. Formats stay controller-friendly (SPEC §17).
 
 Language: English in every file, report and commit; the owner's notes may be in Czech or Slovak.
 

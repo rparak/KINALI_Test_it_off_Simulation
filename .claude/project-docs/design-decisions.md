@@ -23,6 +23,25 @@ conventions are taken.
 
 Pinned by (after F3) `test/Docs/test_layout.py` (root entries, skill folders).
 
+## Simulation now, real-cell transfer planned
+
+**Decision.** The project is a simulation today; keypoints and programs are intended to be transferred to
+the real AUBO i5 later (owner, 2026-10-24). So: the formats stay controller-friendly (joint values in a
+defined unit and order, the TCP definition, speeds as % of the datasheet, SPEC §17); the simulation-only
+deviations (the CAD shifts in `scene.xml`, the assumed acceleration limits, the vacuum's adhesion model)
+are checked against the real cell before a transfer; every output is marked as not validated for the
+real cell (`KNOWN_ISSUES.md` opening, the README alert) until the real-cell validation procedure exists.
+
+**Why.** A test on the real cell is planned; a format that cannot be loaded into the controller, or a
+model deviation nobody re-checks, would make the transfer unsafe or redo the work.
+
+**Alternatives.** Simulation only, formats free: rejected, the transfer is planned. Validating now:
+not possible, the procedure and the real cell's measurements do not exist yet.
+
+**Revisit if** the real-cell validation procedure is defined, or the transfer is cancelled.
+
+Pinned by: nothing yet (the formats come in steps 3–4; their tests will pin unit and order).
+
 ## MuJoCo is pinned to 3.16.0
 
 **Decision.** `mujoco==3.16.0` in `requirements.txt`; the installer checks the version.

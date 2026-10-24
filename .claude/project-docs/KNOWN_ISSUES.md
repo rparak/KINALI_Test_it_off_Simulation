@@ -1,11 +1,23 @@
 # Known issues
 
-**Simulation passed ≠ safe on the real cell.** Every motion this project produces is verified only in
-simulation; whether any output will drive the real robot or loader is still open (SPEC §14). Until that
-is decided, nothing here is a statement about the real cell.
+**Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
 
 This file lists what the project does not model or has not verified. It contains only what has been
 decided or measured.
+
+## Real-cell validation procedure not defined
+
+A transfer of keypoints and programs to the real AUBO i5 is planned (SPEC §17), but no procedure exists
+to validate an output on the real cell.
+
+- **Impact:** no output may be run on the real cell; the simulation's agreement with the real cell is
+  unknown.
+- **Evidence:** SPEC §17; owner, 2026-10-24.
+- **What would close it:** a defined procedure covering the calibration of the robot base, MG06 and
+  loader positions against the model (the CAD deviations of SPEC §4.7 included), the real speeds and
+  accelerations (the acceleration limits of SPEC §4.4 are assumed), the vacuum and gripper behaviour
+  (the adhesion model, the jaw force), and the collision margins (the 3 mm planning clearance), run
+  first at reduced speed with the controller's safety limits active.
 
 ## The baseline was measured on Python 3.14.7 / numpy 2.5.4; the re-baseline in the pinned Python 3.11 environment is pending
 

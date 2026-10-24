@@ -242,7 +242,17 @@ checker) expose the old names on top of `src/`. Kept: `load_plan`, the result di
 | 13 | style (no hidden module state) vs `kinematics.py` | it builds a model at import | classes taking a model; the shim rebuilds the old globals for legacy |
 | 14 | brief vs skills | `docs/PROJECT_BRIEF.md` would duplicate the SPEC | removed from the tree; SPEC cites git `427e076` |
 
-### Decisions needed from the owner
+### Decisions (answered by the owner, 2026-10-24)
+
+1 Roman Parak. 2 port into `src/Simulation` now; proof: empty report diff against the baseline and
+against the frozen legacy run. 3 the look stays in `Scene`. 4 meshes into `models/<name>/`. 5 matplotlib;
+the broken legacy `--render` goes to `KNOWN_ISSUES.md`. 6 keep as *planned*. 7 no bare `python3`: only
+`python3.11` and explicit absolute candidates. 8 simulation now, real-cell transfer planned (SPEC §17).
+Conditions: C1 (skills resolve from a fresh session) done; C2 (SPEC covers the brief) done. Part 2 rules:
+case-only renames through a temporary name; after every commit the fingerprint, the fast tests and, for
+Scene / Kinematics / Collision / Simulation / models, the cycle diff.
+
+The questions as asked:
 
 1. **Holder** in every header: `Roman Parak` (from `LICENSE`, recommended) or another name (the
    template uses JIC Smart Factory).
