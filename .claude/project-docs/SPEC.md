@@ -40,8 +40,13 @@ Phase 1 (brief §7, in this order):
 4. **Program and trajectory**: a program file read top to bottom with the commands `movej`, `movel`,
    `path` (recorded flange path), `loader` (y / z), `gripper` (open / clamp), `vacuum` (on / off),
    `wait`; min-jerk MoveJ with speed and acceleration limits, Cartesian MoveL (IK per sample), path
-   following; a trajectory file (§9); a clearance check of every segment, carried PCB included. No
-   planning algorithm: collision freedom is checked, not searched. Steps are sequential.
+   following; a trajectory file (§9); a clearance check of every segment, carried PCB included. Two
+   versions of the same process (owner, 2026-10-24; design-decisions: *two programs*): the **default
+   program** (`FEATURES.md` F8) is taught as a human operator would - no planning algorithm, collision
+   freedom is checked, not searched, steps are sequential, no blending, the robot and the loader never move
+   at the same time; the **optimized program** (F9) is planned - the free-space transfers between the
+   process-critical (locked) segments are searched, smoothed and time-optimally timed, and the robot and the
+   loader move in parallel under interlocks. Both versions pass the same checks here and in steps 5 and 6.
 5. **Simulation, checks, playback**: the physics run of a trajectory with the report of §4.6, a
    real-time viewer playback, a headless run.
 6. **Regression**: the default program reproduces §4.6 within §10.1; then it replaces `Data/Reference/cell_plan.npz`
@@ -94,8 +99,10 @@ Keep commits small and per feature. After each step run the regression and repor
 - Changing the verified physics: timestep, solver options, any solref/solimp/solmix/margin/gap,
   friction, masses, geometry, actuator gains and ranges, the vacuum/adhesion setup, the bellows springs,
   the CAD deviations (§4.7). A change to any of these is a feature with its own report.
-- Path planning (search): the program lists the path; the tool checks it.
-- Blending and parallel robot/loader execution in Phase 1 (possible later).
+- Path planning (search) for the default program: it lists the path; the tool checks it. The optimized
+  program (§2 item 4) searches only its free-space transfers.
+- Blending in Phase 1 (possible later); parallel robot/loader execution in the default program (the
+  optimized program has it, under interlocks).
 - Driving a real robot or machine now. A transfer to the real cell is planned later (§17).
 
 ## 4. Measured facts this specification rests on

@@ -337,6 +337,35 @@ Pinned by `test/Scene/test_core.py::test_the_floor_is_a_visual_plane_with_a_one_
 `test/Render/test_core.py::test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres`,
 `::test_the_offscreen_floor_fades_into_the_horizon_colour`, `::test_the_passive_viewer_switches_on_fog_and_haze`.
 
+## Step 4 has two programs: the default one is taught, the optimized one is planned
+
+**Decision.** Step 4 produces two versions of the same process (owner, 2026-10-24). The **default program**
+(`Configuration/Program_Default.yaml`, `FEATURES.md` F8) is written as a human operator would teach it: named
+sequential steps, every motion ending at rest at its point, no blending, the robot and the loader never moving
+at the same time, approach and retreat points as offsets from keypoints, vias where a person would put them. For
+it the brief's rule stands: no planning algorithm, collision freedom is checked, not searched. The **optimized
+program** (F9) keeps every process-critical segment of the default program unchanged (LOCKED) and replaces only
+the free-space transfers between them (FREE) by planned motion - a joint-space search with a fixed seed, shortcut,
+smoothing, time-optimal timing within the robot's limits - and lets the robot and the loader move in parallel
+under interlocks. Both versions pass the same segment checks (step 4) and, later, the physics checks of steps 5
+and 6. The brief's "no planning algorithm" (SPEC §2 item 4) is thereby narrowed to the default program; SPEC §2
+and §3 say so.
+
+**Why.** The default program is the readable, teachable reference a person can check line by line and transfer
+to a teach pendant; the optimized program shows how much of the cycle time is free-space motion and waiting, on
+the same process and the same checks, so the two can be compared step by step.
+
+**Alternatives.** One program only, taught (the brief): no measure of the achievable cycle time. One program
+only, optimized: nothing a person can read and check against the process; a planner bug would change the
+process-critical moves. Optimizing everything (contact moves included): rejected, the contact moves are the
+verified physics (SPEC §4.7) and stay as taught.
+
+**Revisit if** the optimized program cannot pass the physics checks of steps 5 or 6, or the owner decides one
+version is enough.
+
+Pinned by: nothing yet (F8 and F9 are designed, not implemented); their tests are listed in `FEATURES.md` F8 and
+F9.
+
 ## The CAD deviations stay compensated in scene.xml
 
 **Decision.** `models/scene.xml` keeps three deliberate deviations from the CAD: the loader shifted
