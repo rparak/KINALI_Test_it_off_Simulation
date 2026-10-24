@@ -79,3 +79,18 @@ def test_an_unknown_camera_or_a_too_large_image_is_refused(state):
         Render_Image(model, data, 'cam_none')
     with pytest.raises(Render_Error_Cls, match='2000x720 px exceeds'):
         Render_Image(model, data, 'cam_pcb', 2000, 720)
+
+
+def test_a_free_camera_image_and_its_size_limit(state):
+    """
+    Description:
+        Render_Free_Image looks at a point from a distance and two angles; a size beyond the offscreen buffer is
+        refused.
+    """
+
+    from Render.Core import Render_Free_Image
+    model, data = state
+    image = Render_Free_Image(model, data, [0.0, -0.3, 0.2], 1.5, 150, -25, 320, 240)
+    assert image.shape == (240, 320, 3) and image.std() > 0
+    with pytest.raises(Render_Error_Cls, match='exceeds'):
+        Render_Free_Image(model, data, [0.0, 0.0, 0.0], 1.0, 0, 0, 4000, 240)

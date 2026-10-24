@@ -532,6 +532,15 @@ read from the compiled model). `fork_start` row 23, `fork_closed_end` row 286, `
   MG06's base) - no collision, unlike the owner's expectation; with MG06 settled **Closed** the bar is 5.95 mm
   into the fork and the check fails. Both pinned; open question for the owner.
 
+### Status (2026-10-24)
+
+- F6.1 done (e78aa8f): `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` and their loader; the moved
+  constants convert to the same floats (fingerprint and cycle report unchanged).
+- F6.2 done (56ae14f): `src/Keypoints/Core.py` (posing, check, resolution), exact clearance
+  (`Collision.Close_Pairs`); the check: 0 FAIL, 1 WARN (`via_mg06_high`, the family switch), 21 PASS.
+- F6.3 done: `Example/Keypoints/` (check, resolve, show, step), `Render_Free_Image`, `Launch_Passive_Viewer`,
+  the script tests. Not verified here: the viewer keys (Page Down / Page Up / `.`) - the owner presses them.
+
 ### Questions (Part A)
 
 1. Joint limits and loader ranges: keep the model (vendored MJCF, `scene.xml`) as their only source and let

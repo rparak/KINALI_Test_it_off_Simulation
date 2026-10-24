@@ -455,13 +455,17 @@ Example/Scene/model_fingerprint.py     compares (default) or writes the compiled
 Example/Render/show_cell.py            opens the viewer on the cell
 Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
 Example/Media/make_logo_variants.py    the black / white SVG logos + Data/Generated/Images/logo_check.png
+Example/Keypoints/check_keypoints.py   the keypoint check table (exit 0 / 1)
+Example/Keypoints/resolve_keypoint.py  IK of a Relative_To keypoint: prints the Joints line to paste
+Example/Keypoints/show_keypoint.py     poses the cell at a keypoint: viewer (mjpython), --headless, --image
+Example/Keypoints/step_keypoints.py    steps through the keypoints in the viewer (mjpython): Page Down / . / Page Up
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
 
-`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`; later
-`Keypoints`, `Program`, `Media`). `Data/` is ordered by purpose. The step 3 configuration (cell, keypoints,
+`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`, `Media`,
+`Keypoints`; later `Program`). `Data/` is ordered by purpose. The step 3 configuration (cell, keypoints,
 program YAML) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
 

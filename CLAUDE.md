@@ -41,7 +41,16 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Render/show_cell.py            # MuJoCo viewer on the cell
 .venv/bin/python Example/Media/make_logo_variants.py # Media/<Logo>_Black|White.svg + Data/Generated/Images/logo_check.png
 .venv/bin/python Example/Render/render_image.py         # Data/Generated/Images/pcb_green.png
+.venv/bin/python Example/Keypoints/check_keypoints.py [--name K]   # the keypoint check table; exit 1 on a FAIL
+.venv/bin/python Example/Keypoints/resolve_keypoint.py --name K [--seed K]   # prints the corrected Joints line
+.venv/bin/python Example/Keypoints/show_keypoint.py --name K --headless [--image [FILE]]   # pose; offscreen image
+.venv/bin/mjpython Example/Keypoints/show_keypoint.py --name K [--loader P --gripper S --pcb L --mg06 Open|Closed]
+.venv/bin/mjpython Example/Keypoints/step_keypoints.py [--start K]   # Page Down / '.' next, Page Up previous
 ```
+
+The two viewer scripts use `mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`;
+under `.venv/bin/python` they exit 2 naming the mjpython command. Keypoints and the cell configuration are
+edited by hand in `Configuration/` (no tool writes the YAML).
 
 History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
 `git log --follow -M20% <file>`. The legacy planner and cycle test: git tag `legacy-planner-reference`.

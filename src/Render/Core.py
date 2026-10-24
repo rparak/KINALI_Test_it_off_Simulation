@@ -83,6 +83,38 @@ def Render_Image(model: mujoco.MjModel, data: mujoco.MjData, camera: str, width:
         renderer.close()
 
 
+def Render_Free_Image(model: mujoco.MjModel, data: mujoco.MjData, lookat: tp.Sequence[float], distance: float, azimuth: float,
+                      elevation: float, width: int = CONST_WIDTH, height: int = CONST_HEIGHT) -> np.ndarray:
+    """
+    Description:
+        An offscreen image of the data's current state from a free camera (a point looked at, a distance and two
+        angles, as the viewer's mouse camera).
+
+    Args:
+        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its state (after mj_forward).
+        (3) lookat [Vector<float> 1x3]: The point looked at (m).
+        (4) distance [float]: The camera's distance from it (m).
+        (5 - 6) azimuth, elevation [float]: The camera's angles (deg; elevation negative = from above).
+        (7 - 8) width, height [int]: The size (px).
+
+    Returns:
+        (1) parameter [Matrix<uint8> HxWx3]: The RGB image.
+    """
+
+    if width > model.vis.global_.offwidth or height > model.vis.global_.offheight:
+        raise Render_Error_Cls('An image of %dx%d px exceeds the model\'s offscreen buffer %dx%d px.'
+                               % (width, height, model.vis.global_.offwidth, model.vis.global_.offheight))
+    camera = mujoco.MjvCamera()
+    camera.lookat[:] = lookat
+    camera.distance, camera.azimuth, camera.elevation = distance, azimuth, elevation
+    renderer = mujoco.Renderer(model, height, width)
+    try:
+        renderer.update_scene(data, camera=camera)
+        return renderer.render().copy()
+    finally:
+        renderer.close()
+
+
 def Save_Image(image: np.ndarray, path: str) -> str:
     """
     Description:
@@ -118,3 +150,28 @@ def Launch_Viewer(model: mujoco.MjModel, data: tp.Optional[mujoco.MjData] = None
 
     import mujoco.viewer
     mujoco.viewer.launch(model, mujoco.MjData(model) if data is None else data)
+
+
+def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callback: tp.Optional[tp.Callable[[int], None]] = None,
+                          command: str = '') -> tp.Any:
+    """
+    Description:
+        Open MuJoCo's passive viewer on the data without stepping it (a posed cell stays as posed). On macOS it runs
+        only under mjpython: then a Render_Error_Cls names the command to use.
+
+    Args:
+        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed state.
+        (3) key_callback [function]: Called with each key code (GLFW), or None.
+        (4) command [string]: The script and its arguments, for the mjpython hint.
+
+    Returns:
+        (1) parameter [mujoco.viewer.Handle]: The viewer (sync, lock, is_running, close).
+    """
+
+    import mujoco.viewer
+    try:
+        return mujoco.viewer.launch_passive(model, data, key_callback=key_callback, show_left_ui=False, show_right_ui=False)
+    except RuntimeError as error:
+        raise Render_Error_Cls('The viewer cannot start (%s). On macOS run it under mjpython: .venv/bin/mjpython %s'
+                               % (error, command)) from error
+
