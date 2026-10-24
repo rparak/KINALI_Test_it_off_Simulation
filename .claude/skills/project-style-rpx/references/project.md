@@ -28,7 +28,8 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 ## Layout and layers (SPEC §6)
 
 ```
-src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program
+src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program;
+                       plus src/Configuration/Program_Parser.py (the cell program's reader, F10)
 Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
                        Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
@@ -37,7 +38,7 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
-Configuration/         Cell.yaml, Keypoints.yaml (step 3), Program_Default.yaml (step 4)
+Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10)
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
@@ -77,9 +78,10 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `models/scene.xml`, `models/aubo_i5/aubo_i5.xml`, `models/robot_tool/vgc10_opener_free.xml` | `Scene.Core` through MjSpec; never written (mjcf.md) |
 | `models/cell_scene.xml` | written by `Scene.Core.Export_Cell_Scene`; read only by MuJoCo's viewer |
 | `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand (the PCB poses only) |
-| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration.Core.Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`; written by hand (a script that finds a value to change prints the line) |
+| `Configuration/Cell.yaml` | `Configuration.Core.Load_Cell_Configuration`; written by hand |
+| `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser.Load_Constants`, `Load_Simulation`, `Load_Program`; written by hand (a script that finds a value to change prints the line: `resolve_keypoint.py`) |
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
-| `Data/Paths/fork_close_open_path.npz` | `Program.Core` (the `Path` command); recorded in the MG06 project, never written |
+| `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
@@ -88,15 +90,20 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 
 ## Configuration
 
-- Files: `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` and `Configuration/Program_Default.yaml` (SPEC §8),
-  read only by `src/Configuration/Core.py` (`Load_Cell_Configuration` -> `Cell_Configuration_Str`, `Load_Keypoints` ->
-  `Keypoints_Str`, `Load_Program` -> `Program_Str`), tested in `test/Configuration/test_configuration_files.py` (each required field named
-  literally, mutated copies of the shipped files).
-- Keys Pascal_Snake_Case; the names of keypoints, loader positions, gripper states and contact groups are
-  lowercase (they are names, SPEC §4.8). No optional fields: `Relative_To: null` and `Allow_Contact: []` are
-  values, not omissions (owner, 2026-10-24).
+- Files (SPEC §8): `Configuration/Cell.yaml`, read only by `src/Configuration/Core.py` (`Load_Cell_Configuration` ->
+  `Cell_Configuration_Str`, tested in `test/Configuration/test_configuration_files.py`); the cell program
+  `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml`, read only by `src/Configuration/Program_Parser.py`
+  (`Load_Constants`, `Load_Simulation`, `Load_Program` -> `Program_Str`, the typed IR; tested in
+  `test/Configuration/test_program_parser.py`: each validation error named with its file and line, on mutated copies of
+  the shipped files). Every YAML file goes through `Configuration.Core.Read_YAML` (duplicate keys rejected, only `true` /
+  `false` booleans, each string with its line).
+- Keys Pascal_Snake_Case. Constants are UPPERCASE with their section's prefix (`T_`, `P_`, `L_`, `G_`, `PATH_`, `DO_`,
+  `DI_`), segments `S<n>_<Name>`, jobs `J_<NAME>`; the contact groups and PCB locations stay lowercase (code constants).
+  No optional fields: `Reference: null`, `Offset: null`, `PCB_Hold: null` and `Contacts: []` are values, not omissions
+  (owner, 2026-10-24). Every declared constant is used.
+- Program lines are calls parsed with `ast`, never evaluated (design-decisions).
 - Not configured: what the model holds (joint limits, loader ranges, the lid's open stop) - read from the
-  compiled model. `On` / `Off` in the program are YAML booleans (PyYAML reads an unquoted On as true).
+  compiled model. `ON` / `OFF` / `Open` are text (the loader reads only `true` / `false` as booleans).
 - Single legal value, so a code constant: the number of suction cups (`Scene.CONST_CUP_N`), the PCB
   locations, the contact groups, the planning margin factor (2 x the clearance).
 - Derived, not stored: the adhesion force (pressure x cup area), the cup pad size, the planning margin.

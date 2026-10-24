@@ -32,8 +32,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
-.venv/bin/python -m pytest -m "not slow"         # everyday, about 15 s
-.venv/bin/python -m pytest                       # before a commit, about 45 s
+.venv/bin/python -m pytest -m "not slow"         # everyday, about 70 s
+.venv/bin/python -m pytest                       # before a commit, about 2 min
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
 .venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~15 s
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
@@ -48,12 +48,13 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/mjpython Example/Keypoints/step_keypoints.py [--start K]   # Page Down / '.' next, Page Up previous
 .venv/bin/python Example/Program/build_program.py [--program F] [--out DIR] [--compare-legacy]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
-.venv/bin/mjpython Example/Program/show_program.py [--version default]   # playback: Home pause, Page Down/'.' next step, Page Up, End
+.venv/bin/mjpython Example/Program/show_program.py [--version default]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
 ```
 
 The two viewer scripts use `mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`;
-under `.venv/bin/python` they exit 2 naming the mjpython command. Keypoints and the cell configuration are
-edited by hand in `Configuration/` (no tool writes the YAML).
+under `.venv/bin/python` they exit 2 naming the mjpython command. The cell configuration (`Cell.yaml`) and the cell
+program (`Constants.yaml` named values, `Simulation.yaml` simulation-only data, `Program.yaml` the program; read by
+`src/Configuration/Program_Parser.py`) are edited by hand in `Configuration/` (no tool writes the YAML).
 
 History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
 `git log --follow -M20% <file>`. The legacy planner and cycle test: git tag `legacy-planner-reference`.

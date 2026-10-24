@@ -15,7 +15,7 @@
 Test-it-off Simulation is a MuJoCo simulation of KINALI's Test-it-off automated PCBA test cell: an AUBO i5 robot with an OnRobot VGC10 vacuum
 gripper and fork picks a PCB from the input crate and hands it to a two-axis loader, which inserts it into the MG06 test
 fixture. The robot closes and opens MG06, and the PCB goes back to the output crate. The physics is verified against
-a regression baseline. A default robot program, taught from named keypoints, is built into a trajectory and checked
+a regression baseline. A default robot program, taught from named robot points, is built into a trajectory and checked
 kinematically (clearance, limits). Its physics run is the next step. A full README follows in Phase 1 step 7.
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA).
@@ -29,6 +29,6 @@ An internal research project of JIC Smart Factory, part of its internal research
 .venv/bin/python Example/Scene/export_cell_scene.py                   # write models/cell_scene.xml
 .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml  # interactive viewer
 .venv/bin/python Example/Program/build_program.py               # default program -> trajectory + check report (Data/Generated/)
-.venv/bin/python Example/Program/show_program.py --step test --headless   # the cell at the end of a program step
+.venv/bin/python Example/Program/show_program.py --step S11_Test --headless   # the cell at the end of a program segment
 .venv/bin/mjpython Example/Program/show_program.py             # play the program in the viewer (macOS: mjpython)
 ```

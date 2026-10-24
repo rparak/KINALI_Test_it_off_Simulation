@@ -8,8 +8,8 @@ project skill of the same name). Style rules come from project-style-rpx and its
 ## What the output is
 
 Test-it-off Simulation, a MuJoCo simulation of KINALI's Test-it-off cell (SPEC §1): the compiled cell model, the cycle run
-with its report and acceptance verdict, and from steps 3–4 the keypoint file, the program and the
-trajectory file. The owner and whoever writes the robot program act on it.
+with its report and acceptance verdict, and from steps 3–4 the cell program (`Constants.yaml`, `Simulation.yaml`,
+`Program.yaml`) and the trajectory file. The owner and whoever writes the robot program act on it.
 
 ## Physical system and safety
 
@@ -26,7 +26,7 @@ Language: English in every file, report and commit; the owner's notes may be in 
 - The verified physics (SPEC §3, mjcf.md): timestep, solver options, contact parameters, friction,
   masses, geometry, actuator gains and ranges, vacuum, bellows, the CAD deviations.
 - Formats: `models/scene.xml`, `Data/PCB/pcb_meta.json`, `Data/Reference/cell_plan.npz`, the trajectory file and
-  the keypoint / program files (from steps 3–4), the report's lines.
+  the cell program's three files and their grammar (SPEC §8, F10), the report's lines.
 - The acceptance criteria (SPEC §10.1) and the 3 mm keypoint / segment clearance.
 - `requirements.txt` pins and the interpreter.
 

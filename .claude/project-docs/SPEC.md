@@ -154,7 +154,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 
 - Loader: home y −0.1000 / z 0; place y +0.19666 / z +0.06722; travel height z +0.07922; park
   y −0.1995 / z +0.020; jaws open 0.035, grip 0.01775 (clamp command 0.00575). Source: now
-  `Configuration/Keypoints.yaml` (`Loader`, `Gripper`; formerly `pcb_meta.json`), `legacy/plan_cell.py` (git
+  `Configuration/Constants.yaml` (`Loader_Positions`, `Gripper_Commands`; formerly `pcb_meta.json`), `legacy/plan_cell.py` (git
   tag `legacy-planner-reference`).
 - PCB in the loader jaws (loader home): position (0.0057, −0.30829, 0.14961), quaternion
   (0.99696, 0.07794, 0, 0) (8.94° tilt); placed in MG06: (0.0057, −0.011636, 0.216826), same quaternion.
@@ -252,7 +252,7 @@ Kinematics and Collision code; F3.4).
   handover there is no press**: the board sits 0.3 mm above the finger ledges, otherwise the jaws clamp
   on the ledge corners.
 - **IK families**: PCB handling uses "wrist up" (wrist_2 > 0), the MG06 fork path "wrist down"
-  (wrist_2 < 0); the switch happens only in free space (via `via_mg06_high`, §4.8).
+  (wrist_2 < 0); the switch happens only in free space (via `P_VIA_HOME_MG06`, §4.8).
 - **MG06 fork path**: the recorded close/open path is tight (bar on the slot bottom). Leaving and
   returning use a separately planned path with the bar centred in the slot (5 mm play), from the closed
   handle angle 28.65° and lid −0.5° (`H_CLOSED`, `LID_CLOSED` in `legacy/plan_cell.py`, git tag `legacy-planner-reference`). The opening path is joined where its recorded handle angle is
@@ -268,9 +268,9 @@ Kinematics and Collision code; F3.4).
 
 ### 4.8 Initial keypoints (extracted from the verified plan; brief §6, verbatim)
 
-In `Configuration/Keypoints.yaml` at full precision: each keypoint's joints are the reference plan's stationary
+In `Configuration/Constants.yaml` (`Points`, renamed in F10: §4.8.1) at full precision: each keypoint's joints are the reference plan's stationary
 segment end (joint speed 0; `q_home` for home), rounded to 1e-6 deg; within 9.3e-5 rad of this table, FK
-within 0.081 mm of its positions (measured 2026-10-24; `test/Configuration/test_configuration_files.py`). Their source, the planner, is `legacy/plan_cell.py` at git tag
+within 0.081 mm of its positions (measured 2026-10-24; `test/Configuration/test_program_parser.py::test_the_points_are_the_spec_table_and_the_reference_plans_rows`). Their source, the planner, is `legacy/plan_cell.py` at git tag
 `legacy-planner-reference` (`SEED`, the `solve` calls of its `main`).
 
 Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP = `aubo/tool/suction_tcp` in m.
@@ -300,12 +300,84 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 | `output_approach` | 1.0462, −0.1697, 2.3385, 0.9374, 1.5708, 0.2609 | tcp z 0.0284 | |
 | `output_place` | 1.0462, −0.2120, 2.3510, 0.9922, 1.5708, 0.2609 | tcp z 0.0134 | PCB 1 mm above the crate floor → vacuum off |
 
+### 4.8.1 Names since F10
+
+F10 (2026-10-24) renamed every keypoint, step, loader position, gripper state and path (`FEATURES.md` F10; the machine
+form, with the 69 executed commands old → new, is `test/Program/data/name_map.json`). The tables of §4.8, §4.9 and §16 keep
+the brief's names verbatim; everything else uses the new ones. The F6 / F8 field `Relative_To` became `Reference` + `Offset`
+(§8), `Configuration/Keypoints.yaml` became `Configuration/Constants.yaml` + `Configuration/Simulation.yaml`, and
+`Configuration/Program_Default.yaml` became `Configuration/Program.yaml`.
+
+| Point (§4.8) | Constant |
+|---|---|
+| `home` | `P_HOME` |
+| `above_input_pcb` | `P_INPUT_ABOVE` |
+| `input_pcb_approach` | `P_INPUT_APPROACH` |
+| `input_pcb_press` | `P_INPUT_PICK` |
+| `input_pcb_clear` | `P_INPUT_CLEAR` |
+| `via_input_to_loader` | `P_VIA_INPUT_LOADER` |
+| `above_loader` | `P_LOADER_ABOVE` |
+| `loader_approach` | `P_LOADER_APPROACH` |
+| `loader_handover` | `P_LOADER_PLACE` |
+| `loader_take_press` | `P_LOADER_PICK` |
+| `loader_out_of_jaws` | `P_LOADER_EXIT` |
+| `via_mg06_high` | `P_VIA_HOME_MG06` |
+| `above_handle` | `P_MG06_ABOVE` |
+| `fork_start` | `P_MG06_FORK_START` |
+| `fork_closed_end` | `P_MG06_CLOSE_END` |
+| `fork_bar_centred` | `P_MG06_BAR_CENTRE` |
+| `fork_out_of_bar` | `P_MG06_SLOT_EXIT` |
+| `fork_retreat_up` | `P_MG06_WAIT` |
+| `fork_open_join` | `P_MG06_OPEN_JOIN` |
+| `via_loader_to_output` | `P_VIA_LOADER_OUTPUT` |
+| `above_output` | `P_OUTPUT_ABOVE` |
+| `output_approach` | `P_OUTPUT_APPROACH` |
+| `output_place` | `P_OUTPUT_PLACE` |
+
+| Step (F8) | Segment |
+|---|---|
+| `approach_input` | `S1_Approach_Input` |
+| `pick_input` | `S2_Pick_Input` |
+| `to_loader` | `S3_To_Loader` |
+| `handover` | `S4_Handover` |
+| `home_after_handover` | `S5_Home_After_Handover` |
+| `loader_insert` | `S6_Loader_Insert` |
+| `loader_park` | `S7_Loader_Park` |
+| `to_mg06` | `S8_To_MG06` |
+| `close_mg06` | `S9_Close_MG06` |
+| `leave_mg06` | `S10_Leave_MG06` |
+| `test` | `S11_Test` |
+| `return_mg06` | `S12_Return_MG06` |
+| `open_mg06` | `S13_Open_MG06` |
+| `home_after_mg06` | `S14_Home_After_MG06` |
+| `loader_fetch` | `S15_Loader_Fetch` |
+| `loader_return` | `S16_Loader_Return` |
+| `to_take` | `S17_To_Take` |
+| `take_from_loader` | `S18_Take_From_Loader` |
+| `to_output` | `S19_To_Output` |
+| `place_output` | `S20_Place_Output` |
+| `home_end` | `S21_Home_End` |
+| `settle` | `End_Settle` |
+
+| Loader, gripper, path (F6, F8) | Constant |
+|---|---|
+| loader `home` | `L_HOME` |
+| loader `travel_place` | `L_TRAVEL` |
+| loader `place` | `L_PLACE` |
+| loader `park` | `L_PARK` |
+| gripper `open` | `G_OPEN` |
+| gripper `clamp` | `G_CLAMP` |
+| gripper `grip` | `G_CLAMP` (the real jaw position: `Simulation.yaml Jaw_Actual`) |
+| `path: fork_close` / `Path: Fork_Close` | `PATH_FORK_CLOSE` |
+| `path: fork_open` / `Path: Fork_Open` | `PATH_FORK_OPEN` |
+
 ### 4.9 The recorded MG06 fork path (brief §6, verbatim)
 
 `fork_close_open_path.npz` is now `Data/Paths/fork_close_open_path.npz`, and
 `tools/plan_cell.py` became `legacy/plan_cell.py`, removed in F4 and kept in git: the fork-path joins,
 the leave / return path around the closed handle and the other special moves are looked up with
-`git show legacy-planner-reference:legacy/plan_cell.py` (step 4 builds the `path` command from them).
+`git show legacy-planner-reference:legacy/plan_cell.py` (step 4 builds the `path` command from them; since F10 `Robot.MovePath(PATH_FORK_CLOSE)` /
+`Robot.MovePath(PATH_FORK_OPEN)`, §4.8.1).
 
 
 `path: fork_close` = rows of `fork_close_open_path.npz` with phase `CLOSE` (≈6.1 s, after the first rows that bring the
@@ -461,45 +533,49 @@ models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by 
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
 models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Mujoco
 models/robot_tool/        VGC10 + fork MJCF and meshes
-Configuration/Cell.yaml, Configuration/Keypoints.yaml, Configuration/Program_Default.yaml   the cell configuration, the keypoints, the default program (§8)
+Configuration/Cell.yaml   the cell's physical description (§8)
+Configuration/Constants.yaml, Simulation.yaml, Program.yaml   the cell program: its named values, the simulation's data, the program (§8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
 Media/Original/           the owner's logo originals, kept untouched for regeneration
-src/Configuration/Core.py the repository paths, the PCB meta reader, the MuJoCo log route
+src/Configuration/Core.py the repository paths, the YAML reader, Cell.yaml's loader, the PCB meta reader, the MuJoCo log route
+src/Configuration/Program_Parser.py   the cell program's loader: Constants, Simulation, Program -> the typed IR (§8)
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
 src/Render/Core.py        offscreen image, viewer start
-src/Keypoints/Core.py     the keypoints: posing the cell, the check, the IK resolution (§7.7)
+src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
 src/Trajectory/Core.py    the trajectory file format: the only writer and reader (npz + CSV export, §9)
-src/Program/Core.py       the program build (motion laws, world state), the program check, posing at a sample (§7.9)
+src/Program/Core.py       the constants' model checks, the program build (motion laws, world state), the program check, posing at a sample (§7.9)
 Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Render/show_cell.py            opens the viewer on the cell
 Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
 Example/Media/make_logo_variants.py    the black / white SVG logos + Data/Generated/Images/logo_check.png
-Example/Keypoints/check_keypoints.py   the keypoint check table (exit 0 / 1)
-Example/Keypoints/resolve_keypoint.py  IK of a Relative_To keypoint: prints the Joints line to paste
-Example/Keypoints/show_keypoint.py     poses the cell at a keypoint: viewer (mjpython), --headless, --image
-Example/Keypoints/step_keypoints.py    steps through the keypoints in the viewer (mjpython): Page Down / . / Page Up
-Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --compare-legacy
-Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End), --step / --time / --image
+Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
+Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
+Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
+Example/Keypoints/step_keypoints.py    steps through the points in the viewer (mjpython): Page Down / . / Page Up
+Example/Program/build_program.py       the program -> its trajectory (npz + csv) and check report (exit 0 / 1); --compare-legacy
+Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
+                                       segment and its current line), --step / --time / --image
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
 
 `Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`, `Media`,
-`Keypoints`, `Program`). `Data/` is ordered by purpose. The step 3 configuration (cell, keypoints,
-program YAML) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
+`Keypoints`, `Program`). `Data/` is ordered by purpose. The configuration (the cell, the
+program's three files) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
 
-`src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
+`src/` layering: `Configuration`, `Render` import nothing of the project (`Configuration.Program_Parser` imports only
+`Configuration.Core`); `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
 `Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo);
 `Program` → `Configuration`, `Scene`, `Kinematics`, `Collision`, `Keypoints`, `Trajectory`. Scripts reach
@@ -511,7 +587,9 @@ in the template's `Configuration/Cell_SF1.yaml`).
 
 The repository's folders and files as constants built from the module's location, never from the
 working directory; the reader of `Data/PCB/pcb_meta.json`; the route of MuJoCo's log file into `logger/`.
-From step 3 on, the only reader of the YAML configuration (§8).
+The only reader of the YAML configuration (§8): `Core` reads `Cell.yaml` and holds the strict YAML reader (`Read_YAML`);
+`Program_Parser` reads the cell program's three files into the typed intermediate representation (`Program_Str`) that
+the other domains read.
 
 ### 7.2 Scene
 
@@ -549,19 +627,22 @@ values; formats the report of §4.6; checks §10.1.
 
 ### 7.7 Keypoints
 
-The keypoints at work (`src/Keypoints/Core.py`): the target of a `Relative_To`, the MG06 state of a `Fixture`
-(the press plate on the model's coupling), posing the whole cell at a keypoint (robot, bellows at rest,
-loader axes, jaws, PCB at its location, MG06), the keypoint check and the IK resolution of a keypoint's joints
-(printed, never written). Playback and posing read `Joints` only.
+The robot points at work (`src/Keypoints/Core.py`; the domain keeps its F6 name): a point's tool site
+(`Simulation.yaml Tool_Site`), the target of a derived point (its `Reference` moved by its `Offset`, or its `PCB_Hold`),
+the MG06 state of a point's `Fixture` (the press plate on the model's coupling), posing the whole cell at a point in its
+scene (robot, bellows at rest, loader axes, jaws at the gripper command's `Jaw_Actual`, PCB at its location, MG06), the
+point check and the IK resolution of a point's joints (the `Joints` and `Pose` lines printed, never written). Playback and
+posing read `Joints` only.
 
-The check (per keypoint, one table row; FAIL on any rule, WARN when wrist_2 is within the family margin):
-joint limits (the model); the family (wrist_2's sign); `Check` within `Clearance.Check_Position`; a
-`Relative_To` target within `Stale_Position` / `Stale_Angle`; the clearance - **exact** distances
+The check (per point, one table row; FAIL on any rule, WARN when wrist_2 is within the family margin):
+joint limits (the model); the family (wrist_2's sign, shown); `Pose` against FK(`Joints`, `Tool`) within 1e-5 m /
+1e-3° (the `check` column); a derived point against its target within `Stale_Position` / `Stale_Angle` (the `stale`
+column); the clearance - **exact** distances
 (`Collision.Close_Pairs`, `mj_geomDistance`) from the robot's geoms, and from the PCB's when the cups carry it,
 to every collidable geom of the planning model (the table included): every pair closer than `Clearance.Robot` fails
-unless its group is in `Allow_Contact` and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on
+unless its group is in the point's `Contacts` (`Simulation.yaml Points`) and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on
 the PCB, not the fork), `handle_bar` (the tool on the MG06 handle), `pcb_crate` (the PCB on a crate, and on the table
-only while the PCB is inside a crate), `pcb_jaws` (the PCB on the loader's jaws) - only groups a keypoint or step
+only while the PCB is inside a crate), `pcb_jaws` (the PCB on the loader's jaws) - only groups a point or segment
 observes; any other pair within the clearance fails. Not checked:
 the robot's mount (its base on the pedestal plate, distance 0 by construction; a code constant, as the
 template's base–stand exclusion). Exact distances because MuJoCo's box–box collider generates no contact for a
@@ -576,87 +657,130 @@ MuJoCo; the program build fills it, the viewer and step 5's physics run read it.
 
 ### 7.9 Program
 
-The program at work (`src/Program/Core.py`, `FEATURES.md` F8). `Build_Program` turns a program into a trajectory: sample 0
-is the start state, then each command's samples (4 ms), every motion ending at rest.
+The program at work (`src/Program/Core.py`, `FEATURES.md` F8, F10). `Validate_Constants` checks `Constants.yaml` against the
+model (every tool's `Flange_Offset` against its site, every `Pose` against FK, every derived point against its target, the
+loader positions and gripper commands within the model's ranges). `Build_Program` runs it first, then turns the IR into a
+trajectory: sample 0 is the start state (`Simulation.yaml Start`), then each executed command's samples (4 ms) - the robot's
+lines in order, a `Run` expanded into its job's lines (each labelled `<Run line> > <job line>`), `End_Settle` last - every
+motion ending at rest.
 
 - **MoveJ**: min-jerk to the target's stored `Joints`, `T = max(Movej_Min_Duration, maxⱼ 1.875·|Δqⱼ|/v_maxⱼ,
-  maxⱼ √(5.774·|Δqⱼ|/a_maxⱼ))` (§4.10), speeds analytic.
-- **MoveL**: the target keypoint's site (`suction_tcp`, or the flange when its `Check` frame is the flange) on a straight
-  line, orientation slerp, min-jerk time law over `T = max(Movel_Min_Duration, 1.875·L/Speed)`; IK per sample (pure DLS,
+  maxⱼ √(5.774·|Δqⱼ|/a_maxⱼ))` (§4.10), speeds analytic; `v_max` = the datasheet speeds × `v=` (omitted:
+  `Motion.Speed_Fraction`).
+- **MoveL**: the target point's tool site (`T_SUCTION`: `suction_tcp`, `T_FLANGE`: the flange) on a straight
+  line, orientation slerp, min-jerk time law over `T = max(Movel_Min_Duration, 1.875·L/v)`; IK per sample (pure DLS,
   1e-8 m) seeded from the previous; fails on non-convergence, wrist_2 within `Family_Margin` or a family change; stretched
   (noted) while a sampled joint speed or acceleration exceeds its limit; ends exactly on the target's stored joints (the
   same IK branch, within the stale tolerance).
-- **Path**: `Fork_Close` = rows 1-305 from `fork_start` to `fork_closed_end`; `Fork_Open` = the `OPEN` rows after the first
-  with handle ≤ `Closed_Handle − Open_Join_Margin` (row 663), from `fork_open_join` to `fork_start`; flange IK per row, the
-  recorded times interpolated onto the grid, ends snapped; `Fork_Open` starts moving (39.1 mm/s, noted).
-- **Loader / Gripper**: one channel, min-jerk over its `Duration`, ending exactly on its target; **Vacuum** an event;
-  **Wait** / **Test** hold (`Test` needs MG06 settled closed and the PCB in it).
+- **MovePath**: `PATH_FORK_CLOSE` = rows 1-305 from `P_MG06_FORK_START` to `P_MG06_CLOSE_END`; `PATH_FORK_OPEN` = the `OPEN`
+  rows after the first with handle ≤ `Closed_Handle − Open_Join_Margin` (row 663), from `P_MG06_OPEN_JOIN` to
+  `P_MG06_FORK_START`; flange IK per row, the recorded times interpolated onto the grid, ends snapped; `PATH_FORK_OPEN` starts
+  moving (39.1 mm/s, noted).
+- **MoveY / MoveZ / Gripper** (loader jobs): one channel, min-jerk over its `t=`, ending exactly on its target (the gripper
+  command; the jaws' real position is its `Jaw_Actual`); **SetDO** drives the output's actuator (an event); **WaitDI** holds
+  for the input's `Signal_Response`; **Wait** / **Test** / `End_Settle` hold (`Test` needs MG06 settled closed and the PCB in
+  it).
 - **Speeds**: analytic in MoveJ; central differences elsewhere; zero at sample 0, in every hold and at every MoveL / Path end.
 - **World state**: the PCB's location changes only by the vacuum and gripper rules (vacuum on with the cups on the PCB in a
   crate or the jaws; clamping on it in MG06; opening at MG06; vacuum off with it clamped in the jaws or within 2 mm of its
   place on a crate floor; anything else fails). The carried PCB is the nominal held pose set back along the tool axis by the
   bellows' compression left (1.5 mm at a press, relaxing as the TCP moves away). MG06 is the recorded rows during a `Path`;
-  during a MoveJ / MoveL it moves from its state at the motion's start to the target keypoint's `Fixture` along the motion's
-  time law (the handle settles as the fork lets it go); it holds otherwise. The jaws stand at `grip` while the PCB is
-  between them.
+  during a MoveJ / MoveL it moves from its state at the motion's start to the target point's `Fixture` along the motion's
+  time law (the handle settles as the fork lets it go); it holds otherwise. The jaws stand at `G_CLAMP`'s `Jaw_Actual` while
+  the PCB is between them.
 
 `Pose_Sample` poses the whole cell at a sample (no IK, no physics). `Check_Trajectory` (the program check, on the planning
 model): every sample where a robot geom, the carried PCB, the loader, the jaws or MG06 may have moved more than
 `Clearance.Check_Step` since the last measured one (and every segment end) is measured exactly (`Close_Pairs`): the robot,
 the PCB on the cups (to everything else), the PCB in the jaws (to the workstation: table, crates); a pair within
-`Clearance.Robot` fails unless the step allows its group and it is no deeper than `Allowed_Depth`; every allowed group must
-occur; per step and group the closest pair (up to 10 mm) and its sample and time are reported. Also: the joint limits; the
-peak joint speed and acceleration of every MoveJ (its rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
+`Clearance.Robot` fails unless the segment allows its group (`Simulation.yaml Allow_Contact`) and it is no deeper than `Allowed_Depth`; every allowed group must
+occur; per segment and group the closest pair (up to 10 mm) and its sample and time are reported. Also: the joint limits; the
+peak joint speed and acceleration of every MoveJ (at its `v=`; its rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
 `Motion` (finite differences, 0.1 % tolerance), the recorded paths' peaks reported, not limited; the handover's no-press
-rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Ledge_Tolerance` at `loader_handover` and while
-clamped, never smaller along the MoveL into it); the keypoint check of every keypoint the program uses.
+rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Ledge_Tolerance` at `P_LOADER_PLACE` and while
+clamped, never smaller along the MoveL into it); the point check of every point the program uses.
 `Format_Check_Report` prints it.
 
-## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml`
+## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
 
-The files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`): every
-field REQUIRED (no optional fields; `Relative_To` may be `null`, `Allow_Contact` an empty list), every problem
-collected and reported at once with its file and key path, unknown keys returned as WARNING notes that the
-scripts print, angles in degrees converted to radians once. Tested in `test/Configuration/`.
+Four hand-written files, split by who uses each value (F10, design-decisions): `Cell.yaml` the cell's physical description;
+`Constants.yaml` every named value the cell's controllers use; `Program.yaml` what the controllers run; `Simulation.yaml`
+what only the simulation needs. `Cell.yaml` is read by `src/Configuration/Core.py` (`Load_Cell_Configuration`), the other
+three by `src/Configuration/Program_Parser.py` (`Load_Constants`, `Load_Simulation`, `Load_Program` -> `Program_Str`, the
+typed IR). All four go through one strict YAML reader (`Read_YAML`: duplicate keys rejected, only `true` / `false` are
+booleans, each string keeps its line). Every field REQUIRED (no optional fields; `null` and `[]` where the file's header
+allows them), every problem collected and reported at once with its file, line and key path (a program line also with its
+segment or job and its text), unknown keys or sections returned as WARNING notes that the scripts print, angles in degrees
+converted to radians once. Tested in `test/Configuration/`; the checks against the model are `Program.Validate_Constants`
+(§7.9).
 
 | `Cell.yaml` field | Unit | Source | Read by |
 |---|---|---|---|
 | `Robot.Base_Position`, `Robot.Base_Yaw` | m, deg | CAD, §4.2 | `Scene` |
 | `Vacuum.Pressure`, `Vacuum.Cup_Diameter` (force derived) | Pa, m | VGC10 datasheet, §4.3 | `Scene` |
 | `MG06.Closed_Lid`, `MG06.Closed_Handle` | deg | §4.7 (`LID_CLOSED`, `H_CLOSED`) | posing, the keypoint check |
-| `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>` (four groups), `Check_Position`, `Stale_Position`, `Stale_Angle`, `Family_Margin`, `Check_Step` | m, deg | §2, the owner (0.5 mm), measured (F6), F8 | `Collision`, the keypoint and program checks |
-| `MG06.Open_Join_Margin` | deg | the legacy planner (28.45°, §4.9) | `Path: Fork_Open` |
+| `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>` (four groups), `Stale_Position`, `Stale_Angle`, `Family_Margin`, `Check_Step` | m, deg | §2, the owner (0.5 mm), measured (F6), F8 | `Collision`, the keypoint and program checks |
+| `MG06.Open_Join_Margin` | deg | the legacy planner (28.45°, §4.9) | `Robot.MovePath(PATH_FORK_OPEN)` |
 | `Handover.Ledge_Gap`, `Handover.Ledge_Tolerance` | m | §4.7, the owner (B1, F8) | the program check (no press at the handover) |
-| `Motion.Speed_Fraction`, `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
-| `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test: Process.Test_Duration` |
+| `Motion.Speed_Fraction` (MoveJ's default `v=`), `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
+| `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
 the vendored robot MJCF, `models/scene.xml`; read from the compiled model); the loader and gripper move times (each
-program command carries its own, with its source in a comment).
+job line carries its own `t=`, with its source in a comment).
 
-`Keypoints.yaml`: `Robot.<name>` (`Joints` [deg] - the source of truth; `Family`; `Check` - a site and the
-position its FK must reach; `Relative_To` - null or a target `pcb_hold@<location>` / a keypoint with a frame
-and an offset [m]; `Fixture` - `Open`, `Closed` or the recorded `{Lid, Handle, Source}` of the fork path;
-`Context` - `Loader`, `Gripper`, `PCB` location; `Allow_Contact` - contact groups; `Note`), `Loader.<position>`
-(`Y`, `Z` [m]: home, travel_place, place, park - the only source of the loader positions, moved from
-`pcb_meta.json`), `Gripper.<state>` [m] (open, grip, clamp). 23 robot keypoints: the 22 of §4.8 at full precision and the
-default program's auxiliary point `input_pcb_clear` (F8.5; same schema and check, its joints from `resolve_keypoint.py`).
+`Constants.yaml` (`FEATURES.md` F10): six sections; every name UPPERCASE with its section's prefix, declared once in the file,
+with a one-line `Description`, and used by `Program.yaml` or `Simulation.yaml` (an unused one is an error).
 
-`Program_Default.yaml` (`FEATURES.md` F8): `Start` (`Robot` a keypoint, `Loader` a position, `Gripper` a state, `Vacuum`
-On / Off, `PCB` a location, `MG06` Open / Closed) and `Steps`, each with `Name` (unique, lowercase), `Comment`,
-`Allow_Contact` (groups, `[]` for none) and `Commands`, one-key mappings: `Movej: <keypoint>`, `Movel: {To, Speed [m/s]}`,
-`Path: Fork_Close | Fork_Open`, `Loader: {Axis: Y | Z, To: <position>, Duration [s]}`, `Gripper: {To: <state>,
-Duration [s]}`, `Vacuum: On | Off` (YAML booleans), `Wait: <s>`, `Test: Process.Test_Duration` (a Cell.yaml reference).
-Every keypoint, position, state and group it names is checked against `Keypoints.yaml` and `Cell.yaml` at load.
+| Section | Prefix | Fields | Unit, frame |
+|---|---|---|---|
+| `Tools` | `T_` | `Flange_Offset` [x, y, z, R, P, Y] | m, deg; the tool frame in the flange frame (`T_SUCTION`, `T_FLANGE`) |
+| `Points` | `P_` | `Tool`, `Reference`, `Offset`, `Joints`, `Pose` | `Joints` [deg] in the model's joint order - authoritative; `Pose` [x, y, z m; R, P, Y deg] the tool frame in the robot base frame, R = Rz(Y)·Ry(P)·Rx(R), FK(`Joints`, `Tool`) within 1e-5 m / 1e-3°; `Reference: <P_> \| null`, `Offset: [dx, dy, dz] \| null` [m] in the Reference point's tool frame, both null or both set, no cycle, FK within `Stale_Position` / `Stale_Angle` |
+| `Loader_Positions` | `L_` | `Y`, `Z` | m, the model's axis zeros (`L_HOME`, `L_TRAVEL`, `L_PLACE`, `L_PARK`) |
+| `Gripper_Commands` | `G_` | `Jaw` | m per jaw, the command (`G_OPEN`, `G_CLAMP`) |
+| `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path (§4.9) |
+| `Signals` | `DO_` / `DI_` | `Port` | a placeholder (`KNOWN_ISSUES.md`) |
+
+23 points: the 22 of §4.8 at full precision (names §4.8.1) and the default program's auxiliary `P_INPUT_CLEAR` (F8.5).
+Approach and exit points are `Reference` + `Offset` of their place; the fork points and the vias are roots.
+
+`Simulation.yaml`: `Start` (`Robot` a point, `Loader` a position, `Gripper` a command, `Vacuum` `ON` / `OFF`, `PCB` a location
+- `input_crate`, `cups`, `jaws`, `mg06`, `output_crate` -, `MG06` `Open` / `Closed`); `Tool_Site` (a model site per tool);
+`Actuators` (the simulated actuator per output: `vacuum`); `Signal_Response` [s] per input; `Jaw_Actual` [m] (where the jaws
+really stop on the PCB per closing command); `End_Settle` [s] (a hold after the last segment, simulation only);
+`Allow_Contact` (contact groups per segment, by its name without the `S<n>_` prefix; an unlisted segment is contact-free);
+`Points` (per point: `Context` {`Loader`, `Gripper`, `PCB`}, `Fixture` `Open` / `Closed` / the recorded `{Lid, Handle,
+Source}`, `Contacts` the groups allowed there, `PCB_Hold` null or {`Location`, `Offset` [m] along the tool axes} - the
+target of a point placed against the PCB).
+
+`Program.yaml`: `Program` (segments `S<n>_<Name>`, n = 1, 2, ... without gaps, `<Name>` unique, each a list of lines ending
+with the robot at rest at a named point), `Loader_Jobs` and `Tester_Jobs` (`J_<NAME>` -> lines). One call per line, parsed
+with `ast` and never evaluated; the only literal values are speeds, durations, waits and timeouts:
+
+| Line | Where | Meaning |
+|---|---|---|
+| `Robot.MoveJ(P_, v=, a=, r=)` | Program | joint move to the point's `Joints`; `v` a fraction of the datasheet joint speeds in (0, 1] (omitted: `Motion.Speed_Fraction`) |
+| `Robot.MoveL(P_, v=, a=, r=)` | Program | straight tool line to the point; `v` the peak tool speed [m/s], required |
+| `Robot.MovePath(PATH_)` | Program | the recorded path; the robot must stand at its `Start`, it ends at its `End` |
+| `Robot.SetDO(DO_, ON\|OFF)`, `Robot.WaitDI(DI_, timeout=)` | Program | set an output; wait for an input [s] (its simulated response must be within the timeout) |
+| `Loader.Run(J_)`, `Tester.Run(J_)` | Program | run a station's job and wait until it is done |
+| `Wait(t)` | Program, jobs | everything holds [s] |
+| `MoveY(L_, t=)`, `MoveZ(L_, t=)`, `Gripper(G_, t=)` | Loader_Jobs | one axis / the jaws to the constant's value in `t` [s] |
+| `Test(Process.Test_Duration)` | Tester_Jobs | the MG06 test for `Cell.yaml`'s duration |
+
+Reserved: `a=` and `r=` take only 0 or nothing (no blending yet); `Loader.Start` / `Loader.WaitDone` and `Tester.Start` /
+`Tester.WaitDone` are refused until F9 (Run = Start + WaitDone). Checked at load besides the grammar: every constant and job
+declared and used; the IK family changes only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot
+stands; the segment names of `Simulation.yaml` exist.
 
 ## 9. Data formats and units
 
 | Quantity | Canonical unit in code | Where another unit appears |
 |---|---|---|
 | length | [m] | the report prints mm |
-| angle | [rad] | the report prints deg; the keypoint file (step 3) will carry deg, converted at load |
+| angle | [rad] | the report prints deg; `Cell.yaml`, `Constants.yaml` and `Simulation.yaml` carry deg, converted at load |
 | time | [s] | - |
 | force | [N] | - |
 
@@ -665,22 +789,23 @@ Every keypoint, position, state and group it names is checked against `Keypoints
 | `models/scene.xml` and the vendored / tool MJCFs | `Scene` (MjSpec), never written |
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
-| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`), written by hand (§8) |
-| `Data/Paths/fork_close_open_path.npz` | `Program` (the `Path` command, §7.9); recorded in the MG06 project, never written |
+| `Configuration/Cell.yaml` | `Configuration` (`Load_Cell_Configuration`), written by hand (§8) |
+| `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser` (`Load_Constants`, `Load_Simulation`, `Load_Program`), written by hand (§8); `Example/Keypoints/resolve_keypoint.py` prints lines to paste, nothing writes them |
+| `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README (and the Phase 2 app) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
-| the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label`, `segment_id`, `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
+| the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label` (a step is a segment `S<n>_<Name>`, or `End_Settle`), `segment_id` (one executed command), `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256 - program, constants, simulation, cell, fork path -, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
 
 Scripts that write take `--out DIR`.
 
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (266 tests, about 58 s), full `.venv/bin/python -m pytest`
-before a commit (276 tests, about 112 s; Apple M2 Pro, 2026-10-24, after F8).
+`.venv/bin/python -m pytest -m "not slow"` (289 tests, about 68 s), full `.venv/bin/python -m pytest`
+before a commit (299 tests, about 123 s; Apple M2 Pro, 2026-10-24, after F10).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
@@ -763,8 +888,8 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 ## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)
 
-The owner's proposals for steps 3–4, kept as the starting point and now settled: the keypoint and program files are §8,
-the trajectory file §9 (`FEATURES.md` F6, F8); the text below is kept verbatim as the brief's record. Quoted verbatim, so they keep the brief's paths: its
+The owner's proposals for steps 3–4, kept as the starting point and now settled: the keypoint and program files became the
+three files of §8 (`FEATURES.md` F6, F8, F10; names §4.8.1), the trajectory file §9; the text below is kept verbatim as the brief's record. Quoted verbatim, so they keep the brief's paths: its
 output folder is now `Data/Generated/` (design-decisions), the trajectory `Data/Generated/Trajectories/`. The CLI of §16.4 is superseded by the
 `Example/` scripts (design-decisions: RPX over brief §5.1); its subcommands map to `run_cycle.py`
 (`run`), `export_cell_scene.py` (`export-xml`), and the scripts of steps 3–5 (`show`, `keypoints --check`,
@@ -843,4 +968,9 @@ AUBO i5 later (owner, 2026-10-24); a test on the real cell is planned. Consequen
 3. **Outputs are not validated for the real cell.** Before any use on real hardware they go through the
    real-cell validation procedure (to be defined, §14, `KNOWN_ISSUES.md`), at reduced speed and with the
    robot controller's own safety limits active.
+4. **The program a controller runs is separate from the simulation's data** (F10): `Program.yaml` and `Constants.yaml`
+   hold only what the controllers run and the named values they use; contacts, scenes, simulated signal times and the end
+   settle are in `Simulation.yaml`. Open for the transfer (`KNOWN_ISSUES.md`): the I/O map (the signals' `Port` is a
+   placeholder), the `Pose` RPY convention against the AUBO controller's, station user frames, and the recorded paths'
+   accelerations.
 

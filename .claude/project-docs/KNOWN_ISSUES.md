@@ -74,7 +74,7 @@ the MG06 is not known.
 - **Impact:** the default program's cycle time (and F9's) includes this 2.0 s; a real test time changes it one for one.
 - **What would close it:** the measured test time of the real board.
 
-## Fork_Open starts with a velocity step
+## PATH_FORK_OPEN starts with a velocity step
 
 The recorded opening path is joined at a row where the flange already moves at 39.1 mm/s, after a MoveL that ends at rest
 (design-decisions). The trajectory's joint speeds jump there.
@@ -86,13 +86,45 @@ The recorded opening path is joined at a row where the flange already moves at 3
 
 ## The recorded fork paths exceed the assumed acceleration limits
 
-The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint accelerations (`Fork_Close`), and
-`Fork_Open`'s join is a velocity step from rest to 39.1 mm/s (8.44x the assumed acceleration); the limits themselves are an
+The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint accelerations (`PATH_FORK_CLOSE`), and
+`PATH_FORK_OPEN`'s join is a velocity step from rest to 39.1 mm/s (8.44x the assumed acceleration); the limits themselves are an
 assumption (SPEC §4.4). The program check reports these peaks and does not limit them (owner, 2026-10-24).
 
 - **Impact:** for the real-cell transfer (SPEC §17) the recorded timing is not executable as is: a real controller needs a
-  ramped join into `Fork_Open` and the paths limited to the real joint accelerations. The simulation ran them (SPEC §4.6).
+  ramped join into `PATH_FORK_OPEN` and the paths limited to the real joint accelerations. The simulation ran them (SPEC §4.6).
 - **What would close it:** the real AUBO i5's acceleration limits, and the paths re-timed (ramped join, limited path) to them.
+
+## The I/O ports of the program's signals are placeholders
+
+`Configuration/Constants.yaml` declares `DO_VACUUM` and `DI_VACUUM_OK` with `Port: "placeholder, real-cell I/O map not
+defined"` (F10). The simulation drives them through `Simulation.yaml` (`Actuators`, `Signal_Response`), which the ports do
+not affect.
+
+- **Impact:** the program cannot be transferred to the real cell's controller until every signal has its real port.
+- **What would close it:** the real cell's I/O map; each `Port` then names its controller channel.
+
+## The Pose RPY convention is not verified against the AUBO controller
+
+A point's `Pose` states orientation as fixed-axis roll, pitch, yaw in degrees, R = Rz(Y)·Ry(P)·Rx(R)
+(`Kinematics.RPY_To_Matrix`, F10). The AUBO i5 controller's own convention (its axis order, intrinsic or extrinsic, units)
+has not been checked; the same three numbers may mean another orientation there. `Joints` are authoritative and not
+affected (their zeros and directions are a separate open item above).
+
+- **Impact:** a `Pose` copied to the teach pendant may give a different tool orientation; the simulation itself is not
+  affected (FK of the joints is checked against `Pose` with this project's convention).
+- **What would close it:** one point read on the real controller (its joints and its pose display) and compared with
+  `Constants.yaml`; the convention, or a conversion, recorded in SPEC §8.
+
+## No station user frames
+
+Every `Pose` is in the robot base frame and every `Offset` in its Reference point's tool frame (F10). The real cell will
+usually teach a station (a crate, the loader, MG06) in its own user frame, so a station that moves needs only its frame
+re-taught.
+
+- **Impact:** a moved station means re-resolving every point that depends on it (`Example/Keypoints/resolve_keypoint.py`
+  per point).
+- **What would close it:** a future step that adds user frames to `Constants.yaml` (a frame per station, points and offsets
+  given in it), with the owner's decision on their names and how they are taught.
 
 ## Simplifications of the model
 

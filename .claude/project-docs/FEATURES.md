@@ -351,6 +351,9 @@ physics or the model.
 
 ## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - done
 
+*The names in this section are those before F10 (`Keypoints.yaml`, lowercase keypoints, `Relative_To`); SPEC §4.8.1 maps
+them to the current ones.*
+
 Requirements (restated): the cell configuration and the named keypoints in YAML in the root `Configuration/`
 (SPEC §6, §8); one loader with validation; IK resolution by family and seed; posing the whole cell at a
 keypoint in the viewer; a headless keypoint check; the 22 keypoints of SPEC §4.8 at full precision; a
@@ -602,7 +605,10 @@ within 5 rows; images `Data/Generated/Images/look_A_*.png`, `look_D_*.png`).
       `materials/grid/mat_reflectance`, `mat_shininess`, `mat_specular`, `mat_texrepeat`, `sizes/nlight` 3 → 2),
       `pcb_vis` kept as the one documented difference; the accepted lists back to `pcb_vis` only.
 
-## F8 - Step 4a: the default program, its trajectory and checks (owner, 2026-10-24) - built, awaiting acceptance
+## F8 - Step 4a: the default program, its trajectory and checks (owner, 2026-10-24) - done (closed in `e5ec42c`)
+
+*The names in this section are those before F10 (`Keypoints.yaml`, lowercase keypoints, `Relative_To`, `Program_Default.yaml`); SPEC §4.8.1 maps
+them to the current ones.*
 
 Requirements (restated): a commented, sequential program in `Configuration/` that reads like a teach-pendant
 program (named steps with a comment each; `Movej`, `Movel`, `Path`, `Loader`, `Gripper`, `Vacuum`, `Wait`, `Stop`);
@@ -1027,6 +1033,9 @@ baselines for both programs in step 6 (SPEC).
       58 s. The viewer's live playback (keys, overlay) is for the owner to check under mjpython.
 - [x] F8.7 Docs: SPEC §10 (counts, the B6 baselines, B5 determinism), §16 settled; the README's commands and status
       (readme-writer); the skill references (feature-manager, project-optimize); requirements.txt's comments.
+- [x] F8.8 Close (owner's Part 0 answers): `Clearance.Allowed_Depth.handle_bar` 0.6 mm (`PATH_FORK_CLOSE`'s recorded 0.539 mm
+      overlap + margin), the default program passes its check (exit 0); answer 10's "straight" corrected; a KNOWN_ISSUES item
+      on the recorded paths' accelerations for the real-cell transfer. Merged into main and pushed at `e5ec42c`.
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 
@@ -1036,29 +1045,35 @@ collision recheck, time-optimal timing within the AUBO i5 limits; the robot and 
 interlocks, robot↔loader checked over time, redundant motions removed; deterministic; stored without a tool
 writing configuration; the same checks as F8 and later steps 5/6; scripts to re-optimize, play and compare.
 
+*Updated for the F10 format (2026-10-24):* a step is a segment of `Configuration/Program.yaml` (`S<n>_<Name>`), a point a
+`P_` constant, a loader job `J_` in `Loader_Jobs`. The default program's `Loader.Run(J_)` (Start + WaitDone) becomes, where
+F9 overlaps the robot and the loader, `Loader.Start(J_)` at the earliest line the interlocks allow and
+`Loader.WaitDone(J_)` before the first line that needs the job finished (both reserved in F10, the parser refuses them
+until F9). The tables below use the F10 names; the step numbers are the segment numbers (22 = `End_Settle`).
+
 ### LOCKED and FREE
 
-The classification is explicit: `Configuration/Optimization.yaml` lists the FREE steps by name; every other step
-is LOCKED. A LOCKED step's samples relative to its own start are byte-identical in both versions (its start time
+The classification is explicit: `Configuration/Optimization.yaml` lists the FREE segments by name (`S1_Approach_Input`,
+...); every other segment is LOCKED. A LOCKED step's samples relative to its own start are byte-identical in both versions (its start time
 may move); a FREE step's motion is replaced. Consecutive FREE robot steps with only loader steps between them are
 one FREE segment from the end of the previous LOCKED robot step to the start of the next: their intermediate
-points (`home`, the vias) are dropped - that is the removal of redundant motion.
+points (`P_HOME`, the vias) are dropped - that is the removal of redundant motion.
 
 | Segment | From → to | Default steps it replaces | Carries the PCB | Family |
 |---|---|---|---|---|
-| FREE 1 | `home` → `above_input_pcb` | 1 | no | up |
-| LOCKED | crate pick: approach, press 1.5 mm, vacuum, lift (`pick_input`) | 2 | from vacuum on | up |
-| FREE 2 | `above_input_pcb` → `above_loader` | 3 | yes | up |
-| LOCKED | handover, no press; clamp; vacuum off; up (`handover`) | 4 | until vacuum off | up |
-| FREE 3 | `above_loader` → `fork_start` (home dropped) | 5, 8 | no | up → down (switch in free space) |
-| LOCKED | `close_mg06` (Fork_Close + bar centred), `leave_mg06`, `test`, `return_mg06`, `open_mg06` (open join + Fork_Open) | 9-13 | no | down |
-| FREE 4 | `fork_start` → `above_loader` (home dropped) | 14, 17 | no | down → up |
-| LOCKED | take: approach, press 1.5 mm, vacuum, gripper open, out of the jaws, up (`take_from_loader`) | 18 | from vacuum on | up |
-| FREE 5 | `above_loader` → `above_output` | 19 | yes | up |
-| LOCKED | place: approach, last 15 mm at 30 mm/s, vacuum off, up (`place_output`) | 20 | until vacuum off | up |
-| FREE 6 | `above_output` → `home` | 21 | no | up |
-| LOCKED | loader: `loader_insert`, `loader_park`, `loader_fetch`, `loader_return` (shape and durations; start times move) | 6, 7, 15, 16 | - | - |
-| LOCKED | `settle` | 22 | - | - |
+| FREE 1 | `P_HOME` → `P_INPUT_ABOVE` | 1 | no | up |
+| LOCKED | crate pick: approach, press 1.5 mm, vacuum, lift (`S2_Pick_Input`) | 2 | from vacuum on | up |
+| FREE 2 | `P_INPUT_ABOVE` → `P_LOADER_ABOVE` | 3 | yes | up |
+| LOCKED | handover, no press; clamp; vacuum off; up (`S4_Handover`) | 4 | until vacuum off | up |
+| FREE 3 | `P_LOADER_ABOVE` → `P_MG06_FORK_START` (`P_HOME` dropped) | 5, 8 | no | up → down (switch in free space) |
+| LOCKED | `S9_Close_MG06` (PATH_FORK_CLOSE + bar centred), `S10_Leave_MG06`, `S11_Test`, `S12_Return_MG06`, `S13_Open_MG06` (open join + PATH_FORK_OPEN) | 9-13 | no | down |
+| FREE 4 | `P_MG06_FORK_START` → `P_LOADER_ABOVE` (`P_HOME` dropped) | 14, 17 | no | down → up |
+| LOCKED | take: approach, press 1.5 mm, vacuum, gripper open, out of the jaws, up (`S18_Take_From_Loader`) | 18 | from vacuum on | up |
+| FREE 5 | `P_LOADER_ABOVE` → `P_OUTPUT_ABOVE` | 19 | yes | up |
+| LOCKED | place: approach, last 15 mm at 30 mm/s, vacuum off, up (`S20_Place_Output`) | 20 | until vacuum off | up |
+| FREE 6 | `P_OUTPUT_ABOVE` → `P_HOME` | 21 | no | up |
+| LOCKED | loader: `S6_Loader_Insert`, `S7_Loader_Park`, `S15_Loader_Fetch`, `S16_Loader_Return` (shape and durations; start times move) | 6, 7, 15, 16 | - | - |
+| LOCKED | `End_Settle` | 22 | - | - |
 
 Every MoveL near contact (the last 15 mm at 30 mm/s), both fork paths and their joins, and the MG06 closed state
 rules sit inside LOCKED steps. No MoveL is FREE, so no MoveL can cross the family switch.
@@ -1094,17 +1109,17 @@ that arrives before its next LOCKED step may start, waits at its end point (B).
 
 | # | Interlock | Why |
 |---|---|---|
-| I1 | `handover` starts only when the loader is at `home` and the gripper open (the start state; no loader step before it) | the jaws must be ready, the PCB must enter open jaws |
-| I2 | `loader_insert` starts only after `handover` ends (vacuum off, the robot 160 mm out along the plate normal) | the loader may move only after the robot left the jaw zone |
-| I3 | `close_mg06` starts only after `loader_park` ends (gripper open, loader parked) | MG06 is closed only with the PCB released and the loader parked |
-| I4 | `test` starts only after `leave_mg06` ends (MG06 closed, the fork out of the bar) | the tester runs closed, the robot away |
-| I5 | `return_mg06` starts only after `test` ends | no motion at MG06 during the test |
-| I6 | `loader_fetch` starts only after `open_mg06` ends (MG06 open, the fork off the handle) | the loader enters MG06 only when it is open and the fork is gone |
-| I7 | `take_from_loader` starts only after `loader_return` ends (loader home, PCB clamped) | the robot enters the jaw zone only when the loader is home |
+| I1 | `S4_Handover` starts only when the loader is at `L_HOME` and the gripper open (the start state; no loader step before it) | the jaws must be ready, the PCB must enter open jaws |
+| I2 | `S6_Loader_Insert` starts only after `S4_Handover` ends (vacuum off, the robot 160 mm out along the plate normal) | the loader may move only after the robot left the jaw zone |
+| I3 | `S9_Close_MG06` starts only after `S7_Loader_Park` ends (gripper open, loader parked) | MG06 is closed only with the PCB released and the loader parked |
+| I4 | `S11_Test` starts only after `S10_Leave_MG06` ends (MG06 closed, the fork out of the bar) | the tester runs closed, the robot away |
+| I5 | `S12_Return_MG06` starts only after `S11_Test` ends | no motion at MG06 during the test |
+| I6 | `S15_Loader_Fetch` starts only after `S13_Open_MG06` ends (MG06 open, the fork off the handle) | the loader enters MG06 only when it is open and the fork is gone |
+| I7 | `S18_Take_From_Loader` starts only after `S16_Loader_Return` ends (loader at `L_HOME`, PCB clamped) | the robot enters the jaw zone only when the loader is home |
 | I8 | the robot's and the loader's samples keep ≥ 3 mm between robot / tool / carried PCB and loader / jaws / PCB in the jaws, at every sample where both exist | parallel motion is safe only where checked |
 
-Expected parallel overlaps (not measured): FREE 3 with `loader_insert` / `loader_park` (the robot waits at
-`fork_start` for I3); FREE 4 with `loader_fetch` / `loader_return` (the robot waits at `above_loader` for I7, if I8
+Expected parallel overlaps (not measured): FREE 3 with `S6_Loader_Insert` / `S7_Loader_Park` (the robot waits at
+`P_MG06_FORK_START` for I3); FREE 4 with `S15_Loader_Fetch` / `S16_Loader_Return` (the robot waits at `P_LOADER_ABOVE` for I7, if I8
 passes there; otherwise it waits earlier on its path). Gain estimate: not measured - the compare script reports it.
 
 ### toppra feasibility (PyPI, 2026-10-24)
@@ -1125,26 +1140,30 @@ and against `ṡ = 0` at both ends. No new package. Not modelled: jerk (bang-ban
 
 ### Where the optimized program lives
 
-- `Configuration/Optimization.yaml` (hand-written, read by `Configuration.Core.Load_Optimization`): `Free_Steps`
-  (names), `Seed`, `Rrt` (`Max_Iterations`, `Edge_Step` [deg], `Goal_Bias` [-]), `Shortcut_Iterations`, `Spline`
-  (`Check_Step` [deg], `Max_Refits`), `Topp_Grid_Points`, `Margin_Steps` [m]. The robot limits stay in `Cell.yaml`
-  (one source, so both versions run with the same limits and compare fairly).
+- `Configuration/Optimization.yaml` (hand-written, read by `Configuration.Program_Parser.Load_Optimization`):
+  `Free_Segments` (segment names), `Seed`, `Rrt` (`Max_Iterations`, `Edge_Step` [deg], `Goal_Bias` [-]),
+  `Shortcut_Iterations`, `Spline` (`Check_Step` [deg], `Max_Refits`), `Topp_Grid_Points`, `Margin_Steps` [m]. The robot
+  limits stay in `Cell.yaml` (one source, so both versions run with the same limits and compare fairly).
 - **`Data/Optimized/Program_Optimized.yaml`**, written only by `Example/Program/optimize_program.py` through
-  `Planner.Core.Write_Optimized_Program`, read by `Configuration.Core.Load_Program` (the same reader as the default:
-  one program format). Committed: it is generated data, like `Data/Reference/cell_plan.npz`, not configuration
-  (no tool writes `Configuration/`). It is the program format with: `Kind: optimized`; the LOCKED steps copied
-  verbatim from the default program; each FREE segment as `Spline: {Waypoints: [[deg × 6], ...]}` (the output of
-  RRT + shortcut + reinserted points: the random part); `Schedule` (each step's start time [s] - recomputed and
-  compared at build); `Inputs` (sha256 of `Program_Default.yaml`, `Keypoints.yaml`, `Cell.yaml`,
-  `Optimization.yaml`, the fork path file, and of the compiled planning model). The build recomputes spline and
-  TOPP (deterministic) and refuses a stale file, naming the changed input and the command to re-run.
-  `Kind: default` files may not hold `Spline`, `Schedule` or `Inputs`.
+  `Planner.Core.Write_Optimized_Program`, read by `Configuration.Program_Parser.Load_Program` (the same reader as the
+  default: one program format, with `Constants.yaml` and `Simulation.yaml` shared). Committed: it is generated data, like
+  `Data/Reference/cell_plan.npz`, not configuration (no tool writes `Configuration/`). It is the `Program.yaml` format
+  with: the LOCKED segments copied verbatim; each FREE segment's motion as one reserved line
+  `Robot.MoveSpline(W_<SEGMENT>)` whose waypoints (`[deg × 6], ...`: the output of RRT + shortcut + reinserted points,
+  the random part) are a `Waypoints` section of the same file; `Loader.Start` / `Loader.WaitDone` where the loader runs in
+  parallel; `Schedule` (each segment's start time [s] - recomputed and compared at build); `Inputs` (sha256 of
+  `Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml`, `Optimization.yaml`, the fork path file, and of the
+  compiled planning model). The build recomputes spline and TOPP (deterministic) and refuses a stale file, naming the
+  changed input and the command to re-run. `Configuration/Program.yaml` may not hold `MoveSpline`, `Waypoints`, `Schedule`
+  or `Inputs`.
 
 ### Scripts and tests (F9)
 
 - `optimize_program.py [--out DIR]`: re-runs the pipeline, writes `Program_Optimized.yaml` and its report (per
   segment: RRT nodes, waypoints before / after shortcut, refits, duration, peaks; the schedule; the interlock times).
 - `build_program.py --program Data/Optimized/Program_Optimized.yaml`, `show_program.py --version optimized`.
+- Format (F10 rules): `Loader.Start` / `Loader.WaitDone` and `Robot.MoveSpline` accepted only in the optimized file; a
+  `WaitDone` without its `Start`, or a `Start` of a job already running, refused with its line.
 - `compare_programs.py [--out DIR]`: default vs optimized - cycle time; Σ|Δq| per joint and TCP path length; PCB
   path length; loader travel; the number of stops (robot at rest between motions); per segment and per step;
   a text table (`Data/Generated/Reports/compare_programs.txt`) and a matplotlib figure (lanes over time for both
@@ -1163,6 +1182,8 @@ F9.1 `Optimization.yaml`, `Load_Optimization`, the optimized program format in `
 `compare_programs.py`; F9.6 docs (SPEC, design-decisions, KNOWN_ISSUES, README, references).
 
 ### Questions (Part A, F8 and F9)
+
+*Answered (F8 Approval); the names are those before F10 (SPEC §4.8.1).*
 
 1. Loader axes in the default program: serialised (Z, then Y, then Z; recommended, human style; about +1.35 s) or
    overlapped as in the legacy plan?
@@ -1191,6 +1212,43 @@ F9.1 `Optimization.yaml`, `Load_Optimization`, the optimized program format in `
 13. TOPP has no jerk limit (bang-bang accelerations at the limits): accept for F9 and let step 5 show the tracking
    and the PCB slip (recommended), or add a jerk-limited smoothing first?
 14. The test command as `Test: {}` (its duration from `Cell.yaml`) - or `Wait` with a named duration?
+
+## F10 - The cell program in three files: Constants, Simulation, Program (owner, 2026-10-24) - built, awaiting acceptance
+
+Requirements (restated): split the program into `Configuration/Constants.yaml` (every named value the controllers use:
+tools `T_`, points `P_` with `Joints` authoritative and `Pose` [x, y, z, R, P, Y] checked against FK, loader positions `L_`,
+gripper commands `G_`, paths `PATH_`, signals `DO_` / `DI_`), `Configuration/Simulation.yaml` (the start state, tool
+sites, actuators, signal responses, `Jaw_Actual`, `End_Settle`, contacts per segment, each point's scene) and
+`Configuration/Program.yaml` (segments `S<n>_<Name>`, loader and tester jobs `J_<NAME>`, one call per line), each with a
+header; a new parser `src/Configuration/Program_Parser.py` (a strict YAML loader, `ast` parsing never evaluated, every
+validation with file, line, segment and text) into a typed IR; Program / Trajectory, the keypoint tools, the checks and the
+viewer on the IR; `Keypoints.yaml` and `Program_Default.yaml` and the old structures deleted; the tests (golden, one per
+validation error, the YAML loader, MoveJ `v=`, WaitDI response vs timeout, MovePath start / end, declared / used
+completeness, Pose vs FK, offset consistency, the family switch); docs. Addendum (owner): a derived point's fields are `Reference`
+and `Offset`, the `Offset` in the Reference point's tool frame. Not changed: the physics, the model, the fingerprint baseline, the legacy
+cycle run and its baseline, any joint value, speed, duration or wait, the recorded paths, `Cell.yaml` values (except F8.8's
+`handle_bar`), the planning model and the clearance logic. Outputs are simulation results, not validated for the real cell.
+
+Map: the names old -> new are SPEC §4.8.1 and `test/Program/data/name_map.json` (23 points, 22 steps -> 21 segments +
+`End_Settle`, 4 loader positions, 3 gripper states -> 2 commands + `Jaw_Actual`, 2 paths, the 69 executed commands).
+Formats: SPEC §8; decisions: design-decisions (the three-file split, typed constants, Reference / Offset, the strict
+parser, Run vs Start / WaitDone, simulated I/O and `End_Settle`, every constant used, the model checks in Program, the
+golden proof, F9's multi-seed IK dropped); open items: `KNOWN_ISSUES.md` (I/O ports, the RPY convention, station user
+frames).
+
+### Status
+
+- [x] F10.1 Golden reference of the F8 build before the change (`e77c004`, data only): every trajectory array's sha256, the
+      cycle time, events and segments, each command's target joints as `float.hex`, the check report, the keypoint table.
+- [x] F10.2 The three files, the parser, the IR, every consumer switched, the old files and structures deleted, the tests
+      (`3963eba`). Golden comparison: every numeric array byte-identical, cycle 68.852 s, the same events, the 69 joint
+      targets bit-identical, the report identical after the name map; the point table identical except its check and stale
+      columns, which now measure `Pose` vs FK and the Reference / `PCB_Hold` consistency (by design). The cycle report diff
+      empty, the fingerprint 1 difference (`pcb_vis` rgba), `build_program.py` exit 0. 276 -> 299 collected; 19 mutations,
+      each test passing first and failing mutated.
+- [x] F10.3 Docs: SPEC §4.8.1 (the name table), §6, §7.1, §7.7, §7.9, §8 (the three files and the grammar), §9, §10, §16,
+      §17; design-decisions (nine entries); KNOWN_ISSUES (three items); F9 updated to the new format (FREE segment names,
+      `Loader.Start` / `WaitDone`); CLAUDE.md, the README's commands (readme-writer), the skill references.
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
@@ -1229,7 +1287,7 @@ rows are byte-identical in SPEC §4.8; of the backticked names, only `cell.build
 | §4 Key numbers: suction TCP in the PCB frame, tool axes | SPEC §4.4 | identical |
 | §4 Key numbers: speeds 220 / 230°/s, 60 %, accel 3 / 6 rad/s² (assumed), MoveL 200–250 / 30 mm/s | SPEC §4.4 | identical; assumption marked |
 | §4 Lessons: vacuum 1.5 mm press, no press at the handover (0.3 mm above the ledges) | SPEC §4.7 | |
-| §4 Lessons: IK families wrist up / down, switch via `via_mg06_high` | SPEC §4.7 | |
+| §4 Lessons: IK families wrist up / down, switch via `P_VIA_HOME_MG06` | SPEC §4.7 | |
 | §4 Lessons: fork path tight, bar centred 5 mm play, 28.65°, −0.5°, `H_CLOSED`, `LID_CLOSED`, never push the handle down | SPEC §4.7 | |
 | §4 Lessons: MuJoCo 3.16 `gap` / `includemargin`, solref 0.002, solimp 0.99 0.999, solmix 100 | SPEC §4.7; design-decisions (MuJoCo 3.16.0) | |
 | §4 Lessons: instability, `d.time` backwards | SPEC §4.7, §13 risk 3 | |
