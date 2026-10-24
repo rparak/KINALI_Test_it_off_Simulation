@@ -212,11 +212,27 @@ def Fixture_State(keypoint: Robot_Keypoint_Str, cell: Cell_Configuration_Str, mo
         lid, handle = keypoint.Fixture_Lid, keypoint.Fixture_Handle
     else:
         raise Keypoints_Error_Cls("The MG06 state '%s' is not Open or Closed." % state)
+    return lid, handle, Press_For_Handle(model, handle)
+
+
+def Press_For_Handle(model: mujoco.MjModel, handle: float) -> float:
+    """
+    Description:
+        The MG06 press plate's position for a handle angle, through the model's joint equality coupling them (a
+        polynomial in the handle angle).
+
+    Args:
+        (1) model [mujoco.MjModel]: The model.
+        (2) handle [float]: The handle angle (rad).
+
+    Returns:
+        (1) parameter [float]: The press plate (m).
+    """
+
     press_id, handle_id = model.joint(CONST_PRESS).id, model.joint(CONST_HANDLE).id
     coupling = next(i for i in range(model.neq) if model.eq_type[i] == mujoco.mjtEq.mjEQ_JOINT
                     and model.eq_obj1id[i] == press_id and model.eq_obj2id[i] == handle_id)
-    press = float(sum(model.eq_data[coupling][k] * handle**k for k in range(5)))
-    return lid, handle, press
+    return float(sum(model.eq_data[coupling][k] * handle**k for k in range(5)))
 
 
 def Pose_Cell(kinematics: Robot_Kinematics_Cls, keypoints: Keypoints_Str, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str,

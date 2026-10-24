@@ -400,6 +400,65 @@ version is enough.
 Pinned by: nothing yet (F8 and F9 are designed, not implemented); their tests are listed in `FEATURES.md` F8 and
 F9.
 
+## A program's robot points are stored joints; lines and paths end exactly on them
+
+**Decision.** Every robot point of a program is a keypoint's stored `Joints` (F6's determinism rule). A MoveJ interpolates
+joints between stored joints; a MoveL aims at the pose of its target's stored joints and a `Path` at its recorded rows, with
+IK per sample seeded from the previous sample, and their last sample is replaced by the target's stored joints when the IK
+end is on the same branch (within the stale tolerance and 1e-3 rad per joint); otherwise the build fails, and a line that
+would end in the other IK family fails with that reason. The per-sample IK is pure damped least squares (no null-space pull)
+to 1e-8 m (`Program.CONST_IK_TOL`).
+
+**Why.** The trajectory reproduces the keypoints exactly, so the program and the keypoint check pose the same robot and a
+later step joins segments without a jump. 1e-8 m keeps the finite-difference speeds and accelerations free of IK noise
+(1e-5 m between samples would read as about 2 rad/s²). The null-space pull to the seed held the solution about 5e-9 m off,
+so the solver ran to its 200-iteration limit: the build took 33 s; without it 1.2 s, the same samples to the tolerance
+(measured 2026-10-24). Whether a keypoint is stale against its `Relative_To` target is the keypoint check's question, not the
+build's (a line aims at the stored joints' pose).
+
+**Alternatives.** Ending a line on its IK result: a sub-micrometre jump at the next MoveJ's start. Keypoint IK settings
+(1e-5 m, the null-space pull): noisy speeds and a 33 s build.
+
+**Revisit if** a keypoint is defined without stored joints, or the IK changes.
+
+Pinned by `test/Program/test_core.py::test_movel_is_straight_and_ends_on_the_stored_joints`,
+`::test_a_movel_cannot_switch_the_ik_family`, `::test_the_fork_paths_follow_the_recorded_rows_and_join_rule`.
+
+## The carried PCB hangs at the cup face once the bellows extend
+
+**Decision.** In a program's world state the PCB on the cups is the nominal held pose (the cup face, SPEC §4.4) set back
+along the tool axis by the bellows' compression left: the compression when the vacuum went on (1.5 mm at a press, 0 at the
+handover) less the TCP's travel since. The PCB therefore stays on its support for the first 1.5 mm of a lift and then hangs
+at the cup face. *Corrected 2026-10-24 (F8.4): Part A froze the PCB's pose relative to the TCP at vacuum on; that kept the
+1.5 mm compression for the whole carry, so the PCB reached `output_place` 2.5 mm above the crate floor instead of 1 mm, and
+the place rule (vacuum off within 2 mm of the floor pose) failed.*
+
+**Why.** Each cup sits on a sprung bellows (SPEC §4.10): under vacuum the board is pulled to the cup face as the bellows
+extend. The keypoints assume the nominal relation (`output_place` = the PCB 1 mm above the floor).
+
+**Alternatives.** The nominal pose from vacuum on: the PCB would jump 1.5 mm into the crate floor at the pick. The frozen
+relative pose: above.
+
+**Revisit if** step 5's physics shows the board hanging elsewhere in the cups (PCB slip is reported there).
+
+Pinned by `test/Program/test_core.py::test_the_carried_pcb_hangs_at_the_cup_face_once_the_bellows_extend`,
+`::test_the_pcb_moves_through_the_cycle_by_the_rules`.
+
+## Fork_Open keeps the recorded velocity step at its join
+
+**Decision.** `Path: Fork_Open` starts at its join row as recorded: the flange already moves at 39.1 mm/s there, and the MoveL
+onto `fork_open_join` ends at rest, so the trajectory has a velocity step at the join (owner, 2026-10-24, answer 9). The build
+notes it; step 5 reports the tracking error and the force on the bar there.
+
+**Why.** The verified physics ran the reference plan with the same step (SPEC §4.6); a time warp would change the recorded
+opening the regression was measured on.
+
+**Alternatives.** Ramping the first rows in with a time warp: smoother, but a change to the verified motion.
+
+**Revisit if** step 5 shows a tracking error or a force on the bar beyond the reference run's.
+
+Pinned by `test/Program/test_core.py::test_the_fork_paths_follow_the_recorded_rows_and_join_rule`.
+
 ## The CAD deviations stay compensated in scene.xml
 
 **Decision.** `models/scene.xml` keeps three deliberate deviations from the CAD: the loader shifted

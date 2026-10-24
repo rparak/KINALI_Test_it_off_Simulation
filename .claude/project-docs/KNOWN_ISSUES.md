@@ -66,6 +66,24 @@ and the test suite), never into the working directory.
 - **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`.
 - **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
 
+## The MG06 test time is a placeholder
+
+`Configuration/Cell.yaml` `Process.Test_Duration` is 2.0 s (owner, 2026-10-24); the real test time of the customer's PCB on
+the MG06 is not known.
+
+- **Impact:** the default program's cycle time (and F9's) includes this 2.0 s; a real test time changes it one for one.
+- **What would close it:** the measured test time of the real board.
+
+## Fork_Open starts with a velocity step
+
+The recorded opening path is joined at a row where the flange already moves at 39.1 mm/s, after a MoveL that ends at rest
+(design-decisions). The trajectory's joint speeds jump there.
+
+- **Impact:** the servo's tracking error and the fork's force on the handle bar at the join are not known for the program yet
+  (the reference plan has the same step and passed, SPEC §4.6).
+- **Evidence:** `Program.Build_Program`'s note; `Data/Paths/fork_close_open_path.npz` rows 662-665.
+- **What would close it:** step 5's run of the default program reports the tracking error and the bar force there.
+
 ## Simplifications of the model
 
 What the simulation does not model; whoever compares it with the real cell checks these first.

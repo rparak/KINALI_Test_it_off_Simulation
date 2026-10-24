@@ -476,6 +476,7 @@ src/Render/Core.py        offscreen image, viewer start
 src/Keypoints/Core.py     the keypoints: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
 src/Trajectory/Core.py    the trajectory file format: the only writer and reader (npz + CSV export, §9)
+src/Program/Core.py       the program build (motion laws, world state), the program check, posing at a sample (§7.9)
 Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
@@ -498,7 +499,8 @@ in the template's `Configuration/Cell_SF1.yaml`).
 
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
-`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo). Scripts reach
+`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo);
+`Program` → `Configuration`, `Scene`, `Kinematics`, `Collision`, `Keypoints`, `Trajectory`. Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
@@ -570,6 +572,32 @@ The trajectory file (`src/Trajectory/Core.py`, F8): `Trajectory_Str`, `Write_Tra
 beside it), `Read_Trajectory` (refuses a missing array, a wrong shape or another format version). It knows nothing of
 MuJoCo; the program build fills it, the viewer and step 5's physics run read it.
 
+### 7.9 Program
+
+The program at work (`src/Program/Core.py`, `FEATURES.md` F8). `Build_Program` turns a program into a trajectory: sample 0
+is the start state, then each command's samples (4 ms), every motion ending at rest.
+
+- **MoveJ**: min-jerk to the target's stored `Joints`, `T = max(Movej_Min_Duration, maxⱼ 1.875·|Δqⱼ|/v_maxⱼ,
+  maxⱼ √(5.774·|Δqⱼ|/a_maxⱼ))` (§4.10), speeds analytic.
+- **MoveL**: the target keypoint's site (`suction_tcp`, or the flange when its `Check` frame is the flange) on a straight
+  line, orientation slerp, min-jerk time law over `T = max(Movel_Min_Duration, 1.875·L/Speed)`; IK per sample (pure DLS,
+  1e-8 m) seeded from the previous; fails on non-convergence, wrist_2 within `Family_Margin` or a family change; stretched
+  (noted) while a sampled joint speed or acceleration exceeds its limit; ends exactly on the target's stored joints (the
+  same IK branch, within the stale tolerance).
+- **Path**: `Fork_Close` = rows 1-305 from `fork_start` to `fork_closed_end`; `Fork_Open` = the `OPEN` rows after the first
+  with handle ≤ `Closed_Handle − Open_Join_Margin` (row 663), from `fork_open_join` to `fork_start`; flange IK per row, the
+  recorded times interpolated onto the grid, ends snapped; `Fork_Open` starts moving (39.1 mm/s, noted).
+- **Loader / Gripper**: one channel, min-jerk over its `Duration`, ending exactly on its target; **Vacuum** an event;
+  **Wait** / **Test** hold (`Test` needs MG06 settled closed and the PCB in it).
+- **Speeds**: analytic in MoveJ; central differences elsewhere; zero at sample 0, in every hold and at every MoveL / Path end.
+- **World state**: the PCB's location changes only by the vacuum and gripper rules (vacuum on with the cups on the PCB in a
+  crate or the jaws; clamping on it in MG06; opening at MG06; vacuum off with it clamped in the jaws or within 2 mm of its
+  place on a crate floor; anything else fails). The carried PCB is the nominal held pose set back along the tool axis by the
+  bellows' compression left (1.5 mm at a press, relaxing as the TCP moves away). MG06 is the recorded rows during a `Path`,
+  else the target keypoint's `Fixture`, held otherwise. The jaws stand at `grip` while the PCB is between them.
+
+`Pose_Sample` poses the whole cell at a sample (no IK, no physics).
+
 ## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml`
 
 The files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`): every
@@ -623,7 +651,7 @@ Every keypoint, position, state and group it names is checked against `Keypoints
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
 | `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`), written by hand (§8) |
-| `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
+| `Data/Paths/fork_close_open_path.npz` | `Program` (the `Path` command, §7.9); recorded in the MG06 project, never written |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README (and the Phase 2 app) |

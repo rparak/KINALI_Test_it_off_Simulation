@@ -1003,6 +1003,13 @@ baselines for both programs in step 6 (SPEC).
       `Vacuum: On / Off` as YAML booleans). 208 -> 246 collected; 6 mutations, all failed.
 - [x] F8.3 Trajectory: `src/Trajectory/Core.py` (`Trajectory_Str`, `Write_Trajectory` npz + CSV, `Read_Trajectory`);
       byte-identical rewrites. 246 -> 250 collected; 4 mutations, all failed.
+- [x] F8.4 Program build: `src/Program/Core.py` (`Build_Program`, `Pose_Sample`; the motion laws, the world state).
+      Default program: 17 067 samples, cycle 68.264 s (estimate 68.1 s; legacy 65.768 s); vacuum on / off at 3.276 / 9.524 s
+      as the reference plan; no MoveL stretched; the `Fork_Open` step noted (39.1 mm/s). Build 1.2 s (33 s with the keypoint
+      IK's null-space pull, dropped). Design corrected: the carried PCB relaxes to the cup face (the frozen pose put it 2.5 mm
+      above the output floor); vacuum off in a crate needs the PCB within 2 mm of its floor pose. 250 -> 263 collected; 14
+      mutations, all failed (two first survived and were sharpened: a bow along the line's own axis; a nondeterminism the
+      speed post-processing absorbed, which exposed a sloppy condition, fixed).
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 
