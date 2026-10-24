@@ -1,5 +1,5 @@
 {
- "source": "git e5ec42c (F8 closed), captured 2026-10-24 by the procedure in FEATURES.md F10",
+ "source": "git e5ec42c (F8 closed), captured 2026-10-24 by the procedure in FEATURES.md F10; arrays re-captured 2026-10-24 when MoveJ began to end exactly on its stored joints (robot_q, robot_qd, pcb_pose changed by roundings only, at most 1.6e-15 rad / 3.0e-13 rad/s / 8.5e-16 m; FEATURES.md F9.6)",
  "cycle_time": 68.852,
  "samples": 17214,
  "arrays": {
@@ -11,7 +11,7 @@
    ]
   },
   "robot_q": {
-   "sha256": "e58b3f5820b14dc035323471d4da99c2af73a377bb90447012d81408eabc2c1e",
+   "sha256": "5619b9146017305c4a41c94c165b30ff69a23882b769bb3c1a9e6a49d1cf0fdb",
    "dtype": "float64",
    "shape": [
     17214,
@@ -19,7 +19,7 @@
    ]
   },
   "robot_qd": {
-   "sha256": "ed204c260818e736bc71516fe26dba33cc7cb65e41a30a95d9b2cce3ad8e8492",
+   "sha256": "19ba55d4cafe68dec71fa99703f4c7b01f337767eee114e6a97df45c31315b14",
    "dtype": "float64",
    "shape": [
     17214,
@@ -62,7 +62,7 @@
    ]
   },
   "pcb_pose": {
-   "sha256": "f1335e895e76d5ddd43dc980f2df2aa013ad2eb99b19cb3dd55f75e1957127ee",
+   "sha256": "ec5bd17d0d4e1ab9534894fbbc2c25b2204fd4b08d7d8604c249cf2b6fc66bf4",
    "dtype": "float64",
    "shape": [
     17214,

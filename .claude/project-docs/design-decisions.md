@@ -406,7 +406,8 @@ F9.
 ## A program's robot points are stored joints; lines and paths end exactly on them
 
 **Decision.** Every robot point of a program is a keypoint's stored `Joints` (F6's determinism rule). A MoveJ interpolates
-joints between stored joints; a MoveL aims at the pose of its target's stored joints and a `Path` at its recorded rows, with
+joints between stored joints and its last sample is the target's stored joints exactly (since F9.6: `q0 + (q1 - q0) x 1.0`
+differed from them by up to a rounding, so the optimized program's LOCKED parts after a MoveJ differed by 1.6e-15 rad); a MoveL aims at the pose of its target's stored joints and a `Path` at its recorded rows, with
 IK per sample seeded from the previous sample, and their last sample is replaced by the target's stored joints when the IK
 end is on the same branch (within the stale tolerance and 1e-3 rad per joint); otherwise the build fails, and a line that
 would end in the other IK family fails with that reason. The per-sample IK is pure damped least squares (no null-space pull)
@@ -717,6 +718,11 @@ trajectory's internals.
 
 **Revisit if** the program's behaviour changes on purpose (F9, a re-taught point): the golden data is then re-captured in its
 own commit with the reason.
+
+A change that moves the numbers on purpose re-captures the golden arrays in its own commit, with the samples that changed
+listed: F9.6 (MoveJ ends exactly on its stored joints) changed robot_q at 6073 samples by at most 1.55e-15 rad (6.2 ulp),
+robot_qd at 2395 by at most 3.0e-13 rad/s (the central differences of those roundings) and pcb_pose at 811 by at most
+8.5e-16 m; every other array, the events, the cycle time, the check report and the point table stayed the same.
 
 Pinned by `test/Program/test_golden.py`.
 

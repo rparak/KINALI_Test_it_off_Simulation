@@ -45,13 +45,6 @@ Description:
     Data/Optimized/Program_Optimized.yaml current and passing every check, faster than the taught program, its interlocks,
     its LOCKED parts against the taught program, the carried PCB's tilt (B4), the stale and schedule refusals.
 """
-# The LOCKED parts that follow a taught MoveJ: the MoveJ ends at q0 + (q1 - q0) x 1.0, within one rounding of its point's
-# stored joints, where a spline ends exactly on them, so these differ in the last bits (at most 1.6e-15 rad, measured
-# 2026-10-24) - the owner's decision is pending (FEATURES.md F9); strict byte identity stays the rule.
-#   Unit [List<string>]
-CONST_AFTER_MOVEJ = ['S4_Handover', 'S18_Take_From_Loader', 'S20_Place_Output', 'End_Settle']
-
-
 @pytest.fixture(scope='module')
 def built(cell_configuration, program, constants, simulation):
     model = Build_Planning_Model(cell_configuration)
@@ -153,37 +146,19 @@ def _Locked(built, program):
                                               Free_Transfers(program, built['optimization'], built['default']))}
 
 
-@pytest.mark.parametrize('part', ['S2_Pick_Input', 'J_INSERT', 'J_PARK', 'S9_Close_MG06', 'S10_Leave_MG06', 'S11_Test', 'S12_Return_MG06',
-                                  'S13_Open_MG06', 'J_FETCH', 'J_RETURN'] + [pytest.param(name, marks=pytest.mark.xfail(
-                                      strict=True, reason='after a taught MoveJ ending one rounding off its stored joints: owner decision '
-                                      'pending (FEATURES.md F9)')) for name in CONST_AFTER_MOVEJ])
+@pytest.mark.parametrize('part', ['S2_Pick_Input', 'S4_Handover', 'J_INSERT', 'J_PARK', 'S9_Close_MG06', 'S10_Leave_MG06', 'S11_Test',
+                                  'S12_Return_MG06', 'S13_Open_MG06', 'J_FETCH', 'J_RETURN', 'S18_Take_From_Loader', 'S20_Place_Output',
+                                  'End_Settle'])
 def test_a_locked_part_is_byte_identical_from_its_start(built, program, part):
     """
     Description:
         Every LOCKED part of the taught program, from its own start: a robot segment on every channel, a parallel loader job
-        on the loader's channels - the same bytes in the optimized program (its start time moves). The four parts after a
-        taught MoveJ are expected to fail (strict: they must start passing only by a decision).
+        on the loader's channels - the same bytes in the optimized program (its start time moves). The parts after a taught
+        MoveJ included: a MoveJ ends exactly on its stored joints (owner's decision, F9.6).
     """
 
     found = _Locked(built, program)
     assert found[part].Identical
-
-
-def test_the_locked_parts_after_a_movej_differ_by_rounding_only(built, program):
-    """
-    Description:
-        The four LOCKED parts after a taught MoveJ differ from the taught program by at most 2e-15 rad in the joints - the
-        rounding of the MoveJ's end - and nowhere in the loader, gripper, vacuum, PCB location or MG06 channels.
-    """
-
-    d, o = built['default'], built['trajectory']
-    for name in CONST_AFTER_MOVEJ:
-        a = np.flatnonzero(d.Step_Index == d.Step_Names.index(name))
-        first, last = Step_Bounds(o, name.split('_', 1)[1] if name.startswith('S') else name)
-        b = np.arange(first, last + 1)
-        assert float(np.max(np.abs(d.Robot_Q[a] - o.Robot_Q[b]))) <= 2e-15
-        for channel in ('Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'PCB_Location', 'MG06_Lid', 'MG06_Handle', 'Jaw'):
-            assert np.asarray(getattr(d, channel))[a].tobytes() == np.asarray(getattr(o, channel))[b].tobytes(), (name, channel)
 
 
 def test_the_carried_pcb_keeps_its_tilt_limit(built):

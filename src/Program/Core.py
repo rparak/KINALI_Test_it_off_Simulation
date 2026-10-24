@@ -564,7 +564,7 @@ class _Builder_Cls(object):
         """
         Description:
             A min-jerk joint move to a point's Joints (Movej_Duration at the command's speed fraction, rounded to whole
-            samples), the speeds analytic.
+            samples), ending exactly on them (like a MoveL or a Path), the speeds analytic.
 
         Args:
             (1) command [Command_Str(object)]: The command.
@@ -578,7 +578,8 @@ class _Builder_Cls(object):
         for i in range(1, n + 1):
             s = i / n
             self.Move_Fixture(fixture, float(Min_Jerk(s)))
-            self.Append(q0 + (q1 - q0) * Min_Jerk(s), (q1 - q0) * Min_Jerk_Rate(s) / (n * CONST_DT), step, segment)
+            # The last sample is the point's stored joints exactly (q0 + (q1 - q0) x 1.0 may differ from q1 by a rounding).
+            self.Append(q1 if i == n else q0 + (q1 - q0) * Min_Jerk(s), (q1 - q0) * Min_Jerk_Rate(s) / (n * CONST_DT), step, segment)
         self.analytic.append((first, len(self.samples['q'])))
 
     def Movel_Samples(self, target: str, speed: float, scale: float, step: str, text: str) -> tp.Tuple[tp.List[np.ndarray], float]:

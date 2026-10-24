@@ -63,7 +63,8 @@ def main():
         written to Data/Optimized/Program_Optimized.yaml and checked like the taught one. The report (stdout and
         Data/Generated/Reports/optimize_program.txt): per transfer the planner's effort, durations, peaks and the carried PCB's
         largest tilt; the schedule; the interlocks I1-I8 with their times; each LOCKED part against the taught program; the
-        check. Exit 0 when the check passes and every interlock holds, 1 otherwise or when it cannot be made.
+        check. Exit 0 when the check passes, every interlock holds and every LOCKED part is byte-identical, 1 otherwise or when it
+        cannot be made.
 
             .venv/bin/python Example/Program/optimize_program.py [--out DIR]
     """
@@ -125,11 +126,9 @@ def main():
     lines += ['  %-22s %-6s %5d samples, start %.3f s -> %.3f s: %s' % (c.Name, c.Channels, c.Samples, c.Start_Default, c.Start_Optimized,
                                                                      'byte-identical' if c.Identical else 'DIFFERS') for c in compared]
     if not all(c.Identical for c in compared):
-        lines.append('[WARNING] LOCKED parts that are not byte-identical: %s - the taught MoveJ before each ends at q0 + (q1 - q0) x 1.0, '
-                     'within one rounding of its point\'s stored joints, the spline exactly on them (owner decision pending, FEATURES.md F9)'
-                     % ', '.join(c.Name for c in compared if not c.Identical))
+        lines.append('[ERROR] LOCKED parts that are not byte-identical: %s' % ', '.join(c.Name for c in compared if not c.Identical))
     lines += Format_Check_Report(result.Check, tr, cell)
-    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks)
+    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks) and all(c.Identical for c in compared)
     report = os.path.join(args.out or CONST_REPORTS, 'optimize_program.txt')
     os.makedirs(os.path.dirname(report), exist_ok=True)
     with open(report, 'w', encoding='utf-8') as handle:

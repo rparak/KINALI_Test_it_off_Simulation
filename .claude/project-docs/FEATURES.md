@@ -1037,7 +1037,7 @@ baselines for both programs in step 6 (SPEC).
       overlap + margin), the default program passes its check (exit 0); answer 10's "straight" corrected; a KNOWN_ISSUES item
       on the recorded paths' accelerations for the real-cell transfer. Merged into main and pushed at `e5ec42c`.
 
-## F9 - Step 4b: the optimized program (owner, 2026-10-24) - built, awaiting acceptance
+## F9 - Step 4b: the optimized program (owner, 2026-10-24) - accepted; F9.6-F9.8 after acceptance
 
 Requirements (restated): the same process as F8 with the process-critical segments unchanged (LOCKED) and the
 free-space transfers between them planned (FREE): IK, RRT-Connect (own, fixed seed), shortcut, spline with a
@@ -1198,8 +1198,9 @@ practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimize
       `Data/Optimized/Program_Optimized.yaml` committed, reproduced byte for byte by a fresh run (B5).
 - [x] F9.4 `build_program.py --program` (stale and schedule refusals), `show_program.py --version optimized` (the F10.4 viewer
       rules), `compare_programs.py` (table + figure).
-- [ ] LOCKED byte identity: 10 of 14 parts byte-identical; the 4 after a taught MoveJ differ by one rounding (<= 1.6e-15 rad) -
-      owner decision pending (KNOWN_ISSUES.md).
+- [x] F9.6 LOCKED byte identity (owner's option a): MoveJ ends exactly on its stored joints; the golden arrays re-captured
+      (robot_q 6073 samples <= 1.55e-15 rad, robot_qd 2395 <= 3.0e-13 rad/s, pcb_pose 811 <= 8.5e-16 m; events, cycle 68.852 s,
+      check report and point table identical); all 14 LOCKED parts byte-identical; the optimizer fails unless they are.
 - Deviations from the design, each recorded: the planner and the optimizer are two domains (design-decisions); `Margins` (tried in
   order) and `Spline.Margin` replace `Margin_Steps`; a merged transfer is named after its last FREE segment; the robot-loader
   check is the exact build check with a slot / wait search, not planning against the loader's swept volume.

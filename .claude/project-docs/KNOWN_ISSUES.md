@@ -128,20 +128,6 @@ known; the two differ in path, timing and the limits that apply.
 - **What would close it:** the controller's interface for time-parametrized joint motion verified before any transfer
   (SPEC §17), and the optimized program's check repeated with that execution model.
 
-## Four LOCKED parts of the optimized program differ in the last bits (owner decision pending)
-
-The optimized program's LOCKED parts are byte-identical to the taught program from their own start, except the four that follow
-a taught MoveJ: `S4_Handover`, `S18_Take_From_Loader`, `S20_Place_Output` and `End_Settle` differ by at most 1.6e-15 rad in the
-joints, 3e-13 rad/s in their speeds and 8.5e-16 m in the carried PCB's pose; every loader, gripper, vacuum, PCB location and
-MG06 value is the same. The cause is the taught program's: a MoveJ ends at `q0 + (q1 - q0) x 1.0`, within one rounding of its
-point's stored joints, while the optimized spline ends exactly on them, and the MoveL after it starts from those bits.
-
-- **Impact:** none measurable (1e-15 rad); the strict byte-identity rule of F9 is not met for these four parts.
-- **Pinned by:** `test/Optimizer/test_core.py::test_a_locked_part_is_byte_identical_from_its_start` (the four as strict expected
-  failures), `::test_the_locked_parts_after_a_movej_differ_by_rounding_only`.
-- **What would close it:** the owner's decision - a MoveJ that ends exactly on its stored joints (the taught trajectory changes by
-  one rounding at those samples; the golden reference re-captured), or the deviation accepted.
-
 ## The carried PCB's tilt limit is an assumption
 
 `Optimization.yaml Carry_Max_Tilt` is 30 deg ("real-cell practice, assumed"): no measurement of what the four cups hold while
