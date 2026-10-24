@@ -273,3 +273,45 @@ checker) expose the old names on top of `src/`. Kept: `load_plan`, the result di
 - [ ] F3.5 Render + Simulation; report diff empty against the baseline and the legacy run
 - [ ] F3.6 Example scripts + tests (`test/`), layout test; style checker clean
 - [ ] F3.7 docs: SPEC §6 *Current* removed, CLAUDE.md, README stub commands, project references' status lines
+
+## Brief coverage (condition C2, 2026-10-24)
+
+Every section and table of the owner's brief (git `427e076:docs/PROJECT_BRIEF.md`) and where it lives
+now. Checked mechanically: all 314 numeric tokens of the brief occur in the project docs; all 22 keypoint
+rows are byte-identical in SPEC §4.8; of the backticked names, only `cell.build_model()` and
+`kinali-sim ...` are not repeated (old API, superseded).
+
+| Brief | Now | Note |
+|---|---|---|
+| Header (language, owner's languages) | `CLAUDE.md`; feature-manager reference | |
+| §1 Context, cell table | SPEC §1, §4.1 | table verbatim in content |
+| §2 Goals, Phase 1 items 1–6 | SPEC §1, §2 items 1–7 | |
+| §2 Phase 2 | SPEC §2 (Phase 2 paragraph + brief §8 verbatim) | |
+| §3 file table | SPEC §4.6 (verbatim) | new places: F1 / F3 *Files: old → new* |
+| §3 run commands | SPEC §4.6 (verbatim) | superseded by `Example/` scripts (F3) |
+| §3 reference result | SPEC §4.6 (verbatim, beside this environment's baseline) | crate −0.08 vs −0.14 mm: `KNOWN_ISSUES.md` |
+| §3 Process (65.8 s), steps 1–6 | SPEC §4.5 | same steps and values (y −199.5 mm, z +20 mm, ~29°) |
+| §4 Frames | SPEC §4.2 | base (0.42072, −0.33497, 0.162), yaw −135°, tilt 8.94° |
+| §4 qpos layout (all rows) | SPEC §4.3 | identical values |
+| §4 Actuators (all rows), sites, cameras, timestep / cones / impratio / noslip | SPEC §4.3 | identical values |
+| §4 Key numbers: loader home / place / travel / park, jaws open / grip / clamp | SPEC §4.4 | identical |
+| §4 Key numbers: PCB in the jaws, placed in MG06 | SPEC §4.4 | identical |
+| §4 Key numbers: PCB in a crate, crate centres | SPEC §4.4 | identical |
+| §4 Key numbers: suction TCP in the PCB frame, tool axes | SPEC §4.4 | identical |
+| §4 Key numbers: speeds 220 / 230°/s, 60 %, accel 3 / 6 rad/s² (assumed), MoveL 200–250 / 30 mm/s | SPEC §4.4 | identical; assumption marked |
+| §4 Lessons: vacuum 1.5 mm press, no press at the handover (0.3 mm above the ledges) | SPEC §4.7 | |
+| §4 Lessons: IK families wrist up / down, switch via `via_mg06_high` | SPEC §4.7 | |
+| §4 Lessons: fork path tight, bar centred 5 mm play, 28.65°, −0.5°, `H_CLOSED`, `LID_CLOSED`, never push the handle down | SPEC §4.7 | |
+| §4 Lessons: MuJoCo 3.16 `gap` / `includemargin`, solref 0.002, solimp 0.99 0.999, solmix 100 | SPEC §4.7; design-decisions (MuJoCo 3.16.0) | |
+| §4 Lessons: instability, `d.time` backwards | SPEC §4.7, §13 risk 3 | |
+| §4 Lessons: CAD deviations (+100 mm Y, +0.95 mm X, −0.8 mm holder, 200 mm cabinet) | SPEC §4.7; design-decisions (CAD deviations) | |
+| §5.1 Proposed structure | superseded: SPEC §6 (RPX layout); design-decisions (RPX over brief §5.1) | |
+| §5.2 Keypoint file (proposal) | SPEC §16.1 (verbatim) | |
+| §5.3 Program file (proposal) | SPEC §16.2 (verbatim); commands also SPEC §2 item 4 | |
+| §5.4 Trajectory output | SPEC §16.3 (verbatim), §9 | |
+| §5.5 CLI (proposal) | SPEC §16.4 (verbatim, superseded) | mapping to `Example/` scripts there |
+| §5.6 Acceptance criteria | SPEC §10.1 | plus penetration ≤ 0.5 mm (owner, F3) |
+| §6 Initial keypoints, all 22 rows | SPEC §4.8 (verbatim) | |
+| §6 fork path definition (`path: fork_close`, `path: fork_open`, ≤ 28.45°, row fields) | SPEC §4.9 (verbatim) | |
+| §7 Work plan steps 1–7 and the work rule | SPEC §2 (steps restated) + verbatim block | |
+| §8 Phase 2 outline | SPEC §2 (verbatim block) | |

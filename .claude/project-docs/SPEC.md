@@ -1,6 +1,6 @@
 # KINALI_Test_it_off_Simulation — Specification
 
-Status: Draft for the owner's approval
+Status: Approved 2026-10-24
 
 A number marked *measured* names what it was measured on; where a test pins it, the test is named.
 This specification is derived from the owner's project brief (git `427e076:docs/PROJECT_BRIEF.md`,
@@ -43,11 +43,42 @@ Phase 1 (brief §7, in this order):
 6. **Regression**: the default program reproduces §4.6 within §10.1; then `legacy/` is removed.
 7. **Docs**: the README (readme-writer) and `CLAUDE.md`.
 
-Phase 2 (later): a PyQt6 window rendering MuJoCo through OpenGL (`QOpenGLWidget` + `MjrContext`, or an
+Phase 2 (later): a PyQt6 window rendering MuJoCo through OpenGL (`QOpenGLWidget` + `mujoco.MjrContext` / `mujoco.Renderer`, or an
 offscreen `mujoco.Renderer` into a `QImage` as a fallback), with the keypoint list and editing (jog
 joints / TCP, IK family, save), the program list (run from a step, step by step), play / pause / step,
-a timeline, camera selection (`free`, `cam_pcb`, `cam_tool`) and the check results. The Phase 1 core
-has no GUI dependency, so the Qt application reuses it unchanged.
+a timeline, camera selection (`free`, `cam_pcb`, `cam_tool`) and the check results, with mouse camera
+control; the simulation runs in a worker thread or a QTimer with fixed real-time stepping. The Phase 1
+core has no GUI dependency, so the Qt application reuses it unchanged. The brief's outline, verbatim:
+
+- `QOpenGLWidget` hosting MuJoCo rendering (`MjvScene`, `MjrContext` in the widget's GL context) or offscreen
+  `mujoco.Renderer` → `QImage` as a fallback; mouse camera control.
+- Panels: keypoints (table, jog joints/TCP, IK family, save), program steps (list, run from step, step-by-step),
+  timeline slider, check results, camera selector (`free`, `cam_pcb`, `cam_tool`).
+- Simulation in a worker thread / QTimer with fixed real-time stepping; the core library from Phase 1 unchanged.
+
+Work rule (brief §7): keep commits small and per feature; after each step run the regression and report
+the numbers. The brief's work plan with its original command names (superseded by the `Example/`
+scripts, §16.4) is kept verbatim:
+
+Use the project skills in `.claude/skills` (`feature-manager` for planning/tracking features, `project-optimization`
+for structure and code quality, `writer-readme` for README/docs, and any other relevant skill there).
+
+1. **Restructure** into §5.1 (package `kinali_sim`, `config/`, `models/`, `assets/`, `data/`, `legacy/`). Update all
+   asset paths. `kinali-sim run` must still reproduce the reference report using the *legacy* `cell_plan.npz`.
+2. **PCB green**: `pcb_vis` rgba in `models/scene.xml` (now `0.91 0.45 0.03 1`) → e.g. `0.05 0.42 0.18 1`; regenerate
+   `cell_scene.xml`. Optional: split the PCB mesh into board and components (z above the board top) and colour
+   components grey/black.
+3. **Config + keypoints**: schema, loader, validation, IK resolution (families/seeds), `kinali-sim show` and
+   `kinali-sim keypoints --check`. Seed `keypoints.yaml` with §6.
+4. **Program + trajectory**: commands of §5.3, min-jerk MoveJ with speed/accel limits, Cartesian MoveL, `path`, loader /
+   gripper / vacuum profiles; `kinali-sim build` writes `output/trajectory.npz`; segment checks (3 mm clearance, carried
+   PCB included).
+5. **Simulation + checks + viewer playback**: move the physics loop and the report from `test_cell_cycle.py` into
+   `simulate.py` / `checks.py`; `kinali-sim play` (passive viewer, real-time) and `kinali-sim run`.
+6. **Regression**: the default `program.yaml` must reproduce §3 (acceptance §5.6). Then remove `legacy/`.
+7. **Docs**: README (writer-readme), `CLAUDE.md` with conventions and commands.
+
+Keep commits small and per feature. After each step run the regression and report the numbers.
 
 ## 3. Out of scope
 
@@ -57,8 +88,7 @@ has no GUI dependency, so the Qt application reuses it unchanged.
   the CAD deviations (§4.7). A change to any of these is a feature with its own report.
 - Path planning (search): the program lists the path; the tool checks it.
 - Blending and parallel robot/loader execution in Phase 1 (possible later).
-- Driving a real robot or machine; whether the program will ever be exported to a real AUBO is an open
-  question (§14).
+- Driving a real robot or machine now. A transfer to the real cell is planned later (§17).
 
 ## 4. Measured facts this specification rests on
 
@@ -118,8 +148,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 - Robot speed: AUBO i5 datasheet 220°/s (J1–J4), 230°/s (J5–J6); the plan uses 60 %. Acceleration
   limits 3 rad/s² (J1–J3), 6 rad/s² (J4–J6) are an **assumption**, not in the datasheet. Free MoveL
   200–250 mm/s, the last 15 mm before contact 30 mm/s.
-- Initial keypoints (joints in rad, TCP / flange in m): the brief's table §6, extracted from the
-  verified plan; seeded into the keypoint file in step 3.
+- Initial keypoints: §4.8; the recorded fork path: §4.9.
 
 ### 4.5 Process of the reference cycle (65.8 s)
 
@@ -156,8 +185,49 @@ PCB <-> lid / press plate                         : no contact
 MG06 at the end: lid -40.0 deg, handle -0.0 deg
 ```
 
-Run time 15–16 s on that machine. The brief's original reference differs in one value (crate
-penetration −0.08 mm, `KNOWN_ISSUES.md`). The legacy planner regenerates `cell_plan.npz` to within
+Run time 15–16 s on that machine. The brief's original reference (environment not recorded) differs in
+one value, the crate penetration (`KNOWN_ISSUES.md`); verbatim from brief §3:
+
+```
+cycle time 65.8 s
+  3.28s vacuum ON  (4 of 4 cups touch the PCB)
+  9.52s vacuum OFF
+ 54.76s vacuum ON  (4 of 4 cups touch the PCB)
+ 62.44s vacuum OFF
+PCB in MG06 (t=16.4s): error 0.30 mm (dx 0.04 dy -0.29 dz 0.06), tilt 0.02 deg
+MG06 closed with the robot away (t=31.6s): lid -0.5 deg, handle 28.7 deg
+PCB at the end: x 406.3 y -752.4 z 4.9 mm (right crate centre 406.2 -751.6, floor 4.0); tilt 0.00 deg
+robot joint tracking error max 0.0126 rad, PCB slip in the cups max 1.32 mm, loader axis lag max 22.6 mm
+max contact force fork -> handle bar: 294 N
+deepest PCB penetration: MG06 holder -0.20 mm, crate -0.08 mm, loader jaws -0.11 mm
+robot <-> MG06 / workstation / crates             : no contact
+robot tool <-> handle (outside closing / opening) : no contact
+robot <-> loader                                  : no contact
+loader <-> MG06 / workstation                     : no contact
+PCB <-> lid / press plate                         : no contact
+MG06 at the end: lid -40.0 deg, handle -0.0 deg
+```
+
+The brief's file table of that state (brief §3, verbatim; every file's new place is in `FEATURES.md`
+F1 and F3 *Files: old → new*):
+
+| File / folder | What it is |
+|---|---|
+| `cell.py` | builds the full cell with `MjSpec`: `scene.xml` + AUBO i5 + VGC10/fork tool + crates (floor + 4 walls) + actuators + vacuum + look/cameras. `build_model()` returns `MjModel` |
+| `scene.xml` | finished scene: workstation, MG06, loader, PCB (free body). Built earlier from Blender – **do not regenerate** |
+| `cell_scene.xml` | the whole cell incl. robot as one MJCF (viewer only), written by `python cell.py` |
+| `test_cell_cycle.py` | physics run of the whole cycle from `cell_plan.npz`, prints all checks (regression test) |
+| `cell_plan.npz` | current plan: robot joint trajectory (dt 4 ms), loader moves, vacuum events, phase labels |
+| `tools/plan_cell.py` | current IK-based planner (reference for timings, keypoints, special moves) |
+| `robot_kin.py` | DLS IK for the suction TCP and the flange, collision check of a robot configuration |
+| `pcb_meta.json` | PCB poses (CAD / place target / in the jaws) and loader axis positions |
+| `mg06/assets`, `machine/assets`, `workstation/assets` | meshes (visual + collision) |
+| `robot/aubo_i5/` | robot MJCF + meshes + licence |
+| `robot_tool/` | `vgc10_opener_free.xml` + meshes, `fork_close_open_path.npz` (recorded flange path that closes/opens MG06) |
+
+Run: `python test_cell_cycle.py` (≈1–2 min), viewer: `python cell.py && python -m mujoco.viewer --mjcf=cell_scene.xml`.
+
+The legacy planner regenerates `cell_plan.npz` to within
 1.2e-14 rad (2026-10-24).
 
 ### 4.7 Lessons learned and deliberate deviations (do not break)
@@ -166,10 +236,10 @@ penetration −0.08 mm, `KNOWN_ISSUES.md`). The legacy planner regenerates `cell
   handover there is no press**: the board sits 0.3 mm above the finger ledges, otherwise the jaws clamp
   on the ledge corners.
 - **IK families**: PCB handling uses "wrist up" (wrist_2 > 0), the MG06 fork path "wrist down"
-  (wrist_2 < 0); the switch happens only in free space (via `via_mg06_high`).
+  (wrist_2 < 0); the switch happens only in free space (via `via_mg06_high`, §4.8).
 - **MG06 fork path**: the recorded close/open path is tight (bar on the slot bottom). Leaving and
   returning use a separately planned path with the bar centred in the slot (5 mm play), from the closed
-  handle angle 28.65° and lid −0.5°. The opening path is joined where its recorded handle angle is
+  handle angle 28.65° and lid −0.5° (`H_CLOSED`, `LID_CLOSED` in `legacy/plan_cell.py`). The opening path is joined where its recorded handle angle is
   already below the real closed angle, so the handle is never pushed down before opening.
 - **MuJoCo 3.16**: `gap` is not applied to `includemargin`, so no `margin`/`gap` on the PCB or the cups
   (parts would float 2–4 mm apart). PCB and cup contacts use `solref 0.002`, `solimp 0.99 0.999`,
@@ -179,6 +249,48 @@ penetration −0.08 mm, `KNOWN_ISSUES.md`). The legacy planner regenerates `cell
 - **CAD deviations compensated in `scene.xml`** (design-decisions): loader shifted +100 mm in Y and
   +0.95 mm in X; rear-right holder support (`holder_10`) lowered by 0.8 mm; electrical cabinet 200 mm
   deep instead of 300 mm.
+
+### 4.8 Initial keypoints (extracted from the verified plan; brief §6, verbatim)
+
+Seeded into the keypoint file in step 3.
+
+Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP = `aubo/tool/suction_tcp` in m.
+
+| name | joints (rad) | TCP / flange (m) | note |
+|---|---|---|---|
+| `home` | 0.7896, 0.6910, 1.8333, −0.4286, 1.5708, 0.0042 | tcp (0.3000, −0.5200, 0.4000) | tool down |
+| `above_input_pcb` | 0.4649, −0.1335, 2.0022, 0.5650, 1.5708, −0.3205 | tcp (0.1559, −0.7470, 0.1324) | 120 mm above |
+| `input_pcb_approach` | 0.4649, −0.3261, 2.1191, 0.8743, 1.5708, −0.3205 | tcp z 0.0274 | 15 mm above |
+| `input_pcb_press` | 0.4649, −0.3633, 2.1304, 0.9229, 1.5708, −0.3205 | tcp z 0.0109 | cups 1.5 mm pressed → vacuum on |
+| `via_input_to_loader` | 0.0465, 0.0565, 1.4637, −0.1952, 1.4994, −0.7367 | tcp (0.0164, −0.5608, 0.3958) | free-space via |
+| `above_loader` | −0.3720, 0.1896, 1.7926, −0.0310, 1.4280, −1.1529 | tcp (0.0045, −0.3298, 0.3158) | 160 mm along the plate normal |
+| `loader_approach` | −0.4242, 0.1057, 2.1193, 0.3873, 1.4249, −1.2055 | tcp (0.0045, −0.3072, 0.1726) | 15 mm along normal |
+| `loader_handover` | −0.4296, 0.0867, 2.1469, 0.4347, 1.4246, −1.2110 | tcp (0.0045, −0.3049, 0.1578) | PCB at the hold pose, **no press** |
+| `loader_take_press` | −0.4302, 0.0847, 2.1496, 0.4395, 1.4246, −1.2116 | tcp (0.0045, −0.3047, 0.1563) | 1.5 mm press → vacuum on |
+| `loader_out_of_jaws` | −0.4187, 0.1225, 2.0906, 0.3409, 1.4252, −1.2000 | tcp (0.0044, −0.3096, 0.1873) | 30 mm along normal |
+| `via_mg06_high` | −0.0138, 0.2020, 0.7805, −1.6993, −0.0164, 0.4996 | flange (0.1251, −0.3218, 0.9331) | wrist-up ↔ wrist-down switch |
+| `above_handle` | −0.8205, 0.2056, 0.9667, −2.3805, −1.6059, 1.1519 | flange (0.1550, −0.2074, 0.8531) | |
+| `fork_start` | −1.1328, 0.0136, 1.1340, −2.0213, −1.9182, 1.1519 | flange (0.0550, −0.1074, 0.7531) | start/end of the recorded path |
+| `fork_closed_end` | −0.5157, 0.0227, 2.4098, −0.7545, −1.3011, 1.1518 | flange (0.0550, −0.2840, 0.3154) | end of `path: fork_close` |
+| `fork_bar_centred` | −0.5118, 0.0507, 2.3961, −0.7961, −1.2972, 1.1518 | flange (0.0550, −0.2850, 0.3259) | bar in slot centre, 2 mm off bottom |
+| `fork_out_of_bar` | −0.8243, 0.0582, 2.2746, −0.9252, −1.6097, 1.1518 | flange (0.0550, −0.2028, 0.3625) | 90 mm along the slot |
+| `fork_retreat_up` | −0.8243, 0.2137, 2.0471, −1.3081, −1.6097, 1.1518 | flange (0.0550, −0.2028, 0.4825) | +120 mm, wait here (MG06 closed) |
+| `fork_open_join` | −0.5034, 0.0542, 2.3958, −0.8000, −1.2887, 1.1520 | flange (0.0550, −0.2872, 0.3269) | join point of `path: fork_open` |
+| `via_loader_to_output` | 0.7093, 0.7032, 1.8349, −0.4944, 1.5158, −0.0734 | tcp (0.2680, −0.4831, 0.3958) | free-space via |
+| `above_output` | 1.0463, 0.0611, 2.2028, 0.5709, 1.5708, 0.2609 | tcp (0.4050, −0.7470, 0.1334) | |
+| `output_approach` | 1.0462, −0.1697, 2.3385, 0.9374, 1.5708, 0.2609 | tcp z 0.0284 | |
+| `output_place` | 1.0462, −0.2120, 2.3510, 0.9922, 1.5708, 0.2609 | tcp z 0.0134 | PCB 1 mm above the crate floor → vacuum off |
+
+### 4.9 The recorded MG06 fork path (brief §6, verbatim)
+
+`fork_close_open_path.npz` is now `Data/fork_close_open_path.npz` (until F3 `data/`), and
+`tools/plan_cell.py` is now `legacy/plan_cell.py`.
+
+
+`path: fork_close` = rows of `fork_close_open_path.npz` with phase `CLOSE` (≈6.1 s, after the first rows that bring the
+fork from `fork_start`); `path: fork_open` = rows with phase `OPEN` after the join row (handle ≤ 28.45°). The file stores
+`t, lid, press, handle, flange_pos[3], flange_quat[4]` per row; follow it with IK on the flange site (see
+`Plan.replay` in `tools/plan_cell.py`). A later task may approximate these paths by a few MoveL keypoints – only if the
 
 ## 5. Platform
 
@@ -366,17 +478,99 @@ this project's reference in `.claude/skills/<skill>/references/project.md` (proj
 
 ## 14. Open questions
 
-1. Does any output of this project ever drive the real AUBO or the loader (a program export)? If so,
-   the safety sentence of `KNOWN_ISSUES.md` becomes a rule with safe first-run conditions.
-2. The requirement groups without a user yet (scipy, trimesh, rtree, coacd; matplotlib until the
-   image script uses it): keep them pinned as *planned*, or drop them until a feature needs them.
-3. The items of `FEATURES.md` F3 *Decisions needed*.
+1. The real-cell validation procedure (§17, `KNOWN_ISSUES.md`): not defined yet.
+
+Answered 2026-10-24 (owner): simulation now, real-cell transfer planned (§17); scipy, trimesh, rtree,
+coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 ## 15. Sources
 
-- Owner's project brief "KINALI Test it off – Automated PCBA Testing Cell (MuJoCo)", git
+- Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test it off – Automated PCBA Testing Cell (MuJoCo)", git
   `427e076:docs/PROJECT_BRIEF.md` (2026-10-24).
 - The previous Czech description of the cell, `docs/README_cs_mg06_cell.md` (git `5e5ee62:README.md`).
 - AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/kinali_sim/model.py`.
 - OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/kinali_sim/model.py`.
 - KINALI "Test it off": https://www.testitoff.cz/en/about-test-it-off/
+
+## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)
+
+The owner's proposals for steps 3–4, kept as the starting point; step 3 and 4 settle them (this
+section is then replaced by the formats in §8 and §9). The CLI of §16.4 is superseded by the
+`Example/` scripts (design-decisions: RPX over brief §5.1); its subcommands map to `run_cycle.py`
+(`run`), `export_cell_scene.py` (`export-xml`), and the scripts of steps 3–5 (`show`, `keypoints --check`,
+`build`, `play`).
+
+### 16.1 Keypoint file (proposal)
+
+```yaml
+units: {length: m, angle: deg}          # angles in deg for humans; convert internally
+robot_keypoints:
+  home:
+    joints: [45.24, 39.59, 105.04, -24.56, 90.00, 0.24]
+  above_input_pcb:
+    tcp: {pos: [0.15595, -0.74700, 0.13240], rpy: [180, 0, 0]}   # or joints
+    seed: wrist_up                         # IK family / seed keypoint
+  ...
+loader_keypoints:
+  home:   {y: -0.1000, z: 0.0}
+  travel_place: {y: 0.19666, z: 0.07922}
+  place:  {y: 0.19666, z: 0.06722}
+  park:   {y: -0.1995, z: 0.020}
+gripper: {open: 0.035, clamp: 0.00575}
+```
+Rules: every robot keypoint is stored/resolved to joints once (IK with the given family/seed) and the resolved joints are
+written back or cached, so playback is deterministic. A keypoint may be defined relative to another one
+(`relative_to: pick_input_pcb, offset: [0, 0, 0.12]`).
+
+### 16.2 Program file (proposal)
+
+```yaml
+- {step: "Pick PCB from input crate", do: [ {movej: above_input_pcb}, {movel: input_pcb_approach, speed: 0.20},
+                                             {movel: input_pcb_press, speed: 0.03}, {vacuum: on}, {wait: 0.3},
+                                             {movel: above_input_pcb, speed: 0.20} ]}
+- {step: "Hand over to the loader", do: [ {movej: via_input_to_loader}, {movej: above_loader},
+                                          {movel: loader_approach, speed: 0.20}, {movel: loader_handover, speed: 0.03},
+                                          {gripper: clamp}, {wait: 0.25}, {vacuum: off}, ... ]}
+- {step: "Loader inserts PCB into MG06", parallel: false, do: [ {loader: {z: travel_place.z}}, ... ]}
+- {step: "Close MG06", do: [ {movej: via_mg06_high}, {movej: fork_start}, {path: fork_close}, ... ]}
+...
+```
+Supported commands (Phase 1): `movej`, `movel`, `path` (recorded flange path segment), `loader` (y / z, duration or
+speed), `gripper` (open / clamp), `vacuum` (on / off), `wait`. Optional `blend` / parallel execution of loader and robot
+can come later – first keep steps sequential.
+
+### 16.3 Trajectory output
+
+`output/trajectory.npz` (+ optional CSV): `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`,
+`vacuum`, `step_index`, `step_label`, sampled at 4 ms (same as now). `simulate.py` plays it with physics and produces the
+report of §3. The trajectory alone must be enough to reproduce the whole process.
+
+### 16.4 CLI (proposal, superseded)
+
+```
+kinali-sim show home                 # viewer, cell posed at keypoint "home"
+kinali-sim show --step 5             # cell at the end of program step 5
+kinali-sim keypoints --check         # IK + collision clearance for all keypoints
+kinali-sim build                     # program → output/trajectory.npz (+ checks of every segment)
+kinali-sim play                      # viewer, physics playback of output/trajectory.npz
+kinali-sim run                       # headless physics + report (regression)
+kinali-sim export-xml                # models/cell_scene.xml
+```
+
+## 17. Future scope: real-cell transfer
+
+The project is simulation only today. Keypoints and programs are intended to be transferred to the real
+AUBO i5 later (owner, 2026-10-24); a test on the real cell is planned. Consequences:
+
+1. **Controller-friendly formats.** The keypoint, program and trajectory formats (steps 3–4) state
+   joint values in a defined unit and order (rad in code, the file's unit declared; order shoulder pan,
+   shoulder lift, elbow, wrist 1, wrist 2, wrist 3), the TCP definition they refer to (`suction_tcp`:
+   the cup face, 260.6 mm from the flange along tool +Z; the flange; §4.3), and speeds as a percentage of
+   the AUBO i5 datasheet joint speeds (§4.4).
+2. **Simulation-only deviations are checked against the real cell before any transfer**: the CAD shifts
+   compensated in `scene.xml` (§4.7: loader +100 mm Y and +0.95 mm X, `holder_10` −0.8 mm, cabinet
+   200 mm), the assumed acceleration limits (§4.4), the adhesion model of the vacuum (§4.3).
+3. **Outputs are not validated for the real cell.** Before any use on real hardware they go through the
+   real-cell validation procedure (to be defined, §14, `KNOWN_ISSUES.md`), at reduced speed and with the
+   robot controller's own safety limits active.
+
