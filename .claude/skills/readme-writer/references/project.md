@@ -48,9 +48,9 @@ the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (light: 
   (outputs are simulation results, not validated for the real cell; the validation procedure, reduced
   speed, the controller's safety limits).
 
-Known checker results that are decisions, not defects: the two `[caption]` ERRORs on the logo header (lines 4
-and 9). The header's logos are a brand mark, not figures: they carry no "Figure N:" caption (2026-10-24, a
-judgement call put to the owner). Every other figure added later is captioned and numbered.
+The header's logos are a brand mark, not figures: they carry no "Figure N:" caption (owner, 2026-10-24). The
+exception is configured in `check_readme.json` beside this file (`uncaptioned_figures`: each logo's light file and the
+reason); the checker reports them as INFO and exits 0. Every other figure added later is captioned and numbered.
 
 ## README tests
 

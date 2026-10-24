@@ -218,6 +218,22 @@ def test_a_pose_that_is_not_fk_is_reported(tools, constants, simulation, cell_co
     assert Check_Keypoint('P_HOME', kinematics, collision, broken, simulation, cell_configuration, meta).Verdict == 'FAIL'
 
 
+
+def test_a_pose_is_compared_with_fk_as_a_rotation(tools, constants, simulation, cell_configuration):
+    """
+    Description:
+        P_INPUT_PICK's Pose (180, 0, 135) deg written as the same rotation in other numbers - (0, 180, -45) deg - still
+        passes; its FK reads roll -179.99999... deg, which the shipped 180 matches as a rotation.
+    """
+
+    kinematics, collision, meta = tools
+    assert Check_Keypoint('P_INPUT_PICK', kinematics, collision, constants, simulation, cell_configuration, meta).Check_Angle < 1e-8
+    other = copy.deepcopy(constants)
+    other.Points['P_INPUT_PICK'].Pose[3:] = [0.0, math.pi, math.radians(-45.0)]
+    result = Check_Keypoint('P_INPUT_PICK', kinematics, collision, other, simulation, cell_configuration, meta)
+    assert result.Verdict == 'PASS' and result.Check_Angle < math.radians(1e-3)
+
+
 def test_the_pick_poses_the_pcb_in_the_crate_with_four_cups_touching(cell_model, constants, simulation, cell_configuration):
     """
     Description:

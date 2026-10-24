@@ -27,8 +27,9 @@
 #              playback reads them only.
 #     Pose     the point's tool frame in the ROBOT BASE frame (Configuration/Cell.yaml Robot.Base_Position,
 #              Base_Yaw): [x, y, z, R, P, Y], position [m], orientation [deg] as fixed-axis roll, pitch,
-#              yaw - R = Rz(Y) Ry(P) Rx(R) (to verify against the AUBO controller, KNOWN_ISSUES.md). A check
-#              value: FK(Joints, Tool) must match it within 1e-5 m and 1e-3 deg.
+#              yaw - R = Rz(Y) Ry(P) Rx(R) (to verify against the AUBO controller, KNOWN_ISSUES.md), each angle written
+#              in (-180, 180]. A check value: FK(Joints, Tool) must match it within 1e-5 m and 1e-3 deg, compared as a
+#              rotation (180 and -180 are the same roll).
 #     Reference: <P_ constant> | null   the point this one is derived from
 #     Offset: [dx, dy, dz] | null       displacement from Reference, in the Reference point's tool frame [m]
 #              (T_SUCTION: +Z from the flange towards the cups); the point's FK must equal Reference's pose moved
@@ -61,14 +62,14 @@ Points:
     Reference: P_INPUT_PICK
     Offset: [0.0, 0.0, -0.1215]
     Joints: [26.638997, -7.651760, 114.718665, 32.370425, 90.000000, -18.361003]
-    Pose: [0.478569866, 0.104128526, -0.029599949, -180.000000000, 0.000000000, 135.000000000]
+    Pose: [0.478569866, 0.104128526, -0.029599949, 180.000000000, 0.000000000, 135.000000000]
   P_INPUT_APPROACH:
     Description: "15 mm above the PCB, the start of the slow approach."
     Tool: T_SUCTION
     Reference: P_INPUT_PICK
     Offset: [0.0, 0.0, -0.0165]
     Joints: [26.638999, -18.681976, 121.413334, 50.095310, 90.000000, -18.361001]
-    Pose: [0.478569874, 0.104128548, -0.134591429, -180.000000000, 0.000000000, 135.000000000]
+    Pose: [0.478569874, 0.104128548, -0.134591429, 180.000000000, 0.000000000, 135.000000000]
   P_INPUT_PICK:
     Description: "Cups pressed 1.5 mm onto the PCB, then vacuum on (SPEC §4.7)."
     Tool: T_SUCTION
@@ -208,7 +209,7 @@ Points:
     Reference: null
     Offset: null
     Joints: [59.945628, -12.144714, 134.701735, 56.846449, 90.000000, 14.945628]
-    Pose: [0.302500284, 0.280198135, -0.148581491, -180.000000000, 0.000000000, 135.000000000]
+    Pose: [0.302500284, 0.280198135, -0.148581491, 180.000000000, 0.000000000, 135.000000000]
 
 # The loader positions: the Y and Z axis set-points [m]. Source: the former Data/PCB/pcb_meta.json and the
 # legacy planner (Z_TRAVEL = place + 12 mm; the park position), SPEC §4.4.

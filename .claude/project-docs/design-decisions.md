@@ -564,7 +564,9 @@ with a one-line `Description`. A point's last word is its role (`ABOVE`, `APPROA
 `WAIT`, `VIA`, and the MG06 fork operations; the name table in SPEC §4.8). A point stores `Joints` [deg] - the pose and the
 IK family, the only value playback reads - and `Pose` [x, y, z m; R, P, Y deg], the tool frame in the robot base frame as
 fixed-axis roll, pitch, yaw (R = Rz(Y)·Ry(P)·Rx(R)), which must equal FK(Joints, Tool) within 1e-5 m and 1e-3°
-(`Keypoints.CONST_POSE_POSITION`, `CONST_POSE_ANGLE`). A loaded name is checked against the kind its argument needs (a
+(`Keypoints.CONST_POSE_POSITION`, `CONST_POSE_ANGLE`), compared as rotations, never as numbers; each angle is written in
+(-180, 180] (one spelling per value, owner 2026-10-24: a roll of -180 is written 180; the parser refuses another, and
+`resolve_keypoint.py` prints it so - `Kinematics.Degrees_Text`). A loaded name is checked against the kind its argument needs (a
 MoveL takes a `P_`, a MoveY an `L_`).
 
 **Why.** A typed name says what it is in every line that uses it, so a wrong kind is a load error, not a run-time surprise.
@@ -578,7 +580,8 @@ rule). Lowercase names (F6, F8): no kind in the name.
 **Revisit if** the RPY convention differs from the AUBO controller's (`KNOWN_ISSUES.md`), or points are taught on the real
 cell (their joints then come from the controller).
 
-Pinned by `test/Keypoints/test_core.py::test_every_pose_is_fk_of_its_joints`, `::test_a_pose_that_is_not_fk_is_reported`,
+Pinned by `test/Keypoints/test_core.py::test_every_pose_is_fk_of_its_joints`, `::test_a_pose_that_is_not_fk_is_reported`, `::test_a_pose_is_compared_with_fk_as_a_rotation`,
+`test/Kinematics/test_core.py::test_rpy_angles_are_normalized_and_compared_as_rotations`,
 `test/Program/test_core.py::test_the_shipped_constants_match_the_model`, `::test_the_constants_are_checked_against_the_model`,
 `test/Configuration/test_program_parser.py::test_an_invalid_constant_is_named_with_its_file_and_line`.
 

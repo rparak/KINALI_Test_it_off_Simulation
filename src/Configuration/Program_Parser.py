@@ -622,7 +622,8 @@ def _Text(p: _Problems_Cls, value: tp.Any, where: str, line: int) -> str:
 def _Pose(p: _Problems_Cls, value: tp.Any, where: str, line: int) -> tp.List[float]:
     """
     Description:
-        [x, y, z (m), R, P, Y (deg)] as metres and radians.
+        [x, y, z (m), R, P, Y (deg)] as metres and radians; each angle written normalized to (-180, 180] (one spelling per
+        value; the Pose is compared with FK as a rotation, Program.Validate_Constants and Keypoints.Check_Keypoint).
 
     Args:
         (1) p [_Problems_Cls(object)]: The problems.
@@ -635,6 +636,10 @@ def _Pose(p: _Problems_Cls, value: tp.Any, where: str, line: int) -> tp.List[flo
     """
 
     v = _Vector(p, value, where, line, 6, -360.0, 360.0)
+    for name, angle in zip('RPY', v[3:]):
+        if not -180.0 < angle <= 180.0:
+            normalized = angle - 360.0 * math.ceil((angle - 180.0) / 360.0)
+            p.Add(line, where, 'the angle %s = %g deg is outside (-180, 180]; write it normalized: %g' % (name, angle, normalized))
     return v[:3] + [math.radians(a) for a in v[3:]]
 
 

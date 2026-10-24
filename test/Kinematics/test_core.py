@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Kinematics/Core
-from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, TCP_For_PCB
+from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, TCP_For_PCB, RPY_To_Matrix, Matrix_To_RPY, Rotation_Angle, Degrees_Text
 #   ../Scene/Core
 from Scene.Core import PCB_In_Crate
 
@@ -143,3 +143,25 @@ def test_one_ik_step_is_the_verified_dls_step(kinematics):
     q1, ok = kinematics.Solve_IK(p, R, q + 0.05 * np.array([1, -1, 1, -1, 1, -1]), q_ref=q, iters=1)
     assert not ok
     assert q1 == pytest.approx([0.7839464111, 0.6934194356, 1.824233254, -0.4411880932, 1.5703622006, 0.0021724899], abs=1e-9)
+
+
+def test_rpy_angles_are_normalized_and_compared_as_rotations():
+    """
+    Description:
+        The Pose convention R = Rz(Y) Ry(P) Rx(R): a roll of 180 and of -180 deg are one rotation, and so is (0, 180, -45)
+        deg to (180, 0, 135) deg - compared by Rotation_Angle, never as numbers. Matrix_To_RPY returns roll and yaw in
+        (-pi, pi]; Degrees_Text writes the angle normalized after rounding (-179.9999999999 -> 180.000000000).
+    """
+
+    def Rpy(r, p, y):
+        return RPY_To_Matrix(np.radians([r, p, y]))
+
+    assert Rotation_Angle(Rpy(180, 0, 135), Rpy(-180, 0, 135)) < 1e-12
+    assert Rotation_Angle(Rpy(180, 0, 135), Rpy(0, 180, -45)) < 1e-7
+    assert np.degrees(Rotation_Angle(Rpy(180, 0, 135), Rpy(180, 0, 135.002))) == pytest.approx(0.002, rel=1e-6)
+    rpy = Matrix_To_RPY(Rpy(-180, 0, 135))
+    assert np.degrees(rpy[0]) == pytest.approx(180.0) and -np.pi < rpy[0] <= np.pi
+    assert Rotation_Angle(RPY_To_Matrix(rpy), Rpy(-180, 0, 135)) < 1e-12
+    assert Degrees_Text(np.radians(-179.9999999999)) == '180.000000000'
+    assert Degrees_Text(np.radians(-180.0)) == '180.000000000' and Degrees_Text(np.radians(540.0)) == '180.000000000'
+    assert Degrees_Text(np.radians(-225.0)) == '135.000000000' and Degrees_Text(np.radians(-0.5)) == '-0.500000000'

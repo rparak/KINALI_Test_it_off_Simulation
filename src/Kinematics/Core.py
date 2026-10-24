@@ -21,6 +21,8 @@
 # File Name: ../Kinematics/Core.py
 ## =========================================================================== ##
 
+# Math (Mathematical functions)
+import math
 # Typing (Support for type hints)
 import typing as tp
 # Numpy (Array computing) [pip3 install numpy]
@@ -355,7 +357,8 @@ def RPY_To_Matrix(rpy: tp.Sequence[float]) -> np.ndarray:
 def Matrix_To_RPY(R: np.ndarray) -> np.ndarray:
     """
     Description:
-        Fixed-axis roll, pitch, yaw of a rotation, R = Rz(yaw) Ry(pitch) Rx(roll) (the inverse of RPY_To_Matrix).
+        Fixed-axis roll, pitch, yaw of a rotation, R = Rz(yaw) Ry(pitch) Rx(roll) (the inverse of RPY_To_Matrix); roll and yaw
+        in (-pi, pi], pitch in [-pi/2, pi/2].
 
     Args:
         (1) R [Matrix<float> 3x3]: The rotation matrix.
@@ -364,7 +367,27 @@ def Matrix_To_RPY(R: np.ndarray) -> np.ndarray:
         (1) parameter [Vector<float> 1x3]: Roll, pitch, yaw (rad).
     """
 
-    return np.array([np.arctan2(R[2, 1], R[2, 2]), np.arcsin(-np.clip(R[2, 0], -1.0, 1.0)), np.arctan2(R[1, 0], R[0, 0])])
+    rpy = np.array([np.arctan2(R[2, 1], R[2, 2]), np.arcsin(-np.clip(R[2, 0], -1.0, 1.0)), np.arctan2(R[1, 0], R[0, 0])])
+    return np.where(rpy <= -np.pi, rpy + 2.0 * np.pi, rpy)
+
+
+def Degrees_Text(angle: float, decimals: int = 9) -> str:
+    """
+    Description:
+        An angle as degrees text normalized to (-180, 180] after the rounding (-179.9999999999 is written 180.000000000), the
+        spelling of a Constants.yaml Pose angle.
+
+    Args:
+        (1) angle [float]: The angle (rad).
+        (2) decimals [int]: The decimals written.
+
+    Returns:
+        (1) parameter [string]: The text.
+    """
+
+    degrees = math.degrees(angle) % 360.0
+    text = '%.*f' % (decimals, degrees - 360.0 if degrees > 180.0 else degrees)
+    return '%.*f' % (decimals, 180.0) if float(text) <= -180.0 else text
 
 
 def Rotation_Angle(R_1: np.ndarray, R_2: np.ndarray) -> float:

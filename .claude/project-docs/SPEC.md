@@ -595,7 +595,8 @@ the other domains read.
 
 Builds the cell from `models/scene.xml` with MjSpec: the crates' collision as floor + 4 walls, the AUBO
 i5 at its base pose, the VGC10/fork tool rigidly on the flange with one body and one adhesion actuator
-per cup, the robot servos, the loader drive lag, the look (lights, materials, cameras). Exports the cell
+per cup, the robot servos, the loader drive lag, the look (lights, materials, cameras). `Compile_Spec` compiles a spec
+with MuJoCo's one known warning (the robot MJCF's integrator, `KNOWN_ISSUES.md`) shown as one INFO line on stderr. Exports the cell
 as one MJCF with mesh paths relative to the file. The compiled model is pinned by its fingerprint
 (§10.2).
 
@@ -740,7 +741,7 @@ with a one-line `Description`, and used by `Program.yaml` or `Simulation.yaml` (
 | Section | Prefix | Fields | Unit, frame |
 |---|---|---|---|
 | `Tools` | `T_` | `Flange_Offset` [x, y, z, R, P, Y] | m, deg; the tool frame in the flange frame (`T_SUCTION`, `T_FLANGE`) |
-| `Points` | `P_` | `Tool`, `Reference`, `Offset`, `Joints`, `Pose` | `Joints` [deg] in the model's joint order - authoritative; `Pose` [x, y, z m; R, P, Y deg] the tool frame in the robot base frame, R = Rz(Y)·Ry(P)·Rx(R), FK(`Joints`, `Tool`) within 1e-5 m / 1e-3°; `Reference: <P_> \| null`, `Offset: [dx, dy, dz] \| null` [m] in the Reference point's tool frame, both null or both set, no cycle, FK within `Stale_Position` / `Stale_Angle` |
+| `Points` | `P_` | `Tool`, `Reference`, `Offset`, `Joints`, `Pose` | `Joints` [deg] in the model's joint order - authoritative; `Pose` [x, y, z m; R, P, Y deg] the tool frame in the robot base frame, R = Rz(Y)·Ry(P)·Rx(R), each angle written in (-180, 180], FK(`Joints`, `Tool`) within 1e-5 m / 1e-3° as a rotation; `Reference: <P_> \| null`, `Offset: [dx, dy, dz] \| null` [m] in the Reference point's tool frame, both null or both set, no cycle, FK within `Stale_Position` / `Stale_Angle` |
 | `Loader_Positions` | `L_` | `Y`, `Z` | m, the model's axis zeros (`L_HOME`, `L_TRAVEL`, `L_PLACE`, `L_PARK`) |
 | `Gripper_Commands` | `G_` | `Jaw` | m per jaw, the command (`G_OPEN`, `G_CLAMP`) |
 | `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path (§4.9) |
@@ -807,8 +808,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (294 tests, about 70 s), full `.venv/bin/python -m pytest`
-before a commit (305 tests, about 124 s; Apple M2 Pro, 2026-10-24, after F10.4).
+`.venv/bin/python -m pytest -m "not slow"` (300 tests, about 71 s), full `.venv/bin/python -m pytest`
+before a commit (311 tests, about 126 s; Apple M2 Pro, 2026-10-24, after F10.5).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)

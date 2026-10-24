@@ -1256,6 +1256,11 @@ frames).
       to the next frame) with `--watchdog S`; `step_keypoints.py` prints outside the lock. Live: 409 frames in 8 s, 4.22 ms
       mean / 15.30 ms max work per frame (budget 16.7 ms). 6 tests (one slow); 6 mutations, each test passing first and
       failing mutated - the old pattern among them.
+- [x] F10.5 Small fixes (owner, 2026-10-24): RPY angles in `Constants.yaml` written in (-180, 180] (three rolls -180 -> 180;
+      the parser refuses another spelling, the Pose check compares rotations, `resolve_keypoint.py` prints normalized);
+      the README checker's exception for the header logos (`readme-writer/references/check_readme.json`, exit 0); MuJoCo's
+      known attach warning shown as one INFO line (`Scene.Compile_Spec`), any other warning passed on. Golden, fingerprint
+      and cycle report unchanged. 305 -> 311 collected; 6 mutations, each test passing first and failing mutated.
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 

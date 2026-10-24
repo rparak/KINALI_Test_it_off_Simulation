@@ -29,7 +29,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the cell and the robot's joint names
 #   ../Scene/Core
-from Scene.Core import Build_Cell_Spec, CONST_ROBOT_JOINTS
+from Scene.Core import Build_Cell_Spec, Compile_Spec, CONST_ROBOT_JOINTS
 #   ../Configuration/Core
 from Configuration.Core import Cell_Configuration_Str
 
@@ -86,7 +86,7 @@ def Build_Planning_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
         geom.name, geom.type = name, mujoco.mjtGeom.mjGEOM_BOX
         geom.size, geom.pos = (upper - lower) / 2, (upper + lower) / 2
         geom.contype, geom.conaffinity, geom.group = CONST_TABLE_CONTYPE, CONST_TABLE_CONAFFINITY, CONST_TABLE_GROUP
-    m = spec.compile()
+    m = Compile_Spec(spec)
     margin = CONST_MARGIN_FACTOR * cell.Clearance
     robot_bodies = {i for i in range(m.nbody) if m.body(i).name.startswith('aubo/')}
     for g in range(m.ngeom):

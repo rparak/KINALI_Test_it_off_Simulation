@@ -42,8 +42,8 @@ from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Re
 from Configuration.Program_Parser import Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
-#   ../Kinematics/Core - IK
-from Kinematics.Core import Robot_Kinematics_Cls
+#   ../Kinematics/Core - IK, the Pose angles' spelling
+from Kinematics.Core import Robot_Kinematics_Cls, Degrees_Text
 #   ../Keypoints/Core - the resolution
 from Keypoints.Core import Resolve_Keypoint, Keypoints_Error_Cls
 
@@ -78,7 +78,7 @@ def main():
         return 1
     print(log.Line('[INFO] %s resolved; paste these lines into Configuration/Constants.yaml (Points.%s):' % (args.name, args.name)))
     print(log.Line('    Joints: [%s]' % ', '.join('%.6f' % math.degrees(q) for q in joints)))
-    print(log.Line('    Pose: [%s]' % ', '.join(['%.9f' % v for v in pose[:3]] + ['%.9f' % math.degrees(a) for a in pose[3:]])))
+    print(log.Line('    Pose: [%s]' % ', '.join(['%.9f' % v for v in pose[:3]] + [Degrees_Text(a) for a in pose[3:]])))
     log.Close()
     return 0
 

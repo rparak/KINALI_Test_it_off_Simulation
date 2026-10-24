@@ -23,6 +23,11 @@
 
 # System (Default)
 import os
+import sys
+# Tempfile (Generate temporary files)
+import tempfile
+# Warnings (Warning control)
+import warnings
 # XML (ElementTree XML API)
 import xml.etree.ElementTree as ET
 # Typing (Support for type hints)
@@ -48,6 +53,12 @@ Description:
 """
 # The robot joints, base to wrist 3 (prefixed 'aubo/' in the cell).
 #   Unit [List<string>]
+# The one known compile warning (KNOWN_ISSUES.md: the vendored robot MJCF's integrator is ignored, the scene runs Euler),
+# exactly as MuJoCo 3.16 words it, and the line printed instead.
+#   Unit [string]
+CONST_KNOWN_ATTACH_WARNING = ("Attach conflict when attaching 'aubo_i5' to 'mg06_loader_scene', policy is 'warning'\n"
+                              "integrator: parent has 0 (default), child has 3, keeping parent value")
+CONST_KNOWN_ATTACH_NOTE = '[INFO] Known: robot MJCF integrator ignored, scene uses Euler (KNOWN_ISSUES)'
 CONST_ROBOT_JOINTS = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
 # Joint position servo gains.
 #   Unit [List<float>] (Nm/rad, Nm s/rad)
@@ -281,7 +292,9 @@ def Build_Cell_Spec(cell: Cell_Configuration_Str) -> mujoco.MjSpec:
     rb.site('attachment_site').attach_body(tool, 'tool/', '')
     base, yaw = np.array(cell.Base_Position), cell.Base_Yaw
     fr = sc.worldbody.add_frame(pos=base, quat=[np.cos(yaw / 2), 0, 0, np.sin(yaw / 2)])
-    fr.attach_body(rb.body('base_link'), 'aubo/', '')
+    # MuJoCo prints the known integrator conflict here; Compile_Spec reports it as one line.
+    with _Known_Warning_Filter_Cls():
+        fr.attach_body(rb.body('base_link'), 'aubo/', '')
     # 4\ Robot + tool touch MG06, the loader, the PCB, the workstation (bit 2) and the crates.
     for b in sc.bodies:
         if b.name.startswith('aubo/'):
@@ -404,7 +417,95 @@ def Build_Cell_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
         (1) parameter [mujoco.MjModel]: The model.
     """
 
-    return Build_Cell_Spec(cell).compile()
+    return Compile_Spec(Build_Cell_Spec(cell))
+
+
+class _Known_Warning_Filter_Cls(object):
+    """
+    Description:
+        A context that captures what MuJoCo prints on stderr (file descriptor 2) and the Python warnings raised inside it,
+        removes the known warning (CONST_KNOWN_ATTACH_WARNING) and passes everything else on unchanged at its end.
+
+    Initialization of the Class:
+        Example:
+            Initialization:
+                # Assignment of the variables.
+                with _Known_Warning_Filter_Cls() as known:
+                    model = spec.compile()
+
+            Features:
+                # Properties of the class.
+                known.Seen
+    """
+
+    def __init__(self) -> None:
+        self.Seen = False
+
+    def __enter__(self) -> '_Known_Warning_Filter_Cls':
+        """
+        Description:
+            Start capturing: stderr (file descriptor 2) into a temporary file, the Python warnings into a list.
+
+        Returns:
+            (1) parameter [_Known_Warning_Filter_Cls(object)]: The filter.
+        """
+
+        sys.stderr.flush()
+        self._Saved, self._Captured = os.dup(2), tempfile.TemporaryFile(mode='w+b')
+        self._Warnings = warnings.catch_warnings(record=True)
+        self._Caught = self._Warnings.__enter__()
+        warnings.simplefilter('always')
+        os.dup2(self._Captured.fileno(), 2)
+        return self
+
+    def __exit__(self, *exc: tp.Any) -> None:
+        """
+        Description:
+            Stop capturing; pass on everything but the known warning (Seen tells whether it came).
+
+        Args:
+            (1) exc [Any]: The exception, if any (not suppressed).
+        """
+
+        os.dup2(self._Saved, 2)
+        os.close(self._Saved)
+        self._Warnings.__exit__(None, None, None)
+        self._Captured.seek(0)
+        printed = self._Captured.read().decode('utf-8', 'replace')
+        self._Captured.close()
+        known = 'WARNING: %s\n' % CONST_KNOWN_ATTACH_WARNING
+        rest = printed.replace(known + '\n', '', 1) if known + '\n' in printed else printed.replace(known, '', 1)
+        self.Seen = rest != printed
+        if rest:
+            sys.stderr.write(rest)
+            sys.stderr.flush()
+        for warning in self._Caught:
+            if str(warning.message) == CONST_KNOWN_ATTACH_WARNING:
+                self.Seen = True
+            else:
+                warnings.warn_explicit(warning.message, warning.category, warning.filename, warning.lineno)
+
+
+def Compile_Spec(spec: mujoco.MjSpec) -> mujoco.MjModel:
+    """
+    Description:
+        Compile a spec (spec.compile(), the same model), with the one known warning (CONST_KNOWN_ATTACH_WARNING) replaced by
+        the line CONST_KNOWN_ATTACH_NOTE on stderr. MuJoCo prints it on stderr when the robot is attached (Build_Cell_Spec
+        removes that print) and raises it as a UserWarning here. Any other warning and any other stderr output are passed on.
+
+    Args:
+        (1) spec [mujoco.MjSpec]: The spec.
+
+    Returns:
+        (1) parameter [mujoco.MjModel]: The compiled model.
+    """
+
+    with _Known_Warning_Filter_Cls() as known:
+        model = spec.compile()
+    if known.Seen:
+        sys.stderr.write(CONST_KNOWN_ATTACH_NOTE + '\n')
+        sys.stderr.flush()
+    return model
 
 
 def Export_Cell_Scene(cell: Cell_Configuration_Str, path: str = CONST_CELL_SCENE_XML) -> str:
@@ -423,7 +524,7 @@ def Export_Cell_Scene(cell: Cell_Configuration_Str, path: str = CONST_CELL_SCENE
 
     path = os.path.abspath(path)
     sc = Build_Cell_Spec(cell)
-    sc.compile()
+    Compile_Spec(sc)
     r = ET.fromstring(sc.to_xml())
     for c in r.iter('compiler'):
         c.set('meshdir', os.path.relpath(CONST_MODELS, os.path.dirname(path)))

@@ -69,9 +69,14 @@ state. Not fixed on purpose: changing either file changes the physics or the ven
 file goes to `logger/MUJOCO_LOG.TXT` (`Configuration.Core.Configure_MuJoCo_Log`, called by every script
 and the test suite), never into the working directory.
 
-- **Impact:** noise on stderr and in the test summary's warnings; not a fault.
+Since 2026-10-24 (owner) the scripts and the tests show it as one line on stderr instead -
+`[INFO] Known: robot MJCF integrator ignored, scene uses Euler (KNOWN_ISSUES)` - by `Scene.Compile_Spec`, which matches
+exactly this message (at the attach and at the compile) and passes any other warning on; the model is unchanged.
+
+- **Impact:** none: one INFO line per compiled model; not a fault.
 - **Evidence:** `MjLogConfig` probe 2026-10-24: the message is logged at the attach in the scene build.
-- **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`.
+- **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`,
+  `test/Scene/test_core.py::test_the_known_attach_warning_becomes_one_info_line`, `::test_any_other_warning_is_still_shown`.
 - **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
 
 ## The MG06 test time is a placeholder

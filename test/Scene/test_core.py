@@ -28,6 +28,8 @@ import sys
 import subprocess
 # JSON (JSON encoder and decoder)
 import json
+# Warnings (Warning control)
+import warnings
 # XML (ElementTree XML API)
 import xml.etree.ElementTree as ET
 # Numpy (Array computing) [pip3 install numpy]
@@ -38,7 +40,8 @@ import pytest
 import mujoco
 # Custom Lib.: the module under test
 #   ../Scene/Core
-from Scene.Core import Crate_Center, PCB_In_Crate, Export_Cell_Scene, Scene_Error_Cls, _Load_Spec
+from Scene.Core import (Crate_Center, PCB_In_Crate, Export_Cell_Scene, Scene_Error_Cls, _Load_Spec, Build_Cell_Spec, Compile_Spec,
+                        _Known_Warning_Filter_Cls, CONST_KNOWN_ATTACH_NOTE)
 #   ../Configuration/Core
 from Configuration.Core import CONST_SCENE_XML, CONST_ROBOT_XML, CONST_TOOL_XML, CONST_CELL_SCENE_XML
 
@@ -308,3 +311,44 @@ def test_a_model_file_that_does_not_load_is_named(tmp_path):
 
     with pytest.raises(Scene_Error_Cls, match='absent.xml does not load'):
         _Load_Spec(str(tmp_path / 'absent.xml'))
+
+
+def test_the_known_attach_warning_becomes_one_info_line(cell_configuration, capfd):
+    """
+    Description:
+        Building and compiling the cell: MuJoCo's integrator conflict (printed on stderr at the attach, raised as a
+        UserWarning at the compile; KNOWN_ISSUES.md) becomes exactly the line CONST_KNOWN_ATTACH_NOTE on stderr; no
+        UserWarning is left and the model is the one spec.compile() gives.
+    """
+
+    capfd.readouterr()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        model = Compile_Spec(Build_Cell_Spec(cell_configuration))
+    out, err = capfd.readouterr()
+    assert err == CONST_KNOWN_ATTACH_NOTE + '\n' and out == '' and caught == []
+    assert model.opt.integrator == mujoco.mjtIntegrator.mjINT_EULER
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        plain = Build_Cell_Spec(cell_configuration).compile()
+    assert (model.nbody, model.ngeom, model.nq) == (plain.nbody, plain.ngeom, plain.nq)
+
+
+def test_any_other_warning_is_still_shown(capfd):
+    """
+    Description:
+        Another attach conflict (a child spec with the RK4 integrator) passes the filter unchanged: MuJoCo's stderr line at
+        the attach and the UserWarning at the compile, and no INFO line.
+    """
+
+    parent = mujoco.MjSpec.from_string('<mujoco model="p"><worldbody><body name="base"/></worldbody></mujoco>')
+    child = mujoco.MjSpec.from_string('<mujoco model="c"><option integrator="RK4"/><worldbody><body name="b"><geom size=".1"/>'
+                                      '</body></worldbody></mujoco>')
+    capfd.readouterr()
+    with _Known_Warning_Filter_Cls() as known:
+        parent.body('base').add_frame().attach_body(child.body('b'), 'c/', '')
+    assert not known.Seen
+    with pytest.warns(UserWarning, match="Attach conflict when attaching 'c' to 'p'"):
+        Compile_Spec(parent)
+    err = capfd.readouterr().err
+    assert "WARNING: Attach conflict when attaching 'c' to 'p', policy is 'warning'" in err and CONST_KNOWN_ATTACH_NOTE not in err
