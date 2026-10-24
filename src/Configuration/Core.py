@@ -60,11 +60,13 @@ CONST_MODELS = os.path.join(CONST_ROOT, 'models')
 #   Unit [string]
 CONST_DATA = os.path.join(CONST_ROOT, 'Data')
 # Generated artefacts, one subfolder per kind (git-ignored; design-decisions: logs in logger/, generated
-# artefacts in Data/Generated/): Reports/ (the cycle report), Images/ (proof images); step 4 adds Trajectories/.
+# artefacts in Data/Generated/): Reports/ (the cycle and program reports), Images/ (proof images), Trajectories/ (the
+# program trajectories, step 4).
 #   Unit [string]
 CONST_GENERATED = os.path.join(CONST_ROOT, 'Data', 'Generated')
 CONST_REPORTS = os.path.join(CONST_GENERATED, 'Reports')
 CONST_IMAGES = os.path.join(CONST_GENERATED, 'Images')
+CONST_TRAJECTORIES = os.path.join(CONST_GENERATED, 'Trajectories')
 # Run logs: each script's printed lines and MuJoCo's own log (git-ignored, created on first use).
 #   Unit [string]
 CONST_LOGGER = os.path.join(CONST_ROOT, 'logger')

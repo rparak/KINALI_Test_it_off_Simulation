@@ -32,7 +32,7 @@ src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simu
 Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
                        Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
-                       Keypoints/step_keypoints.py
+                       Keypoints/step_keypoints.py, Program/build_program.py, Program/show_program.py
 test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
@@ -42,8 +42,8 @@ Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (J
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
-The scripts folder is `Example/`, one subfolder per `src/` domain a script belongs to (`Keypoints`, `Media`;
-later `Program`); a script builds the repository root from `__file__` two folders up. Scripts may import
+The scripts folder is `Example/`, one subfolder per `src/` domain a script belongs to (`Keypoints`, `Media`,
+`Program`); a script builds the repository root from `__file__` two folders up. Scripts may import
 other scripts as modules (none does yet). `Data/` subfolders are named by purpose, Pascal case like the
 domains.
 

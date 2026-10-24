@@ -1018,6 +1018,12 @@ baselines for both programs in step 6 (SPEC).
       overlap against the 0.5 mm `handle_bar` limit (owner). Default program: cycle 68.852 s, B1 gap 0.318 mm. Keypoint table:
       the 22 rows byte-identical, one row added. 263 -> 270 collected; 10 mutations, each test passing first and failing mutated (the harness now checks
       both; it had counted a test that failed unmutated as a catch).
+- [x] F8.6 Scripts: `Example/Program/build_program.py` (trajectory npz + csv, check report, `--compare-legacy`; exit 0 / 1),
+      `Example/Program/show_program.py` (mjpython playback with the step label; `--step` / `--time` / `--headless` / `--image`;
+      refuses a trajectory whose inputs changed). Diagnostic: cycle 68.852 s against 65.768 s (+3.084 s: lift +0.472, loader
+      axes in turn +1.104, test +1.000, fetch / return +0.600, the rest -0.092). 270 -> 276 collected (the 6 script tests
+      slow: each runs the build and check, about 12 s); 8 mutations, all failed. Full suite 276 passed in 112 s, fast 266 in
+      58 s. The viewer's live playback (keys, overlay) is for the owner to check under mjpython.
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 
