@@ -134,10 +134,13 @@ known; the two differ in path, timing and the limits that apply.
 first, assumed 30 deg; To_Output then tilts the board 17.73 deg in 1.768 s instead of 28.98 deg in 1.792 s). No measurement of
 what the four cups hold while the board tilts and accelerates exists.
 
+F11's physics run (2026-10-25) confirms it in the simulation: the optimized carries slip at most 1.28 mm (To_Loader, tool tilt
+up to 10.5 deg) and 1.14 mm (To_Output, up to 16.8 deg and 4.72 m/s^2) with 4 of 4 cups, below the 1.98 mm warning (owner: the
+value stays).
+
 - **Impact:** a planned transfer may tilt the board more than the vacuum holds on the real cell; the simulation's adhesion
-  model (a constant force per cup) does not show slip until step 5.
-- **What would close it:** F11's physics run (the PCB's slip per FREE transfer, with the tilt and the TCP acceleration there)
-  confirms or changes the value; a real-cell value later.
+  model (a constant force per cup while in contact) is not the real cup.
+- **What would close it:** a real-cell value.
 
 ## No station user frames
 

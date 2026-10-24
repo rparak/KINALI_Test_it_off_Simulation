@@ -917,8 +917,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (360 tests, about 80 s), full `.venv/bin/python -m pytest`
-before a commit (376 tests, about 225 s; Apple M2 Pro, 2026-10-24, after F9.8).
+`.venv/bin/python -m pytest -m "not slow"` (383 tests, about 115 s), full `.venv/bin/python -m pytest`
+before a commit (403 tests, about 370 s; Apple M2 Pro, 2026-10-25, after F11).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)

@@ -1208,7 +1208,8 @@ practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimize
       starts; cycle unchanged 57.132 s; I7 kept (I7' would gain at most 0.2 s); no other candidate gains without splitting a
       LOCKED segment. D: no wait above the tester any more.
 - [x] F9.9 Carry_Max_Tilt 20 deg (owner): cycle 57.108 s, To_Output 1.768 s at 17.73 deg; the optimized program regenerated, reproduced
-      byte for byte, all LOCKED parts byte-identical. The final check of the value comes from F11's slip results.
+      byte for byte, all LOCKED parts byte-identical. Confirmed by F11's physics (owner, 2026-10-25): the carrying transfers slip
+      at most 1.28 mm (To_Loader) and 1.14 mm (To_Output, tool tilt up to 16.8 deg, 4.72 m/s^2), below the 1.98 mm warning.
 - [ ] Candidate experiment after step 6 (owner, 2026-10-24): start `J_INSERT` during the handover's last MoveL (at most -1.5 s).
       Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a time-dependent check (I2
       relaxed, the LOCKED handover split) and the physics proof.
@@ -1299,7 +1300,7 @@ frames).
       known attach warning shown as one INFO line (`Scene.Compile_Spec`), any other warning passed on. Golden, fingerprint
       and cycle report unchanged. 305 -> 311 collected; 6 mutations, each test passing first and failing mutated.
 
-## F11 - Step 5: physics playback of a program's trajectory (owner, 2026-10-24) - design (Part A), awaiting approval
+## F11 - Step 5: physics playback of a program's trajectory (owner, 2026-10-24) - built on main, awaiting acceptance
 
 Requirements (restated): run any trajectory file (the taught or the optimized program's) with full physics in place of
 `Data/Reference/cell_plan.npz`, the legacy run staying as the regression of the old baseline until step 6: robot servos with
@@ -1401,6 +1402,28 @@ baseline in its own commit with the reason (as the golden data).
    the legacy run) - agreed?
 6. The FREE transfers' slip (for the tilt decision): per transfer the maximum and the time - enough, or also the PCB's tilt
    and acceleration at that time?
+
+Answers (owner, 2026-10-24): 1-2 yes; 3 report, and warn above 1.5 x the legacy run's (1.98 mm, 0.0189 rad), the bounds in
+step 6; 4 real time with frames skipped, plus `--speed`; 5 drive the command as is; 6 the maximum, its time, the tilt and the
+TCP acceleration then, and their maxima.
+
+### Status (built 2026-10-24/25, on main, not pushed)
+
+- [x] F11.1 The drive refactor (`aacc832`): `Legacy_Drive_Cls` reproduces the baseline report byte for byte, `Trajectory_Drive_Cls`.
+- [x] F11.2 A lost PCB stops the run with its evidence; the instability's evidence; the slip counts on after a loss (`7a9ca21`).
+- [x] F11.3 The take relieves the press before the jaws open (`P_LOADER_TAKE_TOUCH`, a second WaitDI costing 0 s; golden
+      re-captured, the golden tool `Example/Program/golden_program.py`) (`3e3cd45`). Found: the taught program lost the board at
+      the take, the optimized one in its next carry; the legacy run held it on 2 of 4 cups by chance (KNOWN_ISSUES.md).
+- [x] F11.4 The simulated vacuum switch (`Vacuum_OK_Min_Cups`) and the acceptance items 8-10 (`7ddfe9f`).
+- [x] F11.5 Room around the loader: the actuator-modelled loader, `Loader_Free` + `Tracking_Margin` in the check, the planner,
+      `Delay` and I8; `P_LOADER_WAIT` at 50 mm; the taught vias unchanged (already 20.6 mm and > 50 mm) (`2148ee8`).
+- [x] F11.6 `Example/Simulation/run_program.py`, the program report, the loader distances, item 11, the warnings (`1393998`).
+- [x] F11.7 `Example/Simulation/show_physics.py` (mjpython; real time, `--speed`, `--headless --time`) (`e80776c`).
+- Results (2026-10-25): both programs meet SPEC §10.1's 14 items in physics (taught 69.396 s, optimized 57.708 s), no warning;
+  the sensitivity runs (start -50/-10/0/+10/+50 µm, ±0.2 deg) 14 of 14 each, 4 of 4 cups after the release and in every hold,
+  slip at most 1.30 mm. Fork force 291 N taught, 371 N optimized (KNOWN_ISSUES.md).
+- Not done (owner): fix 2, an acceleration limit for carried transfers (the slip stays below 1.98 mm).
+- Tests: 376 -> 403 collected (383 fast); every new test broken once.
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 

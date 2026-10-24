@@ -38,8 +38,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
-.venv/bin/python -m pytest -m "not slow"         # everyday, about 80 s
-.venv/bin/python -m pytest                       # before a commit, about 4 min
+.venv/bin/python -m pytest -m "not slow"         # everyday, about 2 min
+.venv/bin/python -m pytest                       # before a commit, about 6 min
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
 .venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~18 s
 .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~17 s

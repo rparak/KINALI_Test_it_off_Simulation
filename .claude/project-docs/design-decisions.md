@@ -1044,7 +1044,7 @@ Pinned by `test/Program/test_golden.py` and `test/Example/Program/test_golden_pr
 
 ## Step 5 plays a trajectory through the cycle run's loop (design, F11)
 
-**Decision (proposed, awaiting approval).** The physics playback of a program reuses `Simulation.Run_Cycle`'s loop unchanged
+**Decision (owner, 2026-10-24; built in F11).** The physics playback of a program reuses `Simulation.Run_Cycle`'s loop unchanged
 (servo set-points with velocity feed-forward, the filtered loader drives, vacuum adhesion, the instability guard, every
 measurement), fed through a drive object: `Legacy_Drive_Cls` reproduces today's run from `cell_plan.npz` (its report
 byte-identical, the old baseline), `Trajectory_Drive_Cls` reads a trajectory file (the taught or the optimized program's).
@@ -1059,7 +1059,8 @@ format: loses the analytic speeds and the steps.
 
 **Revisit if** the owner's answers to F11's questions change the marks or the fork rule.
 
-Pinned by nothing yet (designed, not built).
+Pinned by `test/Simulation/test_core.py` (the baseline report through `Legacy_Drive_Cls`, slow; the drive's interpolation and step
+classes) and `test/Example/Simulation/test_run_program.py`.
 
 ## The carried PCB tilts at most 20 deg
 
@@ -1071,7 +1072,9 @@ slip on the cups (KNOWN_ISSUES.md).
 
 **Alternatives.** 30 deg: the same time, a board tilted almost 29 deg while it accelerates.
 
-**Revisit if** F11's physics run shows slip in a carrying transfer (or none, which would allow more), or a real-cell value
-exists.
+**Confirmed** by F11's physics run (2026-10-25): the carries slip at most 1.28 / 1.14 mm on 4 of 4 cups, below the 1.98 mm
+warning; the owner keeps 20 deg.
+
+**Revisit if** a real-cell value exists, or a later program's physics run warns.
 
 Pinned by `test/Optimizer/test_core.py::test_the_carried_pcb_keeps_its_tilt_limit`.
