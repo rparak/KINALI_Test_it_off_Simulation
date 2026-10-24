@@ -77,6 +77,16 @@ Clearance:
   # than this since the last measured sample (bounded through the joint steps), and at every segment
   # end. Source: proposed in FEATURES.md F8, approved by the owner 2026-10-24. [m] REQUIRED.
   Check_Step: 0.001
+  # The smallest distance from the robot, the tool and the carried PCB to the loader (its carriages and jaws, and
+  # the PCB they hold) in every free-space transfer (Optimization.yaml Free_Segments of the taught program, the
+  # optimized program's MoveSpline segments); the work at the loader (the handover, the take) keeps Robot.
+  # The loader is posed where its actuator model puts it (the 30 ms filter, the servo, the axis mass), not at its
+  # command. Source: owner, 2026-10-24: more room around the loader in free transfers. [m] REQUIRED.
+  Loader_Free: 0.010
+  # Added to Loader_Free for the kinematic checks and the planner: the robot's largest deviation from its
+  # reference in the free transfers in physics, 2.51 mm (the optimized S13_To_Output), plus the loader actuator
+  # model's error against physics, 1.04 mm (z; y 0.17 mm); measured F11, 2026-10-25; rounded up. [m] REQUIRED.
+  Tracking_Margin: 0.004
 
 # The handover's no-press rule (SPEC §4.7): the PCB is put into the open jaws at the hold pose without
 # pressing it onto the finger ledges, so the jaws do not clamp on the ledge corners.

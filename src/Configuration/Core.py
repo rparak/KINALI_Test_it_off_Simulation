@@ -332,6 +332,10 @@ class Cell_Configuration_Str:
     # The segment check: the largest move of a robot or PCB point between two checked samples.
     #   Unit [float] (m)
     Check_Step: float = 0.0
+    # The free transfers' clearance to the loader, and the margin the kinematic checks and the planner add to it (F11).
+    #   Unit [float] (m)
+    Loader_Free: float = 0.0
+    Tracking_Margin: float = 0.0
     # The handover's no-press rule: the PCB-ledge gap and its tolerance.
     #   Unit [float] (m)
     Ledge_Gap: float = 0.0
@@ -648,7 +652,7 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     vacuum = r.Mapping(root, ('Vacuum',), ('Pressure', 'Cup_Diameter'))
     mg06 = r.Mapping(root, ('MG06',), ('Closed_Lid', 'Closed_Handle', 'Open_Join_Margin'))
     clearance = r.Mapping(root, ('Clearance',), ('Robot', 'Allowed_Depth', 'Stale_Position', 'Stale_Angle', 'Family_Margin',
-                                                 'Check_Step'))
+                                                 'Check_Step', 'Loader_Free', 'Tracking_Margin'))
     handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance'))
     motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration'))
     process = r.Mapping(root, ('Process',), CONST_PROCESS_KEYS)
@@ -685,6 +689,8 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Test_Duration=r.Number(process, ('Process', 'Test_Duration'), 0.0, 600.0),
         Open_Join_Margin=math.radians(r.Number(mg06, ('MG06', 'Open_Join_Margin'), 0.0, 5.0)),
         Check_Step=r.Number(clearance, ('Clearance', 'Check_Step'), 1e-5, 0.01),
+        Loader_Free=r.Number(clearance, ('Clearance', 'Loader_Free'), 1e-4, 0.1),
+        Tracking_Margin=r.Number(clearance, ('Clearance', 'Tracking_Margin'), 0.0, 0.05),
         Ledge_Gap=r.Number(handover, ('Handover', 'Ledge_Gap'), 0.0, 0.005),
         Ledge_Tolerance=r.Number(handover, ('Handover', 'Ledge_Tolerance'), 1e-6, 0.005))
     _Finish(r, path)

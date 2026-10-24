@@ -32,10 +32,12 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Program/Core
-from Program.Core import Build_Program, Check_Trajectory, Format_Check_Report, Movej_Duration, Program_Error_Cls, Pose_Sample, Validate_Constants
+from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Movej_Duration, Program_Error_Cls, Pose_Sample, Validate_Constants,
+                          Loader_Actual, Loader_Actual_Trajectory)
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core
 from Configuration.Core import Read_PCB_Meta, CONST_PCB_LOCATIONS, CONST_FORK_PATH
-from Configuration.Program_Parser import Program_Str, Segment_Str, Parse_Commands, Load_Constants, Load_Simulation, CONST_CONSTANTS_YAML
+from Configuration.Program_Parser import (Program_Str, Segment_Str, Parse_Commands, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps,
+                                          CONST_CONSTANTS_YAML)
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP
 from Trajectory.Core import Write_Trajectory
@@ -71,7 +73,8 @@ def built(program, cell_configuration, tools):
 @pytest.fixture(scope='module')
 def checked(built, program, cell_configuration, tools):
     kinematics, meta, collision = tools
-    return Check_Trajectory(built[0], program, built[1], kinematics, collision, cell_configuration, meta)
+    free = Free_Steps(program, Load_Optimization(program))
+    return Check_Trajectory(built[0], program, built[1], kinematics, collision, cell_configuration, meta, free)
 
 
 def _Probe(lines, constants, simulation, cell, start='P_HOME', pcb='input_crate', allow=(), loader_jobs=None, tester_jobs=None):
@@ -574,3 +577,87 @@ def test_the_optimized_splines_run_within_the_limits(constants, simulation, cell
         assert float(np.max(np.abs(trajectory.Robot_QD[first:end]))) > 0.1
         target = next(c for s in optimized.Segments for c in s.Commands if c.Text == trajectory.Segment_Command[k])
         assert np.array_equal(trajectory.Robot_Q[end - 1], np.array(constants.Points[target.Path_End].Joints))
+
+
+def test_the_free_steps_are_the_taught_list_and_the_optimized_splines(program, cell_configuration):
+    """
+    Description:
+        F11: Free_Steps gives the taught program's Optimization.yaml Free_Segments (8), the optimized program's MoveSpline
+        segments (6), none for a taught program without its settings.
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_OPTIMIZED_PROGRAM_YAML
+    assert Free_Steps(program, Load_Optimization(program)) == {'S1_Approach_Input', 'S3_To_Loader', 'S5_Home_After_Handover', 'S8_To_MG06',
+                                                               'S14_Home_After_MG06', 'S17_To_Take', 'S19_To_Output', 'S21_Home_End'}
+    assert Free_Steps(program) == set()
+    optimized = Load_Program(program.Constants, program.Simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
+    assert Free_Steps(optimized) == {'S1_Approach_Input', 'S3_To_Loader', 'S5_To_MG06', 'S11_To_Take', 'S13_To_Output', 'S15_Home_End'}
+
+
+def test_the_free_transfers_keep_the_loader_clearance(checked, built, program, cell_configuration, tools):
+    """
+    Description:
+        F11: in the taught program's free transfers the robot and the carried PCB keep Loader_Free + Tracking_Margin (14 mm) from
+        the loader where its actuators put it: S3_To_Loader 20.59 mm (the PCB / z_carriage), the others beyond the 50 mm cut;
+        with Loader_Free 20 mm S3_To_Loader fails naming the pair, the sample and the rule, and only it.
+    """
+
+    loader = {s.Name: s.Loader for s in checked.Steps if s.Loader is not None}
+    assert set(loader) == Free_Steps(program, Load_Optimization(program))
+    assert loader['S3_To_Loader'].Pair == 'pcb / z_carriage' and loader['S3_To_Loader'].Distance == pytest.approx(0.02059, abs=0.00001)
+    assert all(found.Sample == -1 for name, found in loader.items() if name != 'S3_To_Loader')
+    kinematics, meta, collision = tools
+    strict = dataclasses.replace(cell_configuration, Loader_Free=0.02)
+    result = Check_Trajectory(built[0], program, built[1], kinematics, collision, strict, meta, {'S3_To_Loader', 'S19_To_Output'})
+    failed = {s.Name: s.Failures for s in result.Steps if s.Failures}
+    assert list(failed) == ['S3_To_Loader'] and failed['S3_To_Loader'][0].startswith('pcb / z_carriage 20.59 mm from the loader at sample 1399 '
+                                                                                     '(5.596 s), the loader at its actuator model')
+    assert failed['S3_To_Loader'][0].endswith('a free transfer keeps Clearance.Loader_Free 20.0 mm + Tracking_Margin 4.0 mm')
+
+
+def test_the_loader_actuator_model_lags_and_settles(built, tools):
+    """
+    Description:
+        F11: Loader_Actual follows the commands through the model's actuators: equal at the start; during J_INSERT's y move
+        behind the command by up to tens of millimetres (the physics run's loader lag is 22.6 mm); settled in the test wait (y
+        within 0.01 mm, z within its gravity droop, load / kp, 0.44 mm); the PCB in the jaws moves with it (Loader_Actual_Trajectory).
+    """
+
+    kinematics = tools[0]
+    tr = built[0]
+    y, z = Loader_Actual(tr, kinematics.Model)
+    assert y[0] == tr.Loader_Y[0] and z[0] == tr.Loader_Z[0]
+    lag = np.abs(y - tr.Loader_Y)
+    assert 0.01 < float(np.max(lag)) < 0.03
+    settled = np.flatnonzero(tr.T > 30.0)[:10]
+    assert np.all(lag[settled] < 1e-5) and np.all(np.abs(z - tr.Loader_Z)[settled] < 0.0005)
+    actual = Loader_Actual_Trajectory(tr, kinematics.Model)
+    jaws = np.flatnonzero(tr.PCB_Location == CONST_PCB_LOCATIONS.index('jaws'))
+    i = jaws[np.argmax(lag[jaws])]
+    assert actual.PCB_Pose[i, 1] - tr.PCB_Pose[i, 1] == pytest.approx(y[i] - tr.Loader_Y[i], abs=1e-12)
+    assert np.array_equal(actual.Robot_Q, tr.Robot_Q)
+
+
+@pytest.mark.slow
+def test_the_loader_actuator_model_matches_the_physics(built, program, cell_configuration):
+    """
+    Description:
+        F11: over the taught program's first 21 s (J_INSERT and J_PARK) the loader in physics is within 0.5 mm (y) and 1.1 mm
+        (z) of Loader_Actual (measured 0.17 mm / 1.04 mm on the optimized program, 2026-10-25), where its command is up to
+        22.6 mm off.
+    """
+
+    from Scene.Core import Build_Cell_Model
+    from Simulation.Core import Trajectory_Drive_Cls, Physics_Run_Cls
+    tr = built[0]
+    model = Build_Cell_Model(cell_configuration)
+    run = Physics_Run_Cls(model, Trajectory_Drive_Cls(tr, program), Read_PCB_Meta(), cell_configuration)
+    y, z = Loader_Actual(tr, model)
+    errors = []
+    while run.Data.time < 21.0:
+        run.Step()
+        i = int(round(run.Data.time / 0.004))
+        if abs(run.Data.time - i * 0.004) < 1e-9:
+            errors.append((abs(run.Data.qpos[run.qy] - y[i]), abs(run.Data.qpos[run.qz] - z[i]), abs(run.Data.qpos[run.qy] - tr.Loader_Y[i])))
+    e = np.array(errors)
+    assert e[:, 0].max() < 0.0005 and e[:, 1].max() < 0.0011 and e[:, 2].max() > 0.02, e.max(axis=0)

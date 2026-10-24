@@ -996,6 +996,38 @@ an input later than the build expected is reported as the wait failing. Counting
 Pinned by `test/Simulation/test_core.py::test_the_vacuum_switch_fails_a_waitdi_whose_input_has_not_come`,
 `::test_a_program_run_fails_exactly_its_new_criterion` and `::test_the_old_take_loses_the_board_at_the_release`.
 
+## The free transfers keep 10 mm from the loader where its actuators put it (F11)
+
+**Decision.** In every free transfer of both programs (the taught program's `Free_Segments`, the optimized program's splines)
+the robot and the carried PCB keep `Cell.yaml Clearance.Loader_Free` (10 mm, owner) plus `Tracking_Margin` (4 mm) from the
+loader's carriages and jaws and the PCB in them, at every sample, with the loader posed by `Program.Core.Loader_Actual` (the
+model's actuator: filter, servo, axis mass, damping and gravity load) instead of its command. The planner's validity has the
+same rule against the static scene, `Delay` and I8 against the moving loader. `P_LOADER_WAIT` moved from 25 to 50 mm above
+`P_LOADER_ABOVE` along the tool axis. The taught vias stay: the taught transfers already keep 20.6 mm (S3_To_Loader) and more
+than 50 mm (the others).
+
+**Why.** Physics showed the optimized take's robot 0.51 mm from the z carriage where the kinematic check, with the loader at its
+command, measured 4.28 mm: the command leads the real loader by up to 22.8 mm. The actuator model reproduces physics within
+0.17 mm (y) and 1.04 mm (z); a first-order filter alone was 9.6 mm off. The margin covers the robot's largest deviation from its
+reference in the free transfers (2.51 mm) and the model's error (1.04 mm), rounded up.
+
+**Measured (2026-10-25).** The waiting point's distance to the loader's swept volume (J_FETCH + J_RETURN): 25 mm -> 5.32 mm,
+30 -> 10.04, 35 -> 14.90, 40 -> 19.80, 45 -> 24.72, 50 -> 29.64, 60 -> 39.50 mm, 80 mm and more beyond 50 mm. The optimized
+program's free transfers before -> after: S3_To_Loader 5.41 -> 16.85 mm, S11_To_Take 0.47 -> 19.39 mm, S13_To_Output 4.87 ->
+16.51 mm; cycle 57.652 -> 57.708 s (To_Loader +0.024 s, To_Output +0.032 s, To_Take 0 s: its last leg 0.304 -> 0.432 s, its
+wait 1.660 -> 1.648 s - the loader is the critical path).
+
+**Alternatives.** The command as the loader's position plus a larger margin: 22.8 mm of lag would make it ~25 mm everywhere.
+A first-order lag (the owner's first reading of the 30 ms): 9.6 mm off. Raising the taught vias: not needed.
+
+**Revisit if** the loader's masses or servo gains change (the model reads them from the compiled cell), or the real loader's
+response is measured.
+
+Pinned by `test/Program/test_core.py::test_the_free_transfers_keep_the_loader_clearance`,
+`::test_the_loader_actuator_model_lags_and_settles`, `::test_the_loader_actuator_model_matches_the_physics` (slow),
+`test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_and_the_tilt` and
+`::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`.
+
 ## The golden data is captured in the current names by one tool (F11)
 
 **Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;

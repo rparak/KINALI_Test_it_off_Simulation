@@ -1,5 +1,5 @@
 {
- "source": "Example/Program/golden_program.py, 2026-10-24, on the program of F11's take fix (P_LOADER_TAKE_TOUCH, the second WaitDI); first capture in the current names (F10's name map retired)",
+ "source": "Example/Program/golden_program.py, 2026-10-25: F11's take fix (P_LOADER_TAKE_TOUCH, the second WaitDI), then the free transfers' loader clearance in the check report (the arrays, commands and point table unchanged); in the current names (F10's name map retired)",
  "cycle_time": 69.396,
  "samples": 17350,
  "arrays": {

@@ -187,6 +187,15 @@ The take is not re-taught to it (owner): with the press relieved before the jaws
 - **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
   the whole edge.
 
+## The loader's actuator model is one load case
+
+`Program.Core.Loader_Actual` (the kinematic checks' loader, F11) takes each axis' mass and gravity load at the trajectory's
+start; in physics the z load changes with the PCB in the jaws and the jaws' contacts, which leaves up to 1.04 mm (y 0.17 mm),
+measured on the optimized program 2026-10-25. `Clearance.Tracking_Margin` covers it.
+
+- **Impact:** a free transfer measured within about 1 mm of the rule may be closer in physics.
+- **What would close it:** the load per sample (the PCB's location), if a margin of 1 mm ever matters.
+
 ## Simplifications of the model
 
 What the simulation does not model; whoever compares it with the real cell checks these first.

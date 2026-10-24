@@ -1,7 +1,9 @@
 program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10729 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
+free transfers to the loader (every sample, the loader at its actuator model's position): at least Loader_Free 10.0 mm + Tracking_Margin 4.0 mm, pairs up to 50 mm
 step                  start s   dur s    peak v / a (recorded path) verdict
 S1_Approach_Input       0.000   1.264  0.642 / 1.000                 PASS
     not allowed  10.00 mm at 0 (0.000 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 S2_Pick_Input           1.264   3.924  0.257 / 0.436                 PASS
     cups_pcb     -1.48 mm at 894 (3.576 s) aubo/tool/cup1 / pcb_comp
     pcb_crate    -0.00 mm at 933 (3.732 s) pcb_rear_r / crate_pick_0
@@ -9,18 +11,21 @@ S2_Pick_Input           1.264   3.924  0.257 / 0.436                 PASS
 S3_To_Loader            5.188   1.836  0.534 / 1.003                 PASS
     cups_pcb     0.00 mm at 1306 (5.224 s) aubo/tool/cup0 / pcb_comp
     not allowed  10.00 mm at 1306 (5.224 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       20.59 mm at 1399 (5.596 s) pcb / z_carriage
 S4_Handover             7.024   4.592  0.252 / 0.376                 PASS
     cups_pcb     0.00 mm at 1773 (7.092 s) aubo/tool/cup0 / pcb_comp
     pcb_jaws     0.20 mm at 2416 (9.664 s) pcb_board / jaw_L
     not allowed  8.35 mm at 2416 (9.664 s) aubo/tool/ee_tool / jaw_L
 S5_Home_After_Handover   11.616   1.496  0.632 / 0.999                 PASS
     not allowed  10.00 mm at 2916 (11.664 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 S6_Loader_Insert       13.112   3.948  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 3300 (13.200 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S7_Loader_Park         17.060   3.252  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 4293 (17.172 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S8_To_MG06             20.312   3.448  0.991 / 0.999                 PASS
     not allowed  10.00 mm at 5087 (20.348 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 S9_Close_MG06          23.760   7.072  0.034 / 0.056   (0.26 / 2.03) PASS
     handle_bar   -0.54 mm at 6504 (26.016 s) aubo/tool/ee_tool / handle_bar
     not allowed  10.00 mm at 6078 (24.312 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
@@ -35,12 +40,14 @@ S13_Open_MG06          37.448   5.424  0.011 / 0.045   (0.26 / 2.03) PASS
     not allowed  10.00 mm at 9387 (37.548 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S14_Home_After_MG06    42.872   3.448  0.991 / 0.999                 PASS
     not allowed  10.00 mm at 10726 (42.904 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 S15_Loader_Fetch       46.320   4.048  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 11599 (46.396 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S16_Loader_Return      50.368   3.600  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 12626 (50.504 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S17_To_Take            53.968   1.496  0.632 / 0.999                 PASS
     not allowed  10.00 mm at 13504 (54.016 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 S18_Take_From_Loader   55.464   6.136  0.250 / 0.421                 PASS
     cups_pcb     -1.48 mm at 14463 (57.852 s) aubo/tool/cup0 / pcb_comp
     pcb_jaws     0.20 mm at 14688 (58.752 s) pcb_board / jaw_R
@@ -48,12 +55,14 @@ S18_Take_From_Loader   55.464   6.136  0.250 / 0.421                 PASS
 S19_To_Output          61.600   2.556  0.780 / 0.999                 PASS
     cups_pcb     0.00 mm at 15412 (61.648 s) aubo/tool/cup0 / pcb_comp
     not allowed  8.13 mm at 15971 (63.884 s) pcb_board / crate_place_1
+    loader       > 50 mm
 S20_Place_Output       64.156   3.344  0.307 / 0.538                 PASS
     cups_pcb     0.00 mm at 16053 (64.212 s) aubo/tool/cup0 / pcb_comp
     pcb_crate    1.02 mm at 16518 (66.072 s) pcb_board / crate_place_0
     not allowed  9.42 mm at 16518 (66.072 s) aubo/tool/cup1 / crate_place_0
 S21_Home_End           67.500   1.100  0.739 / 1.002                 PASS
     not allowed  10.00 mm at 16885 (67.540 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    loader       > 50 mm
 End_Settle             68.600   0.800  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 17349 (69.396 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE min 0.318 mm, at it 0.318 mm, while clamped 0.318 .. 0.318 mm: PASS

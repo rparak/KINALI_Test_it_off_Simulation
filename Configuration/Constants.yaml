@@ -100,12 +100,12 @@ Points:
     Joints: [-21.315111, 10.864292, 102.705812, -1.774282, 81.818434, -66.056436]
     Pose: [0.290676286, -0.298017549, 0.153784869, -171.060031328, 0.000065844, 135.000014831]
   P_LOADER_WAIT:
-    Description: "25 mm farther out along the plate normal: where the optimized program waits while the loader fetches and returns (F9.8)."
+    Description: "50 mm farther out along the plate normal: where the optimized program waits while the loader fetches and returns (F9.8; F11: >= 29.6 mm from its swept volume)."
     Tool: T_SUCTION
     Reference: P_LOADER_ABOVE
-    Offset: [0.0, 0.0, -0.0250]
-    Joints: [-20.808378, 10.788910, 98.862397, -5.614844, 81.850705, -65.545558]
-    Pose: [0.293422556, -0.295269954, 0.178479151, -171.060038937, 0.000098276, 135.000020926]
+    Offset: [0.0, 0.0, -0.0500]
+    Joints: [-20.304329, 10.479539, 94.823328, -9.416420, 81.883446, -65.037464]
+    Pose: [0.296169612, -0.292522836, 0.203175326, -171.060039754, 0.000100301, 135.000021227]
   P_LOADER_APPROACH:
     Description: "15 mm along the plate normal above the hold pose."
     Tool: T_SUCTION

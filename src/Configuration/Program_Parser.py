@@ -1550,6 +1550,25 @@ class Optimization_Str:
     Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
 
 
+def Free_Steps(program: Program_Str, optimization: tp.Optional['Optimization_Str'] = None) -> tp.Set[str]:
+    """
+    Description:
+        The free-space transfers of a program, where Cell.yaml Clearance.Loader_Free applies (F11): an optimized program's
+        segments with a MoveSpline; a taught program's Optimization.yaml Free_Segments (none without its settings).
+
+    Args:
+        (1) program [Program_Str(object)]: The program.
+        (2) optimization [Optimization_Str(object)]: The settings loaded for the taught program, or None.
+
+    Returns:
+        (1) parameter [Set<string>]: The segment keys.
+    """
+
+    if program.Optimized is not None:
+        return {s.Key for s in program.Segments if any(c.Kind == 'MoveSpline' for c in s.Commands)}
+    return set(optimization.Free_Segments) if optimization is not None else set()
+
+
 def Load_Optimization(program: Program_Str, path: str = CONST_OPTIMIZATION_YAML) -> Optimization_Str:
     """
     Description:

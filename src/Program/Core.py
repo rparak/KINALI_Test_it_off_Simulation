@@ -28,6 +28,7 @@ import hashlib
 # Typing (Support for type hints)
 import typing as tp
 # Dataclasses (Data Classes)
+import dataclasses
 from dataclasses import dataclass, field
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
@@ -48,8 +49,8 @@ from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, PCB_For_
 from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Group, Check_Keypoint, Keypoint_Check_Str, Point_Pose, Base_Pose,
                             Target_Pose, CONST_WRIST_2, CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX, CONST_POSE_POSITION, CONST_POSE_ANGLE,
                             CONST_TOOL_POSITION, CONST_TOOL_ANGLE)
-#   ../Collision/Core - exact distances
-from Collision.Core import Robot_Collision_Cls
+#   ../Collision/Core - exact distances, the loader's bodies
+from Collision.Core import Robot_Collision_Cls, CONST_LOADER_BODIES
 #   ../Scene/Core - the cup block
 from Scene.Core import Cup_Block_Geom
 #   ../Trajectory/Core - the trajectory format
@@ -110,6 +111,10 @@ CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'P_LOADER_PLACE', math.radians(45.0
 # Signal_Response); a WaitDI waits what is left of that time, nothing when it has passed (F11).
 #   Unit [Dict<string, string>]
 CONST_INPUT_CAUSE = {'DI_VACUUM_OK': 'DO_VACUUM'}
+# The loader's axes and their actuators in the model (the actuator model, Loader_Actual), and the distance up to which a
+# robot-loader pair is measured (Robot_Loader_Distance).
+#   Unit [Tuple<Tuple<string>>], [float] (m)
+CONST_LOADER_AXES, CONST_LOADER_CUT = (('y_axis', 'y_servo'), ('z_axis', 'z_servo')), 0.05
 # The step the simulation appends after the program's last segment (Simulation.yaml End_Settle).
 #   Unit [string]
 CONST_END_SETTLE = 'End_Settle'
@@ -1036,6 +1041,109 @@ def Pose_Sample(kinematics: Robot_Kinematics_Cls, trajectory: Trajectory_Str, i:
     mujoco.mj_kinematics(model, d)
 
 
+def Loader_Actual(trajectory: Trajectory_Str, model: mujoco.MjModel) -> tp.Tuple[np.ndarray, np.ndarray]:
+    """
+    Description:
+        Where the loader's axes are along a trajectory (F11): their commands through the model's actuators - the filter
+        (act' = (u - act) / tau), the position servo (kp (act - q) - kv q'), the axis' damping, its mass and its gravity load at
+        the start - stepped at the model's timestep with the command linear between samples. Against the physics run of the
+        optimized program (2026-10-25) within 0.17 mm (y) and 1.04 mm (z, its load changes with the PCB); the command alone
+        is up to 22.8 mm off, a first-order filter alone 9.6 mm.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) model [mujoco.MjModel]: The model (its actuators, masses and timestep).
+
+    Returns:
+        (1 - 2) parameter [Vector<float> n]: y, z per sample (m).
+    """
+
+    data = mujoco.MjData(model)
+    data.qpos[model.jnt_qposadr[model.joint('y_axis').id]] = trajectory.Loader_Y[0]
+    data.qpos[model.jnt_qposadr[model.joint('z_axis').id]] = trajectory.Loader_Z[0]
+    mujoco.mj_forward(model, data)
+    h = model.opt.timestep
+    sub = int(round(CONST_DT / h))
+    out = []
+    for (joint, actuator), command in zip(CONST_LOADER_AXES, (trajectory.Loader_Y, trajectory.Loader_Z)):
+        dof, a = model.jnt_dofadr[model.joint(joint).id], model.actuator(actuator).id
+        unit, row = np.zeros(model.nv), np.zeros(model.nv)
+        unit[dof] = 1.0
+        mujoco.mj_mulM(model, data, row, unit)
+        mass, load = row[dof], data.qfrc_bias[dof]
+        kp, kv, tau = model.actuator_gainprm[a][0], -model.actuator_biasprm[a][2], model.actuator_dynprm[a][0]
+        damping = model.dof_damping[dof]
+        q, v, act = float(command[0]), 0.0, float(command[0])
+        axis = np.empty(len(command))
+        axis[0] = q
+        for i in range(1, len(command)):
+            for k in range(sub):
+                u = command[i - 1] + (command[i] - command[i - 1]) * (k / sub)
+                force = kp * (act - q) - (kv + damping) * v - load
+                act += h * (u - act) / tau
+                v += h * force / mass
+                q += h * v
+            axis[i] = q
+        out.append(axis)
+    return out[0], out[1]
+
+
+def Loader_Actual_Trajectory(trajectory: Trajectory_Str, model: mujoco.MjModel) -> Trajectory_Str:
+    """
+    Description:
+        The trajectory with the loader where its actuators put it (Loader_Actual) and the PCB in its jaws moved with it (F11).
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) model [mujoco.MjModel]: The model.
+
+    Returns:
+        (1) parameter [Trajectory_Str(object)]: A copy with Loader_Y, Loader_Z and PCB_Pose replaced.
+    """
+
+    y, z = Loader_Actual(trajectory, model)
+    pcb = trajectory.PCB_Pose.copy()
+    jaws = trajectory.PCB_Location == CONST_PCB_LOCATIONS.index('jaws')
+    pcb[jaws, 1] += (y - trajectory.Loader_Y)[jaws]
+    pcb[jaws, 2] += (z - trajectory.Loader_Z)[jaws]
+    return dataclasses.replace(trajectory, Loader_Y=y, Loader_Z=z, PCB_Pose=pcb)
+
+
+def Robot_Loader_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls,
+                          samples: tp.Iterable[int]) -> tp.Tuple[float, int, str]:
+    """
+    Description:
+        The smallest exact distance between the robot (with the PCB it carries) and the loader (its carriages and jaws, with
+        the PCB they hold) over samples (I8, Clearance.Loader_Free).
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory (Loader_Actual_Trajectory for the loader's real position).
+        (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
+        (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (4) samples [List<int>]: The samples.
+
+    Returns:
+        (1) parameter [float]: The distance (m), CONST_LOADER_CUT when nothing is closer.
+        (2) parameter [int]: Its sample (-1 when none).
+        (3) parameter [string]: The pair.
+    """
+
+    model, data = kinematics.Model, kinematics.Data
+    robot, pcb = collision.Robot_Bodies, model.body('pcb').id
+    loader = {model.body(name).id for name in CONST_LOADER_BODIES}
+    best = (CONST_LOADER_CUT, -1, '')
+    for i in samples:
+        Pose_Sample(kinematics, trajectory, i)
+        location = CONST_PCB_LOCATIONS[trajectory.PCB_Location[i]]
+        mine = robot | ({pcb} if location == 'cups' else set())
+        theirs = loader | ({pcb} if location == 'jaws' else set())
+        others = set(range(model.nbody)) - theirs
+        for distance, body_1, body_2, _, _ in collision.Close_Pairs(mine, CONST_LOADER_CUT, data, exclude=others):
+            if distance < best[0]:
+                best = (distance, i, '%s / %s' % (body_1, body_2))
+    return best
+
+
 @dataclass
 class Group_Distance_Str:
     """
@@ -1083,6 +1191,9 @@ class Step_Check_Str:
     # The samples measured exactly.
     #   Unit [int]
     Checked: int = 0
+    # A free transfer's closest pair to the loader, the loader at its actuator model's position (F11), or None.
+    #   Unit [Group_Distance_Str(object)]
+    Loader: tp.Optional[Group_Distance_Str] = None
     # Every failed rule, as a sentence.
     #   Unit [List<string>]
     Failures: tp.List[str] = field(default_factory=list)
@@ -1192,7 +1303,8 @@ def _Peaks(trajectory: Trajectory_Str, first: int, last: int, cell: Cell_Configu
 
 
 def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp.List[Build_Note_Str], kinematics: Robot_Kinematics_Cls,
-                     collision: Robot_Collision_Cls, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str) -> Program_Check_Str:
+                     collision: Robot_Collision_Cls, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str,
+                     free_steps: tp.Optional[tp.Set[str]] = None) -> Program_Check_Str:
     """
     Description:
         The check of a program's trajectory (FEATURES.md F8), on the planning model (the table included):
@@ -1206,7 +1318,10 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
           rounding to whole samples) and MoveL within the Cell.yaml limits; the recorded paths' peaks reported, not limited;
         - the handover's no-press rule (B1): the PCB-ledge gap within Handover.Ledge_Gap +- Ledge_Tolerance at
           P_LOADER_PLACE and while the jaws clamp the PCB on the cups, and no smaller along the MoveL into it;
-        - the keypoint check of every keypoint the program uses (stale, Check, limits, clearance in its context).
+        - the keypoint check of every keypoint the program uses (stale, Check, limits, clearance in its context);
+        - in each free transfer (free_steps, Configuration.Program_Parser.Free_Steps; F11), every sample: the robot and the
+          carried PCB keep Clearance.Loader_Free + Tracking_Margin from the loader and the PCB in its jaws, the loader posed
+          where its actuators put it (Loader_Actual_Trajectory).
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The built trajectory.
@@ -1216,6 +1331,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         (5) collision [Robot_Collision_Cls(object)]: On the same model and data.
         (6) cell [Cell_Configuration_Str(object)]: The clearance, the depths, the limits, the handover gap.
         (7) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+        (8) free_steps [Set<string>]: The free transfers' segment keys (none: no loader rule).
 
     Returns:
         (1) parameter [Program_Check_Str(object)]: The result.
@@ -1348,6 +1464,18 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
     start = program.Simulation.Start_Robot
     used = [start] + [n for n in used if n != start]
     result.Keypoints = [Check_Keypoint(name, kinematics, collision, program.Constants, program.Simulation, cell, pcb_meta) for name in used]
+    # F11: the free transfers' room around the loader, the loader where its actuators put it.
+    if free_steps:
+        actual, need = Loader_Actual_Trajectory(tr, model), cell.Loader_Free + cell.Tracking_Margin
+        for step_index, check in enumerate(result.Steps):
+            if check.Name not in free_steps:
+                continue
+            distance, i, pair = Robot_Loader_Distance(actual, kinematics, collision, np.flatnonzero(tr.Step_Index == step_index))
+            check.Loader = Group_Distance_Str(Group='loader', Distance=distance, Sample=i, Time=float(tr.T[i]) if i >= 0 else 0.0, Pair=pair)
+            if distance < need:
+                check.Failures.append('%s %.2f mm from the loader at sample %d (%.3f s), the loader at its actuator model\'s position; a free '
+                                      'transfer keeps Clearance.Loader_Free %.1f mm + Tracking_Margin %.1f mm'
+                                      % (pair, 1000 * distance, i, tr.T[i], 1000 * cell.Loader_Free, 1000 * cell.Tracking_Margin))
     for check in result.Steps:
         check.Verdict = 'FAIL' if check.Failures else 'PASS'
     failed = any(c.Failures for c in result.Steps) or (result.Handover is not None and result.Handover.Failures) \
@@ -1356,20 +1484,21 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
     return result
 
 
-def _Distance_Text(found: tp.Optional[Group_Distance_Str]) -> str:
+def _Distance_Text(found: tp.Optional[Group_Distance_Str], cut: float = CONST_REPORT_CUT) -> str:
     """
     Description:
         A closest pair as report text: '-1.48 mm at 819 (3.276 s) aubo/tool/cup1 / pcb_comp', or '> 10 mm'.
 
     Args:
         (1) found [Group_Distance_Str(object)]: The pair, or None.
+        (2) cut [float]: The distance pairs were measured up to (m).
 
     Returns:
         (1) parameter [string]: The text.
     """
 
     if found is None:
-        return '> %g mm' % (1000 * CONST_REPORT_CUT)
+        return '> %g mm' % (1000 * cut)
     return '%.2f mm at %d (%.3f s) %s' % (1000 * found.Distance, found.Sample, found.Time, found.Pair)
 
 
@@ -1393,14 +1522,19 @@ def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, c
 
     lines = ['program %s: %d steps, %d samples (4 ms), cycle time %.3f s; %d samples measured exactly (clearance %.1f mm, pairs '
              'reported up to %g mm)' % (result.Program, len(result.Steps), len(trajectory.T), result.Cycle_Time, result.Checked,
-                                         1000 * cell.Clearance, 1000 * CONST_REPORT_CUT),
-             '%-20s %8s %7s %13s %15s %s' % ('step', 'start s', 'dur s', 'peak v / a', '(recorded path)', 'verdict')]
+                                         1000 * cell.Clearance, 1000 * CONST_REPORT_CUT)]
+    if any(s.Loader is not None for s in result.Steps):
+        lines.append('free transfers to the loader (every sample, the loader at its actuator model\'s position): at least Loader_Free %.1f mm + '
+                     'Tracking_Margin %.1f mm, pairs up to %g mm' % (1000 * cell.Loader_Free, 1000 * cell.Tracking_Margin, 1000 * CONST_LOADER_CUT))
+    lines.append('%-20s %8s %7s %13s %15s %s' % ('step', 'start s', 'dur s', 'peak v / a', '(recorded path)', 'verdict'))
     for s in result.Steps:
         path = '(%.2f / %.2f)' % (s.Path_Speed, s.Path_Acceleration) if s.Path_Speed else ''
         lines.append('%-20s %8.3f %7.3f %6.3f / %.3f %15s %s' % (s.Name, s.Start, s.Duration, s.Peak_Speed, s.Peak_Acceleration, path, s.Verdict))
         for group, found in s.Allowed.items():
             lines.append('    %-12s %s' % (group, _Distance_Text(found)))
         lines.append('    %-12s %s' % ('not allowed', _Distance_Text(s.Closest)))
+        if s.Loader is not None:
+            lines.append('    %-12s %s' % ('loader', _Distance_Text(s.Loader if s.Loader.Sample >= 0 else None, CONST_LOADER_CUT)))
     if result.Handover is not None:
         h = result.Handover
         lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s min %.3f mm, at it '

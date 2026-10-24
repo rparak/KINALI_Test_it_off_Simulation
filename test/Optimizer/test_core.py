@@ -98,7 +98,7 @@ def test_a_changed_input_or_schedule_is_named(built):
     stale.Optimized.Inputs['cell'] = '0' * 64
     assert Stale_Inputs(stale, built['model']) == ['cell']
     stale.Optimized.Schedule['S6_Close_MG06'] += 0.5
-    assert Schedule_Differences(stale, built['trajectory']) == ['S6_Close_MG06: recorded 18.424 s, built 17.924 s']
+    assert Schedule_Differences(stale, built['trajectory']) == ['S6_Close_MG06: recorded 18.448 s, built 17.948 s']
 
 
 @pytest.mark.slow
@@ -106,15 +106,15 @@ def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_conf
     """
     Description:
         The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
-        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.652 s against
-        69.396 s, measured 2026-10-25 after F11's take fix).
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.708 s against
+        69.396 s, measured 2026-10-25 after F11's take fix and loader clearance).
     """
 
     check = Check_Trajectory(built['trajectory'], built['optimized'], built['notes'], built['kinematics'], built['collision'], cell_configuration,
                              built['meta'])
     assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
     assert built['trajectory'].T[-1] < built['default'].T[-1]
-    assert round(float(built['trajectory'].T[-1]), 3) == 57.652
+    assert round(float(built['trajectory'].T[-1]), 3) == 57.708
 
 
 def test_the_interlocks_hold(built, cell_configuration):
@@ -165,29 +165,33 @@ def test_a_locked_part_is_byte_identical_from_its_start(built, program, part):
 def test_the_carried_pcb_keeps_its_tilt_limit(built):
     """
     Description:
-        B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (20 deg): 8.94 deg
-        (To_Loader, P_LOADER_ABOVE's own tilt) and 17.73 deg (To_Output; Carry_Max_Tilt 20 deg), measured 2026-10-24.
+        B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (20 deg): 10.44 deg
+        (To_Loader, routed farther from the loader, F11) and 16.71 deg (To_Output; Carry_Max_Tilt 20 deg), measured 2026-10-25.
     """
 
     limit = built['optimization'].Carry_Max_Tilt
     tilts = {name: Carried_Tilt(built['trajectory'], *Step_Bounds(built['trajectory'], name)) for name in ('To_Loader', 'To_Output')}
     assert all(t <= limit for t in tilts.values())
-    assert round(math.degrees(tilts['To_Loader']), 2) == 8.94 and round(math.degrees(tilts['To_Output']), 2) == 17.73
+    assert round(math.degrees(tilts['To_Loader']), 2) == 10.44 and round(math.degrees(tilts['To_Output']), 2) == 16.71
 
 
 def test_the_free_space_keeps_the_clearance_and_the_tilt(built, cell_configuration, program):
     """
     Description:
         A transfer's validity: its end points valid at the first planner margin; the start of the carrying transfer tilted
-        beyond a stricter limit is invalid; a configuration inside the input crate is invalid.
+        beyond a stricter limit is invalid; a configuration inside the input crate is invalid; the end point (the PCB 160 mm
+        above the jaws) is valid with the loader clearance of Cell.yaml and invalid with 200 mm (F11).
     """
 
     transfers = Free_Transfers(program, built['optimization'], built['default'])
     carry = transfers[1]
     space = Free_Space_Cls(built['kinematics'], built['collision'], built['default'], carry, cell_configuration.Clearance,
-                           built['optimization'].Carry_Max_Tilt)
+                           built['optimization'].Carry_Max_Tilt, cell_configuration.Loader_Free + cell_configuration.Tracking_Margin)
     end = np.array(built['optimized'].Constants.Points[carry.End].Joints)
     assert space.Valid(end, built['optimization'].Margins[0])
+    wide = Free_Space_Cls(built['kinematics'], built['collision'], built['default'], carry, cell_configuration.Clearance,
+                          built['optimization'].Carry_Max_Tilt, 0.2)
+    assert not wide.Valid(end, 0.0)
     strict = Free_Space_Cls(built['kinematics'], built['collision'], built['default'], carry, cell_configuration.Clearance, math.radians(5.0))
     assert not strict.Valid(end, 0.0)
     pick = np.array(built['optimized'].Constants.Points['P_INPUT_PICK'].Joints)
@@ -211,12 +215,13 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(built, cell_co
     """
     Description:
         G (F9.8): To_Take's first leg starts in the sample after Open_MG06 ends, together with J_FETCH (I6 still holds), so the
-        robot never waits above MG06; it waits at P_LOADER_WAIT, which keeps more than the clearance from the loader and the
-        PCB in its jaws at every sample of J_FETCH and J_RETURN with the robot standing there (4.92 mm, measured 2026-10-24);
+        robot never waits above MG06; it waits at P_LOADER_WAIT, which keeps more than Clearance.Loader_Free + Tracking_Margin
+        (14 mm) from the loader and the PCB in its jaws - posed where its actuators put them (F11) - at every sample of J_FETCH and
+        J_RETURN with the robot standing there (29.64 mm, measured 2026-10-25);
         its last leg ends at P_LOADER_ABOVE before the loader is home, so Take_From_Loader starts when J_RETURN ends.
     """
 
-    from Optimizer.Core import Robot_Loader_Distance, Job_Bounds
+    from Optimizer.Core import Robot_Loader_Distance, Job_Bounds, Loader_Actual_Trajectory
     import mujoco
     tr, kinematics, collision = built['trajectory'], built['kinematics'], built['collision']
     texts = tr.Segment_Command
@@ -225,11 +230,11 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(built, cell_co
     assert int(tr.Segment_Start[leg]) == opened + 1 == Job_Bounds(tr, 'J_FETCH')[0]
     wait = np.array(built['optimized'].Constants.Points['P_LOADER_WAIT'].Joints)
     first, last = Job_Bounds(tr, 'J_FETCH')[0], Job_Bounds(tr, 'J_RETURN')[1]
-    standing = copy.deepcopy(tr)
+    standing = Loader_Actual_Trajectory(tr, kinematics.Model)
     standing.Robot_Q = np.array(tr.Robot_Q)
     standing.Robot_Q[first:last + 1] = wait
     distance, _, _ = Robot_Loader_Distance(standing, kinematics, collision, range(first, last + 1))
-    assert distance >= cell_configuration.Clearance and round(1000 * distance, 2) == 4.92
+    assert distance >= cell_configuration.Loader_Free + cell_configuration.Tracking_Margin and round(1000 * distance, 2) == 29.64
     final = texts.index('Robot.MoveSpline(W_TO_TAKE, v=0.6)')
     take, _ = Step_Bounds(tr, 'Take_From_Loader')
     assert int(tr.Segment_End[final]) <= Job_Bounds(tr, 'J_RETURN')[1] and take == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN)')])

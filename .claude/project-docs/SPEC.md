@@ -737,6 +737,14 @@ clamped, never smaller along the MoveL into it); the point check of every point 
 `Format_Check_Report` prints it. The loader moving in parallel is part of every measured sample's scene, so the check also
 measures the robot against the moving loader (I8).
 
+**Room around the loader** (F11, owner 2026-10-24): in every free transfer (`Configuration.Program_Parser.Free_Steps`: the taught
+program's `Optimization.yaml Free_Segments`, the optimized program's MoveSpline segments) the check measures every sample: the
+robot and the carried PCB keep `Clearance.Loader_Free` + `Tracking_Margin` (10 + 4 mm) from the loader's carriages and jaws and
+the PCB in them, the loader posed where its actuators put it (`Loader_Actual`: the 30 ms filter, the position servo, the axis'
+damping, mass and gravity load, stepped at the model's timestep - within 0.17 mm (y) and 1.04 mm (z) of physics, where the
+command is up to 22.8 mm off). The report gives each free transfer's closest loader pair. The work at the loader (the handover,
+the take) keeps `Clearance.Robot` (the pass above).
+
 ### 7.10 Planner
 
 Joint-space planning, independent of the cell (`src/Planner/Core.py`, numpy and scipy only; F9): `Spline_Path_Cls` (scipy
@@ -752,14 +760,15 @@ refitted by polyline midpoints), every random choice from the caller's seeded ge
 The optimized program (`src/Optimizer/Core.py`, F9). `Free_Transfers`: the FREE segments of `Optimization.yaml`, consecutive
 ones merged across segments that only run loader jobs (those jobs then run in parallel). `Free_Space_Cls`: a configuration's
 validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
-carried PCB (hung at the cup face) at least the clearance plus a margin from everything, the carried PCB's tilt at most
-`Carry_Max_Tilt` (B4). A transfer with a waiting point (`Optimization.yaml Waiting_Points`) has two legs: to the waiting point
+carried PCB (hung at the cup face) at least the clearance plus a margin from everything and `Loader_Free` + `Tracking_Margin`
+plus the margin from the loader and the PCB in its jaws (F11), the carried PCB's tilt at most `Carry_Max_Tilt` (B4). A transfer with a waiting point (`Optimization.yaml Waiting_Points`) has two legs: to the waiting point
 at once (after its first job's start), and on to its end at the slot and wait the search finds. `Plan_Transfer`: RRT-Connect
 (seed `Seed` + the transfer's index + 1000 x the leg) and the shortcut at the planner
 margin, the prune, the spline at `Spline.Margin`. `Optimize_Program`: plans every transfer at the first margin it can be
 planned with, writes the program (`Optimized_Text`: LOCKED segments verbatim from `Program.yaml`, renumbered; a transfer as
 `Loader.Start` / `Robot.MoveSpline` / `Loader.WaitDone` lines), loads, builds and checks it; a transfer that meets the loader
-(I8) moves its spline after a later job's start or waits longer (`Delay`: by the length of the meeting window), any other
+(I8: closer than `Loader_Free` + `Tracking_Margin` to the loader at its actuator model's position, F11) moves its spline after a
+later job's start or waits longer (`Delay`: by the length of the meeting window), any other
 failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I8 with their times), `Compare_Locked` (each
 LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
 planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
@@ -783,6 +792,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `Vacuum.Pressure`, `Vacuum.Cup_Diameter` (force derived) | Pa, m | VGC10 datasheet, §4.3 | `Scene` |
 | `MG06.Closed_Lid`, `MG06.Closed_Handle` | deg | §4.7 (`LID_CLOSED`, `H_CLOSED`) | posing, the keypoint check |
 | `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>` (four groups), `Stale_Position`, `Stale_Angle`, `Family_Margin`, `Check_Step` | m, deg | §2, the owner (0.5 mm), measured (F6), F8 | `Collision`, the keypoint and program checks |
+| `Clearance.Loader_Free` (0.010), `Tracking_Margin` (0.004) | m | the owner (F11, 2026-10-24); measured in physics (F11, 2026-10-25: the robot's 2.51 mm deviation in the free transfers + the loader model's 1.04 mm) | the program check's free transfers, the planner, `Delay`, I8 |
 | `MG06.Open_Join_Margin` | deg | the legacy planner (28.45°, §4.9) | `Robot.MovePath(PATH_FORK_OPEN)` |
 | `Handover.Ledge_Gap`, `Handover.Ledge_Tolerance` | m | §4.7, the owner (B1, F8) | the program check (no press at the handover) |
 | `Motion.Speed_Fraction` (MoveJ's default `v=`), `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |

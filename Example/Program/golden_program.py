@@ -44,7 +44,7 @@ import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core, ../Configuration/Program_Parser - the cell, the program
 from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls
-from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program
+from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program, Load_Optimization, Free_Steps
 #   ../Collision/Core, ../Kinematics/Core - the planning model
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Kinematics.Core import Robot_Kinematics_Cls
@@ -117,7 +117,8 @@ def Capture(source: str = '') -> tp.Dict[str, tp.Any]:
     record = {'source': source, 'cycle_time': float(tr.T[-1]), 'samples': len(tr.T), 'arrays': arrays,
               'events': [[float(t).hex(), e] for t, e in tr.Events], 'step_names': list(tr.Step_Names),
               'segment_commands': list(tr.Segment_Command), 'commands': commands}
-    report = Format_Check_Report(Check_Trajectory(tr, program, notes, kinematics, collision, cell, meta), tr, cell)
+    free = Free_Steps(program, Load_Optimization(program))
+    report = Format_Check_Report(Check_Trajectory(tr, program, notes, kinematics, collision, cell, meta, free), tr, cell)
     table = Format_Check_Table(Check_Keypoints(kinematics, collision, constants, simulation, cell, meta))
     return {'program': record, 'report': report, 'table': table}
 

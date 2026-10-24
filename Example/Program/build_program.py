@@ -48,8 +48,8 @@ import mujoco
 from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls,
                                 CONST_CELL_YAML, CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_REPORTS, CONST_REFERENCE_PLAN)
 #   ../Configuration/Program_Parser - the program's three files
-from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
-                                          CONST_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
+from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, Load_Optimization, Free_Steps, CONST_CONSTANTS_YAML,
+                                          CONST_SIMULATION_YAML, CONST_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
 #   ../Scene/Core - the cell's errors
 from Scene.Core import Scene_Error_Cls
 #   ../Kinematics/Core, ../Collision/Core - FK, IK and exact distances on the planning model (the table included)
@@ -212,6 +212,8 @@ def main():
             log.Close()
             return 1
         trajectory, notes = Build_Program(program, cell, meta, kinematics, Build_Meta(args.program, program.Optimized is not None))
+        # The free transfers (Clearance.Loader_Free): the optimized program's splines, the taught one's Optimization.yaml list.
+        free = Free_Steps(program, Load_Optimization(program) if program.Optimized is None else None)
         differences = Schedule_Differences(program, trajectory)
         if differences:
             print(log.Line('[ERROR] The build of %s does not match its recorded Schedule (another platform, or the file was edited): %s; make '
@@ -223,7 +225,7 @@ def main():
         log.Close()
         return 1
     npz, csv = Write_Trajectory(trajectory, os.path.join(args.out or CONST_TRAJECTORIES, program.Name + '.npz'))
-    result = Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta)
+    result = Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta, free)
     lines = Format_Check_Report(result, trajectory, cell)
     if args.compare_legacy:
         try:

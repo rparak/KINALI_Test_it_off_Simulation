@@ -45,7 +45,7 @@ import mujoco
 #   ../Configuration/Core - the cell, the PCB poses and locations, the files
 from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_CELL_YAML, CONST_FORK_PATH, CONST_ROOT
 #   ../Configuration/Program_Parser - the programs and the optimizer's settings
-from Configuration.Program_Parser import (Program_Str, Optimization_Str, Load_Program, CONST_PROGRAM_YAML, CONST_CONSTANTS_YAML,
+from Configuration.Program_Parser import (Program_Str, Optimization_Str, Load_Program, Free_Steps, CONST_PROGRAM_YAML, CONST_CONSTANTS_YAML,
                                           CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML)
 #   ../Kinematics/Core - FK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP
@@ -56,7 +56,8 @@ from Keypoints.Core import CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX
 #   ../Planner/Core - RRT-Connect, the shortcut, the spline, its timing
 from Planner.Core import Rrt_Connect, Shortcut, Prune, Smooth, Time_Path, Planner_Error_Cls
 #   ../Program/Core - the build, its check, posing at a sample, the file hashes
-from Program.Core import Pose_Sample, File_Hash, Build_Program, Check_Trajectory, Program_Check_Str, Build_Note_Str
+from Program.Core import (Pose_Sample, File_Hash, Build_Program, Check_Trajectory, Program_Check_Str, Build_Note_Str, Robot_Loader_Distance,
+                          Loader_Actual_Trajectory, CONST_LOADER_CUT)
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 
@@ -74,9 +75,6 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_INPUTS = {'program': CONST_PROGRAM_YAML, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
                 'optimization': CONST_OPTIMIZATION_YAML, 'fork_path': CONST_FORK_PATH}
-# The robot-loader distance is reported up to this (the clearance decides the verdict).
-#   Unit [float] (m)
-CONST_LOADER_CUT = 0.05
 # A stop of the robot (the comparison's metric): every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME,
 # after a motion. The speed is a sample's joint change over the sample time; 1e-3 rad/s is far below any planned motion
 # (a min-jerk move reaches it within its first or last few samples) and above the plans' numerical noise.
@@ -244,8 +242,10 @@ class Free_Space_Cls(object):
         A FREE transfer's configuration validity on the planning model: the scene as the taught program has it at the
         transfer's start (loader, jaws, PCB, MG06); the robot's geoms - and the carried PCB's, hung at the cup face - at
         least the clearance plus a margin from every other collidable geom (exact distances, Collision.Close_Pairs; the
-        cups on the PCB they carry and the robot's mount left out); the carried PCB tilted at most Carry_Max_Tilt (B4).
-        The loader moves during a transfer with parallel jobs: the robot-loader distance over time is the exact check's.
+        cups on the PCB they carry and the robot's mount left out) and at least the loader clearance plus the margin from the
+        loader and the PCB in its jaws (F11: Clearance.Loader_Free + Tracking_Margin); the carried PCB tilted at most
+        Carry_Max_Tilt (B4). The loader moves during a transfer with parallel jobs: the robot-loader distance over time is
+        the exact check's.
 
     Initialization of the Class:
         Args:
@@ -255,11 +255,13 @@ class Free_Space_Cls(object):
             (4) transfer [Free_Transfer_Str(object)]: The transfer.
             (5) clearance [float]: Cell.yaml Clearance.Robot (m).
             (6) max_tilt [float]: The carried PCB's largest tilt (rad).
+            (7) loader [float]: The clearance to the loader (m; Loader_Free + Tracking_Margin), 0 for clearance only.
 
         Example:
             Initialization:
                 # Assignment of the variables.
-                space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt)
+                space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt,
+                                       cell.Loader_Free + cell.Tracking_Margin)
 
             Features:
                 # Functions of the class.
@@ -267,9 +269,12 @@ class Free_Space_Cls(object):
     """
 
     def __init__(self, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, default: Trajectory_Str, transfer: Free_Transfer_Str,
-                 clearance: float, max_tilt: float) -> None:
+                 clearance: float, max_tilt: float, loader: float = 0.0) -> None:
         self.Kinematics, self.Collision, self.Transfer = kinematics, collision, transfer
-        self.Clearance, self.Max_Tilt = clearance, max_tilt
+        self.Clearance, self.Max_Tilt, self.Loader = clearance, max_tilt, max(loader, clearance)
+        # The loader's bodies and the PCB when it is in the jaws in the transfer's scene (F11).
+        in_jaws = CONST_PCB_LOCATIONS[default.PCB_Location[transfer.First_Sample]] == 'jaws'
+        self.__loader = set(CONST_LOADER_BODIES) | ({'pcb'} if in_jaws else set())
         self.Calls = 0
         model = kinematics.Model
         self.__pcb, self.__robot = model.body('pcb').id, collision.Robot_Bodies
@@ -336,7 +341,8 @@ class Free_Space_Cls(object):
     def Valid(self, q: np.ndarray, margin: float) -> bool:
         """
         Description:
-            Whether q keeps the clearance plus margin and the carried PCB's tilt limit.
+            Whether q keeps the clearance plus margin, the loader clearance plus margin from the loader, and the carried PCB's tilt
+            limit.
 
         Args:
             (1) q [Vector<float> 1x6]: The joints (rad).
@@ -349,7 +355,7 @@ class Free_Space_Cls(object):
         self.Calls += 1
         if self.Tilt(q) > self.Max_Tilt:
             return False
-        return not self.Pairs(q, self.Clearance + margin)
+        return not [p for p in self.Pairs(q, self.Loader + margin) if p[0] < self.Clearance + margin or p[2] in self.__loader]
 
 
 @dataclass
@@ -624,41 +630,6 @@ def Schedule(trajectory: Trajectory_Str) -> tp.Dict[str, float]:
             for k, name in enumerate(trajectory.Step_Names) if name.startswith('S')}
 
 
-def Robot_Loader_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls,
-                          samples: tp.Iterable[int]) -> tp.Tuple[float, int, str]:
-    """
-    Description:
-        The smallest exact distance between the robot (with the PCB it carries) and the loader (its carriages and jaws, with
-        the PCB they hold) over samples (I8).
-
-    Args:
-        (1) trajectory [Trajectory_Str(object)]: The trajectory.
-        (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
-        (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
-        (4) samples [List<int>]: The samples.
-
-    Returns:
-        (1) parameter [float]: The distance (m), CONST_LOADER_CUT when nothing is closer.
-        (2) parameter [int]: Its sample (-1 when none).
-        (3) parameter [string]: The pair.
-    """
-
-    model, data = kinematics.Model, kinematics.Data
-    robot, pcb = collision.Robot_Bodies, model.body('pcb').id
-    loader = {model.body(name).id for name in CONST_LOADER_BODIES}
-    best = (CONST_LOADER_CUT, -1, '')
-    for i in samples:
-        Pose_Sample(kinematics, trajectory, i)
-        location = CONST_PCB_LOCATIONS[trajectory.PCB_Location[i]]
-        mine = robot | ({pcb} if location == 'cups' else set())
-        theirs = loader | ({pcb} if location == 'jaws' else set())
-        others = set(range(model.nbody)) - theirs
-        for distance, body_1, body_2, _, _ in collision.Close_Pairs(mine, CONST_LOADER_CUT, data, exclude=others):
-            if distance < best[0]:
-                best = (distance, i, '%s / %s' % (body_1, body_2))
-    return best
-
-
 @dataclass
 class Optimization_Result_Str:
     """
@@ -730,7 +701,8 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
             (1) parameter [List<Planned_Transfer_Str>]: Its legs.
         """
 
-        space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt)
+        space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt,
+                               cell.Loader_Free + cell.Tracking_Margin)
         points = [transfer.Start] + ([transfer.Wait] if transfer.Wait else []) + [transfer.End]
         sets = ['W_%s_WAIT' % transfer.Name.upper(), 'W_%s' % transfer.Name.upper()][-(len(points) - 1):]
         while level[transfer.Name] < len(optimization.Margins):
@@ -760,7 +732,7 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
             handle.write(text)
         optimized = Load_Program(program.Constants, program.Simulation, cell, path)
         trajectory, notes = Build_Program(optimized, cell, pcb_meta, kinematics, {})
-        check = Check_Trajectory(trajectory, optimized, notes, kinematics, collision, cell, pcb_meta)
+        check = Check_Trajectory(trajectory, optimized, notes, kinematics, collision, cell, pcb_meta, Free_Steps(optimized))
         failing = [s for s in check.Steps if s.Failures and s.Name.split('_', 1)[1] in planned]
         progress('built and checked: cycle %.3f s, %s; %s' % (trajectory.T[-1], check.Verdict, '; '.join('%s: %s' % (s.Name, f) for s in check.Steps
                                                                                                       for f in s.Failures) or 'no failure'))
@@ -769,8 +741,11 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
         for step in failing:
             name = step.Name.split('_', 1)[1]
             pair = step.Closest.Pair if step.Closest is not None else ''
-            if step.Closest is not None and step.Closest.Distance < cell.Clearance and any(b in loader for b in pair.split(' / ')) \
-                    and planned[name][0].Transfer.Jobs:
+            near = step.Closest is not None and step.Closest.Distance < cell.Clearance and any(b in loader for b in pair.split(' / '))
+            # F11: the free transfer too close to the loader where its actuators put it.
+            if step.Loader is not None and step.Loader.Distance < cell.Loader_Free + cell.Tracking_Margin:
+                near, pair, step.Closest = True, step.Loader.Pair, step.Loader
+            if near and planned[name][0].Transfer.Jobs:
                 result.Delays[name] = Delay(trajectory, kinematics, collision, cell, step.Name, planned[name][0].Transfer, *result.Delays[name])
                 result.Attempts.append('%s: %s %.2f mm at %.3f s (I8): the spline after the start of %s, %.3f s later' % (
                     name, pair, 1000 * step.Closest.Distance, step.Closest.Time, planned[name][0].Transfer.Jobs[result.Delays[name][0] - 1],
@@ -794,7 +769,8 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
         handle.write(text)
     result.Program = Load_Program(program.Constants, program.Simulation, cell, path)
     result.Trajectory, result.Notes = Build_Program(result.Program, cell, pcb_meta, kinematics, {})
-    result.Check = Check_Trajectory(result.Trajectory, result.Program, result.Notes, kinematics, collision, cell, pcb_meta)
+    result.Check = Check_Trajectory(result.Trajectory, result.Program, result.Notes, kinematics, collision, cell, pcb_meta,
+                                    Free_Steps(result.Program))
     result.Text, result.Planned = text, [leg for legs in planned.values() for leg in legs]
     return result
 
@@ -804,7 +780,8 @@ def Delay(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collisio
     """
     Description:
         The spline's slot and wait that move the robot past the window in which it meets the loader (I8): every sample of
-        the step measured (Robot_Loader_Distance), the window from the first to the last sample closer than the clearance.
+        the step measured (Robot_Loader_Distance, the loader where its actuators put it), the window from the first to the last
+        sample closer than Clearance.Loader_Free + Tracking_Margin (F11).
         When the robot meets the loader while a job that starts after its spline runs (it stands at its end point then),
         the spline moves after the next job's start (the next slot, no wait); otherwise its wait grows by the window's length
         (rounded to whole samples), so the robot arrives after the loader has passed. A meeting before the spline starts -
@@ -829,7 +806,8 @@ def Delay(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collisio
     # The transfer's last spline (a leg to a waiting point comes before it).
     spline = [k for k, text in enumerate(trajectory.Segment_Command)
               if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
-    meeting = [int(i) for i in samples if Robot_Loader_Distance(trajectory, kinematics, collision, [int(i)])[0] < cell.Clearance]
+    actual, need = Loader_Actual_Trajectory(trajectory, kinematics.Model), cell.Loader_Free + cell.Tracking_Margin
+    meeting = [int(i) for i in samples if Robot_Loader_Distance(actual, kinematics, collision, [int(i)])[0] < need]
     if not meeting:
         return slot, delay
     if meeting[0] < int(trajectory.Segment_Start[spline]):
@@ -983,8 +961,9 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
         The interlocks I1-I8 of FEATURES.md F9 verified on a built trajectory, each with the times that prove it: I1 the
         handover starts with the loader home and the gripper open; I2 the loader's first move after the handover ends; I3
         MG06 is closed only after the park; I4-I5 the test between the leave and the return; I6 the fetch after MG06 is
-        open; I7 the take only after the return; I8 the robot (with a carried PCB) at least the clearance from the loader
-        (with the PCB in its jaws) at every sample of the parts where both may move.
+        open; I7 the take only after the return; I8 the robot (with a carried PCB) at least Clearance.Loader_Free +
+        Tracking_Margin from the loader (with the PCB in its jaws, posed where its actuators put it; F11) at every sample of the
+        parts where both may move.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -1027,12 +1006,15 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
     out.append(('I7', bool(ok), 'J_RETURN\'s last loader move %.3f s (loader at L_HOME, PCB %s); Take_From_Loader starts %.3f s'
                 % (T[ret[1]], CONST_PCB_LOCATIONS[tr.PCB_Location[i]], T[k0])))
     windows = [(insert[0], park[1]), (fetch[0], ret[1])]
-    found = [Robot_Loader_Distance(tr, kinematics, collision, range(a, b + 1)) for a, b in windows]
+    actual = Loader_Actual_Trajectory(tr, kinematics.Model)
+    found = [Robot_Loader_Distance(actual, kinematics, collision, range(a, b + 1)) for a, b in windows]
     distance, sample, pair = min(found)
     closest = '%.2f mm at %.3f s (%s)' % (1000 * distance, T[sample], pair) if sample >= 0 else '> %g mm' % (1000 * CONST_LOADER_CUT)
-    out.append(('I8', distance >= cell.Clearance,
-                'robot (and a carried PCB) to loader (and the PCB in its jaws) over %s: closest %s; clearance %.1f mm'
-                % (', '.join('%.3f-%.3f s' % (T[a], T[b]) for a, b in windows), closest, 1000 * cell.Clearance)))
+    need = cell.Loader_Free + cell.Tracking_Margin
+    out.append(('I8', distance >= need,
+                'robot (and a carried PCB) to loader (and the PCB in its jaws, at its actuator model\'s position) over %s: closest %s; '
+                'Loader_Free %.1f mm + Tracking_Margin %.1f mm' % (', '.join('%.3f-%.3f s' % (T[a], T[b]) for a, b in windows), closest,
+                                                                   1000 * cell.Loader_Free, 1000 * cell.Tracking_Margin)))
     return out
 
 
