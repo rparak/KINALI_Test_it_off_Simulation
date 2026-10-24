@@ -38,7 +38,7 @@ import pytest
 # Custom Lib.: the module under test
 #   ../Simulation/Core
 from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report, Trajectory_Drive_Cls,
-                             Legacy_Drive_Cls, Physics_Run_Cls,
+                             Legacy_Drive_Cls, Physics_Run_Cls, Hold_Str, Check_Program_Acceptance,
                              Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
 #   ../Configuration/Core
 from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
@@ -273,7 +273,7 @@ def _Small_Trajectory():
     """
     Description:
         A four-sample trajectory of three steps: a MoveSpline step that starts a loader job, the handle step with J_PARK, the
-        Test step; and the program's segments (only Key and Allow_Contact are read).
+        Test step; and the program's segments (only Key and Allow_Contact are read) and its vacuum switch's data.
     """
 
     tr = Trajectory_Str(T=np.arange(4) * 0.004, Robot_Q=np.array([[0.0] * 6, [1.0] * 6, [2.0] * 6, [3.0] * 6]), Robot_QD=np.full((4, 6), 2.0),
@@ -284,7 +284,8 @@ def _Small_Trajectory():
                         Segment_Start=np.array([0, 1, 2, 3], np.int32), Segment_End=np.array([1, 2, 3, 3], np.int32),
                         Events=[(0.004, 'vacuum_on'), (0.008, 'gripper_open'), (0.012, 'vacuum_off')])
     program = SimpleNamespace(Segments=[SimpleNamespace(Key='S1_Move', Allow_Contact=[]),
-                                        SimpleNamespace(Key='S2_Close', Allow_Contact=['handle_bar'])])
+                                        SimpleNamespace(Key='S2_Close', Allow_Contact=['handle_bar'])],
+                              Simulation=SimpleNamespace(Signal_Response={'DI_VACUUM_OK': 0.3}, Vacuum_OK_Min_Cups=4))
     return tr, program
 
 
@@ -370,3 +371,102 @@ def test_a_pcb_below_the_table_top_is_lost(cell_configuration, constants):
     run.Data.qpos[run.qpcb + 2] = -0.019
     run.Step()
     assert not run.Done and run.Fault is None
+
+
+def _Program_Result():
+    """
+    Description:
+        The reference values with a program run's two vacuum holds of 4 of 4 cups (F11).
+    """
+
+    result = _Good_Result()
+    result.Holds = [Hold_Str(T_On=3.28, T_Off=9.91), Hold_Str(T_On=57.85, T_Off=66.07)]
+    return result
+
+
+@pytest.mark.parametrize('change, criterion', [
+    (lambda r: setattr(r.Holds[1], 'Min_Cups', 3), 'every vacuum hold keeps 4/4 cups'),
+    (lambda r: r.Holds.pop(1), 'every vacuum hold keeps 4/4 cups'),
+    (lambda r: (setattr(r, 'Fault', 'PCB lost at ...'), setattr(r, 'Fault_Kind', 'lost')), 'the PCB is never lost'),
+    (lambda r: (setattr(r, 'Fault', 'vacuum not OK at ...'), setattr(r, 'Fault_Kind', 'input')), 'every WaitDI gets DI_VACUUM_OK in time'),
+])
+def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
+    """
+    Description:
+        F11: a program's run has SPEC §10.1's ten checks and three more - every vacuum hold keeps 4 of 4 cups (both holds), the PCB
+        is never lost, every WaitDI gets the vacuum switch's input; each violation fails that one.
+    """
+
+    result = _Program_Result()
+    checks = Check_Program_Acceptance(result, Load_Cell_Configuration())
+    assert len(checks) == 13 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
+    change(result)
+    assert [c.Name for c in Check_Program_Acceptance(result, Load_Cell_Configuration()) if not c.Passed] == [criterion]
+
+
+def _Build(program, cell_configuration):
+    """
+    Description:
+        The trajectory of a program (on the planning model).
+    """
+
+    from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
+    from Kinematics.Core import Robot_Kinematics_Cls
+    from Program.Core import Build_Program
+    model = Build_Planning_Model(cell_configuration)
+    trajectory, _ = Build_Program(program, cell_configuration, Read_PCB_Meta(), Robot_Kinematics_Cls(model, Robot_Collision_Cls(model).Data), {})
+    return trajectory
+
+
+def _Run_To_End(program, trajectory, cell_configuration, inputs=None):
+    """
+    Description:
+        A program's physics run to its end or its fault; inputs replaces the drive's vacuum switch checks.
+    """
+
+    drive = Trajectory_Drive_Cls(trajectory, program)
+    drive.Inputs = drive.Inputs if inputs is None else inputs(drive.Inputs)
+    run = Physics_Run_Cls(Build_Cell_Model(cell_configuration), drive, Read_PCB_Meta(), cell_configuration)
+    while not run.Done:
+        run.Step()
+    return run
+
+
+def test_the_vacuum_switch_fails_a_waitdi_whose_input_has_not_come(program, cell_configuration):
+    """
+    Description:
+        F11: the taught program's first WaitDI ends 0.304 s after the vacuum went on with 4 of 4 cups on the PCB; asked for a 0.5 s
+        response, the switch is still false there, so the run stops at that line with the evidence (exit 1 in the scripts).
+    """
+
+    trajectory = _Build(program, cell_configuration)
+    run = _Run_To_End(program, trajectory, cell_configuration, lambda inputs: [(t, s, x, 0.5, n, o) for t, s, x, _, n, o in inputs])
+    assert run.Fault_Kind == 'input' and run.Data.time == pytest.approx(3.580, abs=0.001), (run.Data.time, run.Fault)
+    assert re.fullmatch(r'vacuum not OK at t = 3\.580 s, step S2_Pick_Input, line "Robot\.WaitDI\(DI_VACUUM_OK, timeout=1\.0\)": 4 of 4 cups '
+                        r'touch the PCB \(DI_VACUUM_OK needs 4 for 0\.5 s: for 0\.30[34] s\); the WaitDI would time out after 1\.0 s\.', run.Fault), \
+        run.Fault
+
+
+@pytest.mark.slow
+def test_the_old_take_loses_the_board_at_the_release(program, constants, simulation, cell_configuration, tmp_path):
+    """
+    Description:
+        F11: the take of before the fix - the jaws opened with the bellows pressed (the touch move after the release) - stops
+        the run in S18_Take_From_Loader: the PCB lost while the jaws open, or the second WaitDI's input missing after it; the
+        taught program as shipped passes every new criterion.
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_PROGRAM_YAML
+    text = open(CONST_PROGRAM_YAML, encoding='utf-8').read()
+    touch = '    - Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)            # owner, 2026-10-24 (F11): relieve the bellows before the jaws open\n'
+    release = '    - Loader.Run(J_RELEASE)\n'
+    assert text.count(touch + release) == 1
+    path = tmp_path / 'Program.yaml'
+    path.write_text(text.replace(touch + release, release + touch), encoding='utf-8')
+    old = Load_Program(constants, simulation, cell_configuration, str(path))
+    run = _Run_To_End(old, _Build(old, cell_configuration), cell_configuration)
+    assert run.Fault is not None and ', step S18_Take_From_Loader, line ' in run.Fault, run.Fault
+    assert (run.Fault_Kind == 'lost' and 'line "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)"' in run.Fault) or \
+        (run.Fault_Kind == 'input' and 'line "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)"' in run.Fault), run.Fault
+    shipped = _Run_To_End(program, _Build(program, cell_configuration), cell_configuration).Result()
+    assert [c.Name for c in Check_Program_Acceptance(shipped, cell_configuration) if not c.Passed] == []

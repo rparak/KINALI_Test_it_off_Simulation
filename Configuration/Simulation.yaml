@@ -35,11 +35,17 @@ Tool_Site:
 Actuators:
   DO_VACUUM: vacuum
 
-# How long a digital input takes to come after its cause; the simulated WaitDI waits this long and fails when
-# it exceeds the program's timeout. DI_VACUUM_OK: the legacy planner's 0.3 s hold after vacuum on (git tag
-# legacy-planner-reference). [s] REQUIRED for every DI.
+# How long a digital input takes to come after its cause; the simulated WaitDI waits what is left of it (nothing
+# once it has come) and fails when it exceeds the program's timeout. DI_VACUUM_OK: the legacy planner's 0.3 s hold
+# after vacuum on (git tag legacy-planner-reference). [s] REQUIRED for every DI.
 Signal_Response:
   DI_VACUUM_OK: 0.3
+
+# The simulated vacuum switch (F11, owner 2026-10-24): in physics DI_VACUUM_OK is true only while at least this
+# many of the VGC10's four cups have touched the PCB for its Signal_Response; a WaitDI on it fails otherwise (the
+# program stops: vacuum not OK). The kinematic build does not use it (it holds the PCB on the cups by its rules).
+# [cups, 1-4] REQUIRED.
+Vacuum_OK_Min_Cups: 4
 
 # Where the jaws really stop when a gripper command closes them on the PCB (the 40 N force limit holds them on
 # its edges): the former pcb_meta.json jaw_grip (SPEC §4.4). Posing and the checks use it. [m]

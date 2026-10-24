@@ -713,8 +713,8 @@ until the job's last sample; a `Run` gives the same samples as Start + WaitDone 
 - **MoveY / MoveZ / Gripper** (loader jobs): one channel, min-jerk over its `t=`, ending exactly on its target (the gripper
   command; the jaws' real position is its `Jaw_Actual`); **SetDO** drives the output's actuator (an event); **WaitDI** holds
   until the input comes, its `Signal_Response` after its cause (`DI_VACUUM_OK`: the last `SetDO(DO_VACUUM, ON)`), so a WaitDI
-  whose input came already costs nothing (F11); one whose cause is off is a build error (the wait would time out); **Wait** / **Test** / `End_Settle` hold (`Test` needs MG06 settled closed and the PCB in
-  it).
+  whose input came already costs nothing (F11); one whose cause is off is a build error (the wait would time out); **Wait** /
+  **Test** / `End_Settle` hold (`Test` needs MG06 settled closed and the PCB in it).
 - **Speeds**: analytic in MoveJ; central differences elsewhere; zero at sample 0, in every hold and at every MoveL / Path end.
 - **World state**: the PCB's location changes only by the vacuum and gripper rules (vacuum on with the cups on the PCB in a
   crate or the jaws; clamping on it in MG06; opening at MG06; vacuum off with it clamped in the jaws or within 2 mm of its
@@ -812,7 +812,9 @@ Approach and exit points are `Reference` + `Offset` of their place; the fork poi
 
 `Simulation.yaml`: `Start` (`Robot` a point, `Loader` a position, `Gripper` a command, `Vacuum` `ON` / `OFF`, `PCB` a location
 - `input_crate`, `cups`, `jaws`, `mg06`, `output_crate` -, `MG06` `Open` / `Closed`); `Tool_Site` (a model site per tool);
-`Actuators` (the simulated actuator per output: `vacuum`); `Signal_Response` [s] per input; `Jaw_Actual` [m] (where the jaws
+`Actuators` (the simulated actuator per output: `vacuum`); `Signal_Response` [s] per input; `Vacuum_OK_Min_Cups` [cups, 1-4]
+(the simulated vacuum switch: in physics `DI_VACUUM_OK` needs that many cups on the PCB for its response time, F11; 4);
+`Jaw_Actual` [m] (where the jaws
 really stop on the PCB per closing command); `End_Settle` [s] (a hold after the last segment, simulation only);
 `Allow_Contact` (contact groups per segment, by its name without the `S<n>_` prefix; an unlisted segment is contact-free);
 `Points` (per point: `Context` {`Loader`, `Gripper`, `PCB`}, `Fixture` `Open` / `Closed` / the recorded `{Lid, Handle,
@@ -912,6 +914,18 @@ A cycle run passes when:
    of "ends open" is a decision, design-decisions);
 6. no instability (exit 2 with the evidence), and the PCB is never lost (§7.6; the run stops at the loss);
 7. deepest PCB penetration ≤ 0.5 mm in every group (MG06 holder, crate, loader jaws).
+
+A program's run (F11, owner 2026-10-24; `Simulation.Check_Program_Acceptance`) also passes when:
+
+8. every vacuum hold keeps 4 of 4 cups on the PCB from vacuum on to off - after the jaws open at the take and in every carry
+   (the report gives each hold's minimum and when);
+9. the PCB is never lost (§7.6);
+10. every `WaitDI(DI_VACUUM_OK)` gets its input in time: the simulated vacuum switch is true once `Vacuum_OK_Min_Cups` cups have
+    touched the PCB for its `Signal_Response`; checked where the WaitDI ends on the trajectory's timeline (physics follows it),
+    a false input stops the run (`vacuum not OK at t, step, line: ...`, exit 1).
+
+The legacy reference run keeps items 1-7: its take carried the board on 2 of 4 cups (KNOWN_ISSUES.md), and its baseline
+report stays the regression of the old run.
 
 Further Phase 1 criteria: every keypoint can be shown in the viewer, and an invalid keypoint (IK fails,
 clearance < 3 mm) is reported clearly; the PCB is green; the README explains installation, the

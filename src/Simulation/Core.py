@@ -23,6 +23,8 @@
 
 # JSON (JSON encoder and decoder)
 import json
+# Regular expressions (Default)
+import re
 # Typing (Support for type hints)
 import typing as tp
 # Dataclasses (Data Classes)
@@ -69,6 +71,9 @@ CONST_PICKS, CONST_CUPS = 2, 4
 # in a parallel step), and the distance the robot-loader pairs are reported up to.
 #   Unit [float] (s), [float] (m)
 CONST_SAMPLE_PERIOD, CONST_LOADER_CUT = 0.004, 0.05
+# The input of the simulated vacuum switch (F11; Simulation.yaml Vacuum_OK_Min_Cups).
+#   Unit [string]
+CONST_VACUUM_OK = 'DI_VACUUM_OK'
 # The PCB is lost (F11) when the vacuum is on and no cup has touched it for this long (a contact can blink for a step), or when it
 # is this far below the table top (z = 0; the physics model has no table and its floor does not collide, so a dropped PCB falls
 # through; the lowest PCB of a cycle lies on a crate floor, 4 mm).
@@ -134,6 +139,23 @@ class Vacuum_Event_Str:
 
 
 @dataclass
+class Hold_Str:
+    """
+    Description:
+        One vacuum hold of a run (vacuum on to off): the fewest cups that touched the PCB and when (F11).
+    """
+
+    # When the vacuum went on and off (nan while it is on).
+    #   Unit [float] (s)
+    T_On: float = 0.0
+    T_Off: float = float('nan')
+    # The fewest cups touching the PCB during the hold, and the first time it was that few.
+    #   Unit [int], [float] (s)
+    Min_Cups: int = CONST_CUPS
+    T_Min: float = 0.0
+
+
+@dataclass
 class Cycle_Result_Str:
     """
     Description:
@@ -183,9 +205,14 @@ class Cycle_Result_Str:
     # The run's steps (a program's steps or a legacy plan's phases), in order (F11).
     #   Unit [List<Step_Physics_Str>]
     Steps: tp.List['Step_Physics_Str'] = field(default_factory=list)
-    # Why the run stopped before its end ('PCB lost at ...'), or None (F11).
-    #   Unit [string]
+    # Why the run stopped before its end ('PCB lost at ...', 'vacuum not OK at ...'), or None, and its kind ('lost', 'input')
+    # (F11).
+    #   Unit [string], [string]
     Fault: tp.Optional[str] = None
+    Fault_Kind: tp.Optional[str] = None
+    # The vacuum holds (F11).
+    #   Unit [List<Hold_Str>]
+    Holds: tp.List[Hold_Str] = field(default_factory=list)
 
 
 @dataclass
@@ -335,6 +362,8 @@ class Legacy_Drive_Cls(object):
 
     def __init__(self, plan: Legacy_Plan_Str, loader_home: Loader_Position_Str) -> None:
         self.Plan, self.T_End = plan, plan.T_End
+        # A plan has no WaitDI lines (F11's vacuum switch).
+        self.Inputs: tp.List[tp.Tuple[float, str, str, float, int, float]] = []
         self.__start = {'y': loader_home.Y, 'z': 0.0, 'jaw': plan.Jaw_Open}
         self.__v_plan = np.gradient(plan.Q, plan.Dt, axis=0)
         self.__kv_kp = np.zeros(6)
@@ -533,6 +562,12 @@ class Trajectory_Drive_Cls(object):
         test = next(k for k, name in enumerate(tr.Step_Names) if name.endswith('_Test'))
         self.Placed_Time = float(tr.T[min(int(tr.Segment_Start[park]), self.N - 1)])
         self.Closed_Time = float(tr.T[int(np.flatnonzero(tr.Step_Index == test)[0])])
+        # The vacuum switch's checks (F11): each WaitDI on DI_VACUUM_OK - when its wait ends, its step, its line, the input's
+        # response time, the cups it needs, the WaitDI's timeout.
+        sim = program.Simulation
+        self.Inputs = [(float(tr.T[min(int(tr.Segment_End[k]), self.N - 1)]), tr.Step_Names[int(tr.Segment_Step[k])], text,
+                        sim.Signal_Response[CONST_VACUUM_OK], sim.Vacuum_OK_Min_Cups, float(re.search(r'timeout=([0-9.]+)', text).group(1)))
+                       for k, text in enumerate(tr.Segment_Command) if text.startswith('Robot.WaitDI(%s' % CONST_VACUUM_OK)]
 
     def Bind(self, kv_kp: np.ndarray) -> None:
         """
@@ -821,6 +856,12 @@ class Physics_Run_Cls(object):
         self.held: tp.Optional[tp.Tuple[float, int, float, float, float]] = None
         self.pcb_last = d.qpos[self.qpcb:self.qpcb + 3].copy()
         self.fc = np.zeros(6)
+        # The vacuum switch (F11): its checks due; since when at least k cups (index k) have touched the PCB with the vacuum on;
+        # the vacuum holds.
+        self.Fault_Kind: tp.Optional[str] = None
+        self.inputs = list(drive.Inputs)
+        self.cups_since: tp.List[tp.Optional[float]] = [None] * (CONST_CUPS + 1)
+        self.holds: tp.List[Hold_Str] = []
         # The per-step measurements (F11): the steps by label; the TCP's positions every 4 ms for its acceleration.
         self.steps: tp.Dict[str, Step_Physics_Str] = {}
         self.tcp_history: tp.List[np.ndarray] = []
@@ -857,6 +898,10 @@ class Physics_Run_Cls(object):
             _, on = self.ev.pop(0)
             d.ctrl[self.A_VAC] = 1.0 if on else 0.0
             self.rel0 = None
+            if on:
+                self.holds.append(Hold_Str(T_On=t))
+            elif self.holds:
+                self.holds[-1].T_Off = t
             self.vacuum.append(Vacuum_Event_Str(T=t, On=on, Cups=Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch) if on else None))
         d.ctrl[:3] = drive.Loader(t)
         d.ctrl[A_ROBOT], q_ref = drive.Robot(t)
@@ -878,6 +923,9 @@ class Physics_Run_Cls(object):
         slip_now, cups = None, None
         if d.ctrl[self.A_VAC[0]] > 0.5:
             cups = Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch)
+            hold = self.holds[-1] if self.holds else None
+            if hold is not None and cups < hold.Min_Cups:
+                hold.Min_Cups, hold.T_Min = cups, d.time
             if cups or self.rel0 is not None:
                 R = d.xmat[TOOL].reshape(3, 3)
                 rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
@@ -929,6 +977,33 @@ class Physics_Run_Cls(object):
         if drive.Closed(self.ph, d.time) and 'closed' not in self.marks:
             self.marks['closed'] = (d.qpos[self.qa], d.qpos[self.qh], d.time)
         self.__Lost(cups, slip_now)
+        self.__Vacuum_Switch(t, cups)
+
+    def __Vacuum_Switch(self, t: float, cups: tp.Optional[int]) -> None:
+        """
+        Description:
+            The simulated vacuum switch (F11): DI_VACUUM_OK is true once at least Vacuum_OK_Min_Cups cups have touched the PCB
+            with the vacuum on for its Signal_Response. At the end of each WaitDI on it (the trajectory's timeline, which
+            physics follows) a false input stops the run (Fault): the WaitDI would time out.
+
+        Args:
+            (1) t [float]: The step's start time (s).
+            (2) cups [int]: The cups touching the PCB with the vacuum on, or None with the vacuum off.
+        """
+
+        d, half = self.Data, 0.5 * self.Model.opt.timestep
+        for k in range(1, CONST_CUPS + 1):
+            touching = cups is not None and cups >= k
+            self.cups_since[k] = (t if self.cups_since[k] is None else self.cups_since[k]) if touching else None
+        while self.inputs and self.Fault is None and d.time >= self.inputs[0][0] - half:
+            _, step, text, response, need, timeout = self.inputs.pop(0)
+            since = self.cups_since[need]
+            if since is None or d.time - since < response - half:
+                held = 'for %.3f s' % (d.time - since) if since is not None else 'not now'
+                self.Fault, self.Fault_Kind = ('vacuum not OK at t = %.3f s, step %s, line "%s": %s of %d cups touch the PCB (%s needs %d '
+                                               'for %.1f s: %s); the WaitDI would time out after %.1f s.'
+                                               % (d.time, step, text, cups or 0, CONST_CUPS, CONST_VACUUM_OK, need, response, held, timeout),
+                                               'input')
 
     def __Lost(self, cups: tp.Optional[int], slip: tp.Optional[float]) -> None:
         """
@@ -957,6 +1032,7 @@ class Physics_Run_Cls(object):
                     % (self.held[0], self.held[1], CONST_CUPS, 1000 * self.held[2], np.degrees(self.held[3]), self.held[4])
                     if self.held is not None else '')
             self.Fault = 'PCB lost at t = %.3f s, step %s, line "%s": %s%s.' % (d.time, self.ph, self.Drive.Command(d.time), why, last)
+            self.Fault_Kind = 'lost'
 
     def Result(self) -> 'Cycle_Result_Str':
         """
@@ -981,7 +1057,7 @@ class Physics_Run_Cls(object):
                                 Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
                                 Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Penetration=self.pen, Contacts=self.worst,
                                 Lid_Open=self.Lid_Open, Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
-                                Fault=self.Fault)
+                                Fault=self.Fault, Fault_Kind=self.Fault_Kind, Holds=self.holds)
 
 
 def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
@@ -1100,4 +1176,31 @@ def Check_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> 
     deepest = max([-v[0] for v in r.Penetration.values()] + [0.0])
     out.append(Acceptance_Check_Str('PCB penetration <= %.1f mm' % (1000 * cell.Penetration), deepest <= cell.Penetration,
                                     ', '.join('%s %.2f mm' % (k, -1000 * v[0]) for k, v in sorted(r.Penetration.items()))))
+    return out
+
+
+def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> tp.List[Acceptance_Check_Str]:
+    """
+    Description:
+        The acceptance criteria of a program's run (SPEC §10.1, F11): Check_Acceptance's, then every vacuum hold keeps 4 of 4
+        cups (from the vacuum on to off: the release at the take and every carry included), the PCB is never lost, every WaitDI
+        on the vacuum switch gets its input in time. The legacy reference run keeps Check_Acceptance's (its take holds the
+        board on 2 of 4 cups, KNOWN_ISSUES.md).
+
+    Args:
+        (1) result [Cycle_Result_Str(object)]: A program run's values.
+        (2) cell [Cell_Configuration_Str(object)]: The limits (Cell.yaml Acceptance).
+
+    Returns:
+        (1) parameter [List<Acceptance_Check_Str>]: One verdict per criterion, in SPEC order.
+    """
+
+    r, out = result, Check_Acceptance(result, cell)
+    holds = '; '.join('%.2f-%.2f s min %d/%d%s' % (h.T_On, h.T_Off, h.Min_Cups, CONST_CUPS, ' at %.3f s' % h.T_Min if h.Min_Cups < CONST_CUPS else '')
+                      for h in r.Holds)
+    out.append(Acceptance_Check_Str('every vacuum hold keeps %d/%d cups' % (CONST_CUPS, CONST_CUPS),
+                                    len(r.Holds) == CONST_PICKS and all(h.Min_Cups == CONST_CUPS for h in r.Holds), holds or 'no hold'))
+    out.append(Acceptance_Check_Str('the PCB is never lost', r.Fault_Kind != 'lost', r.Fault if r.Fault_Kind == 'lost' else 'never lost'))
+    out.append(Acceptance_Check_Str('every WaitDI gets %s in time' % CONST_VACUUM_OK, r.Fault_Kind != 'input',
+                                    r.Fault if r.Fault_Kind == 'input' else 'every one'))
     return out

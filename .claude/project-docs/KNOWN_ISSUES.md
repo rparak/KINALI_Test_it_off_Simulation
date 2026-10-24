@@ -163,6 +163,17 @@ to touch, `P_LOADER_TAKE_TOUCH`, SPEC §4.7): conservative real-cell practice as
 - **Impact:** a program that opens a support under a pressed board loses it in the simulation; the real cell may forgive it.
 - **What would close it:** a vacuum model with a holding range, or a real-cell observation of the take.
 
+## The verified legacy baseline carried the board on 2 of 4 cups after the take
+
+Found in F11 (2026-10-24): in the legacy reference run (`Data/Reference/cell_plan.npz`, `test/Simulation/data/baseline_report.txt`)
+the jaws open at the take with the bellows pressed and the board then hangs on 2 of the 4 cups (cup1, cup3) to the output
+crate; moving the PCB's start by -10 or +50 µm loses it at the release (knife-edge). The baseline stays unchanged as the
+regression of the old run and is checked against SPEC §10.1 items 1-7 only; the programs must meet items 8-10 too.
+
+- **Impact:** the legacy run's slip (1.32 mm) and its pass are not evidence that the old take was sound.
+- **What would close it:** nothing to do while the legacy run is only the old regression; it is retired with step 6's
+  program baselines if the owner decides so.
+
 ## The board sags in the jaws after the re-grip from MG06
 
 Measured in physics at the take (F11, 2026-10-24, 10 ms before the cups touch): the board lies 0.7-0.8 deg about its X axis

@@ -73,6 +73,9 @@ CONST_PHASES, CONST_STATES = ('CLOSE', 'OPEN'), ('ON', 'OFF')
 # The simulated actuators an output may drive (the four cups' adhesion).
 #   Unit [Tuple<string>]
 CONST_ACTUATORS = ('vacuum',)
+# The VGC10's suction cups (Simulation.yaml Vacuum_OK_Min_Cups counts them).
+#   Unit [int]
+CONST_CUPS = 4
 # The point where the robot switches its IK family (wrist_2's sign), the only one (SPEC §4.7): a single legal value.
 #   Unit [string]
 CONST_FAMILY_SWITCH_POINT = 'P_VIA_HOME_MG06'
@@ -310,6 +313,9 @@ class Simulation_Str:
     # The hold after the program's last segment.
     #   Unit [float] (s)
     End_Settle: float = 0.0
+    # The simulated vacuum switch: DI_VACUUM_OK needs this many cups touching the PCB (physics, F11).
+    #   Unit [int] (cups)
+    Vacuum_OK_Min_Cups: int = 0
     # The contact groups per segment name (without S<n>_); the lines of the names.
     #   Unit [Dict<string, List<string>>], [Dict<string, int>]
     Allow_Contact: tp.Dict[str, tp.List[str]] = field(default_factory=dict)
@@ -825,7 +831,7 @@ def Load_Simulation(constants: Constants_Str, path: str = CONST_SIMULATION_YAML)
 
     p = _Problems_Cls(path)
     root = Read_YAML(path)
-    keys = ('Start', 'Tool_Site', 'Actuators', 'Signal_Response', 'Jaw_Actual', 'End_Settle', 'Allow_Contact', 'Points')
+    keys = ('Start', 'Tool_Site', 'Actuators', 'Signal_Response', 'Vacuum_OK_Min_Cups', 'Jaw_Actual', 'End_Settle', 'Allow_Contact', 'Points')
     root = root if isinstance(root, dict) else {}
     for k in root:
         if k not in keys:
@@ -887,6 +893,11 @@ def Load_Simulation(constants: Constants_Str, path: str = CONST_SIMULATION_YAML)
                     p.Add(_Line(root, section, 1), '%s.%s' % (section, name), 'missing: every tool needs its model site (REQUIRED)')
     settle = _Field(p, root, 'End_Settle', 'End_Settle', 1)
     s.End_Settle = _Number(p, settle, 'End_Settle', _Line(root, 'End_Settle', 1), 0.0, 60.0) if settle is not None else 0.0
+    cups = _Field(p, root, 'Vacuum_OK_Min_Cups', 'Vacuum_OK_Min_Cups', 1)
+    if cups is not None and (isinstance(cups, bool) or not isinstance(cups, int) or not 1 <= cups <= CONST_CUPS):
+        p.Add(_Line(root, 'Vacuum_OK_Min_Cups', 1), 'Vacuum_OK_Min_Cups', 'must be a whole number of cups within 1-%d, not %r' % (CONST_CUPS, cups))
+    else:
+        s.Vacuum_OK_Min_Cups = cups or 0
     for name, groups in _Mapping(p, root, 'Allow_Contact', 'Allow_Contact', 1).items():
         at = getattr(name, 'Line', 0)
         if not isinstance(groups, list) or not groups or any(g not in CONST_CONTACT_GROUPS for g in groups):

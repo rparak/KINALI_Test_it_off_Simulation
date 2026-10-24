@@ -975,6 +975,27 @@ build fails (the wait would time out).
 Pinned by `test/Program/test_core.py::test_a_waitdi_holds_only_what_is_left_of_the_response` and
 `::test_a_broken_world_rule_is_refused`.
 
+## The simulated vacuum switch counts cups in physics only (F11)
+
+**Decision.** `DI_VACUUM_OK` is a sensor model in the physics run: true once `Simulation.yaml Vacuum_OK_Min_Cups` (4) cups have
+touched the PCB with the vacuum on for its `Signal_Response` (0.3 s); every `WaitDI(DI_VACUUM_OK)` is checked where its wait
+ends on the trajectory's timeline, and a false input stops the run with the step, the line, the cups and how long they held
+(`vacuum not OK at ...`, exit 1). The program's acceptance gets three items (SPEC §10.1 items 8-10: 4 of 4 cups in every hold,
+the PCB never lost, every WaitDI's input in time); the legacy run keeps items 1-7.
+
+**Why.** The owner's rule: the program waits for a real vacuum signal; the post-release WaitDI then means something in physics.
+The kinematic build does not count cups: it attaches the PCB to the cups at vacuum on by its rules (the held pose within 2 mm,
+`CONST_PCB_TOLERANCE`) and poses the board in the jaws at the nominal hold pose, which physics showed is 0.7 deg off
+(KNOWN_ISSUES.md); a cup count there would always be 4 and prove nothing.
+
+**Alternatives.** Letting a WaitDI extend the timeline until the input comes: physics follows the trajectory's fixed timeline;
+an input later than the build expected is reported as the wait failing. Counting cups in the kinematic build: always 4 (above).
+
+**Revisit if** the trajectory gets event-driven waits, or the vacuum model gets a pressure state.
+
+Pinned by `test/Simulation/test_core.py::test_the_vacuum_switch_fails_a_waitdi_whose_input_has_not_come`,
+`::test_a_program_run_fails_exactly_its_new_criterion` and `::test_the_old_take_loses_the_board_at_the_release`.
+
 ## The golden data is captured in the current names by one tool (F11)
 
 **Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;
