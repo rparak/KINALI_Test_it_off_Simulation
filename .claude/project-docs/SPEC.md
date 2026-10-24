@@ -844,7 +844,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Spline.Check_Step`, `Margin`, `Max_Refits` | deg, m, - | chosen; measured | `Smooth` |
 | `Topp_Grid_Points` | - | measured (B3) | `Time_Path` |
 | `Margins` | m (increasing) | measured 2026-10-24 | `Plan_Transfer` |
-| `Carry_Max_Tilt` | deg | real-cell practice, ASSUMED | `Free_Space_Cls` (B4) |
+| `Carry_Max_Tilt` | deg | the owner: 20 deg (no time cost), ASSUMED until F11's slip result | `Free_Space_Cls` (B4) |
 | `Waiting_Points` | transfer -> point | the robot-loader analysis (F9.8) | the transfer's legs; Constants.yaml's completeness (the point is the optimized program's only) |
 
 ## 9. Data formats and units

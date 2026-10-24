@@ -1207,6 +1207,11 @@ practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimize
       the new `P_LOADER_WAIT` (4.92 mm from the loader over the whole fetch and return), its last leg 1.660 s after `J_RETURN`
       starts; cycle unchanged 57.132 s; I7 kept (I7' would gain at most 0.2 s); no other candidate gains without splitting a
       LOCKED segment. D: no wait above the tester any more.
+- [x] F9.9 Carry_Max_Tilt 20 deg (owner): cycle 57.108 s, To_Output 1.768 s at 17.73 deg; the optimized program regenerated, reproduced
+      byte for byte, all LOCKED parts byte-identical. The final check of the value comes from F11's slip results.
+- [ ] Candidate experiment after step 6 (owner, 2026-10-24): start `J_INSERT` during the handover's last MoveL (at most -1.5 s).
+      Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a time-dependent check (I2
+      relaxed, the LOCKED handover split) and the physics proof.
 - Deviations from the design, each recorded: the planner and the optimizer are two domains (design-decisions); `Margins` (tried in
   order) and `Spline.Margin` replace `Margin_Steps`; a merged transfer is named after its last FREE segment; the robot-loader
   check is the exact build check with a slot / wait search, not planning against the loader's swept volume.

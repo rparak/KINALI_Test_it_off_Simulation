@@ -79,14 +79,14 @@ def test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused(tmp_pa
     """
     Description:
         --program Data/Optimized/Program_Optimized.yaml builds and checks the optimized program (exit 0, 16 steps, cycle
-        57.132 s); a copy whose recorded input hash differs is refused naming the input and the optimizer's command; a copy
+        57.108 s); a copy whose recorded input hash differs is refused naming the input and the optimizer's command; a copy
         whose recorded Schedule the build does not reproduce is refused naming the segment.
     """
 
     optimized = os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml')
     result = run_script('Program/build_program.py', ['--program', optimized, '--out', str(tmp_path)], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert 'program Program_Optimized: 16 steps, 14284 samples (4 ms), cycle time 57.132 s;' in result.stdout
+    assert 'program Program_Optimized: 16 steps, 14278 samples (4 ms), cycle time 57.108 s;' in result.stdout
     text = open(optimized, encoding='utf-8').read()
     stale = tmp_path / 'Stale.yaml'
     cell = text.split('    cell: "', 1)[1].split('"', 1)[0]

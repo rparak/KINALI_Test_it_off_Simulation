@@ -877,11 +877,12 @@ Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `te
 
 ## The optimized program's longer PCB path is accepted
 
-**Decision.** The optimized program carries the PCB 3.010 m against the taught 2.712 m (+11 %, measured 2026-10-24) while the
-robot's joint travel falls 18 % and the TCP's path 13 %: accepted (owner, 2026-10-24).
+**Decision.** The optimized program carries the PCB farther than the taught one: 3.010 m against 2.712 m (+11 %) with the first
+30 deg tilt limit, 2.856 m (+5 %) with 20 deg (measured 2026-10-24), while the robot's joint travel falls 18 % and the TCP's
+path 13-15 %: accepted (owner, 2026-10-24).
 
 **Why.** The optimizer's objective is time within the limits and the clearance; the FREE transfers that carry the PCB (To_Loader,
-To_Output) are shorter in time (1.148 s against 1.836 s, 1.792 s against 2.556 s), their clearances pass, and the tilt stays
+To_Output) are shorter in time (1.148 s against 1.836 s, 1.768 s against 2.556 s), their clearances pass, and the tilt stays
 within its limit.
 
 **Alternatives.** A path-length term in the planner: no gain in time, more tuning.
@@ -917,7 +918,8 @@ stays: the take starts when `J_RETURN` has ended.
 
 **Why.** Owner's observation (2026-10-24): the robot waited 4.05 s above MG06. The analysis: the loader is the critical path -
 `J_FETCH` 37.036-41.080 s, `J_RETURN` 41.080-44.680 s (at rest at `L_HOME` from 44.480 s, then its Wait(0.2)) - and the robot was
-already at `P_LOADER_ABOVE` at 43.364 s, so leaving earlier gains no time: the cycle stays 57.132 s. It removes the robot's wait
+already at `P_LOADER_ABOVE` at 43.364 s, so leaving earlier gains no time: the cycle stayed 57.132 s (57.108 s since the 20 deg
+tilt limit). It removes the robot's wait
 above the tester (which a real cell's safety zones would have had to allow). `P_LOADER_ABOVE` itself cannot be the waiting
 point: the `z_carriage` at its travel height meets the robot there (-18.91 mm); 23 mm above keeps 3.26 mm, 25 mm 4.92 mm (3 mm
 plus the planner's first margin), 20 mm 0.85 mm (measured over every sample of `J_FETCH` and `J_RETURN`). I7' (the take on the
@@ -953,3 +955,18 @@ format: loses the analytic speeds and the steps.
 **Revisit if** the owner's answers to F11's questions change the marks or the fork rule.
 
 Pinned by nothing yet (designed, not built).
+
+## The carried PCB tilts at most 20 deg
+
+**Decision.** `Optimization.yaml Carry_Max_Tilt` is 20 deg (owner, 2026-10-24), not the first, assumed 30 deg.
+
+**Why.** It costs no time: with 20 deg the optimizer plans To_Output at 17.73 deg in 1.768 s (30 deg: 28.98 deg in 1.792 s), the
+cycle 57.108 s (57.132 s) - the tighter limit steered RRT-Connect to a slightly shorter path; a flatter board is less likely to
+slip on the cups (KNOWN_ISSUES.md).
+
+**Alternatives.** 30 deg: the same time, a board tilted almost 29 deg while it accelerates.
+
+**Revisit if** F11's physics run shows slip in a carrying transfer (or none, which would allow more), or a real-cell value
+exists.
+
+Pinned by `test/Optimizer/test_core.py::test_the_carried_pcb_keeps_its_tilt_limit`.

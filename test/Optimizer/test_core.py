@@ -106,7 +106,7 @@ def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_conf
     """
     Description:
         The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
-        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.132 s against
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.108 s against
         68.852 s, measured 2026-10-24).
     """
 
@@ -114,7 +114,7 @@ def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_conf
                              built['meta'])
     assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
     assert built['trajectory'].T[-1] < built['default'].T[-1]
-    assert round(float(built['trajectory'].T[-1]), 3) == 57.132
+    assert round(float(built['trajectory'].T[-1]), 3) == 57.108
 
 
 def test_the_interlocks_hold(built, cell_configuration):
@@ -165,14 +165,14 @@ def test_a_locked_part_is_byte_identical_from_its_start(built, program, part):
 def test_the_carried_pcb_keeps_its_tilt_limit(built):
     """
     Description:
-        B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (30 deg): 8.94 deg
-        (To_Loader, P_LOADER_ABOVE's own tilt) and 28.98 deg (To_Output), measured 2026-10-24.
+        B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (20 deg): 8.94 deg
+        (To_Loader, P_LOADER_ABOVE's own tilt) and 17.73 deg (To_Output; Carry_Max_Tilt 20 deg), measured 2026-10-24.
     """
 
     limit = built['optimization'].Carry_Max_Tilt
     tilts = {name: Carried_Tilt(built['trajectory'], *Step_Bounds(built['trajectory'], name)) for name in ('To_Loader', 'To_Output')}
     assert all(t <= limit for t in tilts.values())
-    assert round(math.degrees(tilts['To_Loader']), 2) == 8.94 and round(math.degrees(tilts['To_Output']), 2) == 28.98
+    assert round(math.degrees(tilts['To_Loader']), 2) == 8.94 and round(math.degrees(tilts['To_Output']), 2) == 17.73
 
 
 def test_the_free_space_keeps_the_clearance_and_the_tilt(built, cell_configuration, program):

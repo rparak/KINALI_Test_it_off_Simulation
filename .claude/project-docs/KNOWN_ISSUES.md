@@ -130,15 +130,14 @@ known; the two differ in path, timing and the limits that apply.
 
 ## The carried PCB's tilt limit is an assumption
 
-`Optimization.yaml Carry_Max_Tilt` is 30 deg ("real-cell practice, assumed"): no measurement of what the four cups hold while
-the board tilts and accelerates. The optimized To_Output transfer reaches 28.98 deg (measured 2026-10-24). Sensitivity (a
-temporary run, not committed, owner 2026-10-24): with 20 deg the optimizer plans To_Output at 17.73 deg in 1.768 s (30 deg:
-1.792 s), the cycle 57.108 s (30 deg: 57.132 s) - a tighter limit costs nothing here. The value is decided after step 5's
-PCB-slip result.
+`Optimization.yaml Carry_Max_Tilt` is 20 deg (owner, 2026-10-24: it costs no time - the cycle 57.108 s against 57.132 s at the
+first, assumed 30 deg; To_Output then tilts the board 17.73 deg in 1.768 s instead of 28.98 deg in 1.792 s). No measurement of
+what the four cups hold while the board tilts and accelerates exists.
 
 - **Impact:** a planned transfer may tilt the board more than the vacuum holds on the real cell; the simulation's adhesion
   model (a constant force per cup) does not show slip until step 5.
-- **What would close it:** step 5's physics run of the optimized program (PCB slip on the cups), and a real-cell value.
+- **What would close it:** F11's physics run (the PCB's slip per FREE transfer, with the tilt and the TCP acceleration there)
+  confirms or changes the value; a real-cell value later.
 
 ## No station user frames
 

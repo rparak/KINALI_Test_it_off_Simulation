@@ -477,7 +477,7 @@ CONST_OPTIMIZATION_ERRORS = [
     ('Speed_Fraction: 0.6', 'Speed_Fraction: 0.0', 'Speed_Fraction: 0.0 is outside [0.01, 1]'),
     ('Seed: 20261024', 'Seed: -1', 'Seed: must be a whole number within [0, 2147483647]'),
     ('  Max_Refits: 20', '  Max_Refits: 2.5', 'Spline.Max_Refits: must be a whole number within [0, 1000]'),
-    ('Carry_Max_Tilt: 30.0\n', '', 'Carry_Max_Tilt: missing (REQUIRED)'),
+    ('Carry_Max_Tilt: 20.0\n', '', 'Carry_Max_Tilt: missing (REQUIRED)'),
     ('  To_Take: P_LOADER_WAIT', '  To_Bed: P_LOADER_WAIT', 'Waiting_Points.To_Bed: is not a FREE transfer'),
     ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_NAP', "Waiting_Points.To_Take: 'P_LOADER_NAP' is not a point of Constants.yaml"),
     ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_ABOVE', 'Waiting_Points.To_Take: P_LOADER_ABOVE is used by the taught program'),
@@ -499,12 +499,12 @@ def test_an_invalid_optimization_setting_is_named(tmp_path, program, old, new, t
 def test_the_shipped_optimization_settings_load(program):
     """
     Description:
-        Configuration/Optimization.yaml loads in SI units: the eight FREE segments, the margins, 30 deg of tilt.
+        Configuration/Optimization.yaml loads in SI units: the eight FREE segments, the margins, 20 deg of tilt.
     """
 
     o = Load_Optimization(program)
     assert len(o.Free_Segments) == 8 and o.Margins == [0.002, 0.003, 0.005] and o.Speed_Fraction == 0.6
-    assert math.isclose(o.Carry_Max_Tilt, math.radians(30.0)) and math.isclose(o.Rrt_Edge_Step, math.radians(1.0))
+    assert math.isclose(o.Carry_Max_Tilt, math.radians(20.0)) and math.isclose(o.Rrt_Edge_Step, math.radians(1.0))
 
 
 def test_an_optimizer_point_is_used_only_by_the_optimized_program(tmp_path, monkeypatch, constants, simulation, cell_configuration):

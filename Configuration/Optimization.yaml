@@ -65,6 +65,7 @@ Margins: [0.002, 0.003, 0.005]
 Waiting_Points:
   To_Take: P_LOADER_WAIT
 
-# The largest tilt of the carried PCB from horizontal in a FREE transfer (B4) [deg]. Source: real-cell practice for a
-# board held by four suction cups, ASSUMED (no measurement); P_LOADER_ABOVE itself tilts the board 8.94 deg.
-Carry_Max_Tilt: 30.0
+# The largest tilt of the carried PCB from horizontal in a FREE transfer (B4) [deg]. Source: the owner, 2026-10-24 - 20 deg
+# costs no time (the cycle 57.108 s against 57.132 s at the first, assumed 30 deg; To_Output then tilts 17.73 deg instead of
+# 28.98); P_LOADER_ABOVE itself tilts the board 8.94 deg. ASSUMED until step 5's PCB-slip result confirms it (F11).
+Carry_Max_Tilt: 20.0
