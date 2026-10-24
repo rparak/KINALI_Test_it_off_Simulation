@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/show_cell.py
+# File Name: ../Example/Render/render_image.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -27,7 +27,7 @@ import sys
 import os
 # The repository root, built from this file's location, so the script runs from any working directory.
 #   Unit [string]
-CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 #   Add access if it is not in the system path.
 if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
@@ -36,42 +36,49 @@ import argparse
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
 # Custom Lib.:
-#   ../Configuration/Core - the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
+#   ../Configuration/Core - paths, the logs
+from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_OUTPUT
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
-#   ../Render/Core - the viewer
-from Render.Core import Launch_Viewer
+#   ../Render/Core - the image
+from Render.Core import Render_Image, Save_Image, Render_Error_Cls
+
+"""
+Description:
+    Initialization of constants.
+"""
+# The default camera and file name: the proof image of the green PCB (design-decisions).
+#   Unit [string]
+CONST_CAMERA, CONST_IMAGE_NAME = 'cam_pcb', 'pcb_green.png'
 
 
 def main():
     """
     Description:
-        Open MuJoCo's viewer on the cell built by Scene.Core (the initial state: MG06 open, PCB in the
-        loader jaws). Blocks until the window is closed; runs under python on macOS. --headless builds the
-        cell and exits (used by the tests).
+        An offscreen image of the cell at its initial state from a camera, through Render.Core, saved as a
+        PNG (matplotlib) into DIR (default output/pcb_green.png from cam_pcb).
 
-            .venv/bin/python Example/show_cell.py [--headless]
+            .venv/bin/python Example/Render/render_image.py [--camera cam_pcb] [--name pcb_green.png] [--out DIR]
     """
 
-    parser = argparse.ArgumentParser(description='Open the MuJoCo viewer on the cell.')
-    parser.add_argument('--headless', action='store_true', help='build the cell and exit without a window')
+    parser = argparse.ArgumentParser(description='Offscreen image of the cell from a camera.')
+    parser.add_argument('--camera', default=CONST_CAMERA, help='the camera (default: %s)' % CONST_CAMERA)
+    parser.add_argument('--name', default=CONST_IMAGE_NAME, help='the file name (default: %s)' % CONST_IMAGE_NAME)
+    parser.add_argument('--out', default=CONST_OUTPUT, help='write into this directory (default: output/)')
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('show_cell')
+    log = Script_Log_Cls('render_image')
     try:
         model = Build_Cell_Model()
-    except Scene_Error_Cls as error:
+        data = mujoco.MjData(model)
+        mujoco.mj_forward(model, data)
+        path = Save_Image(Render_Image(model, data, args.camera), os.path.join(args.out, args.name))
+    except (Scene_Error_Cls, Render_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
-    data = mujoco.MjData(model)
-    mujoco.mj_forward(model, data)
-    print(log.Line('[INFO] Cell built: %d bodies, %d geoms, %d actuators.' % (model.nbody, model.ngeom, model.nu)))
-    if not args.headless:
-        print(log.Line('[INFO] Opening the viewer; close its window to exit.'))
-        Launch_Viewer(model, data)
+    print(log.Line('[INFO] Wrote %s (camera %s).' % (path, args.camera)))
     log.Close()
     return 0
 

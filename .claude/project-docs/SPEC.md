@@ -139,7 +139,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 
 - Loader: home y −0.1000 / z 0; place y +0.19666 / z +0.06722; travel height z +0.07922; park
   y −0.1995 / z +0.020; jaws open 0.035, grip 0.01775 (clamp command 0.00575). Source:
-  `Data/pcb_meta.json`, `legacy/plan_cell.py` (git tag `legacy-planner-reference`).
+  `Data/PCB/pcb_meta.json`, `legacy/plan_cell.py` (git tag `legacy-planner-reference`).
 - PCB in the loader jaws (loader home): position (0.0057, −0.30829, 0.14961), quaternion
   (0.99696, 0.07794, 0, 0) (8.94° tilt); placed in MG06: (0.0057, −0.011636, 0.216826), same quaternion.
 - PCB in a crate: flat, board centre at the crate centre, z = 0.004 + 0.0009. Input crate centre
@@ -284,7 +284,7 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 
 ### 4.9 The recorded MG06 fork path (brief §6, verbatim)
 
-`fork_close_open_path.npz` is now `Data/fork_close_open_path.npz`, and
+`fork_close_open_path.npz` is now `Data/Paths/fork_close_open_path.npz`, and
 `tools/plan_cell.py` became `legacy/plan_cell.py`, removed in F4 and kept in git: the fork-path joins,
 the leave / return path around the closed handle and the other special moves are looked up with
 `git show legacy-planner-reference:legacy/plan_cell.py` (step 4 builds the `path` command from them).
@@ -380,27 +380,34 @@ pytest.ini                import mode and the slow marker (root exception)
 .claude/project-docs/     SPEC.md, KNOWN_ISSUES.md, design-decisions.md, FEATURES.md (the tracker)
 .claude/skills/<skill>/references/   the project layer of each personal skill (no SKILL.md tracked)
 models/scene.xml          the finished scene (workstation, MG06, loader, PCB), from Blender; never regenerated
-models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/export_cell_scene.py
+models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/Scene/export_cell_scene.py
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
 models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Mujoco
 models/robot_tool/        VGC10 + fork MJCF and meshes
-Data/pcb_meta.json        PCB poses and loader axis positions
-Data/fork_close_open_path.npz   recorded flange path that closes / opens MG06
+Data/PCB/pcb_meta.json    PCB poses and loader axis positions
+Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
+Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
 src/Configuration/Core.py the repository paths, the PCB meta reader, the MuJoCo log route
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
 src/Render/Core.py        offscreen image, viewer start
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
-Example/run_cycle.py      the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
-Example/export_cell_scene.py   writes models/cell_scene.xml
-Example/show_cell.py      opens the viewer on the cell
-Example/render_image.py   offscreen image from a camera into output/
-Example/model_fingerprint.py   writes or compares the compiled model's fingerprint
-test/<Domain>/test_core.py     mirroring src/; test/Example/, test/Install/, test/Docs/; reference data in test/<Domain>/data/
+Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
+Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
+Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
+Example/Render/show_cell.py            opens the viewer on the cell
+Example/Render/render_image.py         offscreen image from a camera into output/
+test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
+                               reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 output/                   generated reports and images (git-ignored)
 ```
+
+`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`; later
+`Keypoints`, `Program`, `Media`). `Data/` is ordered by purpose. The step 3 configuration (cell, keypoints,
+program YAML) goes into a root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
+in the template's `Configuration/Cell_SF1.yaml`), created with its first file in step 3.
 
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene`; `Simulation` → `Configuration`, `Scene`, `Collision`. Scripts reach
@@ -411,7 +418,7 @@ output/                   generated reports and images (git-ignored)
 ### 7.1 Configuration
 
 The repository's folders and files as constants built from the module's location, never from the
-working directory; the reader of `Data/pcb_meta.json`; the route of MuJoCo's log file into `logger/`.
+working directory; the reader of `Data/PCB/pcb_meta.json`; the route of MuJoCo's log file into `logger/`.
 From step 3 on, the only reader of the YAML configuration (§8).
 
 ### 7.2 Scene
@@ -447,8 +454,8 @@ values; formats the report of §4.6; checks §10.1.
 
 ## 8. Configuration
 
-Not applicable yet: no configuration file exists. Step 3 adds `Configuration/` with the cell and
-keypoint YAML, read only by `src/Configuration/Core.py`, every field REQUIRED with unit and source
+Not applicable yet: no configuration file exists. Step 3 adds the root folder `Configuration/` (§6) with
+the cell, keypoint and program YAML, read only by `src/Configuration/Core.py`, every field REQUIRED with unit and source
 (project-style-rpx references/yaml.md). Until then the cell's values are code constants with their
 sources in `src/Scene/Core.py`.
 
@@ -465,11 +472,11 @@ sources in `src/Scene/Core.py`.
 |---|---|
 | `models/scene.xml` and the vendored / tool MJCFs | `Scene` (MjSpec), never written |
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
-| `Data/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand |
-| `Data/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
+| `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand |
+| `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
-| the report (text) | `Simulation` (`Format_Report`), printed by `Example/run_cycle.py`, copied to `--out`/`report.txt` (default `output/`) |
-| the model fingerprint (JSON) | `Example/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
+| the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `output/`) |
+| the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file (step 4) | to be specified in step 4: `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`, `vacuum`, `step_index`, `step_label`, sampled at 4 ms |
 
@@ -505,7 +512,7 @@ commands, editing keypoints and program, the file formats.
   `geoms/pcb_vis/geom_rgba` (the green PCB).
 - The cycle run's printed report diffs empty against `test/Simulation/data/baseline_report.txt`.
 - Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow: report, §10.1, raw values)
-  and `test/Example/test_run_cycle.py` (slow: the script's stdout).
+  and `test/Example/Simulation/test_run_cycle.py` (slow: the script's stdout).
 
 ## 11. Installer — `install.sh`
 

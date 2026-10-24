@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/test_run_cycle.py
+# File Name: ../test/Example/Simulation/test_run_cycle.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -32,7 +32,7 @@ import pytest
 Description:
     Initialization of constants.
 
-    Example/run_cycle.py run as a person runs it (fresh interpreter, unrelated working directory).
+    Example/Simulation/run_cycle.py run as a person runs it (fresh interpreter, unrelated working directory).
 """
 # The exit codes the script documents: all criteria met, one failed, cannot run / unstable.
 #   Unit [int]
@@ -55,7 +55,7 @@ def test_the_cycle_prints_the_baseline_report_and_passes(root, tmp_path, run_scr
 
     work = tmp_path / 'work'
     work.mkdir()
-    result = run_script('run_cycle.py', ['--out', str(tmp_path / 'out')], work)
+    result = run_script('Simulation/run_cycle.py', ['--out', str(tmp_path / 'out')], work)
     with open(os.path.join(root, 'test', 'Simulation', 'data', 'baseline_report.txt'), encoding='utf-8') as handle:
         baseline = handle.read()
     assert result.returncode == CONST_PASSED, result.stderr
@@ -73,7 +73,7 @@ def test_a_plan_that_cannot_be_read_exits_2_with_an_error_line(root, tmp_path, r
         A missing plan is an [ERROR] line naming it, exit 2, no report.
     """
 
-    result = run_script('run_cycle.py', ['--plan', str(tmp_path / 'absent.npz'), '--out', str(tmp_path / 'out')], tmp_path)
+    result = run_script('Simulation/run_cycle.py', ['--plan', str(tmp_path / 'absent.npz'), '--out', str(tmp_path / 'out')], tmp_path)
     assert result.returncode == CONST_ERROR
     assert '[ERROR] The plan %s cannot be read' % (tmp_path / 'absent.npz') in result.stderr
     assert not (tmp_path / 'out').exists() and '[ERROR]' in _Log(root)
@@ -90,7 +90,7 @@ def test_a_plan_that_misses_the_criteria_exits_1_naming_them(tmp_path, run_scrip
     plan = tmp_path / 'short.npz'
     np.savez(plan, dt=0.004, q=q, q_home=q[0], loader='{"y": [], "z": [], "jaw": []}', events='[]',
              phases='[[0.0, "loader: up, to park"]]', J_OPEN=0.035, T=1.0)
-    result = run_script('run_cycle.py', ['--plan', str(plan), '--out', str(tmp_path / 'out')], tmp_path)
+    result = run_script('Simulation/run_cycle.py', ['--plan', str(plan), '--out', str(tmp_path / 'out')], tmp_path)
     assert result.returncode == CONST_FAILED, result.stderr
     assert '[ERROR] FAIL vacuum ON 2x with 4/4 cups' in result.stderr
     assert 'acceptance checks failed' in result.stderr and (tmp_path / 'out' / 'report.txt').exists()

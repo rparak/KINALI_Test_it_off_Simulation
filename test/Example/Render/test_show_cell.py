@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/test_show_cell.py
+# File Name: ../test/Example/Render/test_show_cell.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -32,7 +32,7 @@ def test_the_viewer_script_builds_the_cell_headless(root, tmp_path, run_script):
         nothing to the working directory (the window itself is not opened in the tests).
     """
 
-    result = run_script('show_cell.py', ['--headless'], tmp_path)
+    result = run_script('Render/show_cell.py', ['--headless'], tmp_path)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == '[INFO] Cell built: 25 bodies, 509 geoms, 13 actuators.'
     with open(os.path.join(root, 'logger', 'show_cell.log'), encoding='utf-8') as handle:

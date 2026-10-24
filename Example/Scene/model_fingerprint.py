@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/model_fingerprint.py
+# File Name: ../Example/Scene/model_fingerprint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -27,7 +27,7 @@ import sys
 import os
 # The repository root, built from this file's location, so the script runs from any working directory.
 #   Unit [string]
-CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 #   Add access if it is not in the system path.
 if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
@@ -246,7 +246,7 @@ def main():
         Compare the cell's fingerprint with the baseline (default) or another file, listing every difference
         (exit 1 if there is one), or write it with --out.
 
-            .venv/bin/python Example/model_fingerprint.py [--compare FILE | --out FILE]
+            .venv/bin/python Example/Scene/model_fingerprint.py [--compare FILE | --out FILE]
     """
 
     parser = argparse.ArgumentParser(description='Fingerprint of the compiled cell: compare or write.')

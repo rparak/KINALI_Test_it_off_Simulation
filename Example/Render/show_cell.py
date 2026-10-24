@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/export_cell_scene.py
+# File Name: ../Example/Render/show_cell.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -27,43 +27,51 @@ import sys
 import os
 # The repository root, built from this file's location, so the script runs from any working directory.
 #   Unit [string]
-CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 #   Add access if it is not in the system path.
 if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
+# MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
+import mujoco
 # Custom Lib.:
-#   ../Configuration/Core - paths, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_CELL_SCENE_XML
-#   ../Scene/Core - the cell and its export
-from Scene.Core import Export_Cell_Scene, Scene_Error_Cls
+#   ../Configuration/Core - the logs
+from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
+#   ../Scene/Core - the cell
+from Scene.Core import Build_Cell_Model, Scene_Error_Cls
+#   ../Render/Core - the viewer
+from Render.Core import Launch_Viewer
 
 
 def main():
     """
     Description:
-        Write the whole cell as one MJCF for MuJoCo's viewer, through Scene.Core.Export_Cell_Scene, with the
-        mesh paths relative to the file (default models/cell_scene.xml).
+        Open MuJoCo's viewer on the cell built by Scene.Core (the initial state: MG06 open, PCB in the
+        loader jaws). Blocks until the window is closed; runs under python on macOS. --headless builds the
+        cell and exits (used by the tests).
 
-            .venv/bin/python Example/export_cell_scene.py [--out DIR]
+            .venv/bin/python Example/Render/show_cell.py [--headless]
     """
 
-    parser = argparse.ArgumentParser(description='Write the whole cell as one MJCF (cell_scene.xml).')
-    parser.add_argument('--out', default=None, help='write cell_scene.xml into this directory (default: models/)')
+    parser = argparse.ArgumentParser(description='Open the MuJoCo viewer on the cell.')
+    parser.add_argument('--headless', action='store_true', help='build the cell and exit without a window')
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('export_cell_scene')
-    path = CONST_CELL_SCENE_XML if args.out is None else os.path.join(args.out, os.path.basename(CONST_CELL_SCENE_XML))
+    log = Script_Log_Cls('show_cell')
     try:
-        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        written = Export_Cell_Scene(path)
+        model = Build_Cell_Model()
     except Scene_Error_Cls as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
-    print(log.Line('[INFO] Wrote %s. View it with: .venv/bin/python -m mujoco.viewer --mjcf=%s' % (written, written)))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    print(log.Line('[INFO] Cell built: %d bodies, %d geoms, %d actuators.' % (model.nbody, model.ngeom, model.nu)))
+    if not args.headless:
+        print(log.Line('[INFO] Opening the viewer; close its window to exit.'))
+        Launch_Viewer(model, data)
     log.Close()
     return 0
 

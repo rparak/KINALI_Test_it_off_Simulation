@@ -25,14 +25,14 @@ Language: English in every file, report and commit; the owner's notes may be in 
 
 - The verified physics (SPEC §3, mjcf.md): timestep, solver options, contact parameters, friction,
   masses, geometry, actuator gains and ranges, vacuum, bellows, the CAD deviations.
-- Formats: `models/scene.xml`, `Data/pcb_meta.json`, `Data/Reference/cell_plan.npz`, the trajectory file and
+- Formats: `models/scene.xml`, `Data/PCB/pcb_meta.json`, `Data/Reference/cell_plan.npz`, the trajectory file and
   the keypoint / program files (from steps 3–4), the report's lines.
 - The acceptance criteria (SPEC §10.1) and the 3 mm keypoint / segment clearance.
 - `requirements.txt` pins and the interpreter.
 
 ## Real data for reproducing a premise
 
-The reference plan `Data/Reference/cell_plan.npz` and its run (`Example/run_cycle.py`; the legacy planner and
+The reference plan `Data/Reference/cell_plan.npz` and its run (`Example/Simulation/run_cycle.py`; the legacy planner and
 cycle test in git tag `legacy-planner-reference`), the baseline report and fingerprint (`test/<Domain>/data/`), the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
@@ -86,7 +86,7 @@ report and the fingerprint.
 
 ## Visual changes
 
-Open the cell in the viewer (`Example/show_cell.py`) or render an image (`Example/render_image.py`) and
+Open the cell in the viewer (`Example/Render/show_cell.py`) or render an image (`Example/Render/render_image.py`) and
 look at what changed.
 
 ## Commits

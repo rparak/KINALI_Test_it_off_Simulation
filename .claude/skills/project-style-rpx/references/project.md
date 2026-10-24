@@ -15,7 +15,7 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
 
 - Holder: **Roman Parak** - `Copyright (c) 2026 Roman Parak`, `Author   : Roman Parak`; licence MIT
   (`LICENSE`). The `#`-comment header form. `File Name:` examples: `../Scene/Core.py` for
-  `src/Scene/Core.py`, `../Example/run_cycle.py`, `../test/Scene/test_core.py`.
+  `src/Scene/Core.py`, `../Example/Simulation/run_cycle.py`, `../test/Scene/test_core.py`.
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
   `Example`, `test`; no exclusions.
 - Command: `.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test`.
@@ -24,15 +24,20 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
 
 ```
 src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation
-Example/<script>.py    run_cycle.py, export_cell_scene.py, show_cell.py, render_image.py, model_fingerprint.py
-test/<Domain>/test_core.py   mirroring src/; test/Example/test_<script>.py; test/Install/test_install.py;
-                       test/Docs/test_layout.py; reference data in test/<Domain>/data/
+Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
+                       Render/show_cell.py, Render/render_image.py
+test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
+                       test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
-Data/                  pcb_meta.json, fork_close_open_path.npz
+Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
+Configuration/         (step 3) the cell, keypoint and program YAML; created with its first file
 logger/, output/       git-ignored, created at run time / by install.sh
 ```
 
-The scripts folder is `Example/`. Scripts may import other scripts as modules (none does yet).
+The scripts folder is `Example/`, one subfolder per `src/` domain a script belongs to (later `Keypoints`,
+`Program`, `Media`); a script builds the repository root from `__file__` two folders up. Scripts may import
+other scripts as modules (none does yet). `Data/` subfolders are named by purpose, Pascal case like the
+domains.
 
 Layer order 📄:
 
@@ -60,11 +65,11 @@ entries. Pinned by `test/Docs/test_layout.py`.
 |---|---|
 | `models/scene.xml`, `models/aubo_i5/aubo_i5.xml`, `models/robot_tool/vgc10_opener_free.xml` | `Scene.Core` through MjSpec; never written (mjcf.md) |
 | `models/cell_scene.xml` | written by `Scene.Core.Export_Cell_Scene`; read only by MuJoCo's viewer |
-| `Data/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand |
-| `Data/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
+| `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand |
+| `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
-| the cycle report | `Simulation.Core.Format_Report`; printed and copied to `output/report.txt` by `Example/run_cycle.py` |
-| the model fingerprint JSON | `Example/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
+| the cycle report | `Simulation.Core.Format_Report`; printed and copied to `output/report.txt` by `Example/Simulation/run_cycle.py` |
+| the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
 ## Configuration
@@ -103,7 +108,7 @@ returned list, printed by the script, exit code 1.
 - Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and write every line
   to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
   to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
-  `test/conftest.py`). `Example/run_cycle.py` prints the report on stdout and its own lines on stderr, so
+  `test/conftest.py`). `Example/Simulation/run_cycle.py` prints the report on stdout and its own lines on stderr, so
   stdout is the report byte for byte.
 - Module-level private helpers: `_Pascal_Snake_Case` (e.g. `Scene.Core._Apply_Look`), like test
   helpers (the generic skill leaves it *Unsettled*; decided 2026-10-24).

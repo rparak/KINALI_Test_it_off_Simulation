@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/test_render_image.py
+# File Name: ../test/Example/Render/test_render_image.py
 ## =========================================================================== ##
 
 # Matplotlib (Plotting) [pip3 install matplotlib]
@@ -31,7 +31,7 @@ def test_the_pcb_image_is_written_into_out(tmp_path, run_script):
         The default camera writes pcb_green.png (960 x 720) into --out.
     """
 
-    result = run_script('render_image.py', ['--out', str(tmp_path)], tmp_path)
+    result = run_script('Render/render_image.py', ['--out', str(tmp_path)], tmp_path)
     assert result.returncode == 0, result.stderr
     assert mpimg.imread(str(tmp_path / 'pcb_green.png')).shape[:2] == (720, 960)
 
@@ -42,6 +42,6 @@ def test_an_unknown_camera_is_an_error_line(tmp_path, run_script):
         An unknown camera is an [ERROR] line naming the cameras, exit 1, no file.
     """
 
-    result = run_script('render_image.py', ['--camera', 'cam_none', '--out', str(tmp_path / 'out')], tmp_path)
+    result = run_script('Render/render_image.py', ['--camera', 'cam_none', '--out', str(tmp_path / 'out')], tmp_path)
     assert result.returncode == 1 and "[ERROR] The model has no camera 'cam_none'" in result.stdout
     assert not (tmp_path / 'out').exists()

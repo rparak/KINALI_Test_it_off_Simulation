@@ -319,7 +319,7 @@ Sub-tasks:
 
 - [x] F4.1 Tag and remove legacy planner
 - [x] F4.2 Remove docs/ after moving remaining content
-- [ ] F4.3 Structure Data/ and Example/ into subfolders
+- [x] F4.3 Structure Data/ and Example/ into subfolders
 - [ ] F4.4 Replace output/ with the generated-artefacts rule
 - [ ] F4.5 Fresh-clone check
 

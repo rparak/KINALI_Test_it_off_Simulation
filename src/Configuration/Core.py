@@ -37,7 +37,7 @@ Description:
     Initialization of constants.
 
     The repository's folders and files, built from this module's location (src/Configuration/Core.py),
-    never from the working directory (SPEC §7.1); the reader of Data/pcb_meta.json; the route of
+    never from the working directory (SPEC §7.1); the reader of Data/PCB/pcb_meta.json; the route of
     MuJoCo's log and of a script's lines into logger/. It prints nothing.
 """
 # The repository root: two folders above src/Configuration/.
@@ -46,7 +46,7 @@ CONST_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__fil
 # The MJCF files and their meshes (style project page mjcf.md).
 #   Unit [string]
 CONST_MODELS = os.path.join(CONST_ROOT, 'models')
-# Hand-written input data: the PCB poses and the recorded fork path.
+# Input data by purpose: PCB/ (the PCB poses), Paths/ (recorded robot paths), Reference/ (the regression plan).
 #   Unit [string]
 CONST_DATA = os.path.join(CONST_ROOT, 'Data')
 # Generated reports and images (git-ignored, created by install.sh or on first use).
@@ -68,8 +68,8 @@ CONST_TOOL_XML = os.path.join(CONST_MODELS, 'robot_tool', 'vgc10_opener_free.xml
 # The PCB poses and the loader axis positions (SPEC §4.4), and the recorded flange path that closes
 # and opens MG06 (SPEC §4.9).
 #   Unit [string]
-CONST_PCB_META = os.path.join(CONST_DATA, 'pcb_meta.json')
-CONST_FORK_PATH = os.path.join(CONST_DATA, 'fork_close_open_path.npz')
+CONST_PCB_META = os.path.join(CONST_DATA, 'PCB', 'pcb_meta.json')
+CONST_FORK_PATH = os.path.join(CONST_DATA, 'Paths', 'fork_close_open_path.npz')
 # The verified IK plan the cycle run is proven on (SPEC §4.6), the regression input until step 6 replaces it
 # with the keypoint program; its planner is in git tag legacy-planner-reference (design-decisions).
 #   Unit [string]
@@ -80,7 +80,7 @@ CONST_REPORT_NAME = 'report.txt'
 # MuJoCo's log file; MuJoCo writes MUJOCO_LOG.TXT into the working directory unless told otherwise.
 #   Unit [string]
 CONST_MUJOCO_LOG = os.path.join(CONST_LOGGER, 'MUJOCO_LOG.TXT')
-# The keys of Data/pcb_meta.json, each a position [m] (3 values), a quaternion (4 values, w first) or a
+# The keys of Data/PCB/pcb_meta.json, each a position [m] (3 values), a quaternion (4 values, w first) or a
 # scalar [m]; every key is required.
 #   Unit [Dict<string, int>] (key -> number of values, 1 = scalar)
 CONST_PCB_META_KEYS = {'cad_pos': 3, 'place_pos': 3, 'hold_pos': 3, 'quat': 4, 'y_home': 1, 'y_place': 1,
@@ -99,7 +99,7 @@ class Configuration_Error_Cls(ValueError):
 class PCB_Meta_Str:
     """
     Description:
-        The PCB poses and loader axis positions of Data/pcb_meta.json (SPEC §4.4), in the MG06 fixture
+        The PCB poses and loader axis positions of Data/PCB/pcb_meta.json (SPEC §4.4), in the MG06 fixture
         frame. Built by Read_PCB_Meta.
     """
 
@@ -132,11 +132,11 @@ class PCB_Meta_Str:
 def Read_PCB_Meta(path: str = CONST_PCB_META) -> PCB_Meta_Str:
     """
     Description:
-        Read Data/pcb_meta.json, the only reader of that file. Every problem is collected first and
+        Read Data/PCB/pcb_meta.json, the only reader of that file. Every problem is collected first and
         reported once: a missing file, invalid JSON, a missing key, a value of the wrong length or type.
 
     Args:
-        (1) path [string]: The file (default: Data/pcb_meta.json).
+        (1) path [string]: The file (default: Data/PCB/pcb_meta.json).
 
     Returns:
         (1) parameter [PCB_Meta_Str(object)]: The poses and positions, in m.

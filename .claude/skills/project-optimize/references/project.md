@@ -7,9 +7,9 @@ file overrides it where they differ. No `SKILL.md` is tracked here.
 
 | Output | Produced by (into a temporary directory) | Deterministic inputs | Identical on two runs (date) |
 |---|---|---|---|
-| The cycle report (stdout) | `.venv/bin/python Example/run_cycle.py --out "$SCRATCH"` | `Data/Reference/cell_plan.npz`, the scene files, `Data/pcb_meta.json`; no randomness | yes, 2026-10-24 (every run of F1-F3, Python 3.14 and 3.11, empty diffs against `test/Simulation/data/baseline_report.txt`) |
-| The model fingerprint | `.venv/bin/python Example/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
-| `models/cell_scene.xml` | `.venv/bin/python Example/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
+| The cycle report (stdout) | `.venv/bin/python Example/Simulation/run_cycle.py --out "$SCRATCH"` | `Data/Reference/cell_plan.npz`, the scene files, `Data/PCB/pcb_meta.json`; no randomness | yes, 2026-10-24 (every run of F1-F3, Python 3.14 and 3.11, empty diffs against `test/Simulation/data/baseline_report.txt`) |
+| The model fingerprint | `.venv/bin/python Example/Scene/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
+| `models/cell_scene.xml` | `.venv/bin/python Example/Scene/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
 
 The report is the contract: a refactor of the physics path is proven by an empty diff against the
 baseline report, plus the acceptance checks.
@@ -28,7 +28,7 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 ## Reached without a grep hit
 
 - Entry points: `Example/*.py`, `install.sh` (names `requirements.txt`); `test/conftest.py` imports
-  `Example/model_fingerprint.py`.
+  `Example/Scene/model_fingerprint.py`.
 - MuJoCo names by string: bodies, geoms, sites, actuators, cameras (`pcb_vis`, `aubo/tool/suction_tcp`,
   `vacuum0`, `cam_pcb`, ...) in code and tests.
 - Files by path string: `models/`, `Data/`, the baselines,

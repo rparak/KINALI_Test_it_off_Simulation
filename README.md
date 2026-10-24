@@ -10,7 +10,7 @@ a regression baseline. A keypoint-based robot program is in progress. A full REA
 
 ```bash
 ./install.sh                                                    # install: .venv with Python 3.11 and the pinned requirements
-.venv/bin/python Example/run_cycle.py                           # headless physics run of the cycle + report (output/report.txt)
-.venv/bin/python Example/export_cell_scene.py                   # write models/cell_scene.xml
+.venv/bin/python Example/Simulation/run_cycle.py                           # headless physics run of the cycle + report (output/report.txt)
+.venv/bin/python Example/Scene/export_cell_scene.py                   # write models/cell_scene.xml
 .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml  # interactive viewer
 ```

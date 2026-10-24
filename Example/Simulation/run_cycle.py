@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/run_cycle.py
+# File Name: ../Example/Simulation/run_cycle.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -27,7 +27,7 @@ import sys
 import os
 # The repository root, built from this file's location, so the script runs from any working directory.
 #   Unit [string]
-CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+CONST_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 #   Add access if it is not in the system path.
 if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
@@ -59,7 +59,7 @@ def main():
         [INFO] / [ERROR] lines on stderr, everything also in logger/run_cycle.log. Exit 0 when every
         criterion is met, 1 when one fails, 2 when the run cannot start or becomes unstable.
 
-            .venv/bin/python Example/run_cycle.py [--plan Data/Reference/cell_plan.npz] [--out output/] [--progress]
+            .venv/bin/python Example/Simulation/run_cycle.py [--plan Data/Reference/cell_plan.npz] [--out output/] [--progress]
     """
 
     parser = argparse.ArgumentParser(description='Physics run of a cell plan: report and acceptance checks.')
