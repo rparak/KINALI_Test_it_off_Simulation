@@ -299,7 +299,7 @@ Mutations that changed nothing (findings about the code, not the tests): the pha
 instead of 20 steps, and a 0.1 mm instead of 0.5 mm cup-touch threshold, change no output of the legacy
 plan (every phase starts on a 20-step boundary; the cups sit deeper than 0.1 mm).
 
-## F4 - Root clean-up: legacy, docs and the output folder removed; Data/ and Example/ in subfolders (owner, 2026-10-24)
+## F4 - Root clean-up: legacy, docs and the output folder removed; Data/ and Example/ in subfolders (owner, 2026-10-24) - done
 
 Requirements:
 
@@ -321,7 +321,14 @@ Sub-tasks:
 - [x] F4.2 Remove docs/ after moving remaining content
 - [x] F4.3 Structure Data/ and Example/ into subfolders
 - [x] F4.4 Replace the output folder with the generated-artefacts rule (logger/ + Data/Generated/<Kind>/)
-- [ ] F4.5 Fresh-clone check
+- [x] F4.5 Fresh-clone check (2026-10-24, at 5fb719b): ./install.sh exit 0 (Python 3.11.2, mujoco 3.16.0); full
+      pytest 103 passed in 46 s; Example/Simulation/run_cycle.py exit 0, stdout and
+      Data/Generated/Reports/report.txt diff empty against the baseline, nothing in the working directory;
+      the viewer loaded models/cell_scene.xml (10 s, no error). git grep: 'output/' only in the brief's
+      verbatim quotes in SPEC §2 and §16; no 'out/' path.
+
+Per-commit checks (fingerprint / fast tests / cycle diff / style): bf210a3, c3ccae9, 50a9793, 5fb719b - each
+1 difference (pcb_vis rgba) / 99 passed / empty / 0 issues.
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
