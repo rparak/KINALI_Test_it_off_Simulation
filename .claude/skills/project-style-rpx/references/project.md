@@ -17,8 +17,7 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
   (`LICENSE`). The `#`-comment header form. `File Name:` examples: `../Scene/Core.py` for
   `src/Scene/Core.py`, `../Example/run_cycle.py`, `../test/Scene/test_core.py`.
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
-  `Example`, `test`; no exclusions. `legacy/` is outside the check roots on purpose: it is the frozen
-  regression reference (design-decisions), changed in imports and paths only, removed in step 6.
+  `Example`, `test`; no exclusions.
 - Command: `.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test`.
 
 ## Layout and layers (SPEC §6)
@@ -30,7 +29,6 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/test_<script>.py; test
                        test/Docs/test_layout.py; reference data in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
 Data/                  pcb_meta.json, fork_close_open_path.npz
-legacy/                the frozen reference (until step 6)
 logger/, output/       git-ignored, created at run time / by install.sh
 ```
 
@@ -44,7 +42,6 @@ Scene                     → Configuration
 Kinematics, Collision     → Scene
 Simulation                → Configuration, Scene, Collision
 Example/                  → any of src/
-legacy/                   → src/ through its shims cell.py and robot_kin.py
 ```
 
 `Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Keypoints, Program and
@@ -53,10 +50,9 @@ Trajectory are added in steps 3–4 as their own domains; no placeholder module 
 ## Root ✅
 
 The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
-`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `legacy`, `docs`.
-Exceptions, each with its reason: **`pytest.ini`** (the test runner reads it at the root); **`legacy`**
-(the regression reference until step 6); **`docs`** (only `README_cs_mg06_cell.md`, until the full
-README of step 7). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
+`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `docs`.
+Exceptions, each with its reason: **`pytest.ini`** (the test runner reads it at the root); **`docs`**
+(only `README_cs_mg06_cell.md`, until it is removed in F4). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
 entries. Pinned by `test/Docs/test_layout.py`.
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
@@ -66,8 +62,8 @@ entries. Pinned by `test/Docs/test_layout.py`.
 | `models/scene.xml`, `models/aubo_i5/aubo_i5.xml`, `models/robot_tool/vgc10_opener_free.xml` | `Scene.Core` through MjSpec; never written (mjcf.md) |
 | `models/cell_scene.xml` | written by `Scene.Core.Export_Cell_Scene`; read only by MuJoCo's viewer |
 | `Data/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand |
-| `Data/fork_close_open_path.npz` | `legacy/plan_cell.py` only, until step 4 |
-| `legacy/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by `legacy/plan_cell.py`. Exception: the frozen `legacy/test_cell_cycle.py` keeps its own `np.load` until step 6 |
+| `Data/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
+| `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `output/report.txt` by `Example/run_cycle.py` |
 | the model fingerprint JSON | `Example/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
@@ -118,6 +114,6 @@ returned list, printed by the script, exit code 1.
 
 ## Departures from the generic skill
 
-- `legacy/` and `docs/` root exceptions (above), both temporary.
+- The `docs/` root exception (above), temporary.
 - `.claude/project-docs/FEATURES.md`: a fourth internal document, the feature tracker the owner asked
   for; the generic skill defines three.

@@ -134,7 +134,7 @@ def test_one_ik_step_is_the_verified_dls_step(kinematics):
     """
     Description:
         Regression pin of the IK algorithm (damping, error terms, null space, clipping): one step from home
-        perturbed by 0.05 rad gives the iterate measured 2026-10-24 on the code that regenerates the legacy
+        perturbed by 0.05 rad gives the iterate measured 2026-10-24 on the code that regenerated the legacy
         plan to 1.2e-14 rad (FEATURES.md F3.4). A pin, not a bound: it detects any change of the step.
     """
 

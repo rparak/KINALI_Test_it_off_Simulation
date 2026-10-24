@@ -81,25 +81,28 @@ Python.
 
 Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
-## The legacy plan stays the regression reference until step 6
+## The legacy plan stays the regression input until step 6; the legacy planner is kept as a git tag
 
-**Decision.** `legacy/cell_plan.npz` (the verified IK plan), `legacy/plan_cell.py` (its planner) and
-`legacy/test_cell_cycle.py` (its physics run) stay in the repository, frozen: only imports and paths
-change. The cycle run of `Example/run_cycle.py` is proven against them; they are removed when the
-keypoint program reproduces the reference (brief §7 step 6).
+**Decision.** `Data/Reference/cell_plan.npz` (the verified IK plan) stays the regression input of the cycle run
+(`Example/Simulation/run_cycle.py`, `test/Simulation`) until the keypoint program reproduces it (brief §7 step 6).
+The legacy planner `legacy/plan_cell.py`, the legacy cycle test `legacy/test_cell_cycle.py` and their shims were
+removed (owner, 2026-10-24, F4) after the annotated tag **`legacy-planner-reference`** (commit `f754e2d`) was set
+on the last commit holding them. *Corrected 2026-10-24: until F4 the planner and the cycle test stayed in
+`legacy/`, frozen.*
 
-**Why.** It is the only verified end-to-end cycle; every refactor before step 6 is measured against it
-(SPEC §10.2). The planner reproduces its plan to 1.2e-14 rad, so it also proves the kinematics and
-collision code it uses.
+**Why.** The plan is the only verified end-to-end cycle, so every change before step 6 is measured against
+it. The planner is not product code; step 4 needs it only as a reference for the fork-path joins, the
+leave / return path around the closed handle and the keypoints, which `git show
+legacy-planner-reference:legacy/plan_cell.py` gives. The port of the loop into `src/Simulation` was proven
+before the removal: the same report and every measured value the same float as the legacy run (F3.5); the
+planner regenerated the plan through the ported Kinematics and Collision code to 1.24e-14 rad (F3.4).
 
-**Alternatives.** Removing it with the restructure: rejected, nothing else would show that the physics
-is unchanged. Porting it into `src/`: rejected, it is the reference, not the product.
+**Alternatives.** Keeping `legacy/` until step 6: rejected by the owner (root layout). Deleting the plan
+too: rejected, nothing else would show that the physics is unchanged.
 
-**Revisit if** step 6 passes.
+**Revisit if** step 6 passes: the keypoint program's trajectory replaces the plan as the regression input.
 
-Pinned by `test/Simulation/test_core.py` (slow: the report equals the baseline; raw-value pins). The port of
-the loop into `src/Simulation` was proven against the frozen run: every measured value the same float
-(2026-10-24, `FEATURES.md` F3.5); the planner regenerates the plan through the shims to 1.24e-14 rad.
+Pinned by `test/Simulation/test_core.py` (slow: the report equals the baseline; raw-value pins).
 
 ## The PCB is drawn in solder-mask green
 

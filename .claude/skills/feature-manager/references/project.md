@@ -25,15 +25,15 @@ Language: English in every file, report and commit; the owner's notes may be in 
 
 - The verified physics (SPEC §3, mjcf.md): timestep, solver options, contact parameters, friction,
   masses, geometry, actuator gains and ranges, vacuum, bellows, the CAD deviations.
-- Formats: `models/scene.xml`, `Data/pcb_meta.json`, `legacy/cell_plan.npz`, the trajectory file and
+- Formats: `models/scene.xml`, `Data/pcb_meta.json`, `Data/Reference/cell_plan.npz`, the trajectory file and
   the keypoint / program files (from steps 3–4), the report's lines.
 - The acceptance criteria (SPEC §10.1) and the 3 mm keypoint / segment clearance.
 - `requirements.txt` pins and the interpreter.
 
 ## Real data for reproducing a premise
 
-The legacy plan `legacy/cell_plan.npz` and its run (`Example/run_cycle.py`, and the frozen
-`legacy/test_cell_cycle.py`), the baseline report and fingerprint (`test/<Domain>/data/`), the scene files. Walk the chain: the
+The reference plan `Data/Reference/cell_plan.npz` and its run (`Example/run_cycle.py`; the legacy planner and
+cycle test in git tag `legacy-planner-reference`), the baseline report and fingerprint (`test/<Domain>/data/`), the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
 
@@ -94,7 +94,7 @@ look at what changed.
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
 - Never committed: `logger/`, `output/`, `.venv/`, the local copies of the generic skills.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
-  source changed, a new `legacy/cell_plan.npz`, a new baseline report or fingerprint.
+  source changed, a new `Data/Reference/cell_plan.npz`, a new baseline report or fingerprint.
 
 ## Docs
 

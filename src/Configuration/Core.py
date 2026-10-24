@@ -55,9 +55,6 @@ CONST_OUTPUT = os.path.join(CONST_ROOT, 'output')
 # Run logs: each script's printed lines and MuJoCo's own log (git-ignored, created on first use).
 #   Unit [string]
 CONST_LOGGER = os.path.join(CONST_ROOT, 'logger')
-# The frozen regression reference (design-decisions: the legacy plan stays until step 6).
-#   Unit [string]
-CONST_LEGACY = os.path.join(CONST_ROOT, 'legacy')
 # The finished scene (workstation, MG06, loader, PCB), built from Blender; never regenerated.
 #   Unit [string]
 CONST_SCENE_XML = os.path.join(CONST_MODELS, 'scene.xml')
@@ -73,9 +70,10 @@ CONST_TOOL_XML = os.path.join(CONST_MODELS, 'robot_tool', 'vgc10_opener_free.xml
 #   Unit [string]
 CONST_PCB_META = os.path.join(CONST_DATA, 'pcb_meta.json')
 CONST_FORK_PATH = os.path.join(CONST_DATA, 'fork_close_open_path.npz')
-# The verified IK plan the cycle run is proven on (SPEC §4.6).
+# The verified IK plan the cycle run is proven on (SPEC §4.6), the regression input until step 6 replaces it
+# with the keypoint program; its planner is in git tag legacy-planner-reference (design-decisions).
 #   Unit [string]
-CONST_LEGACY_PLAN = os.path.join(CONST_LEGACY, 'cell_plan.npz')
+CONST_REFERENCE_PLAN = os.path.join(CONST_DATA, 'Reference', 'cell_plan.npz')
 # The file name of the cycle report (written into output/ or a script's --out folder).
 #   Unit [string]
 CONST_REPORT_NAME = 'report.txt'

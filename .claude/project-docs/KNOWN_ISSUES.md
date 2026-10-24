@@ -46,24 +46,13 @@ The cause is `<option integrator="implicitfast"/>` (line 4) of the vendored robo
 `models/aubo_i5/aubo_i5.xml`, while `models/scene.xml` sets no integrator (Euler, the default). MuJoCo
 keeps the parent's Euler; the verified physics was run that way, so the warning describes the verified
 state. Not fixed on purpose: changing either file changes the physics or the vendored model. MuJoCo's log
-file goes to `logger/MUJOCO_LOG.TXT` (`Configuration.Core.Configure_MuJoCo_Log`, called by every script,
-the legacy shims and the test suite), never into the working directory.
+file goes to `logger/MUJOCO_LOG.TXT` (`Configuration.Core.Configure_MuJoCo_Log`, called by every script
+and the test suite), never into the working directory.
 
 - **Impact:** noise on stderr and in the test summary's warnings; not a fault.
 - **Evidence:** `MjLogConfig` probe 2026-10-24: the message is logged at the attach in the scene build.
 - **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`.
 - **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
-
-## The legacy cycle's --render video option does not work in the pinned environment
-
-`legacy/test_cell_cycle.py --render FILE.mp4` imports `imageio` (and Pillow), which are not in
-`requirements.txt` (owner's pin list, 2026-10-24). Pillow is installed as a dependency of matplotlib;
-`imageio` is not, so the option fails at its import. The cycle run and `--record` are unaffected.
-
-- **Impact:** no video of the legacy cycle from this environment.
-- **Evidence:** `install.sh` output 2026-10-24 (no imageio installed).
-- **What would close it:** a video option in the `Example/` run script written with a pinned package, or
-  imageio added to the pins (owner's decision); otherwise it goes with `legacy/` in step 6.
 
 ## The previous Czech README has pre-restructure paths
 

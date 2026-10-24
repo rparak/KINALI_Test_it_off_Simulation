@@ -35,7 +35,7 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Custom Lib.:
 #   ../Configuration/Core - paths, the PCB data, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_LEGACY_PLAN,
+from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_REFERENCE_PLAN,
                                 CONST_OUTPUT, CONST_REPORT_NAME, CONST_ROOT)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
@@ -54,16 +54,16 @@ CONST_EXIT_PASSED, CONST_EXIT_FAILED, CONST_EXIT_ERROR = 0, 1, 2
 def main():
     """
     Description:
-        The physics run of a plan (default: the verified legacy plan) through the project's own Simulation
+        The physics run of a plan (default: the verified reference plan Data/Reference/cell_plan.npz) through the project's own Simulation
         domain: the report of SPEC §4.6 on stdout and in DIR/report.txt, the acceptance of SPEC §10.1 as
         [INFO] / [ERROR] lines on stderr, everything also in logger/run_cycle.log. Exit 0 when every
         criterion is met, 1 when one fails, 2 when the run cannot start or becomes unstable.
 
-            .venv/bin/python Example/run_cycle.py [--plan legacy/cell_plan.npz] [--out output/] [--progress]
+            .venv/bin/python Example/run_cycle.py [--plan Data/Reference/cell_plan.npz] [--out output/] [--progress]
     """
 
     parser = argparse.ArgumentParser(description='Physics run of a cell plan: report and acceptance checks.')
-    parser.add_argument('--plan', default=CONST_LEGACY_PLAN, help='the plan (default: %s)' % os.path.relpath(CONST_LEGACY_PLAN, CONST_ROOT))
+    parser.add_argument('--plan', default=CONST_REFERENCE_PLAN, help='the plan (default: %s)' % os.path.relpath(CONST_REFERENCE_PLAN, CONST_ROOT))
     parser.add_argument('--out', default=CONST_OUTPUT, help='write %s into this directory (default: output/)' % CONST_REPORT_NAME)
     parser.add_argument('--progress', action='store_true', help='print the simulated time and phase every 2 s (stderr)')
     args = parser.parse_args()

@@ -205,10 +205,10 @@ def reference_run():
 
 
 @pytest.mark.slow
-def test_the_legacy_plan_reproduces_the_baseline_report(root, reference_run):
+def test_the_reference_plan_reproduces_the_baseline_report(root, reference_run):
     """
     Description:
-        The full run of legacy/cell_plan.npz prints test/Simulation/data/baseline_report.txt line for line
+        The full run of Data/Reference/cell_plan.npz prints test/Simulation/data/baseline_report.txt line for line
         (SPEC §10.2).
     """
 
@@ -217,7 +217,7 @@ def test_the_legacy_plan_reproduces_the_baseline_report(root, reference_run):
 
 
 @pytest.mark.slow
-def test_the_legacy_plan_meets_the_acceptance_criteria(reference_run):
+def test_the_reference_plan_meets_the_acceptance_criteria(reference_run):
     """
     Description:
         SPEC §10.1 on the full run, with the limits written here: no contact in any category, 4 of 4 cups at
@@ -241,7 +241,7 @@ def test_the_raw_values_of_the_reference_run_are_pinned(reference_run):
     """
     Description:
         Regression pin of the unrounded values (measured 2026-10-24 on the code proven bit-identical to the
-        frozen legacy run, FEATURES.md F3.5): the report rounds them, so a change below its precision (the
+        legacy run, tag legacy-planner-reference, FEATURES.md F3.5): the report rounds them, so a change below its precision (the
         phase sampling, the cup-touch threshold) would pass the report test. A pin, not a bound.
     """
 

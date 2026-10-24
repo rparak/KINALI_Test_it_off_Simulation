@@ -33,7 +33,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the files, the cell, the contact categories
 #   ../Configuration/Core
-from Configuration.Core import CONST_LEGACY_PLAN, PCB_Meta_Str
+from Configuration.Core import CONST_REFERENCE_PLAN, PCB_Meta_Str
 #   ../Scene/Core
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, CONST_CRATE_FLOOR, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
@@ -45,8 +45,8 @@ Description:
 
     The physics run of a plan (SPEC §7.6): servo set-points with velocity feed-forward, min-jerk loader
     profiles, vacuum events, the instability guard; the measured values, the report of SPEC §4.6 and the
-    acceptance checks of SPEC §10.1. Ported from legacy/test_cell_cycle.py (design-decisions: the legacy
-    plan stays the regression reference): the report is byte-identical. It prints nothing.
+    acceptance checks of SPEC §10.1. Ported from legacy/test_cell_cycle.py (git tag legacy-planner-reference;
+    design-decisions): the report and every measured value were identical to that run's. It prints nothing.
 """
 # The MG06 lid at its open stop (SPEC §4.3), where every run starts.
 #   Unit [float] (rad)
@@ -86,7 +86,8 @@ class Simulation_Error_Cls(RuntimeError):
 class Legacy_Plan_Str:
     """
     Description:
-        A plan written by legacy/plan_cell.py (cell_plan.npz). Built by Read_Legacy_Plan.
+        A plan in the format of the legacy IK planner (cell_plan.npz; the planner is legacy/plan_cell.py at git tag
+        legacy-planner-reference). Built by Read_Legacy_Plan.
     """
 
     # Sample time of the robot trajectory.
@@ -194,13 +195,13 @@ class Acceptance_Check_Str:
     Detail: str = ''
 
 
-def Read_Legacy_Plan(path: str = CONST_LEGACY_PLAN) -> Legacy_Plan_Str:
+def Read_Legacy_Plan(path: str = CONST_REFERENCE_PLAN) -> Legacy_Plan_Str:
     """
     Description:
         Read a legacy plan (cell_plan.npz), the only reader of the format in src/.
 
     Args:
-        (1) path [string]: The file (default legacy/cell_plan.npz).
+        (1) path [string]: The file (default Data/Reference/cell_plan.npz).
 
     Returns:
         (1) parameter [Legacy_Plan_Str(object)]: The plan.
@@ -212,7 +213,8 @@ def Read_Legacy_Plan(path: str = CONST_LEGACY_PLAN) -> Legacy_Plan_Str:
                                Events=json.loads(str(plan['events'])), Phases=json.loads(str(plan['phases'])),
                                Jaw_Open=float(plan['J_OPEN']))
     except (OSError, KeyError, ValueError) as error:
-        raise Simulation_Error_Cls('The plan %s cannot be read (%s). Use a plan written by legacy/plan_cell.py.' % (path, error)) from error
+        raise Simulation_Error_Cls('The plan %s cannot be read (%s). Use Data/Reference/cell_plan.npz or a plan in its format.'
+                                   % (path, error)) from error
 
 
 def Min_Jerk(s: float) -> float:
@@ -414,7 +416,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
 def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
     """
     Description:
-        The report lines of SPEC §4.6 (mm and deg), identical to the legacy run's.
+        The report lines of SPEC §4.6 (mm and deg), identical to the legacy run's (SPEC §10.2).
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A run's values.

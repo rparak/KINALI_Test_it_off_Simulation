@@ -7,10 +7,9 @@ file overrides it where they differ. No `SKILL.md` is tracked here.
 
 | Output | Produced by (into a temporary directory) | Deterministic inputs | Identical on two runs (date) |
 |---|---|---|---|
-| The cycle report (stdout) | `.venv/bin/python Example/run_cycle.py --out "$SCRATCH"` | `legacy/cell_plan.npz`, the scene files, `Data/pcb_meta.json`; no randomness | yes, 2026-10-24 (every run of F1-F3, Python 3.14 and 3.11, empty diffs against `test/Simulation/data/baseline_report.txt`) |
+| The cycle report (stdout) | `.venv/bin/python Example/run_cycle.py --out "$SCRATCH"` | `Data/Reference/cell_plan.npz`, the scene files, `Data/pcb_meta.json`; no randomness | yes, 2026-10-24 (every run of F1-F3, Python 3.14 and 3.11, empty diffs against `test/Simulation/data/baseline_report.txt`) |
 | The model fingerprint | `.venv/bin/python Example/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
 | `models/cell_scene.xml` | `.venv/bin/python Example/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
-| `legacy/cell_plan.npz` | `legacy/plan_cell.py --out "$SCRATCH/plan.npz"` | the scene files, `Data/fork_close_open_path.npz` | arrays equal to 1.2e-14 rad, not bytes (2026-10-24) |
 
 The report is the contract: a refactor of the physics path is proven by an empty diff against the
 baseline report, plus the acceptance checks.
@@ -23,16 +22,16 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 ## Never touched
 
 - `models/scene.xml` (except decided changes), `models/aubo_i5/` (vendored), `models/robot_tool/`.
-- `legacy/` logic and numbers (design-decisions), until step 6.
+- `Data/Reference/cell_plan.npz` (the regression input, design-decisions), until step 6.
 - The baseline files in `test/Simulation/data/` and `test/Scene/data/`.
 
 ## Reached without a grep hit
 
-- Entry points: `Example/*.py`, `install.sh` (names `requirements.txt`), `legacy/*.py` through the shims
-  `legacy/cell.py` and `legacy/robot_kin.py`; `test/conftest.py` imports `Example/model_fingerprint.py`.
+- Entry points: `Example/*.py`, `install.sh` (names `requirements.txt`); `test/conftest.py` imports
+  `Example/model_fingerprint.py`.
 - MuJoCo names by string: bodies, geoms, sites, actuators, cameras (`pcb_vis`, `aubo/tool/suction_tcp`,
   `vacuum0`, `cam_pcb`, ...) in code and tests.
-- Files by path string: `models/`, `Data/`, `legacy/cell_plan.npz`, the baselines,
+- Files by path string: `models/`, `Data/`, the baselines,
   `.claude/skills/project-style-rpx/references/check_style.json`.
 - Docs: SPEC, design-decisions, KNOWN_ISSUES, FEATURES, the README.
 
@@ -41,7 +40,6 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 | Path | Time | Machine, date |
 |---|---|---|
 | cycle run (65.8 s simulated) | 15–16 s | Apple M2 Pro, 2026-10-24 |
-| `legacy/plan_cell.py` | 6.9 s | Apple M2 Pro, 2026-10-24 |
 | test suite, `-m "not slow"` / full | about 15 s / about 45 s (99 / 103 tests) | Apple M2 Pro, 2026-10-24 |
 
 ## Interpreter and tools

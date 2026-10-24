@@ -32,10 +32,10 @@ Description:
     never read from the README or the filesystem.
 """
 # The entries git tracks at the root. Exceptions with their reasons: pytest.ini (the runner reads it at
-# the root), legacy (the regression reference until step 6), docs (the previous Czech README until step 7).
+# the root), docs (the previous Czech README, until it is removed in F4).
 #   Unit [Set<string>]
 CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data', 'legacy', 'docs'}
+                      'src', 'test', 'Example', 'models', 'Data', 'docs'}
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
 CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')

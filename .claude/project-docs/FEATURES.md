@@ -299,6 +299,30 @@ Mutations that changed nothing (findings about the code, not the tests): the pha
 instead of 20 steps, and a 0.1 mm instead of 0.5 mm cup-touch threshold, change no output of the legacy
 plan (every phase starts on a 20-step boundary; the cups sit deeper than 0.1 mm).
 
+## F4 - Root clean-up: legacy/, docs/, output/ removed; Data/ and Example/ in subfolders (owner, 2026-10-24)
+
+Requirements:
+
+1. Annotated tag `legacy-planner-reference` on the last commit with the legacy planner; recorded in
+   design-decisions and in SPEC (fork path, keypoints).
+2. `legacy/cell_plan.npz` kept as the regression input under `Data/`; the planner, the legacy cycle test and
+   the shims deleted; the ported run still diffs empty against the baseline report.
+3. `docs/README_cs_mg06_cell.md` compared with the project docs; what is still valid and missing moved there
+   (or into a step 7 README note here); then deleted.
+4. `Data/` and `Example/` in subfolders by domain or purpose (style skill), the step 3 YAML location decided
+   (no files); `test/Example/` mirrors `Example/`.
+5. `output/` replaced by one rule for generated artefacts, recorded in design-decisions; no `output/` left.
+6. Every move a `git mv`; after every commit: fingerprint (only pcb_vis rgba), fast tests, the cycle diff,
+   the style checker 0 issues. Final check in a fresh clone.
+
+Sub-tasks:
+
+- [x] F4.1 Tag and remove legacy planner
+- [ ] F4.2 Remove docs/ after moving remaining content
+- [ ] F4.3 Structure Data/ and Example/ into subfolders
+- [ ] F4.4 Replace output/ with the generated-artefacts rule
+- [ ] F4.5 Fresh-clone check
+
 ## Brief coverage (condition C2, 2026-10-24)
 
 Every section and table of the owner's brief (git `427e076:docs/PROJECT_BRIEF.md`) and where it lives
