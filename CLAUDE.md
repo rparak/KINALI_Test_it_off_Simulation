@@ -15,6 +15,12 @@ The verified physics is never changed without an explicit request (SPEC §3, the
 `mjcf.md`). Regression baseline: `test/Simulation/data/baseline_report.txt`,
 `test/Scene/data/baseline_model_fingerprint.json`.
 
+## Branches
+
+One short-lived branch per feature, made from main; when the owner accepts the feature it is merged into main
+(fast-forward) and the branch is deleted locally and on origin. main is the only long-lived branch. History is never
+rewritten (no force-push); the tag `legacy-planner-reference` stays.
+
 ## Skills
 
 The skills are personal (`~/.claude/skills/`, `rparak/rp-claude-skills`); this repository tracks only
