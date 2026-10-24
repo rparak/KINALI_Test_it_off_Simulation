@@ -1226,6 +1226,26 @@ def _Family(point: Point_Str) -> int:
     return 1 if point.Joints[CONST_WRIST_2] > 0 else -1
 
 
+def Optimizer_Points(path: str = CONST_OPTIMIZATION_YAML) -> tp.Dict[str, str]:
+    """
+    Description:
+        The points Configuration/Optimization.yaml declares for the optimized program only (Waiting_Points: transfer ->
+        point), read for the completeness checks of Load_Program (Load_Optimization validates the file).
+
+    Args:
+        (1) path [string]: The file (default Configuration/Optimization.yaml).
+
+    Returns:
+        (1) parameter [Dict<string, string>]: Transfer -> point; empty when the file or the section is missing.
+    """
+
+    if not os.path.isfile(path):
+        return {}
+    root = Read_YAML(path)
+    section = root.get('Waiting_Points') if isinstance(root, dict) else None
+    return {str(k): str(v) for k, v in section.items()} if isinstance(section, dict) else {}
+
+
 def _Load_Optimized(p: _Problems_Cls, root: tp.Dict[str, tp.Any], parser: _Program_Parser_Cls, constants: Constants_Str) -> Optimized_Str:
     """
     Description:
@@ -1361,8 +1381,18 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
         if signal.Kind == 'DI' and name not in simulation.Signal_Response:
             p.Add(signal.Line, 'Signals.%s' % name, 'an input without a simulated response time (Simulation.yaml Signal_Response)',
                   file=constants.Path)
-    # Every constant used: by a line, by the start state; a used point's tool and Reference chain with it.
-    used = set(parser.Used) | {simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper}
+    # Every constant used: by a line, by the start state, or - in the taught program - declared for the optimized program
+    # only (Optimization.yaml Waiting_Points); a used point's tool and Reference chain with it. The taught program may not use
+    # such a point; the optimized program must.
+    optimizer_only = set(Optimizer_Points().values())
+    for name in sorted(optimizer_only):
+        if program.Optimized is None and name in parser.Used:
+            p.Add(1, 'Program', '%s is declared for the optimized program only (Optimization.yaml Waiting_Points); the taught program may not '
+                  'use it' % name)
+        if program.Optimized is not None and name not in parser.Used:
+            p.Add(1, 'Program', '%s is declared for the optimized program (Optimization.yaml Waiting_Points) but this program does not use it; '
+                  'make it again: .venv/bin/python Example/Program/optimize_program.py' % name)
+    used = set(parser.Used) | {simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper} | optimizer_only
     for name in list(used):
         while name in constants.Points:
             used.add(constants.Points[name].Tool)
@@ -1501,6 +1531,9 @@ class Optimization_Str:
     # The carried PCB's largest tilt from horizontal.
     #   Unit [float] (rad)
     Carry_Max_Tilt: float = 0.0
+    # Where the robot waits in a transfer while its parallel jobs run: transfer name -> point.
+    #   Unit [Dict<string, string>]
+    Waiting_Points: tp.Dict[str, str] = field(default_factory=dict)
     # The loader's notes.
     #   Unit [List<Tuple<string>>]
     Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
@@ -1524,7 +1557,8 @@ def Load_Optimization(program: Program_Str, path: str = CONST_OPTIMIZATION_YAML)
     p = _Problems_Cls(path)
     root = Read_YAML(path)
     root = root if isinstance(root, dict) else {}
-    keys = ('Speed_Fraction', 'Seed', 'Free_Segments', 'Rrt', 'Shortcut_Iterations', 'Spline', 'Topp_Grid_Points', 'Margins', 'Carry_Max_Tilt')
+    keys = ('Speed_Fraction', 'Seed', 'Free_Segments', 'Rrt', 'Shortcut_Iterations', 'Spline', 'Topp_Grid_Points', 'Margins', 'Carry_Max_Tilt',
+            'Waiting_Points')
     for k in root:
         if k not in keys:
             p.Notes.append(('WARNING', '%s:%d: %s: unknown key, ignored (misspelt?)' % (p.File, getattr(k, 'Line', 0), k)))
@@ -1610,6 +1644,17 @@ def Load_Optimization(program: Program_Str, path: str = CONST_OPTIMIZATION_YAML)
                 p.Add(_Line(root, 'Free_Segments', 1), 'Free_Segments', '%s is listed twice' % key)
             else:
                 o.Free_Segments.append(str(key))
+    names = {keys[k].Name for k in o.Free_Segments if k in keys}
+    taught = {c.Target for s in program.Segments for c in s.Commands} | {c.Path_Start for s in program.Segments for c in s.Commands}
+    for name, point in _Mapping(p, root, 'Waiting_Points', 'Waiting_Points', 1).items():
+        where = 'Waiting_Points.%s' % name
+        if name not in names:
+            p.Add(getattr(name, 'Line', 1), where, 'is not a FREE transfer (named after a FREE segment: %s)' % ', '.join(sorted(names)))
+        if point not in program.Constants.Points:
+            p.Add(getattr(name, 'Line', 1), where, '%r is not a point of Constants.yaml' % (point,))
+        elif point in taught:
+            p.Add(getattr(name, 'Line', 1), where, '%s is used by the taught program: a waiting point is the optimized program\'s only' % point)
+        o.Waiting_Points[str(name)] = str(point)
     p.Finish()
     o.Notes = p.Notes
     return o

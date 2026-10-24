@@ -78,11 +78,14 @@ Program:
     - Robot.MovePath(PATH_FORK_OPEN)                      # legacy: replay(i_open[i_open > k], 'open MG06')
 
   # FREE (planned, F9): P_MG06_FORK_START to P_LOADER_ABOVE, replacing the taught S14_Home_After_MG06,
-  # S15_Loader_Fetch, S16_Loader_Return, S17_To_Take. The loader runs J_FETCH, J_RETURN in parallel.
+  # S15_Loader_Fetch, S16_Loader_Return, S17_To_Take. The loader runs J_FETCH, J_RETURN in parallel. The robot waits
+  # at P_LOADER_WAIT meanwhile.
   S11_To_Take:
     - Loader.Start(J_FETCH)
+    - Robot.MoveSpline(W_TO_TAKE_WAIT, v=0.6)
     - Loader.WaitDone(J_FETCH)
     - Loader.Start(J_RETURN)
+    - Wait(1.660)
     - Robot.MoveSpline(W_TO_TAKE, v=0.6)
     - Loader.WaitDone(J_RETURN)
 
@@ -181,12 +184,18 @@ Waypoints:
     Points:
       - [-9.000565276, 3.637418305, 74.855310994, -17.137627224, 39.207092793, -43.291733703]
       - [-11.899524486, 3.595901892, 74.007995702, -24.926693146, 26.234056499, -36.183946566]
-  W_TO_TAKE:
+  W_TO_TAKE_WAIT:
     From: P_MG06_FORK_START
-    To: P_LOADER_ABOVE
+    To: P_LOADER_WAIT
     Points:
-      - [-24.680679080, -3.640050746, 62.352128103, -5.628990501, 48.980213642, -10.741233507]
-      - [-19.062756326, -4.222099774, 73.405924974, -9.385999248, 52.526887083, -24.649920163]
+      - [-29.830703982, -5.255831901, 65.695338755, -59.282207256, -22.764557833, 6.973498603]
+      - [-12.604916273, -8.206971855, 66.459772865, -31.035034958, 21.017802620, -22.215759971]
+      - [-11.038420346, -7.879800449, 67.718272439, -27.088773055, 27.894500704, -26.863276476]
+      - [-16.436109140, 3.907399229, 87.749324614, -11.916988605, 64.658058417, -53.090029597]
+  W_TO_TAKE:
+    From: P_LOADER_WAIT
+    To: P_LOADER_ABOVE
+    Points: []
   W_TO_OUTPUT:
     From: P_LOADER_ABOVE
     To: P_OUTPUT_ABOVE
@@ -205,10 +214,10 @@ Waypoints:
 Optimized:
   Inputs:
     program: "7851a8954d624bef4a493dc2674d6a8331ef83fec778a39bb1825134da9aea65"
-    constants: "a91f145519c14280d35eedbe2fda7068ee1034438259f637a6bd27fe30ef6411"
-    simulation: "c96f29ecd111ce37c42402f015d3e1e5e500998f8788df601de508d5d69ca9db"
+    constants: "f1d53d51478ea9e55fec42d0edbe064edd676e409d8b2c54fb20acf7d756955d"
+    simulation: "0c032d69f13e686280259cbd2f49caeb361ea673f0a83d069917ab6f9f156271"
     cell: "807be9aa353ff85e4af570fcdec1771525333517d9a7edac02bf276f6a947cbf"
-    optimization: "81f1085283d491ce901823929f839b60af7ca197791140be391e96492a0fb6af"
+    optimization: "3ac09d0bc3554661d3f22fdea75148d2e527cc431d271dfcb29d02d69a316bfc"
     fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
     planning_model: "9deab253ff8e791ecd1f53001f0f21a68d6e7cbd6e0c8f2f5117566133d09684"
   Platform:

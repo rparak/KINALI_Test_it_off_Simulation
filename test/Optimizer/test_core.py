@@ -72,6 +72,7 @@ def test_the_free_transfers_merge_across_the_loader_jobs(built, program):
         ('To_Take', 'P_MG06_FORK_START', 'P_LOADER_ABOVE', ['J_FETCH', 'J_RETURN'], False),
         ('To_Output', 'P_LOADER_ABOVE', 'P_OUTPUT_ABOVE', [], True), ('Home_End', 'P_OUTPUT_ABOVE', 'P_HOME', [], False)]
     assert transfers[2].Keys == ['S5_Home_After_Handover', 'S8_To_MG06'] and transfers[2].Job_Keys == ['S6_Loader_Insert', 'S7_Loader_Park']
+    assert [t.Wait for t in transfers] == [None, None, None, 'P_LOADER_WAIT', None, None]
 
 
 def test_the_shipped_optimized_program_is_current_and_matches_its_schedule(built):
@@ -204,3 +205,54 @@ def test_the_optimized_build_is_deterministic(built, cell_configuration):
     for channel in ('T', 'Robot_Q', 'Robot_QD', 'Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'PCB_Pose', 'MG06_Lid', 'MG06_Handle', 'Jaw',
                     'Segment_Id'):
         assert np.asarray(getattr(again, channel)).tobytes() == np.asarray(getattr(built['trajectory'], channel)).tobytes(), channel
+
+
+def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(built, cell_configuration):
+    """
+    Description:
+        G (F9.8): To_Take's first leg starts in the sample after Open_MG06 ends, together with J_FETCH (I6 still holds), so the
+        robot never waits above MG06; it waits at P_LOADER_WAIT, which keeps more than the clearance from the loader and the
+        PCB in its jaws at every sample of J_FETCH and J_RETURN with the robot standing there (4.92 mm, measured 2026-10-24);
+        its last leg ends at P_LOADER_ABOVE before the loader is home, so Take_From_Loader starts when J_RETURN ends.
+    """
+
+    from Optimizer.Core import Robot_Loader_Distance, Job_Bounds
+    import mujoco
+    tr, kinematics, collision = built['trajectory'], built['kinematics'], built['collision']
+    texts = tr.Segment_Command
+    leg = texts.index('Robot.MoveSpline(W_TO_TAKE_WAIT, v=0.6)')
+    _, opened = Step_Bounds(tr, 'Open_MG06')
+    assert int(tr.Segment_Start[leg]) == opened + 1 == Job_Bounds(tr, 'J_FETCH')[0]
+    wait = np.array(built['optimized'].Constants.Points['P_LOADER_WAIT'].Joints)
+    first, last = Job_Bounds(tr, 'J_FETCH')[0], Job_Bounds(tr, 'J_RETURN')[1]
+    standing = copy.deepcopy(tr)
+    standing.Robot_Q = np.array(tr.Robot_Q)
+    standing.Robot_Q[first:last + 1] = wait
+    distance, _, _ = Robot_Loader_Distance(standing, kinematics, collision, range(first, last + 1))
+    assert distance >= cell_configuration.Clearance and round(1000 * distance, 2) == 4.92
+    final = texts.index('Robot.MoveSpline(W_TO_TAKE, v=0.6)')
+    take, _ = Step_Bounds(tr, 'Take_From_Loader')
+    assert int(tr.Segment_End[final]) <= Job_Bounds(tr, 'J_RETURN')[1] and take == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN)')])
+
+
+def test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion(built):
+    """
+    Description:
+        E: a stop is every joint speed below 1e-3 rad/s (the sample's change over dt) for at least 0.1 s, after a motion: on a
+        made-up motion - at rest 0.2 s first (not a stop), a move, 0.096 s at rest (too short), a move, 0.1 s at rest, a move
+        at 0.5e-3 rad/s for 0.2 s (slower than the threshold: at rest), a move, 0.2 s at 5e-3 rad/s (a motion), 0.3 s at rest to
+        the end - there are three, 0.6 s in all.
+    """
+
+    from Optimizer.Core import Measure
+    q = [np.zeros(6)]
+
+    def Hold(seconds, speed=0.0):
+        for _ in range(int(round(seconds / 0.004))):
+            q.append(q[-1] + np.r_[speed * 0.004, np.zeros(5)])
+
+    Hold(0.2), Hold(0.04, 0.5), Hold(0.096), Hold(0.04, 0.5), Hold(0.1), Hold(0.04, 0.5), Hold(0.2, 0.5e-3), Hold(0.04, 0.5), Hold(0.2, 5e-3)
+    Hold(0.3)
+    zeros = np.zeros(len(q))
+    metrics = Measure(np.array(q), 0.004, built['kinematics'], zeros, zeros)
+    assert metrics.Stops == 3 and metrics.Rest_Time == pytest.approx(0.6, abs=1e-9)

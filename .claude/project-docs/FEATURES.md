@@ -1201,6 +1201,12 @@ practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimize
 - [x] F9.6 LOCKED byte identity (owner's option a): MoveJ ends exactly on its stored joints; the golden arrays re-captured
       (robot_q 6073 samples <= 1.55e-15 rad, robot_qd 2395 <= 3.0e-13 rad/s, pcb_pose 811 <= 8.5e-16 m; events, cycle 68.852 s,
       check report and point table identical); all 14 LOCKED parts byte-identical; the optimizer fails unless they are.
+- [x] F9.7 Owner's answers B, C, E: a 20 deg tilt run (temporary): cycle 57.108 s, To_Output 1.768 s at 17.73 deg (30 deg kept); the
+      PCB path +11 % accepted; a stop redefined as 0.1 s below 1e-3 rad/s - 11 / 11 / 11 stops, 18.600 / 21.176 / 16.716 s at rest.
+- [x] F9.8 G: the loader is the take's critical path (the robot ready 1.32 s early); the robot now leaves MG06 at once and waits at
+      the new `P_LOADER_WAIT` (4.92 mm from the loader over the whole fetch and return), its last leg 1.660 s after `J_RETURN`
+      starts; cycle unchanged 57.132 s; I7 kept (I7' would gain at most 0.2 s); no other candidate gains without splitting a
+      LOCKED segment. D: no wait above the tester any more.
 - Deviations from the design, each recorded: the planner and the optimizer are two domains (design-decisions); `Margins` (tried in
   order) and `Spline.Margin` replace `Margin_Steps`; a merged transfer is named after its last FREE segment; the robot-loader
   check is the exact build check with a slot / wait search, not planning against the loader's swept volume.

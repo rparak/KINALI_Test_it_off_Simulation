@@ -131,7 +131,10 @@ known; the two differ in path, timing and the limits that apply.
 ## The carried PCB's tilt limit is an assumption
 
 `Optimization.yaml Carry_Max_Tilt` is 30 deg ("real-cell practice, assumed"): no measurement of what the four cups hold while
-the board tilts and accelerates. The optimized To_Output transfer reaches 28.98 deg (measured 2026-10-24).
+the board tilts and accelerates. The optimized To_Output transfer reaches 28.98 deg (measured 2026-10-24). Sensitivity (a
+temporary run, not committed, owner 2026-10-24): with 20 deg the optimizer plans To_Output at 17.73 deg in 1.768 s (30 deg:
+1.792 s), the cycle 57.108 s (30 deg: 57.132 s) - a tighter limit costs nothing here. The value is decided after step 5's
+PCB-slip result.
 
 - **Impact:** a planned transfer may tilt the board more than the vacuum holds on the real cell; the simulation's adhesion
   model (a constant force per cup) does not show slip until step 5.

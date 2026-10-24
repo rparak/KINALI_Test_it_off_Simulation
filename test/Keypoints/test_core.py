@@ -50,7 +50,8 @@ Description:
 CONST_FORK = ['P_MG06_FORK_START', 'P_MG06_CLOSE_END', 'P_MG06_BAR_CENTRE', 'P_MG06_SLOT_EXIT', 'P_MG06_WAIT', 'P_MG06_OPEN_JOIN']
 # The derived points: from a Reference (Constants.yaml) or a PCB hold (Simulation.yaml).
 #   Unit [List<string>]
-CONST_DERIVED = ['P_INPUT_ABOVE', 'P_INPUT_APPROACH', 'P_INPUT_PICK', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', 'P_LOADER_APPROACH', 'P_LOADER_PLACE',
+CONST_DERIVED = ['P_INPUT_ABOVE', 'P_INPUT_APPROACH', 'P_INPUT_PICK', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', 'P_LOADER_WAIT', 'P_LOADER_APPROACH',
+                 'P_LOADER_PLACE',
                  'P_LOADER_PICK', 'P_LOADER_EXIT', 'P_OUTPUT_ABOVE', 'P_OUTPUT_APPROACH', 'P_OUTPUT_PLACE']
 
 
@@ -74,12 +75,13 @@ def results(tools, constants, simulation, cell_configuration):
 def test_every_point_passes_the_check(results):
     """
     Description:
-        All 23 points (SPEC §4.8's 22 and the program's P_INPUT_CLEAR) pass; P_VIA_HOME_MG06 only warns (wrist_2 at -0.94 deg,
+        All 24 points (SPEC §4.8's 22, the taught program's P_INPUT_CLEAR, the optimized program's P_LOADER_WAIT) pass;
+        P_VIA_HOME_MG06 only warns (wrist_2 at -0.94 deg,
         the family switch within the 1 deg margin, SPEC §4.7).
     """
 
     verdicts = {name: r.Verdict for name, r in results.items()}
-    assert len(verdicts) == 23 and {n for n, v in verdicts.items() if v == 'FAIL'} == set()
+    assert len(verdicts) == 24 and {n for n, v in verdicts.items() if v == 'FAIL'} == set()
     assert {n for n, v in verdicts.items() if v == 'WARN'} == {'P_VIA_HOME_MG06'}
 
 
@@ -108,7 +110,7 @@ def test_the_family_is_wrist_2s_sign(results, constants):
 def test_the_derived_points_are_not_stale(results):
     """
     Description:
-        The 12 derived points reach their Reference's pose moved by their Offset (9) or their PCB-hold target (3) within
+        The 13 derived points reach their Reference's pose moved by their Offset (10) or their PCB-hold target (3) within
         0.05 mm / 0.01 deg (measured at most 0.0387 mm, P_LOADER_EXIT); the others have no target.
     """
 

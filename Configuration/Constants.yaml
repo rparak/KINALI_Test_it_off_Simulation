@@ -11,7 +11,8 @@
 #     another); a missing or invalid field fails the load, naming it.
 #   Names: UPPERCASE with the prefix of their section: T_ tool, P_ robot point, L_ loader position,
 #     G_ gripper command, PATH_ recorded path, DO_ / DI_ digital output / input. Each has a one-line
-#     Description. Every constant declared here is used by Program.yaml or Simulation.yaml.
+#     Description. Every constant declared here is used by Program.yaml or Simulation.yaml, or is a waiting point of
+#     the optimized program declared in Configuration/Optimization.yaml (Waiting_Points: P_LOADER_WAIT).
 #   Point roles (the name's last word): ABOVE the retreat height above a place, APPROACH 15 mm before
 #     contact, PICK the cups pressed onto the PCB (vacuum on), PLACE the PCB set down (no press), EXIT out of
 #     the jaws, CLEAR the PCB clear of the crate walls, WAIT where the robot waits during the test; VIA a
@@ -98,6 +99,13 @@ Points:
     Offset: [0.0, 0.0, -0.1600]
     Joints: [-21.315111, 10.864292, 102.705812, -1.774282, 81.818434, -66.056436]
     Pose: [0.290676286, -0.298017549, 0.153784869, -171.060031328, 0.000065844, 135.000014831]
+  P_LOADER_WAIT:
+    Description: "25 mm farther out along the plate normal: where the optimized program waits while the loader fetches and returns (F9.8)."
+    Tool: T_SUCTION
+    Reference: P_LOADER_ABOVE
+    Offset: [0.0, 0.0, -0.0250]
+    Joints: [-20.808378, 10.788910, 98.862397, -5.614844, 81.850705, -65.545558]
+    Pose: [0.293422556, -0.295269954, 0.178479151, -171.060038937, 0.000098276, 135.000020926]
   P_LOADER_APPROACH:
     Description: "15 mm along the plate normal above the hold pose."
     Tool: T_SUCTION

@@ -39,7 +39,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
 .venv/bin/python -m pytest -m "not slow"         # everyday, about 80 s
-.venv/bin/python -m pytest                       # before a commit, about 3.5 min
+.venv/bin/python -m pytest                       # before a commit, about 4 min
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
 .venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~15 s
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
@@ -55,7 +55,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/build_program.py [--program F] [--out DIR] [--compare-legacy]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
 .venv/bin/mjpython Example/Program/show_program.py [--version default|optimized] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
-.venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~35 s
+.venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~55 s
 .venv/bin/python Example/Program/compare_programs.py [--out DIR]   # legacy / default / optimized: table + figure
 ```
 

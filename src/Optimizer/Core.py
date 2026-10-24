@@ -77,6 +77,11 @@ CONST_INPUTS = {'program': CONST_PROGRAM_YAML, 'constants': CONST_CONSTANTS_YAML
 # The robot-loader distance is reported up to this (the clearance decides the verdict).
 #   Unit [float] (m)
 CONST_LOADER_CUT = 0.05
+# A stop of the robot (the comparison's metric): every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME,
+# after a motion. The speed is a sample's joint change over the sample time; 1e-3 rad/s is far below any planned motion
+# (a min-jerk move reaches it within its first or last few samples) and above the plans' numerical noise.
+#   Unit [float] (rad/s), [float] (s)
+CONST_STOP_SPEED, CONST_STOP_TIME = 1e-3, 0.1
 # A transfer whose exact check fails on a pair with the loader (I8) waits longer before its spline - by the length of
 # the window in which the robot meets the loader, at most CONST_DELAY_TRIES times; any other failure takes the next
 # planner margin.
@@ -182,6 +187,9 @@ class Free_Transfer_Str:
     #   Unit [bool], [int]
     Carrying: bool = False
     First_Sample: int = 0
+    # Where the robot waits while the parallel jobs run (Optimization.yaml Waiting_Points), or None.
+    #   Unit [string]
+    Wait: tp.Optional[str] = None
 
 
 def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default: Trajectory_Str) -> tp.List[Free_Transfer_Str]:
@@ -189,7 +197,8 @@ def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default
     Description:
         The FREE transfers of the taught program: its FREE segments (Optimization.yaml), consecutive ones merged across
         segments that only run loader jobs (Loader.Run lines), each from the point the robot stands at before its first
-        segment to its last segment's last point; whether the cups carry the PCB (the default trajectory at its start).
+        segment to its last segment's last point; whether the cups carry the PCB (the default trajectory at its start); its
+        waiting point (Optimization.yaml Waiting_Points).
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
@@ -224,6 +233,8 @@ def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default
                     here = command.Target
                 elif command.Kind == 'MovePath':
                     here = command.Path_End
+    for transfer in transfers:
+        transfer.Wait = optimization.Waiting_Points.get(transfer.Name)
     return transfers
 
 
@@ -345,13 +356,20 @@ class Free_Space_Cls(object):
 class Planned_Transfer_Str:
     """
     Description:
-        A planned FREE transfer: its spline's waypoints and how they were found.
+        A planned leg of a FREE transfer (the whole transfer, or with a waiting point its leg to it and its leg from it): its
+        spline's waypoints and how they were found.
     """
 
     # The transfer and the planner margin it was planned with.
     #   Unit [Free_Transfer_Str(object)], [float] (m)
     Transfer: Free_Transfer_Str = field(default_factory=Free_Transfer_Str)
     Margin: float = 0.0
+    # The leg (from 0), its end points and its waypoint set's name (W_<TRANSFER>, the leg to a waiting point W_<TRANSFER>_WAIT).
+    #   Unit [int], [string], [string], [string]
+    Leg: int = 0
+    Start: str = ''
+    End: str = ''
+    Set: str = ''
     # RRT-Connect's iterations and nodes; the path's vertices after RRT, after the shortcut and the prune; the refits.
     #   Unit [int]
     Iterations: int = 0
@@ -372,10 +390,12 @@ class Planned_Transfer_Str:
 
 
 def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, optimization: Optimization_Str, cell: Cell_Configuration_Str,
-                  margin: float, lower: np.ndarray, upper: np.ndarray) -> Planned_Transfer_Str:
+                  margin: float, lower: np.ndarray, upper: np.ndarray, leg: int = 0, names: tp.Optional[tp.Tuple[str, str]] = None,
+                  set_name: str = '') -> Planned_Transfer_Str:
     """
     Description:
-        One FREE transfer planned: RRT-Connect (seed Optimization.Seed + the transfer's index) and the shortcut with the
+        One FREE transfer's leg planned: RRT-Connect (seed Optimization.Seed + the transfer's index + 1000 x leg) and the
+        shortcut with the
         clearance plus margin; the prune; the spline checked against the clearance plus Spline.Margin and refitted; its
         time-optimal timing within Speed_Fraction of the datasheet speeds and the acceleration limits (the duration only:
         the build times it again from the written waypoints).
@@ -387,17 +407,21 @@ def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, opt
         (5) cell [Cell_Configuration_Str(object)]: The limits.
         (6) margin [float]: The planner margin (m).
         (7 - 8) lower, upper [Vector<float> 1x6]: The joint limits (rad).
+        (9) leg [int]: The leg (0: the whole transfer or its leg to the waiting point).
+        (10) names [Tuple<string, string>]: The leg's end points (default: the transfer's).
+        (11) set_name [string]: Its waypoint set's name (default W_<TRANSFER>).
 
     Returns:
-        (1) parameter [Planned_Transfer_Str(object)]: The planned transfer.
+        (1) parameter [Planned_Transfer_Str(object)]: The planned leg.
     """
 
     o, transfer = optimization, space.Transfer
-    for name, q in ((transfer.Start, start), (transfer.End, end)):
+    names = names or (transfer.Start, transfer.End)
+    for name, q in zip(names, (start, end)):
         if not space.Valid(q, margin):
             raise Planner_Error_Cls('%s is within the clearance plus the planner margin %.1f mm (or tilts the PCB beyond the limit)'
                                     % (name, 1000 * margin))
-    rng = np.random.default_rng(o.Seed + transfer.Index)
+    rng = np.random.default_rng(o.Seed + transfer.Index + 1000 * leg)
 
     def Plan_Valid(q: np.ndarray) -> bool:
         """
@@ -433,7 +457,8 @@ def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, opt
     smooth = Smooth(short, Spline_Valid, o.Spline_Check_Step, o.Spline_Max_Refits)
     timed = Time_Path(smooth.Path, o.Speed_Fraction * np.array(cell.Datasheet_Speeds), np.array(cell.Acceleration_Limits), o.Topp_Grid_Points,
                       CONST_DT)
-    return Planned_Transfer_Str(Transfer=transfer, Margin=margin, Iterations=rrt.Iterations, Nodes=rrt.Nodes, Rrt_Points=len(rrt.Path),
+    return Planned_Transfer_Str(Transfer=transfer, Margin=margin, Leg=leg, Start=names[0], End=names[1],
+                                Set=set_name or 'W_%s' % transfer.Name.upper(), Iterations=rrt.Iterations, Nodes=rrt.Nodes, Rrt_Points=len(rrt.Path),
                                 Short_Points=len(short), Refits=smooth.Refits, Waypoints=smooth.Waypoints, Optimal_Time=timed.Optimal_Time,
                                 Duration=timed.Duration, Peak_Speed=timed.Peak_Speed, Peak_Acceleration=timed.Peak_Acceleration,
                                 Checks=space.Calls)
@@ -488,20 +513,22 @@ def _Degrees(q: np.ndarray) -> str:
     return '[%s]' % ', '.join('%.9f' % math.degrees(v) for v in q)
 
 
-def Optimized_Text(program: Program_Str, planned: tp.List[Planned_Transfer_Str], optimization: Optimization_Str, delays: tp.Dict[str, float],
+def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transfer_Str]], optimization: Optimization_Str,
+                   delays: tp.Dict[str, tp.Any],
                    inputs: tp.Dict[str, str], record: tp.Dict[str, str], schedule: tp.Dict[str, float]) -> str:
     """
     Description:
         The optimized program as text (Data/Optimized/Program_Optimized.yaml, the Program.yaml format): every segment of
         the taught program in order, renumbered - a LOCKED segment copied verbatim, a FREE transfer as one segment named
         after its last FREE segment: its parallel jobs in order, each started when the one before is done (Loader.WaitDone,
-        Loader.Start), Robot.MoveSpline(W_<NAME>, v=...) right after the start of its slot's job (after a Wait when it is
-        delayed), the last job waited for at the end (the interlocks I1-I7 as program order);
+        Loader.Start), a leg to its waiting point (W_<NAME>_WAIT) right after the first job's start, its last leg
+        Robot.MoveSpline(W_<NAME>, v=...) right after the start of its slot's job (after a Wait when it is delayed), the last
+        job waited for at the end (the interlocks I1-I7 as program order);
         the jobs copied verbatim; the Waypoints; the Optimized record (inputs, platform, schedule, TOPP grid).
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
-        (2) planned [List<Planned_Transfer_Str>]: The planned transfers.
+        (2) planned [List<List<Planned_Transfer_Str>>]: The planned transfers, each its legs (a leg to its waiting point first).
         (3) optimization [Optimization_Str(object)]: The settings.
         (4) delays [Dict<string, Tuple<int, float>>]: A transfer's spline slot (it runs after Loader.Start of its slot-th parallel job,
             from 1) and its wait before the spline (s), by name.
@@ -514,8 +541,8 @@ def Optimized_Text(program: Program_Str, planned: tp.List[Planned_Transfer_Str],
     """
 
     blocks, jobs = _Blocks(program.Path)
-    by_first = {p.Transfer.Keys[0]: p for p in planned}
-    merged = {key for p in planned for key in p.Transfer.Keys[1:] + p.Transfer.Job_Keys}
+    by_first = {legs[0].Transfer.Keys[0]: legs for legs in planned}
+    merged = {key for legs in planned for key in legs[0].Transfer.Keys[1:] + legs[0].Transfer.Job_Keys}
     out = ['## =========================================================================== ##',
            '#   Description:',
            '#     The OPTIMIZED program of the Test-it-off cell (FEATURES.md F9), WRITTEN by Example/Program/optimize_program.py',
@@ -535,36 +562,38 @@ def Optimized_Text(program: Program_Str, planned: tp.List[Planned_Transfer_Str],
         if segment.Key in merged:
             continue
         number += 1
-        key = 'S%d_%s' % (number, segment.Name) if segment.Key not in by_first else 'S%d_%s' % (number, by_first[segment.Key].Transfer.Name)
+        key = 'S%d_%s' % (number, segment.Name) if segment.Key not in by_first else 'S%d_%s' % (number, by_first[segment.Key][0].Transfer.Name)
         keys.append(key)
         if segment.Key not in by_first:
             block = blocks[segment.Key]
             out += [line.replace('  %s:' % segment.Key, '  %s:' % key, 1) if line.strip() == segment.Key + ':' else line for line in block]
             out.append('')
             continue
-        p = by_first[segment.Key]
-        t = p.Transfer
+        legs = by_first[segment.Key]
+        t = legs[0].Transfer
         order = [s.Key for s in program.Segments if s.Key in t.Keys + t.Job_Keys]
         parallel = ' The loader runs %s in parallel.' % ', '.join(t.Jobs) if t.Jobs else ''
+        parallel += ' The robot waits at %s meanwhile.' % t.Wait if t.Wait else ''
         comment = 'FREE (planned, F9): %s to %s, replacing the taught %s.%s' % (t.Start, t.End, ', '.join(order), parallel)
         out += textwrap.wrap(comment, width=118, initial_indent='  # ', subsequent_indent='  # ')
         out.append('  %s:' % key)
         slot, wait = delays.get(t.Name, (1, 0.0))
-        spline = ['Wait(%.3f)' % wait] if wait > 0 else []
-        spline.append('Robot.MoveSpline(W_%s, v=%g)' % (t.Name.upper(), optimization.Speed_Fraction))
-        lines = [] if t.Jobs else spline
+        early = ['Robot.MoveSpline(%s, v=%g)' % (leg.Set, optimization.Speed_Fraction) for leg in legs[:-1]]
+        spline = (['Wait(%.3f)' % wait] if wait > 0 else []) + ['Robot.MoveSpline(%s, v=%g)' % (legs[-1].Set, optimization.Speed_Fraction)]
+        lines = [] if t.Jobs else early + spline
         for i, job in enumerate(t.Jobs, start=1):
-            lines += (['Loader.WaitDone(%s)' % t.Jobs[i - 2]] if i > 1 else []) + ['Loader.Start(%s)' % job] + (spline if i == slot else [])
+            lines += (['Loader.WaitDone(%s)' % t.Jobs[i - 2]] if i > 1 else []) + ['Loader.Start(%s)' % job] + (early if i == 1 else []) \
+                + (spline if i == slot else [])
         lines += ['Loader.WaitDone(%s)' % t.Jobs[-1]] if t.Jobs else []
         out += ['    - %s' % line for line in lines]
         out.append('')
     out += jobs if jobs[-1] == '' else jobs + ['']
     out += ['# The planned splines: From and To the end points, Points the interior waypoints [deg] (the planner\'s output).',
             'Waypoints:']
-    for p in planned:
-        out.append('  W_%s:' % p.Transfer.Name.upper())
-        out.append('    From: %s' % p.Transfer.Start)
-        out.append('    To: %s' % p.Transfer.End)
+    for p in (leg for legs in planned for leg in legs):
+        out.append('  %s:' % p.Set)
+        out.append('    From: %s' % p.Start)
+        out.append('    To: %s' % p.End)
         interior = p.Waypoints[1:-1]
         out.append('    Points:%s' % ('' if len(interior) else ' []'))
         out += ['      - %s' % _Degrees(q) for q in interior]
@@ -688,28 +717,32 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     result = Optimization_Result_Str(Delays={t.Name: (1, 0.0) for t in transfers})
     level = {t.Name: 0 for t in transfers}
 
-    def Plan(transfer: Free_Transfer_Str) -> Planned_Transfer_Str:
+    def Plan(transfer: Free_Transfer_Str) -> tp.List[Planned_Transfer_Str]:
         """
         Description:
-            Plan a transfer at its current margin level or the next ones that work.
+            Plan a transfer's legs (to its waiting point and on, or the whole) at its current margin level or the next ones
+            that work.
 
         Args:
             (1) transfer [Free_Transfer_Str(object)]: The transfer.
 
         Returns:
-            (1) parameter [Planned_Transfer_Str(object)]: The planned transfer.
+            (1) parameter [List<Planned_Transfer_Str>]: Its legs.
         """
 
         space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt)
-        start, end = np.array(program.Constants.Points[transfer.Start].Joints), np.array(program.Constants.Points[transfer.End].Joints)
+        points = [transfer.Start] + ([transfer.Wait] if transfer.Wait else []) + [transfer.End]
+        sets = ['W_%s_WAIT' % transfer.Name.upper(), 'W_%s' % transfer.Name.upper()][-(len(points) - 1):]
         while level[transfer.Name] < len(optimization.Margins):
             margin = optimization.Margins[level[transfer.Name]]
             try:
-                planned_transfer = Plan_Transfer(space, start, end, optimization, cell, margin, lower, upper)
-                progress('planned %s (%s to %s) at margin %.1f mm: %d RRT iterations, %d waypoints, %.3f s'
-                         % (transfer.Name, transfer.Start, transfer.End, 1000 * margin, planned_transfer.Iterations, len(planned_transfer.Waypoints),
-                            planned_transfer.Duration))
-                return planned_transfer
+                legs = []
+                for leg, (a, b) in enumerate(zip(points[:-1], points[1:])):
+                    legs.append(Plan_Transfer(space, np.array(program.Constants.Points[a].Joints), np.array(program.Constants.Points[b].Joints),
+                                              optimization, cell, margin, lower, upper, leg, (a, b), sets[leg]))
+                    progress('planned %s (%s to %s) at margin %.1f mm: %d RRT iterations, %d waypoints, %.3f s'
+                             % (sets[leg], a, b, 1000 * margin, legs[-1].Iterations, len(legs[-1].Waypoints), legs[-1].Duration))
+                return legs
             except Planner_Error_Cls as error:
                 result.Attempts.append('%s: margin %.1f mm: %s' % (transfer.Name, 1000 * margin, error))
                 level[transfer.Name] += 1
@@ -737,22 +770,23 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
             name = step.Name.split('_', 1)[1]
             pair = step.Closest.Pair if step.Closest is not None else ''
             if step.Closest is not None and step.Closest.Distance < cell.Clearance and any(b in loader for b in pair.split(' / ')) \
-                    and planned[name].Transfer.Jobs:
-                result.Delays[name] = Delay(trajectory, kinematics, collision, cell, step.Name, planned[name].Transfer, *result.Delays[name])
+                    and planned[name][0].Transfer.Jobs:
+                result.Delays[name] = Delay(trajectory, kinematics, collision, cell, step.Name, planned[name][0].Transfer, *result.Delays[name])
                 result.Attempts.append('%s: %s %.2f mm at %.3f s (I8): the spline after the start of %s, %.3f s later' % (
-                    name, pair, 1000 * step.Closest.Distance, step.Closest.Time, planned[name].Transfer.Jobs[result.Delays[name][0] - 1],
+                    name, pair, 1000 * step.Closest.Distance, step.Closest.Time, planned[name][0].Transfer.Jobs[result.Delays[name][0] - 1],
                     result.Delays[name][1]))
                 tries[name] += 1
                 if tries[name] > CONST_DELAY_TRIES:
                     raise Optimizer_Error_Cls('The FREE transfer %s still meets the loader after %d longer waits: %s' % (name, CONST_DELAY_TRIES,
                                                                                                                       '; '.join(step.Failures)))
             else:
-                result.Attempts.append('%s: margin %.1f mm fails the exact check: %s' % (name, 1000 * planned[name].Margin, '; '.join(step.Failures)))
+                result.Attempts.append('%s: margin %.1f mm fails the exact check: %s'
+                                       % (name, 1000 * planned[name][0].Margin, '; '.join(step.Failures)))
                 level[name] += 1
                 if level[name] >= len(optimization.Margins):
                     raise Optimizer_Error_Cls('The FREE transfer %s fails the exact check at every margin of Optimization.yaml Margins: %s'
                                               % (name, '; '.join(step.Failures)))
-                planned[name] = Plan(planned[name].Transfer)
+                planned[name] = Plan(planned[name][0].Transfer)
     else:
         raise Optimizer_Error_Cls('The optimized program does not pass its check after every margin and delay was tried.')
     text = Optimized_Text(program, list(planned.values()), optimization, result.Delays, inputs, record, Schedule(trajectory))
@@ -761,7 +795,7 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     result.Program = Load_Program(program.Constants, program.Simulation, cell, path)
     result.Trajectory, result.Notes = Build_Program(result.Program, cell, pcb_meta, kinematics, {})
     result.Check = Check_Trajectory(result.Trajectory, result.Program, result.Notes, kinematics, collision, cell, pcb_meta)
-    result.Text, result.Planned = text, list(planned.values())
+    result.Text, result.Planned = text, [leg for legs in planned.values() for leg in legs]
     return result
 
 
@@ -792,8 +826,9 @@ def Delay(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collisio
 
     index = trajectory.Step_Names.index(step)
     samples = np.flatnonzero(trajectory.Step_Index == index)
-    spline = next(k for k,
-                  text in enumerate(trajectory.Segment_Command) if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index)
+    # The transfer's last spline (a leg to a waiting point comes before it).
+    spline = [k for k, text in enumerate(trajectory.Segment_Command)
+              if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
     meeting = [int(i) for i in samples if Robot_Loader_Distance(trajectory, kinematics, collision, [int(i)])[0] < cell.Clearance]
     if not meeting:
         return slot, delay
@@ -1043,9 +1078,10 @@ class Program_Metrics_Str:
     # The loader's travel, Y plus Z.
     #   Unit [float] (m)
     Loader_Travel: float = 0.0
-    # The robot's stops: the motions that end at rest.
-    #   Unit [int]
+    # The robot's stops: every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME, after a motion; their total time.
+    #   Unit [int], [float] (s)
     Stops: int = 0
+    Rest_Time: float = 0.0
 
 
 def Measure(q: np.ndarray, dt: float, kinematics: Robot_Kinematics_Cls, loader_y: np.ndarray, loader_z: np.ndarray,
@@ -1053,8 +1089,8 @@ def Measure(q: np.ndarray, dt: float, kinematics: Robot_Kinematics_Cls, loader_y
     """
     Description:
         A program's metrics from its samples: joint travel, the suction TCP's path (FK per sample), the PCB's path, the
-        loader's travel, the robot's stops (a sample moving - some joint changes by more than 1e-9 rad - followed by one at
-        rest).
+        loader's travel, the robot's stops (each run of samples with every joint speed - its change over dt - below
+        CONST_STOP_SPEED lasting at least CONST_STOP_TIME, once the robot has moved).
 
     Args:
         (1) q [Matrix<float> nx6]: The joints per sample (rad).
@@ -1069,9 +1105,17 @@ def Measure(q: np.ndarray, dt: float, kinematics: Robot_Kinematics_Cls, loader_y
 
     dq = np.abs(np.diff(q, axis=0))
     tcp = np.array([kinematics.Site_Pose(qi)[0] for qi in q])
-    moving = np.max(dq, axis=1) > 1e-9
+    rest = np.max(dq, axis=1) / dt < CONST_STOP_SPEED
+    stops, run, moved, rest_time = 0, 0, False, 0.0
+    for still in np.r_[rest, False]:
+        if still:
+            run += 1
+            continue
+        if moved and run * dt >= CONST_STOP_TIME - 1e-9:
+            stops, rest_time = stops + 1, rest_time + run * dt
+        run, moved = 0, True
     return Program_Metrics_Str(Cycle_Time=float(len(q) - 1) * dt, Joint_Travel=dq.sum(axis=0),
                                Tcp_Path=float(np.sum(np.linalg.norm(np.diff(tcp, axis=0), axis=1))),
                                Pcb_Path=float(np.sum(np.linalg.norm(np.diff(pcb, axis=0), axis=1))) if pcb is not None else math.nan,
                                Loader_Travel=float(np.sum(np.abs(np.diff(loader_y))) + np.sum(np.abs(np.diff(loader_z)))),
-                               Stops=int(np.sum(moving[:-1] & ~moving[1:]) + (1 if moving[-1] else 0)))
+                               Stops=stops, Rest_Time=round(rest_time, 6))

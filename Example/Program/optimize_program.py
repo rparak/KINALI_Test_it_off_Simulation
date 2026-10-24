@@ -109,13 +109,14 @@ def main():
         tilt = '%.2f deg (limit %.1f)' % (math.degrees(Carried_Tilt(tr, first, last)),
                                           math.degrees(optimization.Carry_Max_Tilt)) if t.Carrying else '-'
         slot, wait = result.Delays.get(t.Name, (1, 0.0))
-        lines.append('  %-15s %s -> %s: margin %.1f mm; %d / %d; %d -> %d -> %d, %d refits; %d checks; %.3f / %.3f s; %.3f / %.3f; tilt %s'
-                     % (t.Name, t.Start, t.End, 1000 * p.Margin, p.Iterations, p.Nodes, p.Rrt_Points, p.Short_Points, len(p.Waypoints), p.Refits,
+        lines.append('  %-20s %s -> %s: margin %.1f mm; %d / %d; %d -> %d -> %d, %d refits; %d checks; %.3f / %.3f s; %.3f / %.3f; tilt %s'
+                     % (p.Set, p.Start, p.End, 1000 * p.Margin, p.Iterations, p.Nodes, p.Rrt_Points, p.Short_Points, len(p.Waypoints), p.Refits,
                         p.Checks, p.Optimal_Time, p.Duration, p.Peak_Speed, p.Peak_Acceleration, tilt))
-        if t.Jobs:
+        if t.Jobs and p.End == t.End:
             later = ', %.3f s later' % wait if wait else ''
-            lines.append('  %-15s replaces %s; parallel jobs %s; the spline after the start of %s%s'
-                         % ('', ', '.join(t.Keys + t.Job_Keys), ', '.join(t.Jobs), t.Jobs[slot - 1], later))
+            waits = '; the robot waits at %s' % t.Wait if t.Wait else ''
+            lines.append('  %-20s %s replaces %s; parallel jobs %s%s; the last spline after the start of %s%s'
+                         % ('', t.Name, ', '.join(t.Keys + t.Job_Keys), ', '.join(t.Jobs), waits, t.Jobs[slot - 1], later))
     lines += ['  attempt: %s' % a for a in result.Attempts]
     lines.append('schedule: %s' % ', '.join('%s %.3f s' % (k, v) for k, v in result.Program.Optimized.Schedule.items()))
     interlocks = Interlocks(tr, kinematics, collision, cell, result.Program)

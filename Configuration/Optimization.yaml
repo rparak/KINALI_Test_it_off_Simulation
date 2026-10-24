@@ -56,6 +56,15 @@ Topp_Grid_Points: 1000
 # after 80 refits, 2 mm passes; 10 mm makes P_LOADER_ABOVE itself invalid.
 Margins: [0.002, 0.003, 0.005]
 
+# Where the robot waits in a FREE transfer while its parallel jobs run, by transfer (named after its last FREE segment):
+# a point declared in Constants.yaml for the optimized program only (the taught program may not use it; it counts as used
+# for Constants.yaml's completeness through this list). The transfer runs to it at once, waits, and goes on to its end in
+# the first moment the loader allows (F9.8). P_LOADER_WAIT: 25 mm above P_LOADER_ABOVE along the plate normal, the nearest
+# with 3 mm plus the first margin to the loader over the whole fetch and return (measured 2026-10-24: 4.92 mm; 23 mm gave
+# 3.26 mm, 20 mm 0.85 mm).
+Waiting_Points:
+  To_Take: P_LOADER_WAIT
+
 # The largest tilt of the carried PCB from horizontal in a FREE transfer (B4) [deg]. Source: real-cell practice for a
 # board held by four suction cups, ASSUMED (no measurement); P_LOADER_ABOVE itself tilts the board 8.94 deg.
 Carry_Max_Tilt: 30.0

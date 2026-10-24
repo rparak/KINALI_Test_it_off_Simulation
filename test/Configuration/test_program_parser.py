@@ -149,7 +149,7 @@ def test_the_shipped_files_load(program, constants, simulation):
 
     assert program.Notes == []
     assert [len(t) for t in (constants.Tools, constants.Points, constants.Loader, constants.Gripper, constants.Paths,
-                             constants.Signals)] == [2, 23, 4, 2, 2, 2]
+                             constants.Signals)] == [2, 24, 4, 2, 2, 2]
     assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 52
     assert list(program.Loader_Jobs) == ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN',
                                          'J_RELEASE'] and list(program.Tester_Jobs) == ['J_TEST']
@@ -187,7 +187,8 @@ def test_the_points_are_the_spec_table_and_the_reference_plans_rows(constants, r
     """
     Description:
         Every point's joints are within the SPEC §4.8 table's rounding (1e-4 rad) and a stationary row of
-        Data/Reference/cell_plan.npz to the file's rounding (1e-6 deg) - except P_INPUT_CLEAR, the default program's own point.
+        Data/Reference/cell_plan.npz to the file's rounding (1e-6 deg) - except P_INPUT_CLEAR, the default program's own point, and
+        P_LOADER_WAIT, the optimized program's waiting point.
     """
 
     plan = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))
@@ -196,7 +197,7 @@ def test_the_points_are_the_spec_table_and_the_reference_plans_rows(constants, r
         assert np.max(np.abs(joints - table)) <= 1e-4, name
         nearest = plan['q_home'] if name == 'P_HOME' else plan['q'][np.argmin(np.max(np.abs(plan['q'] - joints), axis=1))]
         assert np.max(np.abs(nearest - joints)) <= math.radians(0.5e-6) + 1e-12, name
-    assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR'}
+    assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR', 'P_LOADER_WAIT'}
 
 
 @pytest.mark.parametrize('old, new, text', [
@@ -477,6 +478,9 @@ CONST_OPTIMIZATION_ERRORS = [
     ('Seed: 20261024', 'Seed: -1', 'Seed: must be a whole number within [0, 2147483647]'),
     ('  Max_Refits: 20', '  Max_Refits: 2.5', 'Spline.Max_Refits: must be a whole number within [0, 1000]'),
     ('Carry_Max_Tilt: 30.0\n', '', 'Carry_Max_Tilt: missing (REQUIRED)'),
+    ('  To_Take: P_LOADER_WAIT', '  To_Bed: P_LOADER_WAIT', 'Waiting_Points.To_Bed: is not a FREE transfer'),
+    ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_NAP', "Waiting_Points.To_Take: 'P_LOADER_NAP' is not a point of Constants.yaml"),
+    ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_ABOVE', 'Waiting_Points.To_Take: P_LOADER_ABOVE is used by the taught program'),
 ]
 
 
@@ -501,3 +505,26 @@ def test_the_shipped_optimization_settings_load(program):
     o = Load_Optimization(program)
     assert len(o.Free_Segments) == 8 and o.Margins == [0.002, 0.003, 0.005] and o.Speed_Fraction == 0.6
     assert math.isclose(o.Carry_Max_Tilt, math.radians(30.0)) and math.isclose(o.Rrt_Edge_Step, math.radians(1.0))
+
+
+def test_an_optimizer_point_is_used_only_by_the_optimized_program(tmp_path, monkeypatch, constants, simulation, cell_configuration):
+    """
+    Description:
+        P_LOADER_WAIT, declared in Optimization.yaml Waiting_Points, counts as used for Constants.yaml's completeness without
+        being in Program.yaml; the taught program may not use it; the optimized program must (a copy without it is refused,
+        naming the optimizer's command). Without the declaration, Program.yaml's check names the unused point.
+    """
+
+    path = _Edited(tmp_path, CONST_PROGRAM_YAML, 'Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveJ(P_LOADER_WAIT)')
+    assert 'P_LOADER_WAIT is declared for the optimized program only (Optimization.yaml Waiting_Points); the taught program may not use it' \
+        in _Error(lambda: Load_Program(constants, simulation, cell_configuration, path))
+    text = open(CONST_OPTIMIZED_PROGRAM_YAML, encoding='utf-8').read()
+    assert 'P_LOADER_WAIT' in text
+    path = tmp_path / 'Unused.yaml'
+    text = text.replace('    - Robot.MoveSpline(W_TO_TAKE_WAIT, v=0.6)\n', '').replace('    From: P_LOADER_WAIT', '    From: P_MG06_FORK_START')
+    path.write_text(text.replace('    To: P_LOADER_WAIT', '    To: P_MG06_FORK_START'), encoding='utf-8')
+    message = _Error(lambda: Load_Program(constants, simulation, cell_configuration, str(path)))
+    assert 'P_LOADER_WAIT is declared for the optimized program (Optimization.yaml Waiting_Points) but this program does not use it' in message
+    monkeypatch.setattr(Program_Parser, 'Optimizer_Points', lambda path=None: {})
+    assert 'Points.P_LOADER_WAIT: declared but used by neither Program.yaml nor Simulation.yaml' \
+        in _Error(lambda: Load_Program(constants, simulation, cell_configuration))

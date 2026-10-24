@@ -50,6 +50,9 @@ Description:
 # The test data folder.
 #   Unit [string]
 CONST_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+# The points added after the golden capture, left out of the table comparison.
+#   Unit [List<string>]
+CONST_ADDED_POINTS = ['P_LOADER_WAIT']
 # The old command kinds and the new ones each may become.
 #   Unit [Dict<string, Tuple<string>>]
 CONST_KINDS = {'Movej': ('MoveJ',), 'Movel': ('MoveL',), 'Path': ('MovePath',), 'Loader': ('MoveY', 'MoveZ'), 'Gripper': ('Gripper',),
@@ -187,11 +190,14 @@ def test_the_point_table_is_the_golden_keypoint_table_renamed(constants, simulat
     Description:
         The point check table equals golden_keypoint_table.txt row for row with the points renamed, except its 'check' and
         'stale' columns, which now measure something else by design (the Pose against FK; the Reference / PCB-hold consistency):
-        family, limits, the closest pair, the allowed contacts and the verdict are the same, and the summary lines too.
+        family, limits, the closest pair, the allowed contacts and the verdict are the same, and the summary lines too; the rows of
+        points added later (CONST_ADDED_POINTS) left out.
     """
 
     kinematics, meta, collision = tools
     new = Format_Check_Table(Check_Keypoints(kinematics, collision, constants, simulation, cell_configuration, meta))
+    # The points added after the golden capture (F9.8: the optimized program's waiting point) have no golden row.
+    new = [line for line in new if line[:21].strip() not in CONST_ADDED_POINTS]
     with open(os.path.join(CONST_DATA, 'golden_keypoint_table.txt'), encoding='utf-8') as handle:
         old = handle.read().splitlines()
     assert len(new) == len(old)

@@ -874,3 +874,63 @@ know both lanes' states.
 **Revisit if** the tester's job runs in parallel too (Tester.Start is reserved).
 
 Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `test/Optimizer/test_core.py::test_the_loader_moves_while_the_robot_moves`.
+
+## The optimized program's longer PCB path is accepted
+
+**Decision.** The optimized program carries the PCB 3.010 m against the taught 2.712 m (+11 %, measured 2026-10-24) while the
+robot's joint travel falls 18 % and the TCP's path 13 %: accepted (owner, 2026-10-24).
+
+**Why.** The optimizer's objective is time within the limits and the clearance; the FREE transfers that carry the PCB (To_Loader,
+To_Output) are shorter in time (1.148 s against 1.836 s, 1.792 s against 2.556 s), their clearances pass, and the tilt stays
+within its limit.
+
+**Alternatives.** A path-length term in the planner: no gain in time, more tuning.
+
+**Revisit if** step 5 shows PCB slip in a carrying transfer.
+
+Pinned by `test/Example/Program/test_compare_programs.py`.
+
+## A robot stop is a tenth of a second at rest
+
+**Decision.** The comparison counts a robot stop when every joint speed (its change per sample over 4 ms) stays below 1e-3 rad/s
+for at least 0.1 s after a motion (`Optimizer.CONST_STOP_SPEED`, `CONST_STOP_TIME`), and reports the time at rest in them.
+Legacy, taught and optimized all stop 11 times; at rest 18.600 / 21.176 / 16.716 s (measured 2026-10-24).
+
+**Why.** The first count (a sample moving followed by one at rest) counted the legacy plan's single still rows: 135 stops. With
+a duration, the count is the process's holds - the vacuum at the pick, the handover's clamp, the fork paths' recorded rests,
+the test, the take, the place - and the waits for the loader; the optimization removes motion and moves the waits, so the count
+stays and the time at rest falls.
+
+**Alternatives.** A speed threshold alone: still counts the transient zero speed of a min-jerk move's ends.
+
+**Revisit if** the comparison should tell the process holds from the waits.
+
+Pinned by `test/Optimizer/test_core.py::test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion`,
+`test/Example/Program/test_compare_programs.py`.
+
+## The optimized take waits at P_LOADER_WAIT; the loader is the critical path
+
+**Decision.** In the optimized program the robot leaves `P_MG06_FORK_START` at once after Open_MG06 (with `J_FETCH`), waits at
+`P_LOADER_WAIT` (25 mm above `P_LOADER_ABOVE` along the plate normal, `Optimization.yaml Waiting_Points`) and moves on to
+`P_LOADER_ABOVE` at the earliest moment the exact robot-loader check allows (1.660 s after `J_RETURN` starts). Interlock I7
+stays: the take starts when `J_RETURN` has ended.
+
+**Why.** Owner's observation (2026-10-24): the robot waited 4.05 s above MG06. The analysis: the loader is the critical path -
+`J_FETCH` 37.036-41.080 s, `J_RETURN` 41.080-44.680 s (at rest at `L_HOME` from 44.480 s, then its Wait(0.2)) - and the robot was
+already at `P_LOADER_ABOVE` at 43.364 s, so leaving earlier gains no time: the cycle stays 57.132 s. It removes the robot's wait
+above the tester (which a real cell's safety zones would have had to allow). `P_LOADER_ABOVE` itself cannot be the waiting
+point: the `z_carriage` at its travel height meets the robot there (-18.91 mm); 23 mm above keeps 3.26 mm, 25 mm 4.92 mm (3 mm
+plus the planner's first margin), 20 mm 0.85 mm (measured over every sample of `J_FETCH` and `J_RETURN`). I7' (the take on the
+loader at rest at home, during its trailing Wait(0.2)) would gain at most 0.2 s and needs a state-based "loader home" input and
+a WaitDone inside the LOCKED take: not done. Other candidates (measured): the wait before Close_MG06 (the robot at
+`P_MG06_FORK_START` 12.828-17.924 s while `J_PARK` runs) - loader-limited by I3, gain 0; starting `J_INSERT` during the
+handover's last MoveL (9.224-10.720 s) - at most 1.5 s, but it splits a LOCKED segment and relaxes I2: not done without a
+decision. The closest robot-loader distance is now 4.28 mm at 42.796 s (the last leg behind the passing `z_carriage`).
+
+**Alternatives.** One spline straight to `P_LOADER_ABOVE` timed after the loader passes (the previous program): the same time,
+the wait above MG06.
+
+**Revisit if** the loader's jobs get faster (the robot may become the critical path), or I7' / I2' are wanted.
+
+Pinned by `test/Optimizer/test_core.py::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`, `::test_the_interlocks_hold`,
+`test/Configuration/test_program_parser.py::test_an_optimizer_point_is_used_only_by_the_optimized_program`.

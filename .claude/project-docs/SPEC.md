@@ -736,7 +736,9 @@ The optimized program (`src/Optimizer/Core.py`, F9). `Free_Transfers`: the FREE 
 ones merged across segments that only run loader jobs (those jobs then run in parallel). `Free_Space_Cls`: a configuration's
 validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
 carried PCB (hung at the cup face) at least the clearance plus a margin from everything, the carried PCB's tilt at most
-`Carry_Max_Tilt` (B4). `Plan_Transfer`: RRT-Connect (seed `Seed` + the transfer's index) and the shortcut at the planner
+`Carry_Max_Tilt` (B4). A transfer with a waiting point (`Optimization.yaml Waiting_Points`) has two legs: to the waiting point
+at once (after its first job's start), and on to its end at the slot and wait the search finds. `Plan_Transfer`: RRT-Connect
+(seed `Seed` + the transfer's index + 1000 x the leg) and the shortcut at the planner
 margin, the prune, the spline at `Spline.Margin`. `Optimize_Program`: plans every transfer at the first margin it can be
 planned with, writes the program (`Optimized_Text`: LOCKED segments verbatim from `Program.yaml`, renumbered; a transfer as
 `Loader.Start` / `Robot.MoveSpline` / `Loader.WaitDone` lines), loads, builds and checks it; a transfer that meets the loader
@@ -787,7 +789,8 @@ with a one-line `Description`, and used by `Program.yaml` or `Simulation.yaml` (
 | `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path (§4.9) |
 | `Signals` | `DO_` / `DI_` | `Port` | a placeholder (`KNOWN_ISSUES.md`) |
 
-23 points: the 22 of §4.8 at full precision (names §4.8.1) and the default program's auxiliary `P_INPUT_CLEAR` (F8.5).
+24 points: the 22 of §4.8 at full precision (names §4.8.1), the default program's auxiliary `P_INPUT_CLEAR` (F8.5) and the
+optimized program's waiting point `P_LOADER_WAIT` (F9.8: 25 mm above `P_LOADER_ABOVE` along the plate normal).
 Approach and exit points are `Reference` + `Offset` of their place; the fork points and the vias are roots.
 
 `Simulation.yaml`: `Start` (`Robot` a point, `Loader` a position, `Gripper` a command, `Vacuum` `ON` / `OFF`, `PCB` a location
@@ -815,7 +818,8 @@ with `ast` and never evaluated; the only literal values are speeds, durations, w
 | `Test(Process.Test_Duration)` | Tester_Jobs | the MG06 test for `Cell.yaml`'s duration |
 
 Reserved: `a=` and `r=` take only 0 or nothing (no blending yet); `Tester.Start` / `Tester.WaitDone` are refused (the
-tester's job runs whole). Checked at load besides the grammar: every constant and job declared and used; the IK family changes
+tester's job runs whole). Checked at load besides the grammar: every constant and job declared and used (a point declared in
+`Optimization.yaml Waiting_Points` counts as used, the taught program may not use it, the optimized program must); the IK family changes
 only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot stands; the segment names of
 `Simulation.yaml` exist.
 
@@ -841,6 +845,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Topp_Grid_Points` | - | measured (B3) | `Time_Path` |
 | `Margins` | m (increasing) | measured 2026-10-24 | `Plan_Transfer` |
 | `Carry_Max_Tilt` | deg | real-cell practice, ASSUMED | `Free_Space_Cls` (B4) |
+| `Waiting_Points` | transfer -> point | the robot-loader analysis (F9.8) | the transfer's legs; Constants.yaml's completeness (the point is the optimized program's only) |
 
 ## 9. Data formats and units
 
@@ -874,8 +879,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (355 tests, about 80 s), full `.venv/bin/python -m pytest`
-before a commit (371 tests, 4 of them strict expected failures, about 204 s; Apple M2 Pro, 2026-10-24, after F9).
+`.venv/bin/python -m pytest -m "not slow"` (360 tests, about 80 s), full `.venv/bin/python -m pytest`
+before a commit (376 tests, about 225 s; Apple M2 Pro, 2026-10-24, after F9.8).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)

@@ -500,15 +500,18 @@ def test_the_shipped_constants_match_the_model(program, cell_configuration, tool
     assert Validate_Constants(program, kinematics, cell_configuration, meta) == []
 
 
-def test_a_run_is_a_start_and_a_waitdone(tmp_path, program, constants, simulation, cell_configuration, tools, built):
+def test_a_run_is_a_start_and_a_waitdone(tmp_path, monkeypatch, program, constants, simulation, cell_configuration, tools, built):
     """
     Description:
         The loader's lane (F9): the taught program with S6's Loader.Run(J_INSERT) written as Loader.Start(J_INSERT) +
         Loader.WaitDone(J_INSERT) (in a file with an Optimized record, where they are allowed) gives the same samples on
-        every channel and the same events; only the trajectory's segments differ (two lines instead of the job's six).
+        every channel and the same events; only the trajectory's segments differ (two lines instead of the job's six). (The
+        file is not the optimizer's, so the optimizer's waiting points are not required in it.)
     """
 
+    import Configuration.Program_Parser as Program_Parser
     from Configuration.Program_Parser import Load_Program, CONST_PROGRAM_YAML
+    monkeypatch.setattr(Program_Parser, 'Optimizer_Points', lambda path=None: {})
     text = open(CONST_PROGRAM_YAML, encoding='utf-8').read().replace('    - Loader.Run(J_INSERT)\n',
                                                                      '    - Loader.Start(J_INSERT)\n    - Loader.WaitDone(J_INSERT)\n', 1)
     text += '\nWaypoints: {}\nOptimized:\n  Inputs: {}\n  Platform: {}\n  Schedule: {}\n  Topp_Grid_Points: 1000\n'
@@ -539,7 +542,7 @@ def test_the_optimized_splines_run_within_the_limits(constants, simulation, cell
     v_max = cell_configuration.Speed_Fraction * np.array(cell_configuration.Datasheet_Speeds)
     a_max = np.array(cell_configuration.Acceleration_Limits)
     splines = [k for k, text in enumerate(trajectory.Segment_Command) if text.startswith('Robot.MoveSpline')]
-    assert len(splines) == 6
+    assert len(splines) == 7
     for k in splines:
         # Sample 0 is the start state (the first segment's first sample), so a segment's motion begins at sample 1 at the earliest.
         first, end = max(int(trajectory.Segment_Start[k]), 1), int(trajectory.Segment_End[k])

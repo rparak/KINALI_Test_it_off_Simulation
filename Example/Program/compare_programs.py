@@ -184,7 +184,7 @@ def Figure(default: Trajectory_Str, optimized: Trajectory_Str, metrics: tp.Dict[
                                                                float(b.Joint_Travel.sum()), 'rad'),
              ('TCP path', a.Tcp_Path, b.Tcp_Path, 'm'), ('PCB path', a.Pcb_Path, b.Pcb_Path, 'm'), ('loader travel', a.Loader_Travel,
                                                                                                     b.Loader_Travel, 'm'),
-             ('robot stops', a.Stops, b.Stops, '')]
+             ('robot at rest (stops >= 0.1 s)', a.Rest_Time, b.Rest_Time, 's')]
     names = [i[0] for i in items][::-1]
     percent = [100.0 * i[2] / i[1] for i in items][::-1]
     bars.barh(range(len(items)), percent, height=0.56, color=CONST_ROBOT, edgecolor=CONST_SURFACE, linewidth=2)
@@ -291,12 +291,14 @@ def main():
     lines.append(Row('TCP path [m]', [c.Tcp_Path for _, c in columns], '%.3f'))
     lines.append(Row('PCB path [m]', [c.Pcb_Path for _, c in columns], '%.3f'))
     lines.append(Row('loader travel Y + Z [m]', [c.Loader_Travel for _, c in columns], '%.3f'))
-    lines.append(Row('robot stops', [float(c.Stops) for _, c in columns], '%.0f'))
+    lines.append(Row('robot stops (>= 0.1 s)', [float(c.Stops) for _, c in columns], '%.0f'))
+    lines.append(Row('robot at rest in them [s]', [c.Rest_Time for _, c in columns], '%.3f'))
     lines.append('per part of the process (s): taught, optimized, difference')
     for name, a, b in Part_Rows(default, fast, default.Step_Names, transfers):
         lines.append('  %-58s %8.3f %8.3f %+8.3f' % (name, a, b, b - a))
-    lines.append('the legacy plan\'s PCB path is not recorded (n/a); its loader travel is summed from its moves. Simulation results only: '
-                 'not validated for the real cell.')
+    lines.append('a stop: every joint speed below 1e-3 rad/s (joint change per sample over 4 ms) for at least 0.1 s, after a motion. The '
+                 'legacy plan\'s PCB path is not recorded (n/a); its loader travel is summed from its moves. Simulation results only: not '
+                 'validated for the real cell.')
     table = os.path.join(args.out or CONST_REPORTS, 'compare_programs.txt')
     os.makedirs(os.path.dirname(table), exist_ok=True)
     with open(table, 'w', encoding='utf-8') as handle:

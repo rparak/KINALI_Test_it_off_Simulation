@@ -44,6 +44,8 @@ def test_the_programs_are_compared_in_a_table_and_a_figure(tmp_path_factory, run
     assert sorted(os.listdir(out)) == ['compare_programs.png', 'compare_programs.txt'] and os.listdir(cwd) == []
     table = open(os.path.join(out, 'compare_programs.txt'), encoding='utf-8').read()
     assert 'cycle time [s]                     65.768       68.852       57.132        83.0%' in table
+    assert 'robot stops (>= 0.1 s)                 11           11           11       100.0%' in table
+    assert 'robot at rest in them [s]          18.600       21.176       16.716' in table
     assert '  To_MG06 (FREE: S5, S6, S7, S8)' in table and '  Close_MG06 ' in table and '  joint 6 [rad]' in table
     image = mpimg.imread(os.path.join(out, 'compare_programs.png'))
     assert image.shape[1] > 800
