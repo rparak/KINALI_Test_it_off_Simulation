@@ -72,12 +72,12 @@ def results(tools, keypoints, cell_configuration):
 def test_every_keypoint_passes_the_check(results):
     """
     Description:
-        All 22 keypoints pass; via_mg06_high only warns (wrist_2 at -0.94 deg, the family switch within the 1 deg
-        margin, SPEC §4.7).
+        All 23 keypoints (SPEC §4.8's 22 and the program's input_pcb_clear) pass; via_mg06_high only warns (wrist_2 at
+        -0.94 deg, the family switch within the 1 deg margin, SPEC §4.7).
     """
 
     verdicts = {name: r.Verdict for name, r in results.items()}
-    assert len(verdicts) == 22 and {n for n, v in verdicts.items() if v == 'FAIL'} == set()
+    assert len(verdicts) == 23 and {n for n, v in verdicts.items() if v == 'FAIL'} == set()
     assert {n for n, v in verdicts.items() if v == 'WARN'} == {'via_mg06_high'}
 
 
@@ -105,11 +105,12 @@ def test_every_family_matches_wrist_2(results, keypoints):
 def test_the_relative_keypoints_are_not_stale(results):
     """
     Description:
-        Every Relative_To keypoint reaches its target within 0.05 mm / 0.01 deg (measured at most 24 um).
+        Every Relative_To keypoint (11 of SPEC §4.8 and input_pcb_clear) reaches its target within 0.05 mm / 0.01 deg
+        (measured at most 24 um).
     """
 
     relative = [r for r in results.values() if r.Stale_Position is not None]
-    assert len(relative) == 11 and max(r.Stale_Position for r in relative) <= 0.00005
+    assert len(relative) == 12 and max(r.Stale_Position for r in relative) <= 0.00005
     assert max(r.Stale_Angle for r in relative) <= math.radians(0.01)
 
 

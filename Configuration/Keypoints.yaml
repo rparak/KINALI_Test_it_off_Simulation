@@ -73,6 +73,19 @@ Robot:
     Context: {Loader: home, Gripper: open, PCB: input_crate}
     Allow_Contact: [cups_pcb]
     Note: "Cups pressed 1.5 mm onto the PCB, then vacuum on (SPEC §4.7)."
+  input_pcb_clear:
+    # An auxiliary point of the default program (FEATURES.md F8.5): 170 mm above the PCB's place, so the carried board
+    # (its bottom 25 mm above the 149 mm crate walls) leaves the crate straight up before it moves sideways. Joints from
+    # Example/Keypoints/resolve_keypoint.py --name input_pcb_clear --seed above_input_pcb (2026-10-24); not in the
+    # reference plan.
+    Joints: [26.639005, -4.054115, 110.110691, 24.164834, 89.999999, -18.360995]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.15595, -0.74700, 0.18240]}
+    Relative_To: {Target: pcb_hold@input_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.1700]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "170 mm above the PCB's place in the input crate: the carried board is clear of the crate walls."
   via_input_to_loader:
     Joints: [2.661983, 3.238736, 83.863972, -11.182552, 85.909206, -42.208688]
     Family: wrist_up

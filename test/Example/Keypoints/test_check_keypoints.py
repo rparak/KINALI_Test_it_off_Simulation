@@ -28,15 +28,15 @@ import os
 def test_the_shipped_keypoints_pass_and_the_table_lists_them_all(tmp_path, run_script):
     """
     Description:
-        From an unrelated directory the check exits 0 with a table row per keypoint (22), the summary 0 FAIL / 1 WARN
-        (via_mg06_high, the family switch) / 21 PASS, and nothing written to the working directory.
+        From an unrelated directory the check exits 0 with a table row per keypoint (23: SPEC §4.8's 22 and the program's
+        input_pcb_clear), the summary 0 FAIL / 1 WARN (via_mg06_high, the family switch) / 22 PASS, and nothing written to the working directory.
     """
 
     result = run_script('Keypoints/check_keypoints.py', [], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     rows = [line for line in result.stdout.splitlines() if line.split() and line.split()[-1] in ('PASS', 'WARN', 'FAIL')]
-    assert len(rows) == 22
-    assert '[INFO] 22 keypoint(s): 0 FAIL, 1 WARN, 21 PASS.' in result.stdout
+    assert len(rows) == 23
+    assert '[INFO] 23 keypoint(s): 0 FAIL, 1 WARN, 22 PASS.' in result.stdout
     assert os.listdir(tmp_path) == []
 
 

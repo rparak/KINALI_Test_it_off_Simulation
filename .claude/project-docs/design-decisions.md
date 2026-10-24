@@ -459,6 +459,56 @@ opening the regression was measured on.
 
 Pinned by `test/Program/test_core.py::test_the_fork_paths_follow_the_recorded_rows_and_join_rule`.
 
+## The program check holds the taught moves to the limits and reports the recorded paths
+
+**Decision.** `Program.Check_Trajectory` (F8.5) measures exact distances at every sample where anything may have moved more
+than `Clearance.Check_Step` (1 mm) since the last measured one, and at every segment end; it fails a pair within the 3 mm
+clearance unless the step allows its group, and an allowed pair deeper than the group's `Allowed_Depth`. It holds every MoveJ
+and MoveL to the `Motion` limits, allowing only a MoveJ's rounding to whole 4 ms samples (the legacy rule rounds T: speeds up
+to 1 + 0.5 / n, accelerations its square) and 0.1 % for finite differences; the recorded fork paths' peaks are reported, not
+limited. MG06 moves, during a MoveJ / MoveL, from its state at the motion's start to the target's `Fixture` along the
+motion's time law.
+
+**Why.** Measured on the default program (2026-10-24): MoveJ peaks reach 1.0031 of the acceleration limit through the
+rounding alone; the recorded paths reach 2.03x the assumed acceleration (`Fork_Close`) and 8.44x at `Fork_Open`'s join
+(the velocity step) - the verified physics ran them (SPEC §4.6), so they are the reference, not a fault of the build. With
+MG06 switched to the settled closed state at the start of the bar-centring MoveL (Part A's rule) the fork stood 5.95 mm in
+the bar (F6's C1 effect); the handle really settles as the fork lets go. Holds are skipped by the motion bound: 10 725 of
+17 214 samples measured, check 8 s.
+
+**Alternatives.** Every sample measured: the same result, about 1.6x the time. A fixed 1 % speed / acceleration tolerance:
+would hide a MoveL 1 % too fast. The recorded paths held to the assumed limits: the verified motion would fail.
+
+**Revisit if** the acceleration limits are measured on the real robot (KNOWN_ISSUES), or the fork paths are replaced.
+
+Pinned by `test/Program/test_core.py::test_the_default_program_check_finds_only_the_recorded_fork_overlap`,
+`::test_a_movej_over_its_rule_limits_is_reported`, `::test_contacts_are_allowed_only_where_declared_and_as_deep_as_configured`,
+`::test_a_colliding_step_is_reported_with_its_pair_and_time`, `::test_the_handover_keeps_the_board_off_the_ledges`,
+`::test_a_press_at_the_handover_is_reported`.
+
+## The default program lifts the PCB clear of the crate and returns from MG06 over the family switch
+
+**Decision.** Two changes to the legacy sequence, found by the program check (F8.5): the pick lifts the carried PCB to a new
+auxiliary keypoint `input_pcb_clear` (170 mm above the PCB's place: the board's bottom 25 mm above the crate's 149 mm walls)
+instead of `above_input_pcb` (120 mm, the board still below the walls); and the return from MG06 is `above_handle` →
+`via_mg06_high` → `home`. *Corrected 2026-10-24: Part A said the legacy plan returns "above_handle → home directly", and the
+owner's answer 10 ("straight home, as in the legacy plan") rested on that. The reference plan's speed minima show the legacy
+planner's collision fallback inserted `via_mg06_high` on the return too (41.156 s above_handle, 42.404 s via_mg06_high,
+43.824 s home); the direct MoveJ drives the fork 8.41 mm through the handle bar.*
+
+**Why.** Measured: with the 120 mm lift the carried PCB passes 1.64 mm from the input crate's wall during the MoveJ to
+`via_input_to_loader` (the legacy plan's own motion; the legacy check, based on generated contacts, could not see it); with
+`input_pcb_clear` nothing comes within 10 mm. The keypoint table keeps its 22 rows byte-identical and gains one row (PASS).
+Cost: +0.388 s (the handover's vacuum off at 9.912 s instead of 9.524 s); the return over the via +0.6 s.
+
+**Alternatives.** Allowing `pcb_crate` in `to_loader`: would hide a real near-miss. A MoveL from `above_input_pcb` to the via:
+a diagonal climb out of the crate, not a straight lift.
+
+**Revisit if** the crate is lower or the PCB smaller, or the owner wants the straight home move with another via.
+
+Pinned by `test/Program/test_core.py::test_the_default_program_check_finds_only_the_recorded_fork_overlap`,
+`test/Keypoints/test_core.py::test_every_keypoint_passes_the_check`.
+
 ## The CAD deviations stay compensated in scene.xml
 
 **Decision.** `models/scene.xml` keeps three deliberate deviations from the CAD: the loader shifted

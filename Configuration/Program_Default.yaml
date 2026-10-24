@@ -49,19 +49,20 @@ Steps:
   - Name: pick_input
     Comment: >-
       Straight down to 15 mm above the PCB, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto it
-      (SPEC §4.7), vacuum on, let it build up, straight up out of the crate (its walls are 149 mm high).
+      (SPEC §4.7), vacuum on, let it build up, straight up until the board clears the crate's 149 mm walls.
     Allow_Contact: [cups_pcb, pcb_crate]
     Commands:
       - Movel: {To: input_pcb_approach, Speed: 0.20}   # legacy: linear_move(..., 'down into crate 1', speed=0.20)
       - Movel: {To: input_pcb_press, Speed: 0.03}      # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
       - Vacuum: On                                     # legacy: event('suction_on')
       - Wait: 0.3                                      # legacy: hold(0.3)
-      - Movel: {To: above_input_pcb, Speed: 0.20}      # legacy: linear_move(..., 'up out of the crate', speed=0.20)
+      - Movel: {To: input_pcb_clear, Speed: 0.20}      # legacy: linear_move(..., 'up out of the crate', speed=0.20), to 120 mm:
+                                                       # the board was still below the walls (1.64 mm from one, F8.5)
 
   - Name: to_loader
     Comment: >-
-      Carry the PCB over a free-space via to 160 mm above the loader jaws, along the plate normal, so the board
-      does not swing over the crates or MG06's front.
+      Carry the PCB, clear of the crate, over a free-space via to 160 mm above the loader jaws, along the plate
+      normal, so the board does not swing over the crates or MG06's front.
     Allow_Contact: [cups_pcb]
     Commands:
       - Movej: via_input_to_loader                  # legacy: the via joint_move inserted (SPEC §4.10)
@@ -158,10 +159,13 @@ Steps:
       - Path: Fork_Open                                # legacy: replay(i_open[i_open > k], 'open MG06')
 
   - Name: home_after_mg06
-    Comment: "Above the handle, then straight home: the family switch by a joint move, in free space."
+    Comment: >-
+      Above the handle, back over the free-space family switch, home: joint moves only. A direct move from above
+      the handle to home drives the fork 8.4 mm through the handle bar (F8.5).
     Allow_Contact: []
     Commands:
       - Movej: above_handle                         # legacy: joint_move(q_fvia, 'away from the handle')
+      - Movej: via_mg06_high                        # legacy: the via joint_move(q_home) inserted (in the reference plan)
       - Movej: home                                 # legacy: joint_move(q_home, '-> home')
 
   - Name: loader_fetch

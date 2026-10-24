@@ -84,6 +84,26 @@ The recorded opening path is joined at a row where the flange already moves at 3
 - **Evidence:** `Program.Build_Program`'s note; `Data/Paths/fork_close_open_path.npz` rows 662-665.
 - **What would close it:** step 5's run of the default program reports the tracking error and the bar force there.
 
+## The recorded closing path overlaps the handle bar by 0.54 mm (limit 0.5 mm)
+
+Replayed kinematically, `Path: Fork_Close` puts the fork 0.539 mm into the handle bar on a recorded row (26.016 s of the
+default program); `Cell.yaml` `Allowed_Depth.handle_bar` is 0.5 mm (owner, 2026-10-24), so the default program's check
+fails on this one step. The path is the recorded, physics-verified motion (SPEC §4.6: up to 294 N on the bar).
+
+- **Impact:** `Example/Program/build_program.py` exits 1 on the default program until the owner decides (raise the limit to
+  the measured overlap plus a margin, or accept the failure as the recorded path's).
+- **Evidence:** the check report; between recorded rows the overlap is at most 0.468 mm.
+- **Pinned by:** `test/Program/test_core.py::test_the_default_program_check_finds_only_the_recorded_fork_overlap`.
+- **What would close it:** the owner's decision on the `handle_bar` depth, or a re-recorded path.
+
+## The recorded fork paths exceed the assumed acceleration limits
+
+The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint accelerations (`Fork_Close`) and 8.44x at
+`Fork_Open`'s join (the velocity step); the limits themselves are an assumption (SPEC §4.4).
+
+- **Impact:** on the real robot the recorded timing may not be executable as is; the simulation ran it (SPEC §4.6).
+- **What would close it:** the real AUBO i5's acceleration limits, and the paths re-timed to them if needed.
+
 ## Simplifications of the model
 
 What the simulation does not model; whoever compares it with the real cell checks these first.

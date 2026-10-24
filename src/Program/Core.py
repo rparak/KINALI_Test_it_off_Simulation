@@ -41,8 +41,13 @@ from Configuration.Core import (Program_Str, Program_Command_Str, Keypoints_Str,
 from Scene.Core import PCB_In_Crate, Crate_Holding, CONST_ROBOT_JOINTS
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, PCB_For_TCP
-#   ../Keypoints/Core - the keypoints' MG06 state and frames, the press plate's coupling
-from Keypoints.Core import Fixture_State, Press_For_Handle, Site_Id, CONST_WRIST_2
+#   ../Keypoints/Core - the keypoints' MG06 state and frames, the press plate's coupling, the contact groups, the keypoint check
+from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Group, Check_Keypoint, Keypoint_Check_Str, CONST_WRIST_2,
+                            CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX)
+#   ../Collision/Core - exact distances
+from Collision.Core import Robot_Collision_Cls
+#   ../Scene/Core - the cup block
+from Scene.Core import Cup_Block_Geom
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 
@@ -78,6 +83,22 @@ CONST_PCB_TOLERANCE = 0.002
 # The recorded fork paths: the keypoint each starts and ends at (SPEC §4.9; FEATURES.md F8: within 0.021 mm / 0.002 deg).
 #   Unit [Dict<string, Tuple<string>>]
 CONST_PATH_ENDS = {'Fork_Close': ('fork_start', 'fork_closed_end'), 'Fork_Open': ('fork_open_join', 'fork_start')}
+# The check reports every pair within this distance (the clearance decides the verdict), so a near pair outside the
+# clearance is visible too.
+#   Unit [float] (m)
+CONST_REPORT_CUT = 0.01
+# The MG06 lid and handle: the farthest point from their hinges, for the check's motion bound.
+#   Unit [float] (m)
+CONST_MG06_REACH = 0.5
+# The check's speed and acceleration limits: a MoveJ may exceed them by its duration's rounding to whole 4 ms samples (the
+# legacy rule: up to half a sample shorter, so speeds up to 1 + 0.5 / n, accelerations its square); finite differences
+# of a sampled min-jerk may exceed the continuous peak by this fraction (measured at most 0.08 % on the default program).
+#   Unit [float] (-)
+CONST_DIFFERENCE_TOLERANCE = 1e-3
+# The keypoint whose handover is checked for a press (owner's B1, SPEC §4.7), and the angle within which a jaw geom's
+# direction from the PCB is the board's -normal (a finger ledge under the board, not a jaw face beside it).
+#   Unit [string], [float] (rad)
+CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'loader_handover', math.radians(45.0)
 # The trajectory's units, joint order and TCP, stored in its metadata (SPEC §17: controller-friendly).
 #   Unit [Dict<string, Any>]
 CONST_META = {'units': {'length': 'm', 'angle': 'rad', 'time': 's', 'speed': 'rad/s'},
@@ -353,17 +374,35 @@ class _Builder_Cls(object):
             self.samples[key].append(np.array(value, dtype=float) if key in ('q', 'qd', 'pcb') else value)
         self.q = np.array(q)
 
-    def Fixture(self, target: str) -> None:
+    def Fixture(self, target: str) -> tp.Tuple[float, float, float, float]:
         """
         Description:
-            Set MG06 to the Fixture of a motion's target keypoint (Open, Closed or its recorded row).
+            MG06 over a motion: from its state at the motion's start to the Fixture of the motion's target keypoint (Open,
+            Closed or its recorded row), along the motion's time law - the handle settles as the fork lets it go
+            (FEATURES.md F8.5).
 
         Args:
             (1) target [string]: The keypoint.
+
+        Returns:
+            (1 - 4) parameter [float]: The lid and handle at the start and at the end (rad).
         """
 
         lid, handle, _ = Fixture_State(self.__keypoints.Robot[target], self.__cell, self.__kinematics.Model)
-        self.lid, self.handle = lid, handle
+        return self.lid, self.handle, lid, handle
+
+    def Move_Fixture(self, state: tp.Tuple[float, float, float, float], s: float) -> None:
+        """
+        Description:
+            Set MG06 at the fraction s of a motion (Fixture's start and end states).
+
+        Args:
+            (1) state [Tuple<float>]: The lid and handle at the start and at the end (rad).
+            (2) s [float]: The fraction of the motion done (its time law), 0 .. 1.
+        """
+
+        lid_0, handle_0, lid_1, handle_1 = state
+        self.lid, self.handle = (lid_1, handle_1) if s >= 1.0 else (lid_0 + (lid_1 - lid_0) * s, handle_0 + (handle_1 - handle_0) * s)
 
     def Fail(self, step: str, command: str, text: str) -> None:
         """
@@ -390,10 +429,11 @@ class _Builder_Cls(object):
 
         q0, q1 = self.q.copy(), np.array(self.__keypoints.Robot[target].Joints)
         n = max(1, int(round(Movej_Duration(q0, q1, self.__cell) / CONST_DT)))
-        self.Fixture(target)
+        fixture = self.Fixture(target)
         first = len(self.samples['q'])
         for i in range(1, n + 1):
             s = i / n
+            self.Move_Fixture(fixture, float(Min_Jerk(s)))
             self.Append(q0 + (q1 - q0) * Min_Jerk(s), (q1 - q0) * Min_Jerk_Rate(s) / (n * CONST_DT), step, segment)
         self.analytic.append((first, len(self.samples['q'])))
 
@@ -498,8 +538,9 @@ class _Builder_Cls(object):
         if scale > 1.0:
             self.notes.append(Build_Note_Str(step_name, command.Text, 'stretched x%.3f to %.2f s (a joint speed or acceleration limit), '
                                              'line %.1f mm' % (scale, len(out) * CONST_DT, 1000 * length)))
-        self.Fixture(command.Target)
-        for q in out:
+        fixture = self.Fixture(command.Target)
+        for i, q in enumerate(out):
+            self.Move_Fixture(fixture, float(Min_Jerk((i + 1) / len(out))))
             self.Append(q, np.zeros(6), step, segment)
 
     def Path(self, command: Program_Command_Str, step_name: str, step: int, segment: int) -> None:
@@ -724,3 +765,387 @@ def Pose_Sample(kinematics: Robot_Kinematics_Cls, trajectory: Trajectory_Str, i:
                          z=float(trajectory.Loader_Z[i]), jaw=float(trajectory.Jaw[i]), pcb=trajectory.PCB_Pose[i])
     d.qpos[kinematics.Q_Address] = trajectory.Robot_Q[i]
     mujoco.mj_kinematics(model, d)
+
+
+@dataclass
+class Group_Distance_Str:
+    """
+    Description:
+        The closest pair of a contact group (or of the pairs no allowed group covers) in a step, and where it occurs.
+    """
+
+    # The group ('' for the pairs no allowed group covers).
+    #   Unit [string]
+    Group: str = ''
+    # The exact distance (negative = overlap), the sample and its time, the pair.
+    #   Unit [float] (m), [int], [float] (s), [string]
+    Distance: float = 0.0
+    Sample: int = 0
+    Time: float = 0.0
+    Pair: str = ''
+
+
+@dataclass
+class Step_Check_Str:
+    """
+    Description:
+        The check of one program step: the distances per allowed group and the closest pair no allowed group covers (each
+        with its sample), the peak joint speed and acceleration as fractions of the limits, the failures, the verdict.
+    """
+
+    # The step, its start and its duration.
+    #   Unit [string], [float] (s), [float] (s)
+    Name: str = ''
+    Start: float = 0.0
+    Duration: float = 0.0
+    # The step's declared groups: the closest pair of each (None when no pair of the group came within CONST_REPORT_CUT).
+    #   Unit [Dict<string, Group_Distance_Str>]
+    Allowed: tp.Dict[str, tp.Optional[Group_Distance_Str]] = field(default_factory=dict)
+    # The closest pair no declared group covers (None when nothing came within CONST_REPORT_CUT).
+    #   Unit [Group_Distance_Str(object)]
+    Closest: tp.Optional[Group_Distance_Str] = None
+    # The peak joint speed and acceleration of its MoveJ / MoveL samples, and of its recorded paths, as fractions of the
+    # Cell.yaml limits (0 when it has none).
+    #   Unit [float] (-)
+    Peak_Speed: float = 0.0
+    Peak_Acceleration: float = 0.0
+    Path_Speed: float = 0.0
+    Path_Acceleration: float = 0.0
+    # The samples measured exactly.
+    #   Unit [int]
+    Checked: int = 0
+    # Every failed rule, as a sentence.
+    #   Unit [List<string>]
+    Failures: tp.List[str] = field(default_factory=list)
+    # PASS or FAIL.
+    #   Unit [string]
+    Verdict: str = ''
+
+
+@dataclass
+class Handover_Check_Str:
+    """
+    Description:
+        The no-press check of the handover (owner's B1, SPEC §4.7): the PCB-ledge gap with the jaws at grip over the MoveL into
+        loader_handover (its minimum), at loader_handover, and while the jaws clamp the PCB on the cups (min, max).
+    """
+
+    # The gaps.
+    #   Unit [float] (m)
+    Line_Min: float = 0.0
+    At_Handover: float = 0.0
+    Clamped_Min: float = 0.0
+    Clamped_Max: float = 0.0
+    # The failures; empty when it passes.
+    #   Unit [List<string>]
+    Failures: tp.List[str] = field(default_factory=list)
+
+
+@dataclass
+class Program_Check_Str:
+    """
+    Description:
+        The check of a program's trajectory: per step, the handover, the keypoints the program uses, the build's notes.
+    """
+
+    # The program and its cycle time.
+    #   Unit [string], [float] (s)
+    Program: str = ''
+    Cycle_Time: float = 0.0
+    # The step checks, in order.
+    #   Unit [List<Step_Check_Str>]
+    Steps: tp.List[Step_Check_Str] = field(default_factory=list)
+    # The handover's no-press check (None when the program has no MoveL into loader_handover).
+    #   Unit [Handover_Check_Str(object)]
+    Handover: tp.Optional[Handover_Check_Str] = None
+    # The keypoint check of every keypoint the program uses.
+    #   Unit [List<Keypoint_Check_Str>]
+    Keypoints: tp.List[Keypoint_Check_Str] = field(default_factory=list)
+    # The build's notes.
+    #   Unit [List<Build_Note_Str>]
+    Notes: tp.List[Build_Note_Str] = field(default_factory=list)
+    # The samples measured exactly, of all.
+    #   Unit [int]
+    Checked: int = 0
+    # PASS or FAIL.
+    #   Unit [string]
+    Verdict: str = ''
+
+
+def _Ledge_Gap(model: mujoco.MjModel, data: mujoco.MjData) -> float:
+    """
+    Description:
+        The PCB-ledge gap in the data's current kinematics: the smallest exact distance from the PCB to a jaw geom whose
+        direction from the PCB is within CONST_LEDGE_ANGLE of the board's -normal (a finger ledge under the board).
+
+    Args:
+        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed data.
+
+    Returns:
+        (1) parameter [float]: The gap (m), or inf when no ledge is within CONST_REPORT_CUT.
+    """
+
+    pcb = model.body('pcb').id
+    jaws = {model.body('jaw_L').id, model.body('jaw_R').id}
+    normal = data.xmat[pcb].reshape(3, 3)[:, 2]
+    best, ft = math.inf, np.zeros(6)
+    for a in (g for g in range(model.ngeom) if model.geom_bodyid[g] == pcb and model.geom_contype[g]):
+        for b in (g for g in range(model.ngeom) if model.geom_bodyid[g] in jaws and model.geom_contype[g]):
+            x = mujoco.mj_geomDistance(model, data, a, b, CONST_REPORT_CUT, ft)
+            # The witness points run from the PCB to the jaw; an overlap reverses them, so the sign of x restores the side.
+            direction = math.copysign(1.0, x) * (ft[3:] - ft[:3])
+            length = float(np.linalg.norm(direction))
+            if x < CONST_REPORT_CUT and length > 1e-9 and direction @ -normal >= math.cos(CONST_LEDGE_ANGLE) * length:
+                best = min(best, x)
+    return best
+
+
+def _Peaks(trajectory: Trajectory_Str, first: int, last: int, cell: Cell_Configuration_Str) -> tp.Tuple[float, float]:
+    """
+    Description:
+        The peak joint speed and acceleration of one motion segment as fractions of the limits: finite differences over the
+        segment from its start sample (the previous end, at rest) to its end held (at rest).
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2 - 3) first, last [int]: The segment's samples (end exclusive).
+        (4) cell [Cell_Configuration_Str(object)]: The limits.
+
+    Returns:
+        (1 - 2) parameter [float]: max |qd| / v_max, max |qdd| / a_max.
+    """
+
+    q = np.vstack([trajectory.Robot_Q[max(first - 1, 0)], trajectory.Robot_Q[first:last], trajectory.Robot_Q[last - 1]])
+    qd = np.diff(q, axis=0) / CONST_DT
+    qdd = np.diff(qd, axis=0) / CONST_DT
+    v_max = cell.Speed_Fraction * np.array(cell.Datasheet_Speeds)
+    return float(np.max(np.abs(qd) / v_max)), float(np.max(np.abs(qdd) / np.array(cell.Acceleration_Limits)))
+
+
+def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp.List[Build_Note_Str], kinematics: Robot_Kinematics_Cls,
+                     collision: Robot_Collision_Cls, keypoints: Keypoints_Str, cell: Cell_Configuration_Str,
+                     pcb_meta: PCB_Meta_Str) -> Program_Check_Str:
+    """
+    Description:
+        The check of a program's trajectory (FEATURES.md F8), on the planning model (the table included):
+        - every sample where a robot geom, the carried PCB, the loader, the jaws or MG06 may have moved more than
+          Clearance.Check_Step since the last measured sample (and every segment end) is posed and measured exactly: the
+          robot's geoms, and the PCB's when the cups carry it (to everything else) or the jaws hold it (to the workstation:
+          the table, the crates); every pair within the clearance fails unless its group is one the step allows, and an
+          allowed pair fails deeper than its group's Allowed_Depth; every allowed group must occur in the step; per step and
+          group the closest pair and where it occurs is kept (pairs up to CONST_REPORT_CUT);
+        - the robot joints within the model's limits; the peak joint speed and acceleration of every MoveJ (allowing its
+          rounding to whole samples) and MoveL within the Cell.yaml limits; the recorded paths' peaks reported, not limited;
+        - the handover's no-press rule (B1): the PCB-ledge gap within Handover.Ledge_Gap +- Ledge_Tolerance at
+          loader_handover and while the jaws clamp the PCB on the cups, and no smaller along the MoveL into it;
+        - the keypoint check of every keypoint the program uses (stale, Check, limits, clearance in its context).
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The built trajectory.
+        (2) program [Program_Str(object)]: Its program.
+        (3) notes [List<Build_Note_Str>]: The build's notes.
+        (4) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
+        (5) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (6) keypoints [Keypoints_Str(object)]: The keypoints.
+        (7) cell [Cell_Configuration_Str(object)]: The clearance, the depths, the limits, the handover gap.
+        (8) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+
+    Returns:
+        (1) parameter [Program_Check_Str(object)]: The result.
+    """
+
+    model, data = kinematics.Model, kinematics.Data
+    tr, robot = trajectory, collision.Robot_Bodies
+    pcb_body = model.body('pcb').id
+    not_workstation = {i for i in range(model.nbody) if model.body(i).name != 'workstation'}
+    cup_block = str(Cup_Block_Geom(model))
+    lower, upper = kinematics.Limits
+    commands = [c for step in program.Steps for c in step.Commands]
+    ends = set(int(e) - 1 for e in tr.Segment_End if e > 0)
+    result = Program_Check_Str(Program=program.Name, Cycle_Time=float(tr.T[-1]), Notes=list(notes))
+    for step_index, step in enumerate(program.Steps):
+        samples = np.flatnonzero(tr.Step_Index == step_index)
+        check = Step_Check_Str(Name=step.Name, Start=float(tr.T[samples[0]]), Duration=float(len(samples) * CONST_DT),
+                               Allowed={g: None for g in step.Allow_Contact})
+        result.Steps.append(check)
+    # The motion bound: the robot's reach from its first joint (with the carried PCB), the scene's moving parts.
+    last = None
+    for i in range(len(tr.T)):
+        if last is not None and i not in ends:
+            Pose_Sample(kinematics, tr, last)
+            anchor = data.xanchor[model.joint('aubo/' + CONST_ROBOT_JOINTS[0]).id]
+            reach = max(float(np.linalg.norm(data.geom_xpos[g] - anchor) + model.geom_rbound[g])
+                        for g in range(model.ngeom) if model.geom_bodyid[g] in robot | {pcb_body})
+            bound = (float(np.sum(np.abs(tr.Robot_Q[i] - tr.Robot_Q[last]))) * reach + abs(tr.Loader_Y[i] - tr.Loader_Y[last])
+                     + abs(tr.Loader_Z[i] - tr.Loader_Z[last]) + abs(tr.Jaw[i] - tr.Jaw[last])
+                     + (abs(tr.MG06_Lid[i] - tr.MG06_Lid[last]) + abs(tr.MG06_Handle[i] - tr.MG06_Handle[last])) * CONST_MG06_REACH)
+            if bound <= cell.Check_Step:
+                continue
+        last = i
+        check = result.Steps[tr.Step_Index[i]]
+        check.Checked += 1
+        Pose_Sample(kinematics, tr, i)
+        if np.any(tr.Robot_Q[i] < lower) or np.any(tr.Robot_Q[i] > upper):
+            check.Failures.append('joints outside the model limits at sample %d (%.3f s)' % (i, tr.T[i]))
+        pairs = collision.Close_Pairs(robot, CONST_REPORT_CUT, data)
+        location = CONST_PCB_LOCATIONS[tr.PCB_Location[i]]
+        if location == 'cups':
+            pairs += collision.Close_Pairs({pcb_body}, CONST_REPORT_CUT, data, exclude=robot)
+        elif location == 'jaws':
+            pairs += collision.Close_Pairs({pcb_body}, CONST_REPORT_CUT, data, exclude=not_workstation)
+        in_crate = Crate_Holding(data.xpos[pcb_body]) is not None
+        for distance, body_1, body_2, geom_1, geom_2 in pairs:
+            if body_1 == CONST_MOUNT_BODY and geom_2.startswith(CONST_MOUNT_GEOM_PREFIX):
+                continue
+            group = Contact_Group({body_1, body_2}, {geom_1, geom_2}, cup_block, in_crate)
+            pair = '%s / %s' % (body_1 if geom_1.isdigit() else geom_1, body_2 if geom_2.isdigit() else geom_2)
+            found = Group_Distance_Str(Group=group or '', Distance=distance, Sample=i, Time=float(tr.T[i]), Pair=pair)
+            if group in check.Allowed:
+                if check.Allowed[group] is None or distance < check.Allowed[group].Distance:
+                    check.Allowed[group] = found
+            elif check.Closest is None or distance < check.Closest.Distance:
+                check.Closest = found
+        result.Checked += 1
+    for step_index, (step, check) in enumerate(zip(program.Steps, result.Steps)):
+        if check.Closest is not None and check.Closest.Distance < cell.Clearance:
+            c = check.Closest
+            why = '' if not c.Group else ' (group %s not allowed in this step)' % c.Group
+            check.Failures.append('%s %.2f mm apart at sample %d (%.3f s); clearance %.1f mm%s'
+                                  % (c.Pair, 1000 * c.Distance, c.Sample, c.Time, 1000 * cell.Clearance, why))
+        for group, found in check.Allowed.items():
+            if found is None or found.Distance >= cell.Clearance:
+                check.Failures.append('allowed contact %s does not occur in the step (allow only what is present)' % group)
+            elif -found.Distance > cell.Allowed_Depth[group]:
+                check.Failures.append('%s %.2f mm deep at sample %d (%.3f s), at most %.2f mm' % (group, -1000 * found.Distance, found.Sample,
+                                                                                                found.Time, 1000 * cell.Allowed_Depth[group]))
+        for segment, command in enumerate(commands):
+            first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
+            if tr.Segment_Step[segment] != step_index or command.Kind not in ('Movej', 'Movel', 'Path') or end <= first:
+                continue
+            speed, acceleration = _Peaks(tr, max(first, 1), end, cell)
+            if command.Kind == 'Path':
+                check.Path_Speed, check.Path_Acceleration = max(check.Path_Speed, speed), max(check.Path_Acceleration, acceleration)
+                continue
+            check.Peak_Speed, check.Peak_Acceleration = max(check.Peak_Speed, speed), max(check.Peak_Acceleration, acceleration)
+            # A MoveJ's rule rounds its duration to whole samples: up to half a sample shorter, so up to this much faster.
+            scale = 1.0 + 0.5 / (end - max(first, 1)) if command.Kind == 'Movej' else 1.0
+            if speed > scale * (1 + CONST_DIFFERENCE_TOLERANCE) or acceleration > scale**2 * (1 + CONST_DIFFERENCE_TOLERANCE):
+                check.Failures.append('%s: peak joint speed %.3f / acceleration %.3f of the limits (allowed %.3f / %.3f)'
+                                      % (command.Text, speed, acceleration, scale, scale**2))
+    # B1: the handover's no-press rule.
+    for segment, command in enumerate(commands):
+        if command.Kind != 'Movel' or command.Target != CONST_HANDOVER_KEYPOINT:
+            continue
+        first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
+        grip = keypoints.Gripper['grip']
+        line = []
+        for i in range(first, end):
+            Pose_Sample(kinematics, tr, i)
+            handle = float(tr.MG06_Handle[i])
+            kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[i]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[i]),
+                                 z=float(tr.Loader_Z[i]), jaw=grip, pcb=tr.PCB_Pose[i])
+            mujoco.mj_kinematics(model, data)
+            line.append(_Ledge_Gap(model, data))
+        clamped = []
+        for i in range(end, len(tr.T)):
+            if CONST_PCB_LOCATIONS[tr.PCB_Location[i]] != 'cups':
+                break
+            if tr.Jaw[i] == grip:
+                Pose_Sample(kinematics, tr, i)
+                clamped.append(_Ledge_Gap(model, data))
+        handover = Handover_Check_Str(Line_Min=min(line), At_Handover=line[-1], Clamped_Min=min(clamped) if clamped else math.nan,
+                                      Clamped_Max=max(clamped) if clamped else math.nan)
+        low, high = cell.Ledge_Gap - cell.Ledge_Tolerance, cell.Ledge_Gap + cell.Ledge_Tolerance
+        if not low <= handover.At_Handover <= high:
+            handover.Failures.append('the PCB-ledge gap at %s is %.3f mm, not %.1f +- %.1f mm%s' % (
+                CONST_HANDOVER_KEYPOINT, 1000 * handover.At_Handover, 1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance,
+                ' (a press)' if handover.At_Handover < low else ''))
+        if handover.Line_Min < low:
+            handover.Failures.append('the PCB-ledge gap falls to %.3f mm along %s (a press)' % (1000 * handover.Line_Min, command.Text))
+        if not clamped or not low <= handover.Clamped_Min <= handover.Clamped_Max <= high:
+            handover.Failures.append('the PCB-ledge gap while the jaws clamp is %s, not %.1f +- %.1f mm' % (
+                'never measured (the jaws never reach grip with the PCB on the cups)' if not clamped else
+                '%.3f .. %.3f mm' % (1000 * handover.Clamped_Min, 1000 * handover.Clamped_Max), 1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance))
+        result.Handover = handover
+    used = []
+    for command in commands:
+        names = [command.Target] if command.Kind in ('Movej', 'Movel') else []
+        names += list(CONST_PATH_ENDS[command.Target]) if command.Kind == 'Path' else []
+        used += [n for n in names if n not in used]
+    used = [program.Start_Robot] + [n for n in used if n != program.Start_Robot]
+    result.Keypoints = [Check_Keypoint(name, kinematics, collision, keypoints, cell, pcb_meta) for name in used]
+    for check in result.Steps:
+        check.Verdict = 'FAIL' if check.Failures else 'PASS'
+    failed = any(c.Failures for c in result.Steps) or (result.Handover is not None and result.Handover.Failures) \
+        or any(k.Verdict == 'FAIL' for k in result.Keypoints)
+    result.Verdict = 'FAIL' if failed else 'PASS'
+    return result
+
+
+def _Distance_Text(found: tp.Optional[Group_Distance_Str]) -> str:
+    """
+    Description:
+        A closest pair as report text: '-1.48 mm at 819 (3.276 s) aubo/tool/cup1 / pcb_comp', or '> 10 mm'.
+
+    Args:
+        (1) found [Group_Distance_Str(object)]: The pair, or None.
+
+    Returns:
+        (1) parameter [string]: The text.
+    """
+
+    if found is None:
+        return '> %g mm' % (1000 * CONST_REPORT_CUT)
+    return '%.2f mm at %d (%.3f s) %s' % (1000 * found.Distance, found.Sample, found.Time, found.Pair)
+
+
+def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, cell: Cell_Configuration_Str) -> tp.List[str]:
+    """
+    Description:
+        The program check as text: a header (the program, the cycle time, the samples); per step its start, duration, peak
+        joint speed and acceleration (fractions of the limits; a recorded path's in brackets), verdict, then per allowed
+        group and for the closest pair no allowed group covers, the smallest distance with its sample and time; the
+        handover's PCB-ledge gaps; the build's notes (stretched MoveLs, the recorded path's velocity step); the events; the
+        keypoints used; every failure; the project's sentence on simulation results.
+
+    Args:
+        (1) result [Program_Check_Str(object)]: The check.
+        (2) trajectory [Trajectory_Str(object)]: The trajectory (its events and size).
+        (3) cell [Cell_Configuration_Str(object)]: The clearance, for the header.
+
+    Returns:
+        (1) parameter [List<string>]: The lines.
+    """
+
+    lines = ['program %s: %d steps, %d samples (4 ms), cycle time %.3f s; %d samples measured exactly (clearance %.1f mm, pairs '
+             'reported up to %g mm)' % (result.Program, len(result.Steps), len(trajectory.T), result.Cycle_Time, result.Checked,
+                                         1000 * cell.Clearance, 1000 * CONST_REPORT_CUT),
+             '%-20s %8s %7s %13s %15s %s' % ('step', 'start s', 'dur s', 'peak v / a', '(recorded path)', 'verdict')]
+    for s in result.Steps:
+        path = '(%.2f / %.2f)' % (s.Path_Speed, s.Path_Acceleration) if s.Path_Speed else ''
+        lines.append('%-20s %8.3f %7.3f %6.3f / %.3f %15s %s' % (s.Name, s.Start, s.Duration, s.Peak_Speed, s.Peak_Acceleration, path, s.Verdict))
+        for group, found in s.Allowed.items():
+            lines.append('    %-12s %s' % (group, _Distance_Text(found)))
+        lines.append('    %-12s %s' % ('not allowed', _Distance_Text(s.Closest)))
+    if result.Handover is not None:
+        h = result.Handover
+        lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s min %.3f mm, at it '
+                     '%.3f mm, while clamped %.3f .. %.3f mm: %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT,
+                                                                   1000 * h.Line_Min, 1000 * h.At_Handover, 1000 * h.Clamped_Min,
+                                                                   1000 * h.Clamped_Max, 'FAIL' if h.Failures else 'PASS'))
+    stretched = [n for n in result.Notes if n.Text.startswith('stretched')]
+    lines.append('stretched MoveLs: %s' % ('none' if not stretched else '; '.join('%s %s %s' % (n.Step, n.Command, n.Text) for n in stretched)))
+    lines += ['note: %s, %s: %s' % (n.Step, n.Command, n.Text) for n in result.Notes if n not in stretched]
+    lines.append('events: %s' % ', '.join('%.3f s %s' % (t, e) for t, e in trajectory.Events))
+    verdicts = [k.Verdict for k in result.Keypoints]
+    lines.append('keypoints used: %d (%d FAIL, %d WARN, %d PASS; Example/Keypoints/check_keypoints.py shows each)'
+                 % (len(verdicts), verdicts.count('FAIL'), verdicts.count('WARN'), verdicts.count('PASS')))
+    for s in result.Steps:
+        lines += ['  %s: %s' % (s.Name, f) for f in s.Failures]
+    if result.Handover is not None:
+        lines += ['  handover: %s' % f for f in result.Handover.Failures]
+    for k in result.Keypoints:
+        lines += ['  keypoint %s: %s' % (k.Name, f) for f in k.Failures]
+    lines.append('%s: the program check %s. Simulation results only: not validated for the real cell.'
+                 % (result.Program, 'FAILED' if result.Verdict == 'FAIL' else 'passed'))
+    return lines

@@ -1010,6 +1010,14 @@ baselines for both programs in step 6 (SPEC).
       above the output floor); vacuum off in a crate needs the PCB within 2 mm of its floor pose. 250 -> 263 collected; 14
       mutations, all failed (two first survived and were sharpened: a bow along the line's own axis; a nondeterminism the
       speed post-processing absorbed, which exposed a sloppy condition, fixed).
+- [x] F8.5 Program check: `Check_Trajectory`, `Format_Check_Report` (per step and group the closest pair with its sample and
+      time; the handover gap; the limits; the keypoints used). Found and fixed: the carried PCB 1.64 mm from the input
+      crate's wall (new auxiliary keypoint `input_pcb_clear`, the lift to 170 mm); the fork 8.41 mm through the handle bar on
+      a direct return home (the legacy route over `via_mg06_high`, Part A corrected); the fork 5.95 mm in the bar when MG06
+      switched to closed at the bar-centring MoveL (MG06 now moves along each motion). Open: `Fork_Close`'s recorded 0.54 mm
+      overlap against the 0.5 mm `handle_bar` limit (owner). Default program: cycle 68.852 s, B1 gap 0.318 mm. Keypoint table:
+      the 22 rows byte-identical, one row added. 263 -> 270 collected; 10 mutations, each test passing first and failing mutated (the harness now checks
+      both; it had counted a test that failed unmutated as a catch).
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 

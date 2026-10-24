@@ -59,6 +59,10 @@ CONST_CELL_FIELDS = [('Robot', 'Base_Position'), ('Robot', 'Base_Yaw'), ('Vacuum
 CONST_PROGRAM_STEPS = ['approach_input', 'pick_input', 'to_loader', 'handover', 'home_after_handover', 'loader_insert', 'loader_park',
                        'to_mg06', 'close_mg06', 'leave_mg06', 'test', 'return_mg06', 'open_mg06', 'home_after_mg06', 'loader_fetch',
                        'loader_return', 'to_take', 'take_from_loader', 'to_output', 'place_output', 'home_end', 'settle']
+# The auxiliary keypoints the default program adds (FEATURES.md F8.5): not in SPEC §4.8 or the reference plan; the keypoint
+# each follows in the file.
+#   Unit [Dict<string, string>]
+CONST_AUXILIARY = {'input_pcb_clear': 'input_pcb_press'}
 # Every field of a robot keypoint (all REQUIRED; Relative_To may be null, Allow_Contact empty).
 #   Unit [List<string>]
 CONST_KEYPOINT_FIELDS = ['Joints', 'Family', 'Check', 'Relative_To', 'Fixture', 'Context', 'Allow_Contact', 'Note']
@@ -158,11 +162,15 @@ def test_an_unknown_key_is_a_warning_note(tmp_path):
 def test_the_shipped_keypoints_load(keypoints):
     """
     Description:
-        Configuration/Keypoints.yaml loads without notes: the 22 robot keypoints of SPEC §4.8 in the cycle's order,
-        the four loader positions and the three gripper states; the fork keypoints carry their recorded MG06 state.
+        Configuration/Keypoints.yaml loads without notes: the 22 robot keypoints of SPEC §4.8 and the default program's
+        auxiliary point input_pcb_clear, in the cycle's order; the four loader positions and the three gripper states; the
+        fork keypoints carry their recorded MG06 state.
     """
 
-    assert keypoints.Notes == [] and list(keypoints.Robot) == list(CONST_SPEC_TABLE)
+    expected = list(CONST_SPEC_TABLE)
+    for name, after in CONST_AUXILIARY.items():
+        expected.insert(expected.index(after) + 1, name)
+    assert keypoints.Notes == [] and list(keypoints.Robot) == expected
     assert list(keypoints.Loader) == ['home', 'travel_place', 'place', 'park'] and list(keypoints.Gripper) == ['open', 'grip', 'clamp']
     assert (keypoints.Loader['home'].Y, keypoints.Loader['park'].Y, keypoints.Loader['park'].Z) == (-0.1, -0.1995, 0.02)
     end = keypoints.Robot['fork_closed_end']
@@ -221,13 +229,16 @@ def test_the_joints_are_the_reference_plans_segment_ends(root, keypoints):
     """
     Description:
         Every keypoint's joints are a stationary row of Data/Reference/cell_plan.npz (q_home for home) to the
-        file's rounding (1e-6 deg = 1.7e-8 rad): full precision, not the table's 1e-4.
+        file's rounding (1e-6 deg = 1.7e-8 rad): full precision, not the table's 1e-4. (The program's auxiliary points are
+        not in the plan.)
     """
 
     import os
     plan = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))
     q, q_home = plan['q'], plan['q_home']
     for name, keypoint in keypoints.Robot.items():
+        if name in CONST_AUXILIARY:
+            continue
         joints = np.array(keypoint.Joints)
         nearest = q_home if name == 'home' else q[np.argmin(np.max(np.abs(q - joints), axis=1))]
         assert np.max(np.abs(nearest - joints)) <= math.radians(0.5e-6) + 1e-12, name
@@ -251,7 +262,7 @@ def test_the_motion_process_and_handover_fields_load_in_si_units(cell_configurat
 def test_the_shipped_default_program_loads(keypoints, cell_configuration):
     """
     Description:
-        Configuration/Program_Default.yaml loads without notes: the start state, the 22 steps in order, 68 commands; a
+        Configuration/Program_Default.yaml loads without notes: the start state, the 22 steps in order, 69 commands; a
         Movel, a Loader and the Test command parsed with their values.
     """
 
@@ -259,7 +270,7 @@ def test_the_shipped_default_program_loads(keypoints, cell_configuration):
     assert program.Notes == [] and program.Name == 'Program_Default'
     assert (program.Start_Robot, program.Start_Loader, program.Start_Gripper, program.Start_Vacuum, program.Start_PCB,
             program.Start_MG06) == ('home', 'home', 'open', False, 'input_crate', 'Open')
-    assert [s.Name for s in program.Steps] == CONST_PROGRAM_STEPS and sum(len(s.Commands) for s in program.Steps) == 68
+    assert [s.Name for s in program.Steps] == CONST_PROGRAM_STEPS and sum(len(s.Commands) for s in program.Steps) == 69
     pick = program.Steps[1]
     assert pick.Allow_Contact == ['cups_pcb', 'pcb_crate'] and pick.Commands[1].Text == 'Movel input_pcb_press 0.03'
     assert (pick.Commands[1].Kind, pick.Commands[1].Target, pick.Commands[1].Speed) == ('Movel', 'input_pcb_press', 0.03)

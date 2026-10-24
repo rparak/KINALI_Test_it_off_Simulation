@@ -193,7 +193,8 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
     """
     Description:
         The PCB's locations in order: input_crate, cups (vacuum on at 3.276 s, as the reference plan), jaws (vacuum off at
-        9.524 s), mg06 (the jaws open at MG06), jaws (clamped at MG06), cups (vacuum on at the take), output_crate (vacuum
+        9.912 s: the reference plan's 9.524 s plus the 0.388 s longer lift to input_pcb_clear), mg06 (the jaws open at MG06),
+        jaws (clamped at MG06), cups (vacuum on at the take), output_crate (vacuum
         off) - at its rest pose on the floor; the jaws stand at grip while the PCB is between them; MG06 is settled closed
         during the test and open at the end.
     """
@@ -202,7 +203,7 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
     locations = [CONST_PCB_LOCATIONS[i] for i in trajectory.PCB_Location]
     order = [locations[0]] + [b for a, b in zip(locations, locations[1:]) if a != b]
     assert order == ['input_crate', 'cups', 'jaws', 'mg06', 'jaws', 'cups', 'output_crate']
-    assert [e for e in trajectory.Events if e[1].startswith('vacuum')][:2] == [(3.276, 'vacuum_on'), (9.524, 'vacuum_off')]
+    assert [e for e in trajectory.Events if e[1].startswith('vacuum')][:2] == [(3.276, 'vacuum_on'), (9.912, 'vacuum_off')]
     assert trajectory.PCB_Pose[-1][:3] == pytest.approx([0.40620, -0.75160, 0.0049], abs=1e-9)
     clamp = trajectory.Segment_Command.index('Gripper clamp 0.35')
     assert trajectory.Jaw[trajectory.Segment_End[clamp] - 1] == keypoints.Gripper['grip']
@@ -283,7 +284,7 @@ def test_the_carried_pcb_hangs_at_the_cup_face_once_the_bellows_extend(built, to
     from Kinematics.Core import PCB_For_TCP
     kinematics, _ = tools
     trajectory, _ = built
-    first, last = _Segment(trajectory, 'Movel above_input_pcb 0.2')
+    first, last = _Segment(trajectory, 'Movel input_pcb_clear 0.2')
     tcp = np.array([kinematics.Site_Pose(q)[0] for q in trajectory.Robot_Q[first - 1:last]])
     rise = np.linalg.norm(tcp - tcp[0], axis=1)
     z = trajectory.PCB_Pose[first - 1:last, 2]
@@ -292,3 +293,146 @@ def test_the_carried_pcb_hangs_at_the_cup_face_once_the_bellows_extend(built, to
     assert trajectory.PCB_Pose[last - 1][:3] == pytest.approx(nominal, abs=1e-12)
     place = _Segment(trajectory, 'Movel output_place 0.03')[1] - 1
     assert trajectory.PCB_Pose[place][2] == pytest.approx(0.0049 + 0.001, abs=0.00005) and trajectory.PCB_Pose[place + 1][2] == pytest.approx(0.0049)
+
+
+@pytest.fixture(scope='module')
+def checked(built, program, keypoints, cell_configuration, tools):
+    from Collision.Core import Robot_Collision_Cls
+    from Program.Core import Check_Trajectory
+    kinematics, meta = tools
+    collision = Robot_Collision_Cls(kinematics.Model, kinematics.Data)
+    return Check_Trajectory(built[0], program, built[1], kinematics, collision, keypoints, cell_configuration, meta)
+
+
+def _Check(commands, keypoints, cell, tools, allow=(), start='home', pcb='input_crate'):
+    """
+    Description:
+        Build and check a one-step probe program (Allow_Contact allow).
+    """
+
+    from Collision.Core import Robot_Collision_Cls
+    from Program.Core import Check_Trajectory
+    kinematics, meta = tools
+    program = _Program(commands, start=start, pcb=pcb)
+    program.Steps[0].Allow_Contact = list(allow)
+    trajectory, notes = Build_Program(program, keypoints, cell, meta, kinematics, {})
+    return Check_Trajectory(trajectory, program, notes, kinematics, Robot_Collision_Cls(kinematics.Model, kinematics.Data), keypoints, cell, meta)
+
+
+def test_the_default_program_check_finds_only_the_recorded_fork_overlap(checked):
+    """
+    Description:
+        The default program's check (measured 2026-10-24): 21 of 22 steps pass; close_mg06 fails on handle_bar 0.54 mm deep,
+        on a recorded row of Fork_Close (the recorded path itself; Cell.yaml allows 0.5 mm) - the owner's decision. Every
+        allowed group occurs where declared; the press at the pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples
+        measured than exist); the cycle is 68.852 s.
+    """
+
+    assert [s.Name for s in checked.Steps if s.Verdict == 'FAIL'] == ['close_mg06']
+    close = next(s for s in checked.Steps if s.Name == 'close_mg06')
+    assert len(close.Failures) == 1 and close.Failures[0].startswith('handle_bar 0.54 mm deep')
+    pick = next(s for s in checked.Steps if s.Name == 'pick_input')
+    assert pick.Allowed['cups_pcb'].Distance == pytest.approx(-0.00148, abs=0.00002) and pick.Allowed['pcb_crate'] is not None
+    assert all(f is not None for s in checked.Steps for f in s.Allowed.values())
+    assert 0 < checked.Checked < 17214 and checked.Cycle_Time == pytest.approx(68.852, abs=1e-9)
+
+
+def test_the_handover_keeps_the_board_off_the_ledges(checked):
+    """
+    Description:
+        B1 (SPEC §4.7): the PCB-ledge gap with the jaws at grip is 0.318 mm at loader_handover and while the jaws clamp the
+        PCB on the cups, and never smaller along the MoveL into the hold pose (0.3 +- 0.1 mm): no press.
+    """
+
+    h = checked.Handover
+    assert h.Failures == [] and h.At_Handover == pytest.approx(0.000318, abs=0.000002)
+    assert h.Line_Min == h.At_Handover and h.Clamped_Min == pytest.approx(0.000318, abs=0.000002) and h.Clamped_Max == h.Clamped_Min
+
+
+def test_a_press_at_the_handover_is_reported(keypoints, cell_configuration, tools):
+    """
+    Description:
+        A handover whose hold pose is the take's 1.5 mm press (loader_handover's joints replaced by loader_take_press's) is
+        reported: the PCB-ledge gap below 0.2 mm at loader_handover, '(a press)'.
+    """
+
+    pressed = copy.deepcopy(keypoints)
+    pressed.Robot['loader_handover'].Joints = list(keypoints.Robot['loader_take_press'].Joints)
+    commands = [_Command('Movej', 'above_loader'), _Command('Movel', 'loader_approach', speed=0.2), _Command('Movel', 'loader_handover', speed=0.03),
+                Program_Command_Str(Kind='Gripper', Target='clamp', Duration=0.35, Text='Gripper clamp')]
+    result = _Check(commands, pressed, cell_configuration, tools, allow=('cups_pcb', 'pcb_jaws'), pcb='cups')
+    assert any(f.startswith('the PCB-ledge gap at loader_handover is') and f.endswith('(a press)') for f in result.Handover.Failures)
+    assert result.Verdict == 'FAIL'
+
+
+def test_a_colliding_step_is_reported_with_its_pair_and_time(keypoints, cell_configuration, tools):
+    """
+    Description:
+        A MoveL from 15 mm above the PCB in the input crate straight across to 15 mm above the output crate's floor (through
+        both crates' walls) fails, naming a cup and a crate wall, the sample and its time.
+    """
+
+    commands = [_Command('Movej', 'above_input_pcb'), _Command('Movel', 'input_pcb_approach', speed=0.2),
+                _Command('Movel', 'output_approach', speed=0.2)]
+    result = _Check(commands, keypoints, cell_configuration, tools)
+    step = result.Steps[0]
+    assert step.Verdict == 'FAIL' and step.Closest.Distance < 0 and 'crate_' in step.Closest.Pair
+    assert any(f.startswith(step.Closest.Pair) and 'at sample %d (%.3f s)' % (step.Closest.Sample, step.Closest.Time) in f for f in step.Failures)
+
+
+def test_contacts_are_allowed_only_where_declared_and_as_deep_as_configured(keypoints, cell_configuration, tools):
+    """
+    Description:
+        The pick's press without cups_pcb declared fails (group not allowed); declared, with cups_pcb allowed only 1.0 mm deep
+        it fails on the depth (1.48 mm); a declared group that never occurs (pcb_jaws at the crate) fails.
+    """
+
+    commands = [_Command('Movej', 'above_input_pcb'), _Command('Movel', 'input_pcb_approach', speed=0.2),
+                _Command('Movel', 'input_pcb_press', speed=0.03)]
+    undeclared = _Check(commands, keypoints, cell_configuration, tools)
+    assert any('group cups_pcb not allowed in this step' in f for f in undeclared.Steps[0].Failures)
+    shallow = copy.deepcopy(cell_configuration)
+    shallow.Allowed_Depth['cups_pcb'] = 0.001
+    deep = _Check(commands, keypoints, shallow, tools, allow=('cups_pcb', 'pcb_jaws'))
+    failures = deep.Steps[0].Failures
+    assert any(f.startswith('cups_pcb 1.48 mm deep') and 'at most 1.00 mm' in f for f in failures)
+    assert any('allowed contact pcb_jaws does not occur in the step' in f for f in failures)
+
+
+def test_a_movej_over_its_rule_limits_is_reported(keypoints, cell_configuration, tools):
+    """
+    Description:
+        Checked against acceleration limits 10 % below the ones the MoveJ was timed with, the MoveJ home -> above_input_pcb
+        (acceleration-limited) fails, naming its peak and the allowed fraction.
+    """
+
+    from Collision.Core import Robot_Collision_Cls
+    from Program.Core import Check_Trajectory
+    kinematics, meta = tools
+    program = _Program([_Command('Movej', 'above_input_pcb')])
+    trajectory, notes = Build_Program(program, keypoints, cell_configuration, meta, kinematics, {})
+    slower = copy.deepcopy(cell_configuration)
+    slower.Acceleration_Limits = [0.9 * a for a in slower.Acceleration_Limits]
+    result = Check_Trajectory(trajectory, program, notes, kinematics, Robot_Collision_Cls(kinematics.Model, kinematics.Data), keypoints, slower, meta)
+    assert any(f.startswith('Movej above_input_pcb: peak joint speed') for f in result.Steps[0].Failures)
+
+
+def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cell_configuration):
+    """
+    Description:
+        The report: a header with the cycle time; a row per step with its peaks and verdict, the closest pair per allowed group
+        and of the rest with sample and time; the handover's gaps; the stretched MoveLs; the Fork_Open note; the events; the
+        keypoints used (23: 22 PASS, 1 WARN); the failure; the closing sentence on simulation results.
+    """
+
+    from Program.Core import Format_Check_Report
+    lines = Format_Check_Report(checked, built[0], cell_configuration)
+    text = '\n'.join(lines)
+    assert lines[0].startswith('program Program_Default: 22 steps, 17214 samples (4 ms), cycle time 68.852 s;')
+    assert any(line.startswith('pick_input ') and line.endswith('PASS') for line in lines)
+    assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
+    assert 'handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into loader_handover min 0.318 mm' in text
+    assert 'stretched MoveLs: none' in text and 'note: open_mg06, Path Fork_Open: the recorded path starts moving' in text
+    assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 23 (0 FAIL, 1 WARN, 22 PASS;' in text
+    assert any(line.startswith('  close_mg06: handle_bar 0.54 mm deep') for line in lines)
+    assert lines[-1] == 'Program_Default: the program check FAILED. Simulation results only: not validated for the real cell.'

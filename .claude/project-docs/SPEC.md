@@ -593,10 +593,22 @@ is the start state, then each command's samples (4 ms), every motion ending at r
 - **World state**: the PCB's location changes only by the vacuum and gripper rules (vacuum on with the cups on the PCB in a
   crate or the jaws; clamping on it in MG06; opening at MG06; vacuum off with it clamped in the jaws or within 2 mm of its
   place on a crate floor; anything else fails). The carried PCB is the nominal held pose set back along the tool axis by the
-  bellows' compression left (1.5 mm at a press, relaxing as the TCP moves away). MG06 is the recorded rows during a `Path`,
-  else the target keypoint's `Fixture`, held otherwise. The jaws stand at `grip` while the PCB is between them.
+  bellows' compression left (1.5 mm at a press, relaxing as the TCP moves away). MG06 is the recorded rows during a `Path`;
+  during a MoveJ / MoveL it moves from its state at the motion's start to the target keypoint's `Fixture` along the motion's
+  time law (the handle settles as the fork lets it go); it holds otherwise. The jaws stand at `grip` while the PCB is
+  between them.
 
-`Pose_Sample` poses the whole cell at a sample (no IK, no physics).
+`Pose_Sample` poses the whole cell at a sample (no IK, no physics). `Check_Trajectory` (the program check, on the planning
+model): every sample where a robot geom, the carried PCB, the loader, the jaws or MG06 may have moved more than
+`Clearance.Check_Step` since the last measured one (and every segment end) is measured exactly (`Close_Pairs`): the robot,
+the PCB on the cups (to everything else), the PCB in the jaws (to the workstation: table, crates); a pair within
+`Clearance.Robot` fails unless the step allows its group and it is no deeper than `Allowed_Depth`; every allowed group must
+occur; per step and group the closest pair (up to 10 mm) and its sample and time are reported. Also: the joint limits; the
+peak joint speed and acceleration of every MoveJ (its rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
+`Motion` (finite differences, 0.1 % tolerance), the recorded paths' peaks reported, not limited; the handover's no-press
+rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Ledge_Tolerance` at `loader_handover` and while
+clamped, never smaller along the MoveL into it); the keypoint check of every keypoint the program uses.
+`Format_Check_Report` prints it.
 
 ## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml`
 
@@ -627,7 +639,8 @@ position its FK must reach; `Relative_To` - null or a target `pcb_hold@<location
 and an offset [m]; `Fixture` - `Open`, `Closed` or the recorded `{Lid, Handle, Source}` of the fork path;
 `Context` - `Loader`, `Gripper`, `PCB` location; `Allow_Contact` - contact groups; `Note`), `Loader.<position>`
 (`Y`, `Z` [m]: home, travel_place, place, park - the only source of the loader positions, moved from
-`pcb_meta.json`), `Gripper.<state>` [m] (open, grip, clamp). The 22 keypoints are §4.8 at full precision.
+`pcb_meta.json`), `Gripper.<state>` [m] (open, grip, clamp). 23 robot keypoints: the 22 of §4.8 at full precision and the
+default program's auxiliary point `input_pcb_clear` (F8.5; same schema and check, its joints from `resolve_keypoint.py`).
 
 `Program_Default.yaml` (`FEATURES.md` F8): `Start` (`Robot` a keypoint, `Loader` a position, `Gripper` a state, `Vacuum`
 On / Off, `PCB` a location, `MG06` Open / Closed) and `Steps`, each with `Name` (unique, lowercase), `Comment`,
