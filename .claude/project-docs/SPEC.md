@@ -361,6 +361,46 @@ robot), both `targetbody`.
   `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`, `trimesh==5.1.1`, `rtree==1.4.1`,
   `coacd==1.0.14`, `matplotlib==3.11.2`, `pytest==9.1.1`. The groups without a user yet are marked
   *planned* (§14).
+- **The verified baseline environment is recorded as a full `pip freeze`** (owner, 2026-10-24): a record of
+  what the baseline (§4.6) ran with, not an install input (`install.sh` installs `requirements.txt` only). It
+  is replaced, with its date, whenever the baseline is re-measured. Recorded 2026-10-24, Python 3.11.2,
+  macOS 26.6.2 arm64 (Apple M2 Pro), the `.venv` of `./install.sh --recreate` in which the baseline was
+  re-measured (`.venv/bin/python -m pip freeze --all`):
+
+  ```
+  absl-py==2.5.1
+  coacd==1.0.14
+  contourpy==1.3.3
+  cycler==0.12.1
+  etils==1.14.0
+  fonttools==4.67.0
+  fsspec==2026.9.0
+  glfw==2.11.0
+  iniconfig==2.3.1
+  kiwisolver==1.5.1
+  matplotlib==3.11.2
+  mujoco==3.16.0
+  numpy==2.4.6
+  packaging==26.3
+  pillow==13.0.0
+  pip==26.2.2
+  pluggy==1.7.0
+  Pygments==2.21.0
+  PyOpenGL==3.1.10
+  pyparsing==3.3.3
+  pytest==9.1.1
+  python-dateutil==3.0.0
+  PyYAML==6.0.3
+  rtree==1.4.1
+  scipy==1.17.1
+  setuptools==65.6.3
+  six==1.17.0
+  trimesh==5.1.1
+  typing_extensions==4.16.0
+  tzdata==2026.5
+  websockets==17.3
+  zipp==4.1.2
+  ```
 - The viewer: `python -m mujoco.viewer` (blocking `launch`) runs under `python` on macOS;
   `launch_passive` needs `mjpython` on macOS.
 

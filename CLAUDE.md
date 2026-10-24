@@ -40,4 +40,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Render/render_image.py         # Data/Generated/Images/pcb_green.png
 ```
 
+History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
+`git log --follow -M20% <file>`. The legacy planner and cycle test: git tag `legacy-planner-reference`.
+
 Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).
