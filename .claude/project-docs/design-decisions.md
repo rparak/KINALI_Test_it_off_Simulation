@@ -294,6 +294,49 @@ components with their own colours: an open follow-up (`KNOWN_ISSUES.md`).
 
 Pinned by `test/Scene/test_core.py::test_the_pcb_is_green_without_a_material` and `test/Render/test_core.py::test_the_pcb_camera_shows_a_green_pcb`.
 
+## The studio look: fog on, a 1 m grid, a statistic from the cell's bounding box
+
+**Decision.** The scene has the studio look of F7 (SPEC §4.7 Look), applied in code (`Scene.Core._Apply_Look`,
+`CONST_LOOK_*`; `scene.xml` unchanged): a gradient sky, a dark 1 m grid on the existing visual-only floor plane
+(20 m), a key spot light with shadows and a weak fill, haze and fog in the horizon colour, and an explicit
+`statistic`. Fog is on wherever the project renders (offscreen images, the passive viewer; owner, 2026-10-24,
+option A). Values that differ from the owner's first specification, each measured in MuJoCo 3.16.0
+(2026-10-24):
+
+- `texrepeat` 2 2, not 1 1: with `texuniform` MuJoCo maps one texture onto 2 m of a plane (orthographic top
+  view: lines at −4, −2, 0, 2, 4 m); 2 2 gives a line every 1 m on the world axes.
+- Sky `rgb2` 0.64 0.68 0.73, not the horizon colour: the gradient runs from `rgb1` at the zenith to `rgb2` at
+  the nadir and the horizon is their mean, so `rgb2 = 2 × horizon − zenith` puts 0.42 0.45 0.49 at the horizon.
+- `statistic` extent 2.6 m: `fogstart` / `fogend` are multiples of the extent, not metres. Without a
+  statistic the 20 m plane moved the automatic extent to 4.4 m (fog 6.6–26 m, past the plane: a hard horizon
+  line). The centre and extent come from the cell's bounding box at the default qpos, robot included, so the
+  default free camera holds the whole cell with a 10 % margin (fog 3.9–15.6 m, inside the plane).
+- Reflectance 0.05 (owner): 0.1 mirrored the cabinet clearly on the dark floor.
+- The key light's shadows are hard: MuJoCo's shadow maps have no penumbra (the owner's "soft" key light is not
+  available; edges look the same at cutoff 30° and 75°; no acne seen).
+
+**Why.** With fog on the floor fades into the horizon colour with no edge: at the horizon the far floor renders
+115.7 / 255 against the horizon's 115.6. The price: with fog on, MuJoCo draws the whole skybox in the fog colour,
+so the sky is a uniform grey and the gradient shows only with fog off (the blocking viewer's default). Render time
+is unchanged within noise (one `Render_Free_Image` call 223–256 ms after, 226–240 ms before; steady frame 25.5 →
+23.2 ms): the shadow map was already 8192.
+
+**Alternatives.** Option D (owner's prototype request): an infinite plane (size 0), fog off, haze on, the gradient
+visible - rejected: a hard horizon line (floor 51 / 255 against the sky's 115 within 5 rows; the haze band is too
+thin to hide it); its distant grid moiré was low. Look values in `Configuration/Cell.yaml`: rejected (owner), they
+describe the presentation, not the cell. The spec's values as written: the 2 m grid, a darker horizon, the hard
+horizon line above.
+
+**Revisit if** MuJoCo stops fogging the skybox (then the gradient could show with fog on), adds soft shadows, or
+the robot's default pose changes (re-derive the statistic).
+
+Pinned by `test/Scene/test_core.py::test_the_floor_is_a_visual_plane_with_a_one_metre_grid`,
+`::test_the_sky_is_the_gradient_with_the_horizon_colour_between`, `::test_haze_and_fog_are_the_horizon_colour`,
+`::test_the_lights_are_one_key_spot_with_shadows_and_one_fill`, `::test_the_default_view_fits_the_whole_cell_with_a_margin`,
+`::test_the_pcb_and_tool_cameras_are_unchanged`, `::test_the_crates_and_every_non_visual_field_equal_the_baseline`,
+`test/Render/test_core.py::test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres`,
+`::test_the_offscreen_floor_fades_into_the_horizon_colour`, `::test_the_passive_viewer_switches_on_fog_and_haze`.
+
 ## The CAD deviations stay compensated in scene.xml
 
 **Decision.** `models/scene.xml` keeps three deliberate deviations from the CAD: the loader shifted

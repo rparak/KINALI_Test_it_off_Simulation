@@ -91,6 +91,48 @@ CONST_SUCTION_IN_PCB = np.array([-0.00125, 0.0046, 0.0075])
 # The tool axes in the PCB frame: tool +Z = -PCB normal, tool +X = PCB +X.
 #   Unit [Matrix<float> 3x3] (-)
 CONST_R_TOOL_IN_PCB = np.diag([1.0, -1.0, -1.0])
+# The studio look (F7): the default NVIDIA Isaac Sim / Isaac Lab environment, approximated (owner, 2026-10-24).
+# Visual only; nothing here reaches the physics (SPEC §4.7 Look, design-decisions).
+# The sky: a gradient from the zenith (rgb1, darker) to the nadir (rgb2). MuJoCo puts the mean of the two at the
+# horizon (measured 2026-10-24), so the nadir is 2 x horizon - zenith; it is below the floor and never seen.
+#   Unit [List<float>] (rgb 0-1)
+CONST_LOOK_SKY_ZENITH = [0.20, 0.22, 0.25]
+CONST_LOOK_HORIZON = [0.42, 0.45, 0.49]
+CONST_LOOK_SKY_NADIR = [0.64, 0.68, 0.73]
+# The floor grid: base and line colours.
+#   Unit [List<float>] (rgb 0-1)
+CONST_LOOK_FLOOR_RGB, CONST_LOOK_GRID_RGB = [0.23, 0.24, 0.26], [0.40, 0.42, 0.45]
+# The grid texture's size (one line at its edge) and its repeat per unit length (texuniform): MuJoCo maps one
+# texture onto 2 m of a plane at texrepeat 1 (measured: lines 2 m apart), so 2 gives a line every 1 m on the world
+# axes.
+#   Unit [int] (px), [List<float>] (-)
+CONST_LOOK_GRID_PX, CONST_LOOK_GRID_REPEAT = 200, [2, 2]
+# The floor material: a subtle reflection (owner: 0.05; 0.1 mirrored the cabinet clearly on the dark floor).
+#   Unit [float] (-)
+CONST_LOOK_FLOOR_REFLECTANCE, CONST_LOOK_FLOOR_SPECULAR, CONST_LOOK_FLOOR_SHININESS = 0.05, 0.2, 0.3
+# The floor plane's half sizes: far enough that the plane ends inside the fog (fog end = 6 x extent = 15.6 m).
+#   Unit [List<float>] (m)
+CONST_LOOK_FLOOR_SIZE = [20, 20, 0.05]
+# Fog and haze: start and end as multiples of the model extent (MuJoCo's unit for visual.map), the haze proportion.
+#   Unit [float] (-)
+CONST_LOOK_FOG_START, CONST_LOOK_FOG_END, CONST_LOOK_HAZE = 1.5, 6.0, 0.6
+# The headlight.
+#   Unit [List<float>] (rgb 0-1)
+CONST_LOOK_HEADLIGHT = dict(ambient=[0.35, 0.36, 0.38], diffuse=[0.25, 0.25, 0.25], specular=[0.05, 0.05, 0.05])
+# The key light (a spot above the cell, casting shadows) and the weak fill (directional, no shadows); MuJoCo's
+# default light specular (0.3) for both.
+#   Unit [Dict] (pos m, dir -, cutoff deg, diffuse rgb 0-1)
+CONST_LOOK_KEY_LIGHT = dict(pos=[1.6, 1.2, 4.0], dir=[-0.4, -0.3, -1.0], cutoff=75.0, diffuse=[0.65, 0.64, 0.62])
+CONST_LOOK_FILL_LIGHT = dict(dir=[0.5, 0.4, -0.6], diffuse=[0.18, 0.19, 0.21])
+# Shadow map size and offscreen multisamples.
+#   Unit [int] (px, -)
+CONST_LOOK_SHADOW_SIZE, CONST_LOOK_OFFSAMPLES = 8192, 8
+# The model statistic: the centre of the cell's bounding box at the default qpos, robot included (x -0.308..0.664,
+# y -1.001..0.295, z -0.873..1.290, half diagonal r = 1.351 m), and the extent that fits that sphere into the
+# default free camera with a 10 % margin: distance 1.5 x extent >= 1.1 r / sin(fovy 45 deg / 2) = 3.88 m. It also
+# keeps the 20 m floor out of the automatic extent and scales the fog (measured 2026-10-24).
+#   Unit [List<float>] (m), [float] (m)
+CONST_LOOK_CENTER, CONST_LOOK_EXTENT = [0.178, -0.353, 0.208], 2.6
 
 
 class Scene_Error_Cls(ValueError):
@@ -261,34 +303,43 @@ def Build_Cell_Spec(cell: Cell_Configuration_Str) -> mujoco.MjSpec:
 def _Apply_Look(sc: mujoco.MjSpec) -> None:
     """
     Description:
-        The look: a neutral floor, three lights with shadows, metal / plastic materials, cameras on the
-        PCB and the tool. The PCB keeps its own colour (no material on pcb* geoms).
+        The look: the studio look (a grey sky, a dark 1 m grid floor fading into the fog, a key spot light with
+        shadows and a weak fill), metal / plastic materials, cameras on the PCB and the tool. The PCB keeps its own
+        colour (no material on pcb* geoms). Fog is a render flag, set by Render.Core.
 
     Args:
         (1) sc [mujoco.MjSpec]: The cell, changed in place.
     """
 
-    sc.visual.quality.shadowsize = 8192
-    sc.visual.headlight.ambient = [0.25, 0.25, 0.25]
-    sc.visual.headlight.diffuse = [0.35, 0.35, 0.35]
+    sc.visual.quality.shadowsize = CONST_LOOK_SHADOW_SIZE
+    sc.visual.quality.offsamples = CONST_LOOK_OFFSAMPLES
+    for k, v in CONST_LOOK_HEADLIGHT.items():
+        setattr(sc.visual.headlight, k, v)
+    sc.visual.rgba.haze = sc.visual.rgba.fog = CONST_LOOK_HORIZON + [1.0]
+    sc.visual.map.fogstart, sc.visual.map.fogend, sc.visual.map.haze = CONST_LOOK_FOG_START, CONST_LOOK_FOG_END, CONST_LOOK_HAZE
+    sc.stat.center, sc.stat.extent = CONST_LOOK_CENTER, CONST_LOOK_EXTENT
+    sky = sc.texture('sky')
+    sky.rgb1, sky.rgb2 = CONST_LOOK_SKY_ZENITH, CONST_LOOK_SKY_NADIR
     t = sc.texture('grid')
     t.builtin = mujoco.mjtBuiltin.mjBUILTIN_FLAT
-    t.mark = mujoco.mjtMark.mjMARK_RANDOM
-    t.random = 0.25
-    t.rgb1 = [0.62, 0.62, 0.60]
-    t.rgb2 = [0.62, 0.62, 0.60]
-    t.markrgb = [0.55, 0.55, 0.53]
-    t.width = t.height = 1024
+    t.mark = mujoco.mjtMark.mjMARK_EDGE
+    t.rgb1 = t.rgb2 = CONST_LOOK_FLOOR_RGB
+    t.markrgb = CONST_LOOK_GRID_RGB
+    t.width = t.height = CONST_LOOK_GRID_PX
     mf = sc.material('grid')
-    mf.texrepeat = [6, 6]
-    mf.reflectance = 0.0
-    mf.specular = 0.1
+    mf.texrepeat = CONST_LOOK_GRID_REPEAT
+    mf.texuniform = True
+    mf.reflectance = CONST_LOOK_FLOOR_REFLECTANCE
+    mf.specular = CONST_LOOK_FLOOR_SPECULAR
+    mf.shininess = CONST_LOOK_FLOOR_SHININESS
+    sc.geom('floor').size = CONST_LOOK_FLOOR_SIZE
     for light in list(sc.worldbody.lights):
         sc.delete(light)
-    for pos, d, dif, sh in [([1.2, -2.0, 2.6], [-0.4, 0.7, -1.0], 0.55, True), ([-1.5, -1.0, 2.0], [0.6, 0.4, -1.0], 0.30, True),
-                            ([0.0, 1.5, 2.2], [0.0, -0.6, -1.0], 0.20, False)]:
-        sc.worldbody.add_light(pos=pos, dir=d / np.linalg.norm(d), diffuse=[dif] * 3, specular=[0.25] * 3, castshadow=sh,
-                               type=mujoco.mjtLightType.mjLIGHT_DIRECTIONAL)
+    key, fill = CONST_LOOK_KEY_LIGHT, CONST_LOOK_FILL_LIGHT
+    sc.worldbody.add_light(name='key_light', pos=key['pos'], dir=np.array(key['dir']) / np.linalg.norm(key['dir']), cutoff=key['cutoff'],
+                           diffuse=key['diffuse'], castshadow=True, type=mujoco.mjtLightType.mjLIGHT_SPOT)
+    sc.worldbody.add_light(name='fill_light', dir=np.array(fill['dir']) / np.linalg.norm(fill['dir']), diffuse=fill['diffuse'],
+                           castshadow=False, type=mujoco.mjtLightType.mjLIGHT_DIRECTIONAL)
     materials = {'alu': dict(specular=0.75, shininess=0.65), 'plastic': dict(specular=0.25, shininess=0.3),
                  'dark': dict(specular=0.15, shininess=0.2)}
     for n, kw in materials.items():

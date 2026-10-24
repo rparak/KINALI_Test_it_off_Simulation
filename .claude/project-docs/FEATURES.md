@@ -575,6 +575,32 @@ Closing answers (owner, 2026-10-24) to the step 3 report:
 6. The optional fields (`Check`, `Relative_To`, `Allow_Contact`) as a recorded exception to the skill's "no
    optional fields".
 
+## F7 - Studio look: grey sky, dark 1 m grid floor, key light and fill (owner, 2026-10-24) - in progress
+
+Requirements (restated): an Isaac Sim / Isaac Lab "studio" look for the viewer and the offscreen renders - a grey
+gradient sky, haze and fog in the horizon colour, a dark 1 m grid floor with a subtle reflection reaching the fog,
+one key spot light with shadows plus a weak directional fill, a tight `statistic`; visual only (no geom, body or
+material other than the floor's changes; the cycle report and the keypoint table unchanged); the fingerprint
+baseline updated for the visual differences only, in a separate commit.
+
+Measured (Part A, 2026-10-24): the floor plane exists (`floor`, z −0.873 m = the workstation's lowest vertex,
+visual-only); MuJoCo 3.16 maps one `texuniform` texture onto 2 m (→ `texrepeat` 2 2), puts the gradient's mean at
+the horizon (→ nadir 0.64 0.68 0.73), fogs the whole skybox when fog is on, and scales fog by the extent (→ an
+explicit statistic). Details: design-decisions (the studio look).
+
+Owner's answers: corrections (a) texrepeat, (b) nadir, (d) statistic applied; (e) hard shadows accepted;
+reflectance 0.05; `CONST_LOOK_*` in `Scene.Core`; `show_cell.py` stays on the blocking viewer (Rendering > Fog
+documented); two commits (look, then baseline). Option A (fog on, uniform grey sky) or D (infinite plane, fog
+off, gradient) chosen by a prototype: **A** - D has a hard horizon line (floor 51 / 255 against the sky's 115
+within 5 rows; images `Data/Generated/Images/look_A_*.png`, `look_D_*.png`).
+
+- [x] F7.1 the look (`Scene.Core`, `Render.Core`), `models/cell_scene.xml` regenerated, 11 tests (191 → 202
+      collected; each broken once), SPEC §4.7 Look and §7.5, design-decisions. The fingerprint tests accept the
+      6 visual differences until F7.2. Cycle report diff empty; keypoint table byte-identical; fast tests
+      196 passed + the 2 fingerprint-script tests (24.4–25.7 s, before 22.9–26.0 s); style 0 issues.
+- [ ] F7.2 the fingerprint baseline: the 6 visual entries rewritten, `pcb_vis` kept as the one documented
+      difference; the accepted lists back to `pcb_vis` only.
+
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
 - An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the

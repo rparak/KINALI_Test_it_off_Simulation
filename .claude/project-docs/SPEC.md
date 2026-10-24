@@ -356,10 +356,29 @@ recorded opening path only where its handle angle already points up below the re
 slot wall meets the bar moving up and the handle is never pushed down (it stays at 28.6° until opening
 starts). Measured fork-to-bar clearance while leaving and returning: 3.8–4.7 mm.
 
-**Look.** A neutral textured floor, three directional lights, two with shadows (`shadowsize 8192`);
-materials: aluminium and metal `specular` 0.75, plastic 0.25, dark parts 0.15; reflections off for render
-speed. Cameras `cam_pcb` (follows the PCB) and `cam_tool` (follows the tool from the side opposite the
-robot), both `targetbody`.
+**Look.** The studio look (F7; the default NVIDIA Isaac Sim / Isaac Lab environment, approximated), applied
+in code by `Scene.Core._Apply_Look` (`CONST_LOOK_*`), visual only:
+
+- sky: gradient from the zenith (0.20 0.22 0.25) to the nadir (0.64 0.68 0.73), so the horizon (their mean in
+  MuJoCo) is 0.42 0.45 0.49; haze and fog in that horizon colour; `fogstart` 1.5, `fogend` 6 (multiples of
+  the extent: 3.9–15.6 m), `haze` 0.6;
+- floor: the existing visual-only plane `floor` (z −0.873 m, the workstation feet; contype = conaffinity = 0),
+  20 × 20 m, a dark grid (base 0.23 0.24 0.26, lines 0.40 0.42 0.45; 200 px flat texture with an edge mark,
+  `texuniform`, `texrepeat` 2 2 = one line per 1 m on the world axes), reflectance 0.05, specular 0.2,
+  shininess 0.3;
+- lights: headlight ambient 0.35 0.36 0.38, diffuse 0.25, specular 0.05; the key spot light `key_light` at
+  (1.6, 1.2, 4.0) m, direction (−0.4, −0.3, −1), cutoff 75°, diffuse 0.65 0.64 0.62, casting shadows (hard:
+  MuJoCo's shadow maps have no penumbra); the directional fill `fill_light`, direction (0.5, 0.4, −0.6),
+  diffuse 0.18 0.19 0.21, no shadows; `shadowsize` 8192, `offsamples` 8;
+- `statistic`: centre (0.178, −0.353, 0.208) m and extent 2.6 m, from the cell's bounding box at the default
+  qpos, robot included (half diagonal 1.351 m): the default free camera (distance 1.5 × extent = 3.9 m, fovy
+  45°) holds the whole cell with a 10 % margin;
+- fog is a render flag, not a model field: on in `Render.Core`'s offscreen images and passive viewer
+  (`CONST_LOOK_FLAGS`: fog and haze); the blocking viewer (`show_cell.py`, `python -m mujoco.viewer`) starts
+  with fog off - left panel, Rendering > Fog (Haze is on by default).
+
+Materials: aluminium and metal `specular` 0.75, plastic 0.25, dark parts 0.15. Cameras `cam_pcb` (follows the
+PCB) and `cam_tool` (follows the tool from the side opposite the robot), both `targetbody`.
 
 ## 5. Platform
 
@@ -504,7 +523,8 @@ categories of §4.6.
 
 ### 7.5 Render
 
-An offscreen image from a named camera; starting the viewer. No project imports.
+An offscreen image from a named camera or a free camera, with the studio look's fog and haze flags on;
+starting the viewer (the passive one with the same flags). No project imports.
 
 ### 7.6 Simulation
 

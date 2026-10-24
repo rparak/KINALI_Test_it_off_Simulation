@@ -22,7 +22,7 @@ directory).
 and the tool mounted rigidly on the flange; the cup block shortened 2 mm; one body, bellows slide joint,
 mass sphere and square pad per cup; one adhesion actuator per cup; contact bits of robot and tool;
 three self-collision exclusions; robot joint armature, damping and position servos; loader drive lag;
-the look (lights, materials, cameras).
+the look (sky, floor grid and size, visual settings, lights, statistic, materials, cameras; F7).
 
 ## Never changed in a structure or style change ✅
 

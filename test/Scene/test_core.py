@@ -52,9 +52,18 @@ Description:
 # The solder-mask green of the PCB visual (design-decisions: the PCB is drawn in solder-mask green).
 #   Unit [Vector<float> 1x4] (-)
 CONST_GREEN = [0.05, 0.42, 0.18, 1.0]
-# The one accepted difference from the baseline fingerprint (the green PCB).
+# The accepted differences from the baseline fingerprint: the green PCB, and until the baseline is updated (F7, the
+# next commit) the studio look's visual-only fields - the floor plane's size, the floor material, the number of lights.
 #   Unit [List<string>]
-CONST_ACCEPTED_DIFFERENCES = ['geoms/pcb_vis/geom_rgba']
+CONST_ACCEPTED_DIFFERENCES = ['geoms/floor/geom_size', 'geoms/pcb_vis/geom_rgba', 'materials/grid/mat_reflectance',
+                              'materials/grid/mat_shininess', 'materials/grid/mat_specular', 'materials/grid/mat_texrepeat',
+                              'sizes/nlight']
+# The studio look (F7, SPEC §4.7 Look): the sky's zenith, horizon and nadir colours.
+#   Unit [List<float>] (rgb 0-1)
+CONST_SKY_ZENITH, CONST_HORIZON, CONST_SKY_NADIR = [0.20, 0.22, 0.25], [0.42, 0.45, 0.49], [0.64, 0.68, 0.73]
+# The cameras on the PCB and the tool, as before the studio look: name -> position (m), fovy (deg), target body.
+#   Unit [Dict<string, Tuple>]
+CONST_CAMERAS = {'cam_pcb': ([-0.55, -0.85, 0.75], 40.0, 'pcb'), 'cam_tool': ([-0.30, 0.35, 0.80], 45.0, 'aubo/tool/ee_tool')}
 # The crate centres of SPEC §4.4 (x, y).
 #   Unit [Dict<string, Vector<float> 1x2>] (m)
 CONST_CRATE_CENTRES = {'crate_pick': [0.15720, -0.75160], 'crate_place': [0.40620, -0.75160]}
@@ -96,6 +105,125 @@ def test_the_fingerprint_equals_the_baseline_except_the_green_pcb(root, cell_mod
     current = json.loads(json.dumps(fingerprint_tool.Model_Fingerprint(cell_model)))
     differences = fingerprint_tool.Compare_Fingerprints(current, reference)
     assert [line.split(':')[0] for line in differences] == CONST_ACCEPTED_DIFFERENCES
+
+
+def test_the_crates_and_every_non_visual_field_equal_the_baseline(root, cell_model, fingerprint_tool):
+    """
+    Description:
+        The studio look changes only visual fields: every crate geom (the floors and walls) equals its baseline entry,
+        and every accepted difference is the floor plane's size, a floor-material field, the number of lights or the
+        PCB colour.
+    """
+
+    with open(os.path.join(root, 'test', 'Scene', 'data', 'baseline_model_fingerprint.json'), encoding='utf-8') as handle:
+        reference = json.load(handle)
+    current = json.loads(json.dumps(fingerprint_tool.Model_Fingerprint(cell_model)))
+    crates = [k for k in reference['geoms'] if k.startswith('crate_')]
+    assert len(crates) == 10 and all(current['geoms'][k] == reference['geoms'][k] for k in crates)
+    visual = ('geoms/floor/geom_size', 'geoms/pcb_vis/geom_rgba', 'materials/grid/mat_', 'sizes/nlight')
+    assert all(d.startswith(visual) for d in CONST_ACCEPTED_DIFFERENCES)
+
+
+def test_the_floor_is_a_visual_plane_with_a_one_metre_grid(cell_model):
+    """
+    Description:
+        The floor plane takes part in no contact; its material is the grid texture (200 px, a line at the edge),
+        uniform per metre and repeated twice per unit length (MuJoCo maps one texture onto 2 m: one line per 1 m),
+        with a subtle reflection.
+    """
+
+    m = cell_model
+    floor, material, texture = m.geom('floor'), m.material('grid'), m.texture('grid')
+    assert floor.type == mujoco.mjtGeom.mjGEOM_PLANE and (floor.contype, floor.conaffinity) == (0, 0)
+    assert floor.matid == material.id and list(floor.size) == [20, 20, 0.05]
+    assert m.mat_texid[material.id][mujoco.mjtTextureRole.mjTEXROLE_RGB] == texture.id
+    assert bool(m.mat_texuniform[material.id]) and list(material.texrepeat) == [2, 2]
+    assert (m.tex_width[texture.id], m.tex_height[texture.id]) == (200, 200)
+    assert material.reflectance == pytest.approx(0.05) and material.specular == pytest.approx(0.2)
+
+
+def test_the_sky_is_the_gradient_with_the_horizon_colour_between(cell_model):
+    """
+    Description:
+        The skybox is the gradient from the zenith to the nadir; the side faces' middle rows (the horizon) are the
+        horizon colour, the mean of the two (measured 2026-10-24: MuJoCo's gradient runs zenith to nadir).
+    """
+
+    m = cell_model
+    t = m.texture('sky')
+    w, h, n = m.tex_width[t.id], m.tex_height[t.id], m.tex_nchannel[t.id]
+    faces = m.tex_data[m.tex_adr[t.id]:m.tex_adr[t.id] + w * h * n].reshape(6, w, w, n)[..., :3] / 255.0
+    assert t.type == mujoco.mjtTexture.mjTEXTURE_SKYBOX
+    assert faces[2, w // 2, w // 2] == pytest.approx(CONST_SKY_ZENITH, abs=0.005)
+    assert faces[3, w // 2, w // 2] == pytest.approx(CONST_SKY_NADIR, abs=0.005)
+    for f in (0, 1, 4, 5):
+        assert faces[f, w // 2, w // 2] == pytest.approx(CONST_HORIZON, abs=0.005), f
+
+
+def test_haze_and_fog_are_the_horizon_colour(cell_model):
+    """
+    Description:
+        Haze and fog are the horizon colour, so the floor fades into the sky without a band; fog from 1.5 to 6
+        extents, haze 0.6.
+    """
+
+    v = cell_model.vis
+    assert list(v.rgba.haze) == pytest.approx(CONST_HORIZON + [1.0]) and list(v.rgba.fog) == pytest.approx(CONST_HORIZON + [1.0])
+    assert (v.map.fogstart, v.map.fogend, v.map.haze) == pytest.approx((1.5, 6.0, 0.6))
+
+
+def test_the_lights_are_one_key_spot_with_shadows_and_one_fill(cell_model):
+    """
+    Description:
+        Two lights: the key spot light above the cell (cutoff 75 deg) casting shadows and the directional fill without.
+    """
+
+    m = cell_model
+    key, fill = m.light('key_light'), m.light('fill_light')
+    assert m.nlight == 2 and key.type == mujoco.mjtLightType.mjLIGHT_SPOT and bool(key.castshadow)
+    assert list(key.pos) == pytest.approx([1.6, 1.2, 4.0]) and key.cutoff == pytest.approx(75.0)
+    assert fill.type == mujoco.mjtLightType.mjLIGHT_DIRECTIONAL and not bool(fill.castshadow)
+    assert (m.vis.quality.shadowsize, m.vis.quality.offsamples) == (8192, 8)
+
+
+def test_the_default_view_fits_the_whole_cell_with_a_margin(cell_model):
+    """
+    Description:
+        The statistic fits the cell's bounding sphere at the default qpos, robot included, into the default free
+        camera (fovy 45 deg) with a margin of at least 5 % (designed 10 %): the robot no longer touches the edge.
+    """
+
+    m = cell_model
+    d = mujoco.MjData(m)
+    mujoco.mj_forward(m, d)
+    points = []
+    for g in range(m.ngeom):
+        if m.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH:
+            k = m.geom_dataid[g]
+            v = m.mesh_vert[m.mesh_vertadr[k]:m.mesh_vertadr[k] + m.mesh_vertnum[k]]
+            points.append(v @ d.geom_xmat[g].reshape(3, 3).T + d.geom_xpos[g])
+        elif m.geom_type[g] != mujoco.mjtGeom.mjGEOM_PLANE:
+            points.append(d.geom_xpos[g] + m.geom_rbound[g] * np.array([[-1, -1, -1], [1, 1, 1]]))
+    points = np.vstack(points)
+    low, high = points.min(0), points.max(0)
+    camera = mujoco.MjvCamera()
+    mujoco.mjv_defaultFreeCamera(m, camera)
+    assert np.allclose(camera.lookat, (low + high) / 2, atol=0.002)
+    radius = np.linalg.norm(high - low) / 2
+    assert camera.distance * np.sin(np.radians(m.vis.global_.fovy / 2)) >= 1.05 * radius
+
+
+@pytest.mark.parametrize('name', sorted(CONST_CAMERAS))
+def test_the_pcb_and_tool_cameras_are_unchanged(cell_model, name):
+    """
+    Description:
+        cam_pcb and cam_tool keep their position, field of view and target (the statistic does not move them).
+    """
+
+    position, fovy, target = CONST_CAMERAS[name]
+    c = cell_model.camera(name)
+    assert list(c.pos) == pytest.approx(position) and c.fovy == pytest.approx(fovy)
+    assert c.mode == mujoco.mjtCamLight.mjCAMLIGHT_TARGETBODY and c.targetbodyid == cell_model.body(target).id
 
 
 def test_the_pcb_is_green_without_a_material(cell_model):

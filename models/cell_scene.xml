@@ -6,10 +6,14 @@
 
   <size memory="200M" />
 
+  <statistic extent="2.6" center="0.178 -0.353 0.208" />
+
   <visual>
     <global offwidth="1280" offheight="960" />
-    <quality shadowsize="8192" />
-    <headlight ambient="0.25 0.25 0.25" diffuse="0.35 0.35 0.35" />
+    <quality shadowsize="8192" offsamples="8" />
+    <headlight ambient="0.35 0.36 0.38" diffuse="0.25 0.25 0.25" specular="0.05 0.05 0.05" />
+    <map fogstart="1.5" fogend="6" haze="0.6" />
+    <rgba fog="0.42 0.45 0.49 1" haze="0.42 0.45 0.49 1" />
   </visual>
 
   <default>
@@ -60,9 +64,9 @@
   </default>
 
   <asset>
-    <texture type="skybox" colorspace="auto" name="sky" builtin="gradient" rgb1="0.55 0.62 0.7" rgb2="0.12 0.14 0.17" width="256" height="1536" />
-    <texture type="2d" colorspace="auto" name="grid" builtin="flat" mark="random" rgb1="0.62 0.62 0.6" rgb2="0.62 0.62 0.6" markrgb="0.55 0.55 0.53" random="0.25" width="1024" height="1024" />
-    <material name="grid" texture="grid" texrepeat="6 6" specular="0.1" />
+    <texture type="skybox" colorspace="auto" name="sky" builtin="gradient" rgb1="0.2 0.22 0.25" rgb2="0.64 0.68 0.73" width="256" height="1536" />
+    <texture type="2d" colorspace="auto" name="grid" builtin="flat" mark="edge" rgb1="0.23 0.24 0.26" rgb2="0.23 0.24 0.26" markrgb="0.4 0.42 0.45" width="200" height="200" />
+    <material name="grid" texture="grid" texrepeat="2 2" texuniform="true" specular="0.2" shininess="0.3" reflectance="0.05" />
     <material name="table" rgba="0.55 0.57 0.6 1" />
     <material name="aubo/Opaque(63,63,63)" rgba="0.25098 0.25098 0.25098 1" />
     <material name="aubo/Opaque(229,234,237)" rgba="0.898039 0.917647 0.929412 1" />
@@ -513,12 +517,11 @@
   </asset>
 
   <worldbody>
-    <geom name="floor" size="3 3 0.1" pos="0 0 -0.873" type="plane" contype="0" conaffinity="0" material="grid" />
+    <geom name="floor" size="20 20 0.05" pos="0 0 -0.873" type="plane" contype="0" conaffinity="0" material="grid" />
     <camera name="cam_pcb" target="pcb" pos="-0.55 -0.85 0.75" mode="targetbody" fovy="40" />
     <camera name="cam_tool" target="aubo/tool/ee_tool" pos="-0.3 0.35 0.8" mode="targetbody" />
-    <light pos="1.2 -2 2.6" dir="-0.3114 0.544949 -0.778499" diffuse="0.55 0.55 0.55" specular="0.25 0.25 0.25" type="directional" />
-    <light pos="-1.5 -1 2" dir="0.486664 0.324443 -0.811107" diffuse="0.3 0.3 0.3" specular="0.25 0.25 0.25" type="directional" />
-    <light castshadow="false" pos="0 1.5 2.2" dir="0 -0.514496 -0.857493" diffuse="0.2 0.2 0.2" specular="0.25 0.25 0.25" type="directional" />
+    <light name="key_light" pos="1.6 1.2 4" dir="-0.357771 -0.268328 -0.894427" cutoff="75" diffuse="0.65 0.64 0.62" />
+    <light name="fill_light" castshadow="false" dir="0.569803 0.455842 -0.683763" diffuse="0.18 0.19 0.21" type="directional" />
     <body name="workstation">
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0 0.517647 1 1" density="0" material="look_plastic" mesh="ws_vis_static_0_132_255" />
       <geom pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.101961 0.101961 0.101961 1" density="0" material="look_dark" mesh="ws_vis_static_26_26_26" />

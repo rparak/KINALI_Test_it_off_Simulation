@@ -41,6 +41,10 @@ Description:
 # Default offscreen image size; within the scene's offscreen buffer (offwidth 1280, offheight 960).
 #   Unit [int] (px)
 CONST_WIDTH, CONST_HEIGHT = 960, 720
+# The render flags of the studio look (F7) that are not model fields: fog (the floor fades into the horizon colour;
+# MuJoCo's default is off) and haze (MuJoCo's default is on, kept on explicitly).
+#   Unit [Dict<int, bool>] (mjtRndFlag -> on)
+CONST_LOOK_FLAGS = {mujoco.mjtRndFlag.mjRND_FOG: True, mujoco.mjtRndFlag.mjRND_HAZE: True}
 
 
 class Render_Error_Cls(ValueError):
@@ -49,6 +53,19 @@ class Render_Error_Cls(ValueError):
         An image cannot be made: an unknown camera or a size beyond the model's offscreen buffer. The
         message names the value and the limit.
     """
+
+
+def _Set_Look_Flags(flags: np.ndarray) -> None:
+    """
+    Description:
+        Switch on the studio look's render flags (fog, haze) in a scene's flags.
+
+    Args:
+        (1) flags [Vector<uint8>]: An mjvScene's flags, changed in place.
+    """
+
+    for flag, on in CONST_LOOK_FLAGS.items():
+        flags[flag] = on
 
 
 def Render_Image(model: mujoco.MjModel, data: mujoco.MjData, camera: str, width: int = CONST_WIDTH, height: int = CONST_HEIGHT,
@@ -78,6 +95,7 @@ def Render_Image(model: mujoco.MjModel, data: mujoco.MjData, camera: str, width:
         if segmentation:
             renderer.enable_segmentation_rendering()
         renderer.update_scene(data, camera=camera)
+        _Set_Look_Flags(renderer.scene.flags)
         return renderer.render().copy()
     finally:
         renderer.close()
@@ -110,6 +128,7 @@ def Render_Free_Image(model: mujoco.MjModel, data: mujoco.MjData, lookat: tp.Seq
     renderer = mujoco.Renderer(model, height, width)
     try:
         renderer.update_scene(data, camera=camera)
+        _Set_Look_Flags(renderer.scene.flags)
         return renderer.render().copy()
     finally:
         renderer.close()
@@ -141,7 +160,8 @@ def Launch_Viewer(model: mujoco.MjModel, data: tp.Optional[mujoco.MjData] = None
     """
     Description:
         Open MuJoCo's interactive viewer on the model and block until it is closed (mujoco.viewer.launch:
-        runs under python on macOS; launch_passive would need mjpython).
+        runs under python on macOS; launch_passive would need mjpython). This viewer takes no render flags from
+        code: the studio look's fog is off until switched on in the left panel, Rendering > Fog (Haze is on).
 
     Args:
         (1) model [mujoco.MjModel]: The model.
@@ -156,8 +176,8 @@ def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callba
                           command: str = '') -> tp.Any:
     """
     Description:
-        Open MuJoCo's passive viewer on the data without stepping it (a posed cell stays as posed). On macOS it runs
-        only under mjpython: then a Render_Error_Cls names the command to use.
+        Open MuJoCo's passive viewer on the data without stepping it (a posed cell stays as posed), with the studio
+        look's fog and haze on. On macOS it runs only under mjpython: then a Render_Error_Cls names the command to use.
 
     Args:
         (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed state.
@@ -170,8 +190,13 @@ def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callba
 
     import mujoco.viewer
     try:
-        return mujoco.viewer.launch_passive(model, data, key_callback=key_callback, show_left_ui=False, show_right_ui=False)
+        viewer = mujoco.viewer.launch_passive(model, data, key_callback=key_callback, show_left_ui=False, show_right_ui=False)
     except RuntimeError as error:
         raise Render_Error_Cls('The viewer cannot start (%s). On macOS run it under mjpython: .venv/bin/mjpython %s'
                                % (error, command)) from error
+    # The studio look's fog and haze: the viewer copies its user scene's flags into its own scene at the next sync.
+    with viewer.lock():
+        _Set_Look_Flags(viewer.user_scn.flags)
+    viewer.sync()
+    return viewer
 
