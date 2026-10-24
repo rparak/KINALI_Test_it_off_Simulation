@@ -42,7 +42,8 @@ CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEAT
 #   Unit [Set<string>]
 CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/references/project.md',
                      'project-style-rpx/references/project.md', 'project-style-rpx/references/check_style.json',
-                     'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md'}
+                     'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
+                     'readme-writer/references/check_readme.json'}
 
 
 def _Tracked(root):
