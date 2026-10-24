@@ -17,9 +17,9 @@ The verified physics is never changed without an explicit request (SPEC §3, the
 
 ## Branches
 
-One short-lived branch per feature, made from main; when the owner accepts the feature it is merged into main
-(fast-forward) and the branch is deleted locally and on origin. main is the only long-lived branch. History is never
-rewritten (no force-push); the tag `legacy-planner-reference` stays.
+Work directly on main. Commit only after the usual checks pass (fingerprint, cycle diff, golden, point table, fast
+tests, style). Push after each accepted feature. A failed experiment is undone with git revert, never with force-push
+or history rewrite. The tags `legacy-planner-reference` and `pre-F9` (the state before F9) stay.
 
 ## Skills
 

@@ -92,6 +92,8 @@ look at what changed.
 ## Commits
 
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
+- Work directly on main, no feature branches (owner, 2026-10-24; `CLAUDE.md` > Branches): commit only after the usual
+  checks pass, push after each accepted feature, undo a failed experiment with `git revert` (never force-push or rewrite).
 - Never committed: `logger/`, `Data/Generated/` (the trajectories stay git-ignored until step 6, owner 2026-10-24), `.venv/`.
   F9's optimized program (`Data/Optimized/`) will be committed, with its input hashes.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
