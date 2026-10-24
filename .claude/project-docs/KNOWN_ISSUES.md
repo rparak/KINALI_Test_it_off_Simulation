@@ -22,17 +22,25 @@ to validate an output on the real cell.
   (the adhesion model, the jaw force), and the collision margins (the 3 mm planning clearance), run
   first at reduced speed with the controller's safety limits active.
 
-## The model's joint zeros and directions are not verified against the real AUBO i5 controller
+## Real-cell verification pending (no access)
 
-The joint angles of this project (the keypoints, and from step 4 the trajectories) are the MuJoCo model's:
-the vendored AUBO i5 MJCF (ian-chuang/Manipulator-Mujoco) defines each joint's zero and axis direction
-(shoulder lift, wrist 1 and wrist 3 about −Y, SPEC §4.3). Whether they equal the AUBO controller's convention
-(zero pose, positive direction, joint order) has not been checked.
+There is no access to the real cell; the project is simulation only for now (owner, 2026-10-24). Once access exists,
+these are compared on the real AUBO i5 controller, and this entry is removed when the comparison is done:
 
-- **Impact:** a keypoint copied to the real controller as joint values could command a different pose
-  (SPEC §17).
-- **What would close it:** comparing a few poses on the real robot (or the AUBO documentation's zero pose and
-  directions) with the model, as part of the real-cell validation procedure.
+- **The pose of one point** - `P_HOME` read on the controller (its joints and its pose display) against
+  `Configuration/Constants.yaml`'s `Pose`: the RPY convention. This project writes orientation as fixed-axis roll, pitch,
+  yaw in degrees, R = Rz(Y)·Ry(P)·Rx(R), each angle in (-180, 180] (`Kinematics.RPY_To_Matrix`, F10); the controller's
+  axis order, intrinsic or extrinsic reading and units are not checked, so the same three numbers may mean another
+  orientation there.
+- **The pendant's TCP setting** against `T_SUCTION` (the cup face 260.6 mm from the flange along its Z, SPEC §4.3).
+- **The joint values** - each joint's zero and positive direction and the joint order: the vendored MJCF
+  (ian-chuang/Manipulator-Mujoco) defines them (shoulder lift, wrist 1 and wrist 3 about −Y, SPEC §4.3); whether they equal
+  the controller's convention is not checked (F6).
+- **The robot base pose** - `Cell.yaml` `Robot.Base_Position` and `Base_Yaw` against the real mounting.
+
+- **Impact:** a point copied to the controller as joint values or as a pose could command a different pose (SPEC §17).
+  The simulation itself is not affected: FK of the joints is checked against `Pose` with this project's convention.
+- **What would close it:** the four comparisons above, recorded in SPEC §8 (the convention, or a conversion) and §4.2.
 
 ## The crate penetration is −0.14 mm in this environment, −0.08 mm in the brief's reference
 
@@ -103,17 +111,17 @@ not affect.
 - **Impact:** the program cannot be transferred to the real cell's controller until every signal has its real port.
 - **What would close it:** the real cell's I/O map; each `Port` then names its controller channel.
 
-## The Pose RPY convention is not verified against the AUBO controller
+## MoveSpline's execution on the AUBO controller is not verified
 
-A point's `Pose` states orientation as fixed-axis roll, pitch, yaw in degrees, R = Rz(Y)·Ry(P)·Rx(R)
-(`Kinematics.RPY_To_Matrix`, F10). The AUBO i5 controller's own convention (its axis order, intrinsic or extrinsic, units)
-has not been checked; the same three numbers may mean another orientation there. `Joints` are authoritative and not
-affected (their zeros and directions are a separate open item above).
+F9's `Robot.MoveSpline(W_<SEGMENT>)` (only in `Data/Optimized/Program_Optimized.yaml`, owner, 2026-10-24) is a
+time-parametrized sequence of joint waypoints: the simulation plays it as joint targets every 4 ms. How the AUBO i5
+controller would execute it - streamed joint targets at a fixed rate, or MoveJ through the waypoints with blending - is not
+known; the two differ in path, timing and the limits that apply.
 
-- **Impact:** a `Pose` copied to the teach pendant may give a different tool orientation; the simulation itself is not
-  affected (FK of the joints is checked against `Pose` with this project's convention).
-- **What would close it:** one point read on the real controller (its joints and its pose display) and compared with
-  `Constants.yaml`; the convention, or a conversion, recorded in SPEC §8.
+- **Impact:** the optimized program cannot be transferred as is; its cycle time and clearances hold for the simulated
+  execution only.
+- **What would close it:** the controller's interface for time-parametrized joint motion verified before any transfer
+  (SPEC §17), and the optimized program's check repeated with that execution model.
 
 ## No station user frames
 
