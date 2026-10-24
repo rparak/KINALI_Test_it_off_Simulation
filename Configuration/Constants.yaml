@@ -15,10 +15,10 @@
 #     the optimized program declared in Configuration/Optimization.yaml (Waiting_Points: P_LOADER_WAIT).
 #   Point roles (the name's last word): ABOVE the retreat height above a place, APPROACH 15 mm before
 #     contact, PICK the cups pressed onto the PCB (vacuum on), PLACE the PCB set down (no press), EXIT out of
-#     the jaws, CLEAR the PCB clear of the crate walls, WAIT where the robot waits during the test; VIA a
-#     free-space via; the MG06 fork operations FORK_START (the recorded path's start and end), CLOSE_END
-#     (the closing path's end), BAR_CENTRE (the bar centred in the fork slot), SLOT_EXIT (out of the bar
-#     along the slot), OPEN_JOIN (where the opening path is joined).
+#     the jaws, CLEAR the PCB clear of the crate walls, WAIT where the robot waits during the test, TOUCH the cups
+#     resting on the part with no press; VIA a free-space via; the MG06 fork operations FORK_START (the
+#     recorded path's start and end), CLOSE_END (the closing path's end), BAR_CENTRE (the bar centred in the
+#     fork slot), SLOT_EXIT (out of the bar along the slot), OPEN_JOIN (where the opening path is joined).
 #
 #   Units: lengths [m], angles [deg], jaw [m per jaw].
 #   Frames:
@@ -127,6 +127,13 @@ Points:
     Offset: [0.0, 0.0, 0.0015]
     Joints: [-24.646931, 4.853708, 123.162497, 25.177060, 81.622298, -69.417507]
     Pose: [0.272933678, -0.315760998, -0.005725531, -171.059999567, 0.000000094, 134.999999954]
+  P_LOADER_TAKE_TOUCH:
+    Description: "1.5 mm back along the plate normal from the pick: the cups resting on the PCB in the jaws, the press relieved before the jaws open (F11)."
+    Tool: T_SUCTION
+    Reference: P_LOADER_PICK
+    Offset: [0.0, 0.0, -0.0015]
+    Joints: [-24.615558, 4.969405, 123.008444, 24.902701, 81.624015, -69.385844]
+    Pose: [0.273098408, -0.315596212, -0.004243832, -171.060002587, 0.000002991, 135.000000736]
   P_LOADER_EXIT:
     Description: "30 mm along the plate normal out of the jaws."
     Tool: T_SUCTION

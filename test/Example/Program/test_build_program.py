@@ -46,8 +46,8 @@ def test_the_default_program_is_built_checked_and_written(built):
     assert result.returncode == 0, result.stdout + result.stderr
     assert sorted(os.listdir(out)) == ['Program.csv', 'Program.npz', 'Program_check.txt'] and os.listdir(cwd) == []
     report = open(os.path.join(out, 'Program_check.txt'), encoding='utf-8').read()
-    assert report.startswith('program Program: 22 steps, 17214 samples (4 ms), cycle time 68.852 s;')
-    assert '  cycle time: program 68.852 s, legacy 65.768 s, difference +3.084 s' in report
+    assert report.startswith('program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s;')
+    assert '  cycle time: program 69.396 s, legacy 65.768 s, difference +3.628 s' in report
     assert '  vacuum_on    program    3.276 s, legacy    3.276 s, +0.000 s' in report
     assert all(line in result.stdout for line in report.splitlines())
     assert '[INFO] Program: the check passed.' in result.stdout
@@ -79,14 +79,14 @@ def test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused(tmp_pa
     """
     Description:
         --program Data/Optimized/Program_Optimized.yaml builds and checks the optimized program (exit 0, 16 steps, cycle
-        57.108 s); a copy whose recorded input hash differs is refused naming the input and the optimizer's command; a copy
+        57.652 s); a copy whose recorded input hash differs is refused naming the input and the optimizer's command; a copy
         whose recorded Schedule the build does not reproduce is refused naming the segment.
     """
 
     optimized = os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml')
     result = run_script('Program/build_program.py', ['--program', optimized, '--out', str(tmp_path)], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert 'program Program_Optimized: 16 steps, 14278 samples (4 ms), cycle time 57.108 s;' in result.stdout
+    assert 'program Program_Optimized: 16 steps, 14414 samples (4 ms), cycle time 57.652 s;' in result.stdout
     text = open(optimized, encoding='utf-8').read()
     stale = tmp_path / 'Stale.yaml'
     cell = text.split('    cell: "', 1)[1].split('"', 1)[0]

@@ -106,15 +106,15 @@ def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_conf
     """
     Description:
         The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
-        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.108 s against
-        68.852 s, measured 2026-10-24).
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.652 s against
+        69.396 s, measured 2026-10-25 after F11's take fix).
     """
 
     check = Check_Trajectory(built['trajectory'], built['optimized'], built['notes'], built['kinematics'], built['collision'], cell_configuration,
                              built['meta'])
     assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
     assert built['trajectory'].T[-1] < built['default'].T[-1]
-    assert round(float(built['trajectory'].T[-1]), 3) == 57.108
+    assert round(float(built['trajectory'].T[-1]), 3) == 57.652
 
 
 def test_the_interlocks_hold(built, cell_configuration):

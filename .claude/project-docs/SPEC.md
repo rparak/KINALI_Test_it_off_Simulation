@@ -250,7 +250,9 @@ Kinematics and Collision code; F3.4).
 
 - **Vacuum**: the cups are pressed **1.5 mm** onto the PCB before vacuum on (bellows). At the **loader
   handover there is no press**: the board sits 0.3 mm above the finger ledges, otherwise the jaws clamp
-  on the ledge corners.
+  on the ledge corners. **At the take from the loader, relieve the 1.5 mm press (back to touch,
+  `P_LOADER_TAKE_TOUCH`) before the jaws open**; the stored bellows force would otherwise throw the board off the
+  cups (owner, 2026-10-24, F11; KNOWN_ISSUES.md).
 - **IK families**: PCB handling uses "wrist up" (wrist_2 > 0), the MG06 fork path "wrist down"
   (wrist_2 < 0); the switch happens only in free space (via `P_VIA_HOME_MG06`, §4.8).
 - **MG06 fork path**: the recorded close/open path is tight (bar on the slot bottom). Leaving and
@@ -303,7 +305,8 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 ### 4.8.1 Names since F10
 
 F10 (2026-10-24) renamed every keypoint, step, loader position, gripper state and path (`FEATURES.md` F10; the machine
-form, with the 69 executed commands old → new, is `test/Program/data/name_map.json`). The tables of §4.8, §4.9 and §16 keep
+form, with the 69 executed commands old → new, was `test/Program/data/name_map.json`, retired in F11 when the golden data
+was re-captured in the new names). The tables of §4.8, §4.9 and §16 keep
 the brief's names verbatim; everything else uses the new ones. The F6 / F8 field `Relative_To` became `Reference` + `Offset`
 (§8), `Configuration/Keypoints.yaml` became `Configuration/Constants.yaml` + `Configuration/Simulation.yaml`, and
 `Configuration/Program_Default.yaml` became `Configuration/Program.yaml`.
@@ -709,7 +712,8 @@ until the job's last sample; a `Run` gives the same samples as Start + WaitDone 
   moving (39.1 mm/s, noted).
 - **MoveY / MoveZ / Gripper** (loader jobs): one channel, min-jerk over its `t=`, ending exactly on its target (the gripper
   command; the jaws' real position is its `Jaw_Actual`); **SetDO** drives the output's actuator (an event); **WaitDI** holds
-  for the input's `Signal_Response`; **Wait** / **Test** / `End_Settle` hold (`Test` needs MG06 settled closed and the PCB in
+  until the input comes, its `Signal_Response` after its cause (`DI_VACUUM_OK`: the last `SetDO(DO_VACUUM, ON)`), so a WaitDI
+  whose input came already costs nothing (F11); one whose cause is off is a build error (the wait would time out); **Wait** / **Test** / `End_Settle` hold (`Test` needs MG06 settled closed and the PCB in
   it).
 - **Speeds**: analytic in MoveJ; central differences elsewhere; zero at sample 0, in every hold and at every MoveL / Path end.
 - **World state**: the PCB's location changes only by the vacuum and gripper rules (vacuum on with the cups on the PCB in a
@@ -920,6 +924,10 @@ commands, editing keypoints and program, the file formats.
 - The cycle run's printed report diffs empty against `test/Simulation/data/baseline_report.txt`.
 - Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow: report, §10.1, raw values)
   and `test/Example/Simulation/test_run_cycle.py` (slow: the script's stdout).
+- **Golden data of the taught program** (`test/Program/data/`: the trajectory arrays' sha256, the cycle time, the events, the
+  segments, every command's values as float hex, the check report, the point table), written and compared by
+  `Example/Program/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
+  change to the program or its build re-captures it in its own commit, listing what changed.
 - **Baselines by run** (owner, 2026-10-24, B6): `test/Simulation/data/baseline_report.txt` stays the baseline of the
   legacy run (`Data/Reference/cell_plan.npz`) and stays valid for it. Step 6 adds a new baseline report for the default
   program and one for the optimized program, each measured in the pinned environment; neither replaces the legacy one.

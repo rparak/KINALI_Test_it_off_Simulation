@@ -106,6 +106,10 @@ CONST_DIFFERENCE_TOLERANCE = 1e-3
 # direction from the PCB is the board's -normal (a finger ledge under the board, not a jaw face beside it).
 #   Unit [string], [float] (rad)
 CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'P_LOADER_PLACE', math.radians(45.0)
+# The cause of each simulated digital input: the output whose switch-on starts its response time (Simulation.yaml
+# Signal_Response); a WaitDI waits what is left of that time, nothing when it has passed (F11).
+#   Unit [Dict<string, string>]
+CONST_INPUT_CAUSE = {'DI_VACUUM_OK': 'DO_VACUUM'}
 # The step the simulation appends after the program's last segment (Simulation.yaml End_Settle).
 #   Unit [string]
 CONST_END_SETTLE = 'End_Settle'
@@ -392,6 +396,8 @@ class _Builder_Cls(object):
         self.grip_command = constants.Gripper[simulation.Start_Gripper].Jaw
         self.vacuum = simulation.Start_Vacuum
         self.location = simulation.Start_PCB
+        # The time each digital output went on (a simulated input's cause, CONST_INPUT_CAUSE).
+        self.outputs_on: tp.Dict[str, float] = {}
         # The bellows' compression when the vacuum went on, and the TCP's position then (Held_Pose).
         self.press, self.press_tcp = 0.0, np.zeros(3)
         self.lid, self.handle = (self.__lid_open, 0.0) if simulation.Start_MG06 == 'Open' else (cell.Closed_Lid, cell.Closed_Handle)
@@ -901,6 +907,30 @@ class _Builder_Cls(object):
                 self.Fail(step_name, command.Text, 'vacuum off in free space would drop the PCB.')
         self.vacuum = on
         self.events.append((len(self.samples['q']) * CONST_DT - CONST_DT, '%s_%s' % (command.Actuator, command.Value.lower())))
+        if on:
+            self.outputs_on.setdefault(command.Target, len(self.samples['q']) * CONST_DT - CONST_DT)
+        else:
+            self.outputs_on.pop(command.Target, None)
+
+    def Wait_Input(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
+        """
+        Description:
+            A WaitDI: the input comes its simulated response time (Simulation.yaml Signal_Response) after its cause went on
+            (CONST_INPUT_CAUSE), so the wait holds what is left of that time - nothing when it has passed, e.g. a second
+            WaitDI after the first. An input whose cause is off never comes: the wait would time out.
+
+        Args:
+            (1) command [Command_Str(object)]: The command.
+            (2) step_name [string]: The step.
+            (3 - 4) step, segment [int]: The indices.
+        """
+
+        cause = CONST_INPUT_CAUSE[command.Target]
+        if cause not in self.outputs_on:
+            self.Fail(step_name, command.Text, '%s never comes: %s is off; the wait would time out after %g s.' % (command.Target, cause,
+                                                                                                                   command.Timeout))
+        elapsed = len(self.samples['q']) * CONST_DT - CONST_DT - self.outputs_on[cause]
+        self.Hold(max(0.0, command.Duration - elapsed), step, segment)
 
 
 
@@ -910,8 +940,8 @@ def Build_Program(program: Program_Str, cell: Cell_Configuration_Str, pcb_meta: 
     Description:
         The trajectory of a program: its constants first checked against the model (Validate_Constants); sample 0 is the
         simulation's start state, then each executed command's samples in order (Executed_Commands; a SetDO takes no time,
-        a WaitDI holds its simulated response, a Run its job's lines), every motion ending at rest; the joint speeds analytic
-        in MoveJ, central differences elsewhere. A Test requires MG06 settled closed with the PCB inside.
+        a WaitDI holds what is left of its simulated response (Wait_Input), a Run its job's lines), every motion ending at
+        rest; the joint speeds analytic in MoveJ, central differences elsewhere. A Test requires MG06 settled closed with the PCB inside.
 
     Args:
         (1) program [Program_Str(object)]: The program (its constants and simulation data).
@@ -949,6 +979,8 @@ def Build_Program(program: Program_Str, cell: Cell_Configuration_Str, pcb_meta: 
             b.Wait_Job(step_index, segment)
         elif command.Kind == 'SetDO':
             b.Vacuum(command, step_name)
+        elif command.Kind == 'WaitDI':
+            b.Wait_Input(command, step_name, step_index, segment)
         else:
             if command.Kind == 'Test' and (b.location != 'mg06' or b.lid != cell.Closed_Lid or b.handle != cell.Closed_Handle):
                 b.Fail(step_name, text, 'the test needs the PCB in MG06 and MG06 settled closed (PCB in %s, handle %.2f deg).'

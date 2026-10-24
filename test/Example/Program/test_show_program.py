@@ -60,12 +60,12 @@ def test_headless_posing_at_a_step_and_at_a_time(trajectory, tmp_path, run_scrip
 
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'S11_Test', '--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert ('[INFO] step 11/22 S11_Test   t = 35.136 s / 68.852 s   PCB mg06 (sample 8784): Tester.Run(J_TEST) > Test(Process.Test_Duration)'
+    assert ('[INFO] step 11/22 S11_Test   t = 35.136 s / 69.396 s   PCB mg06 (sample 8784): Tester.Run(J_TEST) > Test(Process.Test_Duration)'
             in result.stdout)
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', '11', '--headless'], tmp_path)
     assert 'step 11/22 S11_Test' in result.stdout
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--time', '3.276', '--headless'], tmp_path)
-    assert ('[INFO] step 2/22 S2_Pick_Input   t = 3.276 s / 68.852 s   PCB input_crate (sample 819): Robot.MoveL(P_INPUT_PICK, v=0.03)'
+    assert ('[INFO] step 2/22 S2_Pick_Input   t = 3.276 s / 69.396 s   PCB input_crate (sample 819): Robot.MoveL(P_INPUT_PICK, v=0.03)'
             in result.stdout)
     assert os.listdir(tmp_path) == []
 
@@ -152,4 +152,4 @@ def test_the_optimized_version_is_posed(tmp_path_factory, run_script, root):
     result = run_script('Program/show_program.py', ['--version', 'optimized', '--trajectory', str(out / 'Program_Optimized.npz'), '--step',
                                                     'S5_To_MG06', '--headless'], out)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert '[INFO] step 5/16 S5_To_MG06   t = 17.920 s / 57.108 s   PCB mg06 (sample 4480): Loader.WaitDone(J_PARK)' in result.stdout
+    assert '[INFO] step 5/16 S5_To_MG06   t = 17.920 s / 57.652 s   PCB mg06 (sample 4480): Loader.WaitDone(J_PARK)' in result.stdout

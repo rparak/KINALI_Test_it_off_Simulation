@@ -28,16 +28,16 @@ import os
 def test_the_shipped_keypoints_pass_and_the_table_lists_them_all(tmp_path, run_script):
     """
     Description:
-        From an unrelated directory the check exits 0 with a table row per keypoint (24: SPEC §4.8's 22, the taught program's
-        P_INPUT_CLEAR and the optimized program's P_LOADER_WAIT), the summary 0 FAIL / 1 WARN (P_VIA_HOME_MG06, the family
-        switch) / 23 PASS, and nothing written to the working directory.
+        From an unrelated directory the check exits 0 with a table row per keypoint (25: SPEC §4.8's 22, the taught program's
+        P_INPUT_CLEAR and P_LOADER_TAKE_TOUCH and the optimized program's P_LOADER_WAIT), the summary 0 FAIL / 1 WARN
+        (P_VIA_HOME_MG06, the family switch) / 24 PASS, and nothing written to the working directory.
     """
 
     result = run_script('Keypoints/check_keypoints.py', [], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     rows = [line for line in result.stdout.splitlines() if line.split() and line.split()[-1] in ('PASS', 'WARN', 'FAIL')]
-    assert len(rows) == 24
-    assert '[INFO] 24 keypoint(s): 0 FAIL, 1 WARN, 23 PASS.' in result.stdout
+    assert len(rows) == 25
+    assert '[INFO] 25 keypoint(s): 0 FAIL, 1 WARN, 24 PASS.' in result.stdout
     assert os.listdir(tmp_path) == []
 
 

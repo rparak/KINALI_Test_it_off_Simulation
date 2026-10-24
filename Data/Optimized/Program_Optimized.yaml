@@ -90,13 +90,16 @@ Program:
     - Loader.WaitDone(J_RETURN)
 
   # Down along the plate normal, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto the PCB in the
-  # jaws, vacuum on, the jaws open, slowly out of the jaws, then up.
+  # jaws, vacuum on, back to touch (the press relieved, SPEC §4.7), the jaws open, the vacuum still OK, slowly out
+  # of the jaws, then up.
   S12_Take_From_Loader:
     - Robot.MoveL(P_LOADER_APPROACH, v=0.20)              # legacy: linear_move(..., 'down to the loader', speed=0.20)
     - Robot.MoveL(P_LOADER_PICK, v=0.03)                  # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
     - Robot.SetDO(DO_VACUUM, ON)                          # legacy: event('suction_on')
     - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # legacy: hold(0.3)
+    - Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)            # owner, 2026-10-24 (F11): relieve the bellows before the jaws open
     - Loader.Run(J_RELEASE)
+    - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # owner, 2026-10-24 (F11): the PCB is still held after the release
     - Wait(0.15)                                          # legacy: hold(0.15)
     - Robot.MoveL(P_LOADER_EXIT, v=0.05)                  # legacy: linear_move(..., 'up out of the jaws', speed=0.05)
     - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'up', speed=0.20)
@@ -214,9 +217,9 @@ Waypoints:
 # was made with, each segment's start time (compared at a build), the TOPP grid.
 Optimized:
   Inputs:
-    program: "7851a8954d624bef4a493dc2674d6a8331ef83fec778a39bb1825134da9aea65"
-    constants: "f1d53d51478ea9e55fec42d0edbe064edd676e409d8b2c54fb20acf7d756955d"
-    simulation: "0c032d69f13e686280259cbd2f49caeb361ea673f0a83d069917ab6f9f156271"
+    program: "8ad54ef10159299fbb8603b93a91a61112dbfba4998409ebe5ba3d80898e7db6"
+    constants: "1012a0243163743b3317cb481749704fc21a15d8d5eac10750c2dab2bd0c058b"
+    simulation: "65d06175ccb2346084680b97d101f7af43953fea4c3de077b1e601fd3f8e4e3b"
     cell: "807be9aa353ff85e4af570fcdec1771525333517d9a7edac02bf276f6a947cbf"
     optimization: "5a7535352644a70875ee790b82cad3b0c5f028612e02a81d2f85b2de80a412e9"
     fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
@@ -241,7 +244,7 @@ Optimized:
     S10_Open_MG06: 31.612
     S11_To_Take: 37.036
     S12_Take_From_Loader: 44.684
-    S13_To_Output: 50.276
-    S14_Place_Output: 52.044
-    S15_Home_End: 55.388
+    S13_To_Output: 50.820
+    S14_Place_Output: 52.588
+    S15_Home_End: 55.932
   Topp_Grid_Points: 1000

@@ -143,14 +143,14 @@ def test_a_command_line_is_parsed_never_evaluated():
 def test_the_shipped_files_load(program, constants, simulation):
     """
     Description:
-        The three shipped files load without notes: 2 tools, 23 points, 4 loader positions, 2 gripper commands, 2 paths, 2
-        signals; the 21 segments in order with 52 lines; the loader's 6 jobs and the tester's one; the start state.
+        The three shipped files load without notes: 2 tools, 25 points, 4 loader positions, 2 gripper commands, 2 paths, 2
+        signals; the 21 segments in order with 54 lines; the loader's 6 jobs and the tester's one; the start state.
     """
 
     assert program.Notes == []
     assert [len(t) for t in (constants.Tools, constants.Points, constants.Loader, constants.Gripper, constants.Paths,
-                             constants.Signals)] == [2, 24, 4, 2, 2, 2]
-    assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 52
+                             constants.Signals)] == [2, 25, 4, 2, 2, 2]
+    assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 54
     assert list(program.Loader_Jobs) == ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN',
                                          'J_RELEASE'] and list(program.Tester_Jobs) == ['J_TEST']
     assert (simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper, simulation.Start_Vacuum, simulation.Start_PCB,
@@ -187,8 +187,8 @@ def test_the_points_are_the_spec_table_and_the_reference_plans_rows(constants, r
     """
     Description:
         Every point's joints are within the SPEC §4.8 table's rounding (1e-4 rad) and a stationary row of
-        Data/Reference/cell_plan.npz to the file's rounding (1e-6 deg) - except P_INPUT_CLEAR, the default program's own point, and
-        P_LOADER_WAIT, the optimized program's waiting point.
+        Data/Reference/cell_plan.npz to the file's rounding (1e-6 deg) - except P_INPUT_CLEAR, the default program's own point,
+        P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11).
     """
 
     plan = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))
@@ -197,7 +197,7 @@ def test_the_points_are_the_spec_table_and_the_reference_plans_rows(constants, r
         assert np.max(np.abs(joints - table)) <= 1e-4, name
         nearest = plan['q_home'] if name == 'P_HOME' else plan['q'][np.argmin(np.max(np.abs(plan['q'] - joints), axis=1))]
         assert np.max(np.abs(nearest - joints)) <= math.radians(0.5e-6) + 1e-12, name
-    assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR', 'P_LOADER_WAIT'}
+    assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR', 'P_LOADER_WAIT', 'P_LOADER_TAKE_TOUCH'}
 
 
 @pytest.mark.parametrize('old, new, text', [

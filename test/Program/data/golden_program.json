@@ -1,107 +1,107 @@
 {
- "source": "git e5ec42c (F8 closed), captured 2026-10-24 by the procedure in FEATURES.md F10; arrays re-captured 2026-10-24 when MoveJ began to end exactly on its stored joints (robot_q, robot_qd, pcb_pose changed by roundings only, at most 1.6e-15 rad / 3.0e-13 rad/s / 8.5e-16 m; FEATURES.md F9.6)",
- "cycle_time": 68.852,
- "samples": 17214,
+ "source": "Example/Program/golden_program.py, 2026-10-24, on the program of F11's take fix (P_LOADER_TAKE_TOUCH, the second WaitDI); first capture in the current names (F10's name map retired)",
+ "cycle_time": 69.396,
+ "samples": 17350,
  "arrays": {
   "t": {
-   "sha256": "816a84226459e406d3eb0d3ccddee0a0f0ddb7110492409b74156efe287acb0c",
+   "sha256": "c6b515d5d03830e9062a9c551725f43fe2a6ea88d9c3e34cdaa94ddea6bb9edb",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "robot_q": {
-   "sha256": "5619b9146017305c4a41c94c165b30ff69a23882b769bb3c1a9e6a49d1cf0fdb",
+   "sha256": "926c2a95a7941583a35624c65d2bc3672bbf5b520ce02a54db5895cc57d90938",
    "dtype": "float64",
    "shape": [
-    17214,
+    17350,
     6
    ]
   },
   "robot_qd": {
-   "sha256": "19ba55d4cafe68dec71fa99703f4c7b01f337767eee114e6a97df45c31315b14",
+   "sha256": "a22bb2bc850f65c2892e44ad135470fdb3aba1ac41ef6b351485e1b785616e07",
    "dtype": "float64",
    "shape": [
-    17214,
+    17350,
     6
    ]
   },
   "loader_y": {
-   "sha256": "d2cb9212ce778510c1ea360f3ef1bccb32a3b41ce7a29fb4d4ae16a380c6166d",
+   "sha256": "fedfae73203888325aad426b360e2a7f041970a390c3c762131c475a303df43c",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "loader_z": {
-   "sha256": "7afeaa3ffdac6a97c88b2d463bf7753541b71ea6f838cc23442edac2ac155df8",
+   "sha256": "ff023c6e2a287e37e1b98b1bf0f85c9c0c3a01a5e63653bbc5f4d9a509934118",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "gripper": {
-   "sha256": "d0ca53934807ac3c70bca80692c05faefe0e9e595aec1c01716f2a2b33d8f6e2",
+   "sha256": "cd5f9a30a947e0747636cf3d0602ae14ec24ca4ecc16e056cd2e4d634594fb86",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "vacuum": {
-   "sha256": "441ea0f9b8ac688de9fd5f6901f9a79411c74b1ab1ca74b45de26ea75d736051",
+   "sha256": "1f8353787715109de159dafff8c203d829f3cf30e81a3a0c1678ac2f165585ec",
    "dtype": "int8",
    "shape": [
-    17214
+    17350
    ]
   },
   "pcb_location": {
-   "sha256": "3dc8c7f769999fe0c182fbdf14d2bd69f88695c9d327e54e1db023352a02c0cc",
+   "sha256": "046ffd47bd90cefe3c84ecba182687071f6f38a43172a2c29aa4441c1a57da01",
    "dtype": "int8",
    "shape": [
-    17214
+    17350
    ]
   },
   "pcb_pose": {
-   "sha256": "ec5bd17d0d4e1ab9534894fbbc2c25b2204fd4b08d7d8604c249cf2b6fc66bf4",
+   "sha256": "33406f28b4ade8111667ee924c5ad0ef6602713854cd3e6264c1edc662409d25",
    "dtype": "float64",
    "shape": [
-    17214,
+    17350,
     7
    ]
   },
   "mg06_lid": {
-   "sha256": "309c8c71352f4e98a29f7499acb9391437f376a0ac2995d1d0be50648075af8d",
+   "sha256": "8eae6c689b7cb721b1dce31fc041ec4ea851817a8774a60630a657127bbdbc2c",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "mg06_handle": {
-   "sha256": "6bd16899250c46ddd49effe579d45f882377223be0e1ad930e92ab3342b1bdc6",
+   "sha256": "60bc0992403aabad464a18215e8e7e34f040e7511eea2cee3e57a64c9fbf967b",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "jaw": {
-   "sha256": "331dea9c4849a101b6cbfff0f15babe19a26515ef4b31c417f693e933537f2b6",
+   "sha256": "73ecd4f7ae7279e0232971b7f6a9150140587907710dbbe37d604d016fe8f789",
    "dtype": "float64",
    "shape": [
-    17214
+    17350
    ]
   },
   "step_index": {
-   "sha256": "e39830c572b7418794d7e070df2492668337cad071903f1f41f293cd45ab6c01",
+   "sha256": "466b4d8b694cd427b09cab8ac00e5514586a496be08f9d526ca61fcc41b340c6",
    "dtype": "int32",
    "shape": [
-    17214
+    17350
    ]
   },
   "segment_id": {
-   "sha256": "cee178f84153c46bca5785e63be8cf69934435650681b0a5a4bb353f5a26b9c8",
+   "sha256": "dcd9d31004cd568a76bd7bfbfdd64ecacf4063c7f4bae5539a0d35fad763b10f",
    "dtype": "int32",
    "shape": [
-    17214
+    17350
    ]
   }
  },
@@ -131,118 +131,117 @@
    "vacuum_on"
   ],
   [
-   "0x1.d1374bc6a7efap+5",
+   "0x1.d604189374bc7p+5",
    "gripper_open"
   ],
   [
-   "0x1.061cac083126fp+6",
+   "0x1.0849ba5e353f8p+6",
    "vacuum_off"
   ]
  ],
  "step_names": [
-  "approach_input",
-  "pick_input",
-  "to_loader",
-  "handover",
-  "home_after_handover",
-  "loader_insert",
-  "loader_park",
-  "to_mg06",
-  "close_mg06",
-  "leave_mg06",
-  "test",
-  "return_mg06",
-  "open_mg06",
-  "home_after_mg06",
-  "loader_fetch",
-  "loader_return",
-  "to_take",
-  "take_from_loader",
-  "to_output",
-  "place_output",
-  "home_end",
-  "settle"
+  "S1_Approach_Input",
+  "S2_Pick_Input",
+  "S3_To_Loader",
+  "S4_Handover",
+  "S5_Home_After_Handover",
+  "S6_Loader_Insert",
+  "S7_Loader_Park",
+  "S8_To_MG06",
+  "S9_Close_MG06",
+  "S10_Leave_MG06",
+  "S11_Test",
+  "S12_Return_MG06",
+  "S13_Open_MG06",
+  "S14_Home_After_MG06",
+  "S15_Loader_Fetch",
+  "S16_Loader_Return",
+  "S17_To_Take",
+  "S18_Take_From_Loader",
+  "S19_To_Output",
+  "S20_Place_Output",
+  "S21_Home_End",
+  "End_Settle"
  ],
  "segment_commands": [
-  "Movej above_input_pcb",
-  "Movel input_pcb_approach 0.2",
-  "Movel input_pcb_press 0.03",
-  "Vacuum On",
-  "Wait 0.3",
-  "Movel input_pcb_clear 0.2",
-  "Movej via_input_to_loader",
-  "Movej above_loader",
-  "Movel loader_approach 0.2",
-  "Movel loader_handover 0.03",
-  "Gripper clamp 0.35",
-  "Wait 0.25",
-  "Vacuum Off",
-  "Wait 0.2",
-  "Movel above_loader 0.2",
-  "Movej home",
-  "Loader Z travel_place 0.8",
-  "Loader Y travel_place 2",
-  "Loader Z place 0.6",
-  "Wait 0.1",
-  "Gripper open 0.35",
-  "Wait 0.1",
-  "Loader Z travel_place 0.5",
-  "Loader Y park 1.8",
-  "Loader Z park 0.8",
-  "Wait 0.15",
-  "Movej via_mg06_high",
-  "Movej above_handle",
-  "Movej fork_start",
-  "Path Fork_Close",
-  "Movel fork_bar_centred 0.02",
-  "Movel fork_out_of_bar 0.12",
-  "Movel fork_retreat_up 0.25",
-  "Test Process.Test_Duration (2 s)",
-  "Movel fork_out_of_bar 0.25",
-  "Movel fork_bar_centred 0.12",
-  "Movel fork_open_join 0.03",
-  "Path Fork_Open",
-  "Movej above_handle",
-  "Movej via_mg06_high",
-  "Movej home",
-  "Loader Z travel_place 0.6",
-  "Loader Y travel_place 2.2",
-  "Loader Z place 0.6",
-  "Wait 0.1",
-  "Gripper clamp 0.35",
-  "Wait 0.2",
-  "Loader Z travel_place 0.6",
-  "Loader Y home 2",
-  "Loader Z home 0.8",
-  "Wait 0.2",
-  "Movej above_loader",
-  "Movel loader_approach 0.2",
-  "Movel loader_take_press 0.03",
-  "Vacuum On",
-  "Wait 0.3",
-  "Gripper open 0.35",
-  "Wait 0.15",
-  "Movel loader_out_of_jaws 0.05",
-  "Movel above_loader 0.2",
-  "Movej via_loader_to_output",
-  "Movej above_output",
-  "Movel output_approach 0.2",
-  "Movel output_place 0.03",
-  "Vacuum Off",
-  "Wait 0.3",
-  "Movel above_output 0.2",
-  "Movej home",
-  "Wait 0.8"
+  "Robot.MoveJ(P_INPUT_ABOVE)",
+  "Robot.MoveL(P_INPUT_APPROACH, v=0.20)",
+  "Robot.MoveL(P_INPUT_PICK, v=0.03)",
+  "Robot.SetDO(DO_VACUUM, ON)",
+  "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+  "Robot.MoveL(P_INPUT_CLEAR, v=0.20)",
+  "Robot.MoveJ(P_VIA_INPUT_LOADER)",
+  "Robot.MoveJ(P_LOADER_ABOVE)",
+  "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
+  "Robot.MoveL(P_LOADER_PLACE, v=0.03)",
+  "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)",
+  "Wait(0.25)",
+  "Robot.SetDO(DO_VACUUM, OFF)",
+  "Wait(0.2)",
+  "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
+  "Robot.MoveJ(P_HOME)",
+  "Loader.Run(J_INSERT) > MoveZ(L_TRAVEL, t=0.8)",
+  "Loader.Run(J_INSERT) > MoveY(L_TRAVEL, t=2.0)",
+  "Loader.Run(J_INSERT) > MoveZ(L_PLACE, t=0.6)",
+  "Loader.Run(J_INSERT) > Wait(0.1)",
+  "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.35)",
+  "Loader.Run(J_INSERT) > Wait(0.1)",
+  "Loader.Run(J_PARK) > MoveZ(L_TRAVEL, t=0.5)",
+  "Loader.Run(J_PARK) > MoveY(L_PARK, t=1.8)",
+  "Loader.Run(J_PARK) > MoveZ(L_PARK, t=0.8)",
+  "Loader.Run(J_PARK) > Wait(0.15)",
+  "Robot.MoveJ(P_VIA_HOME_MG06)",
+  "Robot.MoveJ(P_MG06_ABOVE)",
+  "Robot.MoveJ(P_MG06_FORK_START)",
+  "Robot.MovePath(PATH_FORK_CLOSE)",
+  "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.02)",
+  "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.12)",
+  "Robot.MoveL(P_MG06_WAIT, v=0.25)",
+  "Tester.Run(J_TEST) > Test(Process.Test_Duration)",
+  "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.25)",
+  "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.12)",
+  "Robot.MoveL(P_MG06_OPEN_JOIN, v=0.03)",
+  "Robot.MovePath(PATH_FORK_OPEN)",
+  "Robot.MoveJ(P_MG06_ABOVE)",
+  "Robot.MoveJ(P_VIA_HOME_MG06)",
+  "Robot.MoveJ(P_HOME)",
+  "Loader.Run(J_FETCH) > MoveZ(L_TRAVEL, t=0.6)",
+  "Loader.Run(J_FETCH) > MoveY(L_TRAVEL, t=2.2)",
+  "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)",
+  "Loader.Run(J_FETCH) > Wait(0.1)",
+  "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.35)",
+  "Loader.Run(J_FETCH) > Wait(0.2)",
+  "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)",
+  "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)",
+  "Loader.Run(J_RETURN) > MoveZ(L_HOME, t=0.8)",
+  "Loader.Run(J_RETURN) > Wait(0.2)",
+  "Robot.MoveJ(P_LOADER_ABOVE)",
+  "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
+  "Robot.MoveL(P_LOADER_PICK, v=0.03)",
+  "Robot.SetDO(DO_VACUUM, ON)",
+  "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+  "Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)",
+  "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)",
+  "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+  "Wait(0.15)",
+  "Robot.MoveL(P_LOADER_EXIT, v=0.05)",
+  "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
+  "Robot.MoveJ(P_VIA_LOADER_OUTPUT)",
+  "Robot.MoveJ(P_OUTPUT_ABOVE)",
+  "Robot.MoveL(P_OUTPUT_APPROACH, v=0.20)",
+  "Robot.MoveL(P_OUTPUT_PLACE, v=0.03)",
+  "Robot.SetDO(DO_VACUUM, OFF)",
+  "Wait(0.3)",
+  "Robot.MoveL(P_OUTPUT_ABOVE, v=0.20)",
+  "Robot.MoveJ(P_HOME)",
+  "End_Settle(0.8)"
  ],
  "commands": [
   {
-   "step": "approach_input",
-   "kind": "Movej",
-   "text": "Movej above_input_pcb",
-   "target": "above_input_pcb",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S1_Approach_Input",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_INPUT_ABOVE)",
+   "target": "P_INPUT_ABOVE",
    "joints_rad_hex": [
     "0x1.dc18c2e842450p-2",
     "-0x1.1181d392ee674p-3",
@@ -250,16 +249,19 @@
     "0x1.2143d01b83fd0p-1",
     "0x1.921fb54442d18p+0",
     "-0x1.4826a7a0435e0p-2"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "pick_input",
-   "kind": "Movel",
-   "text": "Movel input_pcb_approach 0.2",
-   "target": "input_pcb_approach",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S2_Pick_Input",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_INPUT_APPROACH, v=0.20)",
+   "target": "P_INPUT_APPROACH",
    "joints_rad_hex": [
     "0x1.dc18c53ff30ddp-2",
     "-0x1.4de331e010ed5p-2",
@@ -267,16 +269,19 @@
     "0x1.bfa7eec0ff335p-1",
     "0x1.921fb54442d18p+0",
     "-0x1.4826a54892953p-2"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "pick_input",
-   "kind": "Movel",
-   "text": "Movel input_pcb_press 0.03",
-   "target": "input_pcb_press",
-   "speed": "0x1.eb851eb851eb8p-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S2_Pick_Input",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_INPUT_PICK, v=0.03)",
+   "target": "P_INPUT_PICK",
    "joints_rad_hex": [
     "0x1.dc18c53ff30ddp-2",
     "-0x1.73f41b65cd5fbp-2",
@@ -284,34 +289,45 @@
     "0x1.d87ffcb13100fp-1",
     "0x1.921fb54442d18p+0",
     "-0x1.4826a54892953p-2"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "pick_input",
-   "kind": "Vacuum",
-   "text": "Vacuum On",
-   "target": "On",
+   "step": "S2_Pick_Input",
+   "kind": "SetDO",
+   "text": "Robot.SetDO(DO_VACUUM, ON)",
+   "target": "DO_VACUUM",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x0.0p+0",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "pick_input",
-   "kind": "Wait",
-   "text": "Wait 0.3",
-   "target": "",
+   "step": "S2_Pick_Input",
+   "kind": "WaitDI",
+   "text": "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+   "target": "DI_VACUUM_OK",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-2",
-   "axis": ""
+   "timeout": "0x1.0000000000000p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "pick_input",
-   "kind": "Movel",
-   "text": "Movel input_pcb_clear 0.2",
-   "target": "input_pcb_clear",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S2_Pick_Input",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_INPUT_CLEAR, v=0.20)",
+   "target": "P_INPUT_CLEAR",
    "joints_rad_hex": [
     "0x1.dc18cc4705686p-2",
     "-0x1.21d2c762f996fp-4",
@@ -319,16 +335,19 @@
     "0x1.afe0c87102eefp-2",
     "0x1.921fb4f94cb87p+0",
     "-0x1.48269e41803aap-2"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_loader",
-   "kind": "Movej",
-   "text": "Movej via_input_to_loader",
-   "target": "via_input_to_loader",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S3_To_Loader",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_VIA_INPUT_LOADER)",
+   "target": "P_VIA_INPUT_LOADER",
    "joints_rad_hex": [
     "0x1.7c9a742162d57p-5",
     "0x1.cf10e2f24f516p-5",
@@ -336,16 +355,19 @@
     "-0x1.8fb6858b0e8acp-3",
     "0x1.7fd8948bcc28bp+0",
     "-0x1.792e3260ea665p-1"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_loader",
-   "kind": "Movej",
-   "text": "Movej above_loader",
-   "target": "above_loader",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S3_To_Loader",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_LOADER_ABOVE)",
+   "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
     "-0x1.7cf2839388f18p-2",
     "0x1.8456445bf3e7ap-3",
@@ -353,16 +375,19 @@
     "-0x1.fb5d46735c975p-6",
     "0x1.6d917a447ba83p+0",
     "-0x1.27249aeb69bc7p+0"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
-   "kind": "Movel",
-   "text": "Movel loader_approach 0.2",
-   "target": "loader_approach",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S4_Handover",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
+   "target": "P_LOADER_APPROACH",
    "joints_rad_hex": [
     "-0x1.b2566a0562326p-2",
     "0x1.b0f5cc317997ap-4",
@@ -370,16 +395,19 @@
     "0x1.8c98f34dc0726p-2",
     "0x1.6cc6d585156c1p+0",
     "-0x1.349b672a62fe5p+0"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
-   "kind": "Movel",
-   "text": "Movel loader_handover 0.03",
-   "target": "loader_handover",
-   "speed": "0x1.eb851eb851eb8p-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S4_Handover",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_PLACE, v=0.03)",
+   "target": "P_LOADER_PLACE",
    "joints_rad_hex": [
     "-0x1.b7ef7209f3503p-2",
     "0x1.6339b9feeb00ep-4",
@@ -387,53 +415,71 @@
     "0x1.bd1548f9d821bp-2",
     "0x1.6cb316e6c48fap+0",
     "-0x1.3604f6d3d27ebp+0"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
+   "step": "S4_Handover",
    "kind": "Gripper",
-   "text": "Gripper clamp 0.35",
-   "target": "clamp",
+   "text": "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)",
+   "target": "G_CLAMP",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.6666666666666p-2",
+   "timeout": "0x0.0p+0",
    "axis": "",
-   "value_hex": "0x1.78d4fdf3b645cp-8"
+   "position": "0x0.0p+0",
+   "jaw": "0x1.78d4fdf3b645cp-8"
   },
   {
-   "step": "handover",
+   "step": "S4_Handover",
    "kind": "Wait",
-   "text": "Wait 0.25",
+   "text": "Wait(0.25)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.0000000000000p-2",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
-   "kind": "Vacuum",
-   "text": "Vacuum Off",
-   "target": "Off",
+   "step": "S4_Handover",
+   "kind": "SetDO",
+   "text": "Robot.SetDO(DO_VACUUM, OFF)",
+   "target": "DO_VACUUM",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x0.0p+0",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
+   "step": "S4_Handover",
    "kind": "Wait",
-   "text": "Wait 0.2",
+   "text": "Wait(0.2)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-3",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "handover",
-   "kind": "Movel",
-   "text": "Movel above_loader 0.2",
-   "target": "above_loader",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S4_Handover",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
+   "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
     "-0x1.7cf2839388f18p-2",
     "0x1.8456445bf3e7ap-3",
@@ -441,16 +487,19 @@
     "-0x1.fb5d46735c975p-6",
     "0x1.6d917a447ba83p+0",
     "-0x1.27249aeb69bc7p+0"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "home_after_handover",
-   "kind": "Movej",
-   "text": "Movej home",
-   "target": "home",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S5_Home_After_Handover",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_HOME)",
+   "target": "P_HOME",
    "joints_rad_hex": [
     "0x1.944b216c13956p-1",
     "0x1.61cf6eee3cbcfp-1",
@@ -458,113 +507,149 @@
     "-0x1.b6da48ce701a0p-2",
     "0x1.921f9f03335d7p+0",
     "0x1.15c134701bf50p-8"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_insert",
-   "kind": "Loader",
-   "text": "Loader Z travel_place 0.8",
-   "target": "travel_place",
+   "step": "S6_Loader_Insert",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_INSERT) > MoveZ(L_TRAVEL, t=0.8)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.44795edc46b23p-4"
+   "position": "0x1.44795edc46b23p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_insert",
-   "kind": "Loader",
-   "text": "Loader Y travel_place 2",
-   "target": "travel_place",
+   "step": "S6_Loader_Insert",
+   "kind": "MoveY",
+   "text": "Loader.Run(J_INSERT) > MoveY(L_TRAVEL, t=2.0)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.0000000000000p+1",
+   "timeout": "0x0.0p+0",
    "axis": "Y",
-   "value_hex": "0x1.92c19c25f5d13p-3"
+   "position": "0x1.92c19c25f5d13p-3",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_insert",
-   "kind": "Loader",
-   "text": "Loader Z place 0.6",
-   "target": "place",
+   "step": "S6_Loader_Insert",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_INSERT) > MoveZ(L_PLACE, t=0.6)",
+   "target": "L_PLACE",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.1352756371b44p-4"
+   "position": "0x1.1352756371b44p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_insert",
+   "step": "S6_Loader_Insert",
    "kind": "Wait",
-   "text": "Wait 0.1",
+   "text": "Loader.Run(J_INSERT) > Wait(0.1)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-4",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_insert",
+   "step": "S6_Loader_Insert",
    "kind": "Gripper",
-   "text": "Gripper open 0.35",
-   "target": "open",
+   "text": "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.35)",
+   "target": "G_OPEN",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.6666666666666p-2",
+   "timeout": "0x0.0p+0",
    "axis": "",
-   "value_hex": "0x1.1eb851eb851ecp-5"
+   "position": "0x0.0p+0",
+   "jaw": "0x1.1eb851eb851ecp-5"
   },
   {
-   "step": "loader_insert",
+   "step": "S6_Loader_Insert",
    "kind": "Wait",
-   "text": "Wait 0.1",
+   "text": "Loader.Run(J_INSERT) > Wait(0.1)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-4",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_park",
-   "kind": "Loader",
-   "text": "Loader Z travel_place 0.5",
-   "target": "travel_place",
+   "step": "S7_Loader_Park",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_PARK) > MoveZ(L_TRAVEL, t=0.5)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.0000000000000p-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.44795edc46b23p-4"
+   "position": "0x1.44795edc46b23p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_park",
-   "kind": "Loader",
-   "text": "Loader Y park 1.8",
-   "target": "park",
+   "step": "S7_Loader_Park",
+   "kind": "MoveY",
+   "text": "Loader.Run(J_PARK) > MoveY(L_PARK, t=1.8)",
+   "target": "L_PARK",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.ccccccccccccdp+0",
+   "timeout": "0x0.0p+0",
    "axis": "Y",
-   "value_hex": "-0x1.989374bc6a7f0p-3"
+   "position": "-0x1.989374bc6a7f0p-3",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_park",
-   "kind": "Loader",
-   "text": "Loader Z park 0.8",
-   "target": "park",
+   "step": "S7_Loader_Park",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_PARK) > MoveZ(L_PARK, t=0.8)",
+   "target": "L_PARK",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.47ae147ae147bp-6"
+   "position": "0x1.47ae147ae147bp-6",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_park",
+   "step": "S7_Loader_Park",
    "kind": "Wait",
-   "text": "Wait 0.15",
+   "text": "Loader.Run(J_PARK) > Wait(0.15)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-3",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_mg06",
-   "kind": "Movej",
-   "text": "Movej via_mg06_high",
-   "target": "via_mg06_high",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S8_To_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_VIA_HOME_MG06)",
+   "target": "P_VIA_HOME_MG06",
    "joints_rad_hex": [
     "-0x1.c2f69536a539bp-7",
     "0x1.9dbe59e5a2833p-3",
@@ -572,16 +657,19 @@
     "-0x1.b3079153c0f8cp+0",
     "-0x1.0d0f21bd1118ep-6",
     "0x1.ffa3c6fba4eaap-2"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_mg06",
-   "kind": "Movej",
-   "text": "Movej above_handle",
-   "target": "above_handle",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S8_To_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_MG06_ABOVE)",
+   "target": "P_MG06_ABOVE",
    "joints_rad_hex": [
     "-0x1.a41e3c43c8dd4p-1",
     "0x1.a50ff1e820894p-3",
@@ -589,16 +677,19 @@
     "-0x1.30b441ab8e426p+1",
     "-0x1.9b1f1e3f1264fp+0",
     "0x1.26e407502312fp+0"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_mg06",
-   "kind": "Movej",
-   "text": "Movej fork_start",
-   "target": "fork_start",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S8_To_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_MG06_FORK_START)",
+   "target": "P_MG06_FORK_START",
    "joints_rad_hex": [
     "-0x1.22019c3852d08p+0",
     "0x1.bf43c1c88a590p-7",
@@ -606,25 +697,32 @@
     "-0x1.02b893c10b060p+1",
     "-0x1.eb11638701c04p+0",
     "0x1.26e4325b737d7p+0"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "close_mg06",
-   "kind": "Path",
-   "text": "Path Fork_Close",
-   "target": "Fork_Close",
+   "step": "S9_Close_MG06",
+   "kind": "MovePath",
+   "text": "Robot.MovePath(PATH_FORK_CLOSE)",
+   "target": "PATH_FORK_CLOSE",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x0.0p+0",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "close_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_bar_centred 0.02",
-   "target": "fork_bar_centred",
-   "speed": "0x1.47ae147ae147bp-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S9_Close_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.02)",
+   "target": "P_MG06_BAR_CENTRE",
    "joints_rad_hex": [
     "-0x1.0608137bfdd0cp-1",
     "0x1.9e9199ce029dbp-5",
@@ -632,16 +730,19 @@
     "-0x1.97918652e9bfcp-1",
     "-0x1.4c14b31ad18dbp+0",
     "0x1.26ddcd81ab495p+0"
-   ]
+   ],
+   "speed": "0x1.47ae147ae147bp-6",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "leave_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_out_of_bar 0.12",
-   "target": "fork_out_of_bar",
-   "speed": "0x1.eb851eb851eb8p-4",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S10_Leave_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.12)",
+   "target": "P_MG06_SLOT_EXIT",
    "joints_rad_hex": [
     "-0x1.a6040c1f8d5e1p-1",
     "0x1.dd1fd5cc25aaep-5",
@@ -649,16 +750,19 @@
     "-0x1.d9b4b0aa148e6p-1",
     "-0x1.9c12af21a33b4p+0",
     "0x1.26de628cfb341p+0"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-4",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "leave_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_retreat_up 0.25",
-   "target": "fork_retreat_up",
-   "speed": "0x1.0000000000000p-2",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S10_Leave_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_WAIT, v=0.25)",
+   "target": "P_MG06_WAIT",
    "joints_rad_hex": [
     "-0x1.a60a51ef6f2d0p-1",
     "0x1.b5932dfbd2d20p-3",
@@ -666,25 +770,32 @@
     "-0x1.4edf19fc94e18p+0",
     "-0x1.9c15d2548a3bdp+0",
     "0x1.26de628cfb341p+0"
-   ]
-  },
-  {
-   "step": "test",
-   "kind": "Test",
-   "text": "Test Process.Test_Duration (2 s)",
-   "target": "Process.Test_Duration",
-   "speed": "0x0.0p+0",
-   "duration": "0x1.0000000000000p+1",
-   "axis": ""
-  },
-  {
-   "step": "return_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_out_of_bar 0.25",
-   "target": "fork_out_of_bar",
+   ],
    "speed": "0x1.0000000000000p-2",
    "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
    "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S11_Test",
+   "kind": "Test",
+   "text": "Tester.Run(J_TEST) > Test(Process.Test_Duration)",
+   "target": "Process.Test_Duration",
+   "joints_rad_hex": [],
+   "speed": "0x0.0p+0",
+   "duration": "0x1.0000000000000p+1",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S12_Return_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.25)",
+   "target": "P_MG06_SLOT_EXIT",
    "joints_rad_hex": [
     "-0x1.a6040c1f8d5e1p-1",
     "0x1.dd1fd5cc25aaep-5",
@@ -692,16 +803,19 @@
     "-0x1.d9b4b0aa148e6p-1",
     "-0x1.9c12af21a33b4p+0",
     "0x1.26de628cfb341p+0"
-   ]
+   ],
+   "speed": "0x1.0000000000000p-2",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "return_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_bar_centred 0.12",
-   "target": "fork_bar_centred",
-   "speed": "0x1.eb851eb851eb8p-4",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S12_Return_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.12)",
+   "target": "P_MG06_BAR_CENTRE",
    "joints_rad_hex": [
     "-0x1.0608137bfdd0cp-1",
     "0x1.9e9199ce029dbp-5",
@@ -709,16 +823,19 @@
     "-0x1.97918652e9bfcp-1",
     "-0x1.4c14b31ad18dbp+0",
     "0x1.26ddcd81ab495p+0"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-4",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "open_mg06",
-   "kind": "Movel",
-   "text": "Movel fork_open_join 0.03",
-   "target": "fork_open_join",
-   "speed": "0x1.eb851eb851eb8p-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S13_Open_MG06",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_MG06_OPEN_JOIN, v=0.03)",
+   "target": "P_MG06_OPEN_JOIN",
    "joints_rad_hex": [
     "-0x1.01bcaf7306583p-1",
     "0x1.bbc5b6219cc01p-5",
@@ -726,25 +843,32 @@
     "-0x1.999d287db4fd8p-1",
     "-0x1.49ec1cd81de68p+0",
     "0x1.26e7c0ba3262cp+0"
-   ]
-  },
-  {
-   "step": "open_mg06",
-   "kind": "Path",
-   "text": "Path Fork_Open",
-   "target": "Fork_Open",
-   "speed": "0x0.0p+0",
+   ],
+   "speed": "0x1.eb851eb851eb8p-6",
    "duration": "0x0.0p+0",
-   "axis": ""
-  },
-  {
-   "step": "home_after_mg06",
-   "kind": "Movej",
-   "text": "Movej above_handle",
-   "target": "above_handle",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
    "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S13_Open_MG06",
+   "kind": "MovePath",
+   "text": "Robot.MovePath(PATH_FORK_OPEN)",
+   "target": "PATH_FORK_OPEN",
+   "joints_rad_hex": [],
+   "speed": "0x0.0p+0",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S14_Home_After_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_MG06_ABOVE)",
+   "target": "P_MG06_ABOVE",
    "joints_rad_hex": [
     "-0x1.a41e3c43c8dd4p-1",
     "0x1.a50ff1e820894p-3",
@@ -752,16 +876,19 @@
     "-0x1.30b441ab8e426p+1",
     "-0x1.9b1f1e3f1264fp+0",
     "0x1.26e407502312fp+0"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "home_after_mg06",
-   "kind": "Movej",
-   "text": "Movej via_mg06_high",
-   "target": "via_mg06_high",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S14_Home_After_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_VIA_HOME_MG06)",
+   "target": "P_VIA_HOME_MG06",
    "joints_rad_hex": [
     "-0x1.c2f69536a539bp-7",
     "0x1.9dbe59e5a2833p-3",
@@ -769,16 +896,19 @@
     "-0x1.b3079153c0f8cp+0",
     "-0x1.0d0f21bd1118ep-6",
     "0x1.ffa3c6fba4eaap-2"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "home_after_mg06",
-   "kind": "Movej",
-   "text": "Movej home",
-   "target": "home",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S14_Home_After_MG06",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_HOME)",
+   "target": "P_HOME",
    "joints_rad_hex": [
     "0x1.944b216c13956p-1",
     "0x1.61cf6eee3cbcfp-1",
@@ -786,113 +916,149 @@
     "-0x1.b6da48ce701a0p-2",
     "0x1.921f9f03335d7p+0",
     "0x1.15c134701bf50p-8"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_fetch",
-   "kind": "Loader",
-   "text": "Loader Z travel_place 0.6",
-   "target": "travel_place",
+   "step": "S15_Loader_Fetch",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_FETCH) > MoveZ(L_TRAVEL, t=0.6)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.44795edc46b23p-4"
+   "position": "0x1.44795edc46b23p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_fetch",
-   "kind": "Loader",
-   "text": "Loader Y travel_place 2.2",
-   "target": "travel_place",
+   "step": "S15_Loader_Fetch",
+   "kind": "MoveY",
+   "text": "Loader.Run(J_FETCH) > MoveY(L_TRAVEL, t=2.2)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.199999999999ap+1",
+   "timeout": "0x0.0p+0",
    "axis": "Y",
-   "value_hex": "0x1.92c19c25f5d13p-3"
+   "position": "0x1.92c19c25f5d13p-3",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_fetch",
-   "kind": "Loader",
-   "text": "Loader Z place 0.6",
-   "target": "place",
+   "step": "S15_Loader_Fetch",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)",
+   "target": "L_PLACE",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.1352756371b44p-4"
+   "position": "0x1.1352756371b44p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_fetch",
+   "step": "S15_Loader_Fetch",
    "kind": "Wait",
-   "text": "Wait 0.1",
+   "text": "Loader.Run(J_FETCH) > Wait(0.1)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-4",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_fetch",
+   "step": "S15_Loader_Fetch",
    "kind": "Gripper",
-   "text": "Gripper clamp 0.35",
-   "target": "clamp",
+   "text": "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.35)",
+   "target": "G_CLAMP",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.6666666666666p-2",
+   "timeout": "0x0.0p+0",
    "axis": "",
-   "value_hex": "0x1.78d4fdf3b645cp-8"
+   "position": "0x0.0p+0",
+   "jaw": "0x1.78d4fdf3b645cp-8"
   },
   {
-   "step": "loader_fetch",
+   "step": "S15_Loader_Fetch",
    "kind": "Wait",
-   "text": "Wait 0.2",
+   "text": "Loader.Run(J_FETCH) > Wait(0.2)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-3",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_return",
-   "kind": "Loader",
-   "text": "Loader Z travel_place 0.6",
-   "target": "travel_place",
+   "step": "S16_Loader_Return",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)",
+   "target": "L_TRAVEL",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x1.44795edc46b23p-4"
+   "position": "0x1.44795edc46b23p-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_return",
-   "kind": "Loader",
-   "text": "Loader Y home 2",
-   "target": "home",
+   "step": "S16_Loader_Return",
+   "kind": "MoveY",
+   "text": "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)",
+   "target": "L_HOME",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.0000000000000p+1",
+   "timeout": "0x0.0p+0",
    "axis": "Y",
-   "value_hex": "-0x1.999999999999ap-4"
+   "position": "-0x1.999999999999ap-4",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_return",
-   "kind": "Loader",
-   "text": "Loader Z home 0.8",
-   "target": "home",
+   "step": "S16_Loader_Return",
+   "kind": "MoveZ",
+   "text": "Loader.Run(J_RETURN) > MoveZ(L_HOME, t=0.8)",
+   "target": "L_HOME",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-1",
+   "timeout": "0x0.0p+0",
    "axis": "Z",
-   "value_hex": "0x0.0p+0"
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "loader_return",
+   "step": "S16_Loader_Return",
    "kind": "Wait",
-   "text": "Wait 0.2",
+   "text": "Loader.Run(J_RETURN) > Wait(0.2)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-3",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_take",
-   "kind": "Movej",
-   "text": "Movej above_loader",
-   "target": "above_loader",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S17_To_Take",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_LOADER_ABOVE)",
+   "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
     "-0x1.7cf2839388f18p-2",
     "0x1.8456445bf3e7ap-3",
@@ -900,16 +1066,19 @@
     "-0x1.fb5d46735c975p-6",
     "0x1.6d917a447ba83p+0",
     "-0x1.27249aeb69bc7p+0"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Movel",
-   "text": "Movel loader_approach 0.2",
-   "target": "loader_approach",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S18_Take_From_Loader",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
+   "target": "P_LOADER_APPROACH",
    "joints_rad_hex": [
     "-0x1.b2566a0562326p-2",
     "0x1.b0f5cc317997ap-4",
@@ -917,16 +1086,19 @@
     "0x1.8c98f34dc0726p-2",
     "0x1.6cc6d585156c1p+0",
     "-0x1.349b672a62fe5p+0"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Movel",
-   "text": "Movel loader_take_press 0.03",
-   "target": "loader_take_press",
-   "speed": "0x1.eb851eb851eb8p-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S18_Take_From_Loader",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_PICK, v=0.03)",
+   "target": "P_LOADER_PICK",
    "joints_rad_hex": [
     "-0x1.b87e828015591p-2",
     "0x1.5afc369649bb5p-4",
@@ -934,53 +1106,104 @@
     "0x1.c1f7ff07c17f4p-2",
     "0x1.6cb1222ee8dd1p+0",
     "-0x1.36290fdc23718p+0"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Vacuum",
-   "text": "Vacuum On",
-   "target": "On",
+   "step": "S18_Take_From_Loader",
+   "kind": "SetDO",
+   "text": "Robot.SetDO(DO_VACUUM, ON)",
+   "target": "DO_VACUUM",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x0.0p+0",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Wait",
-   "text": "Wait 0.3",
-   "target": "",
+   "step": "S18_Take_From_Loader",
+   "kind": "WaitDI",
+   "text": "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+   "target": "DI_VACUUM_OK",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-2",
-   "axis": ""
+   "timeout": "0x1.0000000000000p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
+   "step": "S18_Take_From_Loader",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)",
+   "target": "P_LOADER_TAKE_TOUCH",
+   "joints_rad_hex": [
+    "-0x1.b7eef83a0a844p-2",
+    "0x1.63419894cdb74p-4",
+    "0x1.12cdb246683d0p+1",
+    "0x1.bd10ba63f16d1p-2",
+    "0x1.6cb318f37f3f5p+0",
+    "-0x1.3604d85fd84bbp+0"
+   ],
+   "speed": "0x1.47ae147ae147bp-7",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S18_Take_From_Loader",
    "kind": "Gripper",
-   "text": "Gripper open 0.35",
-   "target": "open",
+   "text": "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)",
+   "target": "G_OPEN",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.6666666666666p-2",
+   "timeout": "0x0.0p+0",
    "axis": "",
-   "value_hex": "0x1.1eb851eb851ecp-5"
+   "position": "0x0.0p+0",
+   "jaw": "0x1.1eb851eb851ecp-5"
   },
   {
-   "step": "take_from_loader",
+   "step": "S18_Take_From_Loader",
+   "kind": "WaitDI",
+   "text": "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
+   "target": "DI_VACUUM_OK",
+   "joints_rad_hex": [],
+   "speed": "0x0.0p+0",
+   "duration": "0x1.3333333333333p-2",
+   "timeout": "0x1.0000000000000p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
+  },
+  {
+   "step": "S18_Take_From_Loader",
    "kind": "Wait",
-   "text": "Wait 0.15",
+   "text": "Wait(0.15)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-3",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Movel",
-   "text": "Movel loader_out_of_jaws 0.05",
-   "target": "loader_out_of_jaws",
-   "speed": "0x1.999999999999ap-5",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S18_Take_From_Loader",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_EXIT, v=0.05)",
+   "target": "P_LOADER_EXIT",
    "joints_rad_hex": [
     "-0x1.acc282ff60d1fp-2",
     "0x1.f5e16a74509e2p-4",
@@ -988,16 +1211,19 @@
     "0x1.5d15e5240573bp-2",
     "0x1.6cdacb3020b85p+0",
     "-0x1.33332a96290e4p+0"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-5",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "take_from_loader",
-   "kind": "Movel",
-   "text": "Movel above_loader 0.2",
-   "target": "above_loader",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S18_Take_From_Loader",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
+   "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
     "-0x1.7cf2839388f18p-2",
     "0x1.8456445bf3e7ap-3",
@@ -1005,16 +1231,19 @@
     "-0x1.fb5d46735c975p-6",
     "0x1.6d917a447ba83p+0",
     "-0x1.27249aeb69bc7p+0"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_output",
-   "kind": "Movej",
-   "text": "Movej via_loader_to_output",
-   "target": "via_loader_to_output",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S19_To_Output",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_VIA_LOADER_OUTPUT)",
+   "target": "P_VIA_LOADER_OUTPUT",
    "joints_rad_hex": [
     "0x1.6b2d57a07873ap-1",
     "0x1.6804a7c90d535p-1",
@@ -1022,16 +1251,19 @@
     "-0x1.fa3dd7b730b92p-2",
     "0x1.8409320335f0dp+0",
     "-0x1.2cb3bb22f193fp-4"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "to_output",
-   "kind": "Movej",
-   "text": "Movej above_output",
-   "target": "above_output",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S19_To_Output",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_OUTPUT_ABOVE)",
+   "target": "P_OUTPUT_ABOVE",
    "joints_rad_hex": [
     "0x1.0bd7c66dea067p+0",
     "0x1.f497c21008727p-5",
@@ -1039,16 +1271,19 @@
     "0x1.244978b373dc4p-1",
     "0x1.921fc47e3feb0p+0",
     "0x1.0b1fbe691f903p-2"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "place_output",
-   "kind": "Movel",
-   "text": "Movel output_approach 0.2",
-   "target": "output_approach",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S20_Place_Output",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_OUTPUT_APPROACH, v=0.20)",
+   "target": "P_OUTPUT_APPROACH",
    "joints_rad_hex": [
     "0x1.0bd6f26deb060p+0",
     "-0x1.5b9f0c1be2c90p-3",
@@ -1056,16 +1291,19 @@
     "0x1.dff530b38419bp-1",
     "0x1.921fb54442d18p+0",
     "0x1.0b1c5f2f2674fp-2"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "place_output",
-   "kind": "Movel",
-   "text": "Movel output_place 0.03",
-   "target": "output_place",
-   "speed": "0x1.eb851eb851eb8p-6",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S20_Place_Output",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_OUTPUT_PLACE, v=0.03)",
+   "target": "P_OUTPUT_PLACE",
    "joints_rad_hex": [
     "0x1.0bd6f26deb060p+0",
     "-0x1.b21ad5bc1dff3p-3",
@@ -1073,34 +1311,45 @@
     "0x1.fbfc182eb96c7p-1",
     "0x1.921fb54442d18p+0",
     "0x1.0b1c5f2f2674fp-2"
-   ]
+   ],
+   "speed": "0x1.eb851eb851eb8p-6",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "place_output",
-   "kind": "Vacuum",
-   "text": "Vacuum Off",
-   "target": "Off",
+   "step": "S20_Place_Output",
+   "kind": "SetDO",
+   "text": "Robot.SetDO(DO_VACUUM, OFF)",
+   "target": "DO_VACUUM",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x0.0p+0",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "place_output",
+   "step": "S20_Place_Output",
    "kind": "Wait",
-   "text": "Wait 0.3",
+   "text": "Wait(0.3)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-2",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "place_output",
-   "kind": "Movel",
-   "text": "Movel above_output 0.2",
-   "target": "above_output",
-   "speed": "0x1.999999999999ap-3",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S20_Place_Output",
+   "kind": "MoveL",
+   "text": "Robot.MoveL(P_OUTPUT_ABOVE, v=0.20)",
+   "target": "P_OUTPUT_ABOVE",
    "joints_rad_hex": [
     "0x1.0bd7c66dea067p+0",
     "0x1.f497c21008727p-5",
@@ -1108,16 +1357,19 @@
     "0x1.244978b373dc4p-1",
     "0x1.921fc47e3feb0p+0",
     "0x1.0b1fbe691f903p-2"
-   ]
+   ],
+   "speed": "0x1.999999999999ap-3",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "home_end",
-   "kind": "Movej",
-   "text": "Movej home",
-   "target": "home",
-   "speed": "0x0.0p+0",
-   "duration": "0x0.0p+0",
-   "axis": "",
+   "step": "S21_Home_End",
+   "kind": "MoveJ",
+   "text": "Robot.MoveJ(P_HOME)",
+   "target": "P_HOME",
    "joints_rad_hex": [
     "0x1.944b216c13956p-1",
     "0x1.61cf6eee3cbcfp-1",
@@ -1125,16 +1377,26 @@
     "-0x1.b6da48ce701a0p-2",
     "0x1.921f9f03335d7p+0",
     "0x1.15c134701bf50p-8"
-   ]
+   ],
+   "speed": "0x1.3333333333333p-1",
+   "duration": "0x0.0p+0",
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   },
   {
-   "step": "settle",
+   "step": "End_Settle",
    "kind": "Wait",
-   "text": "Wait 0.8",
+   "text": "End_Settle(0.8)",
    "target": "",
+   "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.999999999999ap-1",
-   "axis": ""
+   "timeout": "0x0.0p+0",
+   "axis": "",
+   "position": "0x0.0p+0",
+   "jaw": "0x0.0p+0"
   }
  ]
 }

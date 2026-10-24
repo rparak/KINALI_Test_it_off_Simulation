@@ -123,6 +123,11 @@ Points:
     Fixture: Open
     Contacts: [cups_pcb]
     PCB_Hold: null
+  P_LOADER_TAKE_TOUCH:
+    Context: {Loader: L_HOME, Gripper: G_CLAMP, PCB: jaws}
+    Fixture: Open
+    Contacts: [cups_pcb]
+    PCB_Hold: null
   P_LOADER_EXIT:
     Context: {Loader: L_HOME, Gripper: G_OPEN, PCB: cups}
     Fixture: Open

@@ -25,13 +25,13 @@
 def test_headless_stepping_poses_every_keypoint_in_order(tmp_path, run_script):
     """
     Description:
-        --headless poses the 24 points once, in the file's order (P_HOME first, P_OUTPUT_PLACE last), exit 0.
+        --headless poses the 25 points once, in the file's order (P_HOME first, P_OUTPUT_PLACE last), exit 0.
     """
 
     result = run_script('Keypoints/step_keypoints.py', ['--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     lines = [line for line in result.stdout.splitlines() if line.startswith('[INFO] ')]
-    assert len(lines) == 24 and lines[0].startswith('[INFO]  1/24 P_HOME:') and lines[-1].startswith('[INFO] 24/24 P_OUTPUT_PLACE:')
+    assert len(lines) == 25 and lines[0].startswith('[INFO]  1/25 P_HOME:') and lines[-1].startswith('[INFO] 25/25 P_OUTPUT_PLACE:')
 
 
 def test_an_unknown_start_is_an_error_line(tmp_path, run_script):

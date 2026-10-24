@@ -717,7 +717,7 @@ consistency, by design.
 trajectory's internals.
 
 **Revisit if** the program's behaviour changes on purpose (F9, a re-taught point): the golden data is then re-captured in its
-own commit with the reason.
+own commit with the reason (since F11 by `Example/Program/golden_program.py`, in the current names; see below).
 
 A change that moves the numbers on purpose re-captures the golden arrays in its own commit, with the samples that changed
 listed: F9.6 (MoveJ ends exactly on its stored joints) changed robot_q at 6073 samples by at most 1.55e-15 rad (6.2 ulp),
@@ -936,6 +936,58 @@ the wait above MG06.
 
 Pinned by `test/Optimizer/test_core.py::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`, `::test_the_interlocks_hold`,
 `test/Configuration/test_program_parser.py::test_an_optimizer_point_is_used_only_by_the_optimized_program`.
+
+## The take relieves the press before the jaws open (F11)
+
+**Decision.** `S18_Take_From_Loader`, after the vacuum is OK, moves 1.5 mm back along the tool axis to `P_LOADER_TAKE_TOUCH`
+(Reference `P_LOADER_PICK`, Offset [0, 0, -0.0015], at 10 mm/s), then opens the jaws, then waits for `DI_VACUUM_OK` again
+(the board still held after the release; it costs nothing when the input is already true). The segment stays LOCKED and the
+same in both programs; `P_LOADER_PICK` stays as taught (owner, 2026-10-24). Cost: +0.544 s per cycle (the touch move 0.600 s,
+the exit 0.056 s shorter).
+
+**Why.** In physics the compressed bellows' 10.8 N throws the board off the cups when the jaws let go (KNOWN_ISSUES.md);
+relieved first, both programs hold 4 of 4 cups from the release through the carry in every sensitivity run (start -50 to +50
+µm, ±0.2 deg).
+
+**Alternatives.** Re-teaching the pick to the board's measured pose in the jaws (0.74 deg, -0.16 mm) with the 1.5 mm press:
+the press even, the board still lost (58.430 s), and the kinematic check, posing the nominal board, read the press 2.16 mm
+deep. Reusing `P_LOADER_PLACE` (the same pose within 6 µm): the handover and the take are different operations, and the
+handover's no-press check is keyed on that point. Opening the jaws slower: untested, the stored force stays.
+
+**Revisit if** the vacuum model gets a holding range, or the real cell shows the take holds with the press.
+
+Pinned by `test/Program/test_core.py::test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle`, the
+golden data (`test/Program/test_golden.py`) and the physics acceptance of both programs.
+
+## A WaitDI waits only for what is left of its input's response (F11)
+
+**Decision.** A simulated input comes its `Signal_Response` after its cause (`Program.Core.CONST_INPUT_CAUSE`: `DI_VACUUM_OK`
+after `DO_VACUUM` went on); a WaitDI holds what is left of that time, nothing when it has passed; with the cause off the
+build fails (the wait would time out).
+
+**Why.** A real WaitDI returns at once when its input is true; the take's second WaitDI (after the jaws open) must not add
+0.3 s to the cycle.
+
+**Alternatives.** Each WaitDI holds the full response (before F11): adds a wait the cell would not have.
+
+**Revisit if** an input gets a cause other than an output, or more inputs exist.
+
+Pinned by `test/Program/test_core.py::test_a_waitdi_holds_only_what_is_left_of_the_response` and
+`::test_a_broken_world_rule_is_refused`.
+
+## The golden data is captured in the current names by one tool (F11)
+
+**Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;
+`test/Program/test_golden.py` imports it. The F11 re-capture (the take fix) wrote it in the current names, so F10's name map
+(`name_map.json`) is retired.
+
+**Why.** One reader and writer of the format; a re-capture is one command, its provenance in the record's `source`.
+
+**Alternatives.** Keeping the F8 data and its name map: every program change would extend a map of names that no longer differ.
+
+**Revisit if** names change again (a rename re-captures; the old data is in git).
+
+Pinned by `test/Program/test_golden.py` and `test/Example/Program/test_golden_program.py`.
 
 ## Step 5 plays a trajectory through the cycle run's loop (design, F11)
 

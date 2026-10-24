@@ -252,16 +252,31 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
 def test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle(built, simulation):
     """
     Description:
-        The WaitDI after each press holds Simulation.yaml's 0.3 s response (75 samples); the trajectory ends with the
-        simulation's End_Settle step (0.8 s, 200 samples) after the program's last segment, S21_Home_End.
+        The WaitDI right after each vacuum on holds Simulation.yaml's 0.3 s response (75 samples); the second one at the take,
+        after the jaws opened, costs nothing (the input came long before, F11); the trajectory ends with the simulation's
+        End_Settle step (0.8 s, 200 samples) after the program's last segment, S21_Home_End.
     """
 
     trajectory, _ = built
-    for i, text in enumerate(trajectory.Segment_Command):
-        if text == 'Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)':
-            assert trajectory.Segment_End[i] - trajectory.Segment_Start[i] == 75
+    waits = [trajectory.Segment_End[i] - trajectory.Segment_Start[i] for i, text in enumerate(trajectory.Segment_Command)
+             if text == 'Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)']
+    assert waits == [75, 75, 0]
     assert trajectory.Step_Names[-2:] == ['S21_Home_End', 'End_Settle'] and trajectory.Segment_Command[-1] == 'End_Settle(0.8)'
     assert np.sum(trajectory.Step_Index == len(trajectory.Step_Names) - 1) == int(round(simulation.End_Settle / 0.004))
+
+
+def test_a_waitdi_holds_only_what_is_left_of_the_response(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        F11: a WaitDI waits for the input to come 0.3 s after its cause (the vacuum on): after a 0.1 s wait it holds the remaining
+        0.2 s (50 samples), a second one right after it nothing.
+    """
+
+    kinematics, meta, _ = tools
+    lines = ['Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveL(P_INPUT_APPROACH, v=0.2)', 'Robot.MoveL(P_INPUT_PICK, v=0.03)', 'Robot.SetDO(DO_VACUUM, ON)',
+             'Wait(0.1)', 'Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)', 'Robot.WaitDI(DI_VACUUM_OK, timeout=0.5)']
+    trajectory, _ = Build_Program(_Probe(lines, constants, simulation, cell_configuration), cell_configuration, meta, kinematics, {})
+    assert [e - s for s, e in (_Segment(trajectory, text) for text in lines[4:])] == [25, 50, 0]
 
 
 @pytest.mark.parametrize('lines, start, pcb, text', [
@@ -271,12 +286,14 @@ def test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settl
      'vacuum off 120.0 mm from the PCB.s place on the crate floor would drop it'),
     (['Loader.Run(J_LET_GO)'], 'P_HOME', 'jaws', 'opening the jaws away from MG06'),
     (['Tester.Run(J_TEST)'], 'P_HOME', 'mg06', 'the test needs the PCB in MG06 and MG06 settled closed'),
+    (['Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)'], 'P_HOME', 'input_crate', 'DI_VACUUM_OK never comes: DO_VACUUM is off; the wait would time out'),
 ])
 def test_a_broken_world_rule_is_refused(constants, simulation, cell_configuration, tools, lines, start, pcb, text):
     """
     Description:
         Vacuum on with no PCB under the cups, vacuum off 120 mm above the crate floor (a drop), the jaws opened away from MG06
-        with the PCB only in them, and a test with MG06 open are build errors naming the segment and the line.
+        with the PCB only in them, a test with MG06 open and a WaitDI for the vacuum with the vacuum off are build errors naming
+        the segment and the line.
     """
 
     kinematics, meta, _ = tools
@@ -344,7 +361,7 @@ def test_the_default_program_passes_its_check(checked):
     Description:
         The default program's check (measured 2026-10-24): every step passes; S9_Close_MG06's deepest handle_bar overlap is the
         recorded closing path's 0.54 mm, within Cell.yaml's 0.6 mm; every allowed group occurs where declared; the press at the
-        pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples measured than exist); the cycle is 68.852 s.
+        pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples measured than exist); the cycle is 69.396 s (F11's take fix).
     """
 
     assert [s.Name for s in checked.Steps if s.Verdict == 'FAIL'] == [] and checked.Verdict == 'PASS'
@@ -353,7 +370,7 @@ def test_the_default_program_passes_its_check(checked):
     pick = next(s for s in checked.Steps if s.Name == 'S2_Pick_Input')
     assert pick.Allowed['cups_pcb'].Distance == pytest.approx(-0.00148, abs=0.00002) and pick.Allowed['pcb_crate'] is not None
     assert all(f is not None for s in checked.Steps for f in s.Allowed.values())
-    assert 0 < checked.Checked < 17214 and checked.Cycle_Time == pytest.approx(68.852, abs=1e-9)
+    assert 0 < checked.Checked < 17350 and checked.Cycle_Time == pytest.approx(69.396, abs=1e-9)
 
 
 def test_the_handover_keeps_the_board_off_the_ledges(checked):
@@ -445,17 +462,17 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     Description:
         The report: a header with the cycle time; a row per step with its peaks and verdict, the closest pair per allowed group
         and of the rest with sample and time; the handover's gaps; the stretched MoveLs; the opening path's note; the events;
-        the points used (23: 22 PASS, 1 WARN); no failure; the closing sentence on simulation results.
+        the points used (24: 23 PASS, 1 WARN); no failure; the closing sentence on simulation results.
     """
 
     lines = Format_Check_Report(checked, built[0], cell_configuration)
     text = '\n'.join(lines)
-    assert lines[0].startswith('program Program: 22 steps, 17214 samples (4 ms), cycle time 68.852 s;')
+    assert lines[0].startswith('program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s;')
     assert any(line.startswith('S2_Pick_Input ') and line.endswith('PASS') for line in lines)
     assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
     assert 'handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE min 0.318 mm' in text
     assert 'stretched MoveLs: none' in text and 'note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving' in text
-    assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 23 (0 FAIL, 1 WARN, 22 PASS;' in text
+    assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS;' in text
     assert lines[-1] == 'Program: the program check passed. Simulation results only: not validated for the real cell.'
 
 

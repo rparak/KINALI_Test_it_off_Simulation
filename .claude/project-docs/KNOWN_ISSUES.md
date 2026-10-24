@@ -150,6 +150,32 @@ re-taught.
 - **What would close it:** a future step that adds user frames to `Constants.yaml` (a frame per station, points and offsets
   given in it), with the owner's decision on their names and how they are taught.
 
+## The vacuum's adhesion holds only while a cup touches: the bellows' preload can throw the board off
+
+MuJoCo's adhesion actuator pulls only through active contacts (the cups and the PCB have no margin, SPEC §4.7). At the take
+from the loader the 1.5 mm press compresses the bellows by about 0.9 mm (3000 N/m: 2.7 N per cup, 10.8 N in all) while
+the jaws hold the board; when the jaws open, that force throws the ~90 g board off the cups at about 120 m/s² and, once a
+cup face has left it, nothing pulls it back (F11, 2026-10-24: the taught program lost the board at 58.375 s, the optimized
+one in the next carry; the verified legacy run held it on 2 of 4 cups by chance - moving its start by -10 or +50 µm loses it).
+A real vacuum cup holds through a small gap and would likely keep the board. The take therefore relieves the press first (back
+to touch, `P_LOADER_TAKE_TOUCH`, SPEC §4.7): conservative real-cell practice as well.
+
+- **Impact:** a program that opens a support under a pressed board loses it in the simulation; the real cell may forgive it.
+- **What would close it:** a vacuum model with a holding range, or a real-cell observation of the take.
+
+## The board sags in the jaws after the re-grip from MG06
+
+Measured in physics at the take (F11, 2026-10-24, 10 ms before the cups touch): the board lies 0.7-0.8 deg about its X axis
+and about 0.16 mm lower along its normal than the nominal hold pose (taught 0.74 deg / -0.153 mm, optimized 0.74 deg /
+-0.159 mm, legacy 0.84 deg / -0.165 mm); the jaws touch it only along the front ~38 mm of its edges (board y -39.6 to -2 mm),
+so the rear half sags. The 1.5 mm press then compresses the front cups by 0.93-1.15 mm and the rear ones by 0.49-0.72 mm.
+The take is not re-taught to it (owner): with the press relieved before the jaws open the board stays on 4 of 4 cups.
+
+- **Impact:** the kinematic model (the program check, the point table) poses the board at the nominal hold pose, 0.7 deg
+  from where physics settles it; the press depths it reports at the take are nominal.
+- **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
+  the whole edge.
+
 ## Simplifications of the model
 
 What the simulation does not model; whoever compares it with the real cell checks these first.
