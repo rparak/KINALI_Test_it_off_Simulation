@@ -760,3 +760,111 @@ Pinned by `test/Render/test_core.py::test_the_overlay_is_never_set_under_the_vie
 `::test_the_overlay_updates_at_most_four_times_a_second_and_at_once_on_a_segment_change`,
 `::test_a_stalled_loop_is_reported_by_the_watchdog`,
 `test/Example/Program/test_show_program.py::test_a_frame_of_the_playback_fits_the_frame_period`.
+
+## The planner and the optimizer are two domains
+
+**Decision.** Joint-space planning is `src/Planner/Core.py` (the spline, TOPP, RRT-Connect, the shortcut, the prune, the
+refit; numpy and scipy only, a configuration's validity a function the caller gives); the optimized program is
+`src/Optimizer/Core.py` (the FREE transfers on the cell, the program written, its verification). `Program` imports
+`Planner` (a MoveSpline is timed at build); `Optimizer` imports `Program` (it builds and checks what it writes).
+
+**Why.** The approved design put both into `Planner`; then `Program` (timing a MoveSpline) and `Planner` (building the program)
+would import each other. Split, the layer order stays a tree (SPEC §6) and the planner is tested without the cell.
+
+**Alternatives.** The spline timing copied into `Program`: two TOPPs to keep equal.
+
+**Revisit if** another program form needs the planner outside `Program`.
+
+Pinned by `test/Planner/test_core.py`, `test/Optimizer/test_core.py`.
+
+## TOPP is our own, by reachability with first-order interpolation
+
+**Decision.** The time-optimal timing is `Planner.Topp`: TOPP-RA's reachability (Pham & Pham 2018) on a uniform grid, `s̈`
+constant per interval, its acceleration limits met at both ends of each interval (first-order interpolation: `x_{i+1} = x_i
++ 2 Δs u_i` substituted at the end point), every bound on `u` linear in `x`, so the controllable set is an interval found in
+closed form from the pairs of bounds; the timing is sampled exactly (`s` quadratic in time per interval), stretched to whole
+4 ms samples and further while a sample exceeds a limit between grid points.
+
+**Why.** toppra has no macOS arm64 wheel (FEATURES.md F9). Collocation at the grid points alone left `u` unbounded where a
+clamped spline's `q'` vanishes (its ends): the sampled acceleration reached 1.75x the limit between grid points and the
+stretch made a 1.80 s transfer 3.11 s (measured 2026-10-24); with first-order interpolation the stretch is 0.1-0.3 %. A first
+vertex-enumeration LP was replaced by the closed form: with its open bounds of 1e9 it lost precision and the interval
+oscillated. B3: the closed-form trapezoid and triangle are met within 1.9e-7 (relative; 1000 intervals).
+
+**Alternatives.** A jerk-limited timing: not approved (answer 13: bang-bang accelerations, step 5 reports the tracking).
+**Revisit if** step 5 shows tracking errors from the acceleration steps, or a real controller's limits differ.
+
+Pinned by `test/Planner/test_core.py::test_topp_matches_the_closed_form_of_a_straight_move`,
+`::test_a_timed_spline_keeps_the_limits_at_every_sample`.
+
+## The planner's path keeps a wider margin than its spline
+
+**Decision.** RRT-Connect and the shortcut keep the clearance plus a planner margin (`Optimization.yaml Margins`, the first
+2 mm, then 3 and 5 mm when a transfer fails the exact check); the spline through their path is checked against the
+clearance plus `Spline.Margin` (1 mm) and refitted where it fails.
+
+**Why.** Planned at the spline's own margin, the polyline grazes the obstacles and the spline through it cuts them: the
+carried PCB's transfer to the output crate stayed invalid after 80 refits at 1 mm; with the polyline at 2 mm it passes after
+2 refits. 10 mm would make `P_LOADER_ABOVE` itself invalid (measured 2026-10-24). The final word is the exact check at every
+sample.
+
+**Alternatives.** One margin for both: the spline needs room the polyline does not leave.
+
+**Revisit if** a transfer fails at every margin.
+
+Pinned by `test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_and_the_tilt`,
+`::test_the_optimized_program_passes_every_check_and_is_faster`.
+
+## A transfer's place among its parallel jobs comes from the exact robot-loader check
+
+**Decision.** A FREE transfer with loader jobs between its taught segments starts the first job, runs its spline, then
+waits for each job and starts the next. When the build's check finds the robot within the clearance of the loader (I8), the
+spline moves after the start of the next job if the meeting happens while a later job runs (the robot would stand at its end
+point then), otherwise it waits longer before the spline by the length of the meeting window; a meeting while the robot waits
+at its start fails, naming the transfer. Shipped: To_MG06 runs its spline during `J_INSERT`; To_Take after the start of
+`J_RETURN` - with the spline during `J_FETCH` the robot standing at `P_LOADER_ABOVE` meets the `z_carriage` (-18.91 mm) while the
+loader comes back at its travel height (measured 2026-10-24).
+
+**Why.** In the taught program the robot is at home while the loader fetches and returns; `P_LOADER_ABOVE` is in the
+loader's travel height path. Waiting longer could not help there (the meeting moved with the wait); a later slot does.
+
+**Alternatives.** Planning the robot against the loader's swept volume (the design's conservative variant): it would forbid
+`P_LOADER_ABOVE` as an end point outright. A waiting point between: a second spline and a stop.
+
+**Revisit if** the loader's positions or jobs change (the optimizer finds the slot again).
+
+Pinned by `test/Optimizer/test_core.py::test_the_interlocks_hold`, `test/Example/Program/test_optimize_program.py`.
+
+## The optimized program is generated data, committed and reproducible
+
+**Decision.** `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Program/optimize_program.py` and committed.
+It records the sha256 of its inputs (the four configuration files, `Optimization.yaml`, the fork path, the compiled planning
+model), the platform and versions, each segment's start time and the TOPP grid. A build refuses it when an input changed or
+when it does not reproduce the schedule; the optimizer run again writes the same bytes (B5).
+
+**Why.** The planning is random with a fixed seed: the file keeps the result reviewable and diffable, and the hashes keep it
+honest when the taught program or the cell changes.
+
+**Alternatives.** Planning at every build: slow (34 s) and the result unreviewed.
+
+**Revisit if** the optimizer runs on another platform (its output may then differ: re-run and commit with the platform).
+
+Pinned by `test/Example/Program/test_optimize_program.py::test_the_optimizer_reproduces_the_committed_program_byte_for_byte`,
+`test/Optimizer/test_core.py::test_the_shipped_optimized_program_is_current_and_matches_its_schedule`,
+`test/Example/Program/test_build_program.py::test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused`.
+
+## Run is Start plus WaitDone; a robot Wait holds only the robot
+
+**Decision.** The builder runs a started loader job one sample per robot sample (a motion, a `Wait`, a `WaitDI` of the robot
+all advance it); `Loader.WaitDone` holds the robot until the job's last sample. `Loader.Run` keeps its expanded form and gives
+the same samples as Start + WaitDone. In the taught program no job runs during a robot line, so its trajectory is unchanged
+(golden).
+
+**Why.** A real master program runs this way: the PLC's job goes on while the robot works.
+
+**Alternatives.** A separate loader timeline merged afterwards: the PCB rules (clamp at MG06, release) would need the merge to
+know both lanes' states.
+
+**Revisit if** the tester's job runs in parallel too (Tester.Start is reserved).
+
+Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `test/Optimizer/test_core.py::test_the_loader_moves_while_the_robot_moves`.

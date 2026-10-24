@@ -1037,7 +1037,7 @@ baselines for both programs in step 6 (SPEC).
       overlap + margin), the default program passes its check (exit 0); answer 10's "straight" corrected; a KNOWN_ISSUES item
       on the recorded paths' accelerations for the real-cell transfer. Merged into main and pushed at `e5ec42c`.
 
-## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
+## F9 - Step 4b: the optimized program (owner, 2026-10-24) - built, awaiting acceptance
 
 Requirements (restated): the same process as F8 with the process-critical segments unchanged (LOCKED) and the
 free-space transfers between them planned (FREE): IK, RRT-Connect (own, fixed seed), shortcut, spline with a
@@ -1180,6 +1180,31 @@ F9.1 `Optimization.yaml`, `Load_Optimization`, the optimized program format in `
 `src/Planner/Core.py` RRT-Connect, shortcut, spline, TOPP; F9.3 synchronization and interlocks; F9.4
 `optimize_program.py`, `Data/Optimized/Program_Optimized.yaml`, the optimized build and playback; F9.5
 `compare_programs.py`; F9.6 docs (SPEC, design-decisions, KNOWN_ISSUES, README, references).
+
+### Status (built 2026-10-24, on main; restore point: tag `pre-F9`)
+
+Approved (owner, 2026-10-24): Part A + B3, B4, B5 on the F10 format; `Optimization.yaml` with `Carry_Max_Tilt` 30 deg ("real-cell
+practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimized/Program_Optimized.yaml`.
+
+- [x] F9.1 Planner (`src/Planner/Core.py`): spline, own TOPP with first-order interpolation (B3: the closed form within 1.9e-7
+      relative, 1000 intervals; < 0.05 s per spline), RRT-Connect, shortcut, prune, refit; deterministic with its seed.
+- [x] F9.2 Format and lane: `Configuration/Optimization.yaml` + `Load_Optimization`; the optimized program's grammar (MoveSpline,
+      Loader.Start / WaitDone, Waypoints, the Optimized record) and its flow rules; the builder's loader lane (Run = Start +
+      WaitDone, tested) and MoveSpline; the check's MoveSpline peaks. The taught trajectory unchanged (golden).
+- [x] F9.3 Optimizer (`src/Optimizer/Core.py`) and `Example/Program/optimize_program.py` (34 s): six FREE transfers (S5 + S8 and
+      S14 + S17 merged, the loader's jobs between them in parallel), all at the first margin (2 mm), RRT 0-32 iterations; one
+      robot-loader meeting found and solved (To_Take's spline after the start of `J_RETURN`); cycle 57.132 s against 68.852 s
+      (-11.720 s, -17.0 %); every check passes; I1-I8 hold (I8: nothing within 50 mm); carried PCB tilt 8.94 / 28.98 deg (B4);
+      `Data/Optimized/Program_Optimized.yaml` committed, reproduced byte for byte by a fresh run (B5).
+- [x] F9.4 `build_program.py --program` (stale and schedule refusals), `show_program.py --version optimized` (the F10.4 viewer
+      rules), `compare_programs.py` (table + figure).
+- [ ] LOCKED byte identity: 10 of 14 parts byte-identical; the 4 after a taught MoveJ differ by one rounding (<= 1.6e-15 rad) -
+      owner decision pending (KNOWN_ISSUES.md).
+- Deviations from the design, each recorded: the planner and the optimizer are two domains (design-decisions); `Margins` (tried in
+  order) and `Spline.Margin` replace `Margin_Steps`; a merged transfer is named after its last FREE segment; the robot-loader
+  check is the exact build check with a slot / wait search, not planning against the loader's swept volume.
+- Tests: 311 -> 371 collected (355 fast); 15 mutations, each test passing first and failing mutated (one equivalent mutant
+  found, its redundant code removed).
 
 ### Questions (Part A, F8 and F9)
 

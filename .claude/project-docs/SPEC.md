@@ -535,6 +535,8 @@ models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Muj
 models/robot_tool/        VGC10 + fork MJCF and meshes
 Configuration/Cell.yaml   the cell's physical description (§8)
 Configuration/Constants.yaml, Simulation.yaml, Program.yaml   the cell program: its named values, the simulation's data, the program (§8)
+Configuration/Optimization.yaml   the optimized program's settings: the FREE segments, the planner (§8, F9)
+Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
@@ -550,7 +552,9 @@ src/Render/Core.py        offscreen image, viewer start
 src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
 src/Trajectory/Core.py    the trajectory file format: the only writer and reader (npz + CSV export, §9)
-src/Program/Core.py       the constants' model checks, the program build (motion laws, world state), the program check, posing at a sample (§7.9)
+src/Program/Core.py       the constants' model checks, the program build (motion laws, world state, the loader's lane), the program check, posing at a sample (§7.9)
+src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
+src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written, its interlocks and LOCKED parts verified (§7.11)
 Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
@@ -561,9 +565,12 @@ Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
 Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
 Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
 Example/Keypoints/step_keypoints.py    steps through the points in the viewer (mjpython): Page Down / . / Page Up
-Example/Program/build_program.py       the program -> its trajectory (npz + csv) and check report (exit 0 / 1); --compare-legacy
+Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
+                                       stale or its schedule differs), --compare-legacy
+Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
+Example/Program/compare_programs.py    legacy vs taught vs optimized: a table and a figure (exit 0 / 1)
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
-                                       segment and its current line), --step / --time / --image, --watchdog S (debug)
+                                       segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
@@ -578,7 +585,8 @@ in the template's `Configuration/Cell_SF1.yaml`).
 `Configuration.Core`); `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
 `Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo);
-`Program` → `Configuration`, `Scene`, `Kinematics`, `Collision`, `Keypoints`, `Trajectory`. Scripts reach
+`Planner` → nothing of the project (numpy, scipy); `Program` → `Configuration`, `Scene`, `Kinematics`, `Collision`, `Keypoints`,
+`Trajectory`, `Planner`; `Optimizer` → `Configuration`, `Kinematics`, `Collision`, `Keypoints`, `Planner`, `Program`, `Trajectory`. Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
@@ -666,11 +674,17 @@ model (every tool's `Flange_Offset` against its site, every `Pose` against FK, e
 loader positions and gripper commands within the model's ranges). `Build_Program` runs it first, then turns the IR into a
 trajectory: sample 0 is the start state (`Simulation.yaml Start`), then each executed command's samples (4 ms) - the robot's
 lines in order, a `Run` expanded into its job's lines (each labelled `<Run line> > <job line>`), `End_Settle` last - every
-motion ending at rest.
+motion ending at rest. The loader's lane (F9): `Loader.Start(J_)` starts a job that then takes one sample per robot sample
+while the robot's lines go on (a robot `Wait`, `WaitDI` or motion advances it too); `Loader.WaitDone(J_)` holds the robot
+until the job's last sample; a `Run` gives the same samples as Start + WaitDone (tested).
 
 - **MoveJ**: min-jerk to the target's stored `Joints`, `T = max(Movej_Min_Duration, maxⱼ 1.875·|Δqⱼ|/v_maxⱼ,
   maxⱼ √(5.774·|Δqⱼ|/a_maxⱼ))` (§4.10), speeds analytic; `v_max` = the datasheet speeds × `v=` (omitted:
   `Motion.Speed_Fraction`).
+- **MoveSpline** (an optimized program only): the cubic spline through its waypoints over the chord length (clamped), timed
+  time-optimally (TOPP, §7.10) within its `v=` of the datasheet speeds and the acceleration limits from rest to rest on the
+  file's TOPP grid, stretched to whole samples; speeds analytic; ends exactly on its end point's `Joints`; it may change the IK
+  family (a joint-space motion); MG06 moves to the end point's `Fixture` along it.
 - **MoveL**: the target point's tool site (`T_SUCTION`: `suction_tcp`, `T_FLANGE`: the flange) on a straight
   line, orientation slerp, min-jerk time law over `T = max(Movel_Min_Duration, 1.875·L/v)`; IK per sample (pure DLS,
   1e-8 m) seeded from the previous; fails on non-convergence, wrist_2 within `Family_Margin` or a family change; stretched
@@ -699,11 +713,37 @@ model): every sample where a robot geom, the carried PCB, the loader, the jaws o
 the PCB on the cups (to everything else), the PCB in the jaws (to the workstation: table, crates); a pair within
 `Clearance.Robot` fails unless the segment allows its group (`Simulation.yaml Allow_Contact`) and it is no deeper than `Allowed_Depth`; every allowed group must
 occur; per segment and group the closest pair (up to 10 mm) and its sample and time are reported. Also: the joint limits; the
-peak joint speed and acceleration of every MoveJ (at its `v=`; its rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
+peak joint speed and acceleration of every MoveJ and MoveSpline (at its `v=`; a MoveJ's rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
 `Motion` (finite differences, 0.1 % tolerance), the recorded paths' peaks reported, not limited; the handover's no-press
 rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Ledge_Tolerance` at `P_LOADER_PLACE` and while
 clamped, never smaller along the MoveL into it); the point check of every point the program uses.
-`Format_Check_Report` prints it.
+`Format_Check_Report` prints it. The loader moving in parallel is part of every measured sample's scene, so the check also
+measures the robot against the moving loader (I8).
+
+### 7.10 Planner
+
+Joint-space planning, independent of the cell (`src/Planner/Core.py`, numpy and scipy only; F9): `Spline_Path_Cls` (scipy
+`CubicSpline`, clamped, over the chord length); `Topp` - TOPP by reachability (Pham & Pham 2018) on a uniform grid with
+first-order interpolation (each interval's constant `s̈` meets the acceleration limits at both of its ends), solved per
+interval in closed form (every lower and upper bound on `s̈` is linear in `ṡ²`); `Time_Path` - the timing sampled every 4 ms,
+stretched to whole samples and further while a sample exceeds a limit (B3: the closed-form trapezoid and triangle within a
+relative 1e-3, measured < 2e-7); `Rrt_Connect`, `Shortcut`, `Prune` and `Smooth` (the spline checked at `Check_Step` and
+refitted by polyline midpoints), every random choice from the caller's seeded generator.
+
+### 7.11 Optimizer
+
+The optimized program (`src/Optimizer/Core.py`, F9). `Free_Transfers`: the FREE segments of `Optimization.yaml`, consecutive
+ones merged across segments that only run loader jobs (those jobs then run in parallel). `Free_Space_Cls`: a configuration's
+validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
+carried PCB (hung at the cup face) at least the clearance plus a margin from everything, the carried PCB's tilt at most
+`Carry_Max_Tilt` (B4). `Plan_Transfer`: RRT-Connect (seed `Seed` + the transfer's index) and the shortcut at the planner
+margin, the prune, the spline at `Spline.Margin`. `Optimize_Program`: plans every transfer at the first margin it can be
+planned with, writes the program (`Optimized_Text`: LOCKED segments verbatim from `Program.yaml`, renumbered; a transfer as
+`Loader.Start` / `Robot.MoveSpline` / `Loader.WaitDone` lines), loads, builds and checks it; a transfer that meets the loader
+(I8) moves its spline after a later job's start or waits longer (`Delay`: by the length of the meeting window), any other
+failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I8 with their times), `Compare_Locked` (each
+LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
+planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
 
 ## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
 
@@ -770,14 +810,37 @@ with `ast` and never evaluated; the only literal values are speeds, durations, w
 | `Robot.MovePath(PATH_)` | Program | the recorded path; the robot must stand at its `Start`, it ends at its `End` |
 | `Robot.SetDO(DO_, ON\|OFF)`, `Robot.WaitDI(DI_, timeout=)` | Program | set an output; wait for an input [s] (its simulated response must be within the timeout) |
 | `Loader.Run(J_)`, `Tester.Run(J_)` | Program | run a station's job and wait until it is done |
-| `Wait(t)` | Program, jobs | everything holds [s] |
+| `Wait(t)` | Program, jobs | the program holds [s]: the robot in its program (a started loader job goes on), the loader in a job |
 | `MoveY(L_, t=)`, `MoveZ(L_, t=)`, `Gripper(G_, t=)` | Loader_Jobs | one axis / the jaws to the constant's value in `t` [s] |
 | `Test(Process.Test_Duration)` | Tester_Jobs | the MG06 test for `Cell.yaml`'s duration |
 
-Reserved: `a=` and `r=` take only 0 or nothing (no blending yet); `Loader.Start` / `Loader.WaitDone` and `Tester.Start` /
-`Tester.WaitDone` are refused until F9 (Run = Start + WaitDone). Checked at load besides the grammar: every constant and job
-declared and used; the IK family changes only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot
-stands; the segment names of `Simulation.yaml` exist.
+Reserved: `a=` and `r=` take only 0 or nothing (no blending yet); `Tester.Start` / `Tester.WaitDone` are refused (the
+tester's job runs whole). Checked at load besides the grammar: every constant and job declared and used; the IK family changes
+only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot stands; the segment names of
+`Simulation.yaml` exist.
+
+The **optimized program** `Data/Optimized/Program_Optimized.yaml` (F9) is written by `Example/Program/optimize_program.py`
+only and committed (generated data, like `Data/Reference/cell_plan.npz`). It has the `Program.yaml` format plus:
+`Robot.MoveSpline(W_<NAME>, v=)` (a planned spline, `v` a fraction of the datasheet speeds, required), `Loader.Start(J_)` /
+`Loader.WaitDone(J_)` (a job started while none runs and waited for before the next Start, Run or the end); `Waypoints`
+(`W_<NAME>`: `From`, `To` points, `Points` the interior waypoints [deg]); and `Optimized` (`Inputs`: the sha256 of
+`Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml`, `Optimization.yaml`, the fork path and the compiled planning
+model; `Platform`; `Schedule`: each segment's start [s]; `Topp_Grid_Points`). These are refused in `Program.yaml`; its constants
+are shared, so not all need be used. A build refuses it when an input changed or the schedule is not reproduced.
+
+`Optimization.yaml` (F9; read by `Load_Optimization`, every field REQUIRED):
+
+| Field | Unit | Source | Read by |
+|---|---|---|---|
+| `Speed_Fraction` | - | equal to `Cell.yaml Motion.Speed_Fraction` (a fair comparison) | the splines' `v=` |
+| `Seed` | - | any fixed value (B5) | RRT-Connect, the shortcut |
+| `Free_Segments` | segment keys | the approved LOCKED / FREE table (FEATURES.md F9); MoveJ lines only | `Free_Transfers` |
+| `Rrt.Max_Iterations`, `Extend_Step`, `Edge_Step`, `Goal_Bias` | -, deg, deg, - | chosen 2026-10-24 | `Rrt_Connect` |
+| `Shortcut_Iterations` | - | chosen | `Shortcut` |
+| `Spline.Check_Step`, `Margin`, `Max_Refits` | deg, m, - | chosen; measured | `Smooth` |
+| `Topp_Grid_Points` | - | measured (B3) | `Time_Path` |
+| `Margins` | m (increasing) | measured 2026-10-24 | `Plan_Transfer` |
+| `Carry_Max_Tilt` | deg | real-cell practice, ASSUMED | `Free_Space_Cls` (B4) |
 
 ## 9. Data formats and units
 
@@ -795,6 +858,9 @@ stands; the segment names of `Simulation.yaml` exist.
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
 | `Configuration/Cell.yaml` | `Configuration` (`Load_Cell_Configuration`), written by hand (§8) |
 | `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser` (`Load_Constants`, `Load_Simulation`, `Load_Program`), written by hand (§8); `Example/Keypoints/resolve_keypoint.py` prints lines to paste, nothing writes them |
+| `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
+| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
+| the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
@@ -808,8 +874,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (300 tests, about 71 s), full `.venv/bin/python -m pytest`
-before a commit (311 tests, about 126 s; Apple M2 Pro, 2026-10-24, after F10.5).
+`.venv/bin/python -m pytest -m "not slow"` (355 tests, about 80 s), full `.venv/bin/python -m pytest`
+before a commit (371 tests, 4 of them strict expected failures, about 204 s; Apple M2 Pro, 2026-10-24, after F9).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)

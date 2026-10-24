@@ -28,17 +28,19 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 ## Layout and layers (SPEC §6)
 
 ```
-src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program;
+src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program, Planner,
+                       Optimizer;
                        plus src/Configuration/Program_Parser.py (the cell program's reader, F10)
 Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
                        Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
-                       Keypoints/step_keypoints.py, Program/build_program.py, Program/show_program.py
+                       Keypoints/step_keypoints.py, Program/build_program.py, Program/show_program.py,
+                       Program/optimize_program.py, Program/compare_programs.py
 test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
-Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
-Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10)
+Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz, Optimized/Program_Optimized.yaml
+Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10); Optimization.yaml (F9)
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
@@ -57,12 +59,14 @@ Kinematics, Collision     → Scene
 Simulation                → Configuration, Scene, Collision
 Keypoints                 → Configuration, Scene, Kinematics, Collision
 Trajectory                → Configuration (the file format only, no MuJoCo)
-Program                   → Configuration, Scene, Kinematics, Collision, Keypoints, Trajectory
+Planner                   imports nothing of the project (numpy, scipy)
+Program                   → Configuration, Scene, Kinematics, Collision, Keypoints, Trajectory, Planner
+Optimizer                 → Configuration, Kinematics, Collision, Keypoints, Planner, Program, Trajectory
 Example/                  → any of src/
 ```
 
-`Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Trajectory (F8.3) and Program (F8.4) are the
-step 4 domains; Planner comes with F9 (no placeholder module before, skeleton rule).
+`Render` takes an `MjModel` / `MjData` and knows nothing of the cell; `Planner` takes a validity function and knows nothing
+of the cell either. Trajectory (F8.3) and Program (F8.4) are the step 4a domains, Planner and Optimizer step 4b's (F9).
 
 ## Root ✅
 
@@ -80,6 +84,8 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand (the PCB poses only) |
 | `Configuration/Cell.yaml` | `Configuration.Core.Load_Cell_Configuration`; written by hand |
 | `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser.Load_Constants`, `Load_Simulation`, `Load_Program`; written by hand (a script that finds a value to change prints the line: `resolve_keypoint.py`) |
+| `Configuration/Optimization.yaml` | `Configuration.Program_Parser.Load_Optimization`; written by hand |
+| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer.Core.Optimized_Text` (only through `Example/Program/optimize_program.py`); read by `Configuration.Program_Parser.Load_Program` |
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |

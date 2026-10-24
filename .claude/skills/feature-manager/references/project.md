@@ -95,7 +95,8 @@ look at what changed.
 - Work directly on main, no feature branches (owner, 2026-10-24; `CLAUDE.md` > Branches): commit only after the usual
   checks pass, push after each accepted feature, undo a failed experiment with `git revert` (never force-push or rewrite).
 - Never committed: `logger/`, `Data/Generated/` (the trajectories stay git-ignored until step 6, owner 2026-10-24), `.venv/`.
-  F9's optimized program (`Data/Optimized/`) will be committed, with its input hashes.
+  F9's optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
+  `Example/Program/optimize_program.py`; when an input changes, run it again and commit the result as its own change.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
   source changed, a new `Data/Reference/cell_plan.npz`, a new baseline report or fingerprint.
 
