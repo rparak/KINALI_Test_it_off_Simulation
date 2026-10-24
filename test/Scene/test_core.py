@@ -93,8 +93,8 @@ def test_the_fingerprint_equals_the_baseline_except_the_green_pcb(root, cell_mod
 
     with open(os.path.join(root, 'test', 'Scene', 'data', 'baseline_model_fingerprint.json'), encoding='utf-8') as handle:
         reference = json.load(handle)
-    current = json.loads(json.dumps(fingerprint_tool.fingerprint(cell_model)))
-    differences = fingerprint_tool.compare(current, reference)
+    current = json.loads(json.dumps(fingerprint_tool.Model_Fingerprint(cell_model)))
+    differences = fingerprint_tool.Compare_Fingerprints(current, reference)
     assert [line.split(':')[0] for line in differences] == CONST_ACCEPTED_DIFFERENCES
 
 

@@ -66,6 +66,27 @@ def cell_model():
     return Build_Cell_Model()
 
 
+def _Run_Script(script, arguments, cwd, timeout=600):
+    """
+    Description:
+        Run Example/<script> the way a person does: a fresh interpreter, from cwd (an unrelated directory).
+    """
+
+    import subprocess
+    return subprocess.run([sys.executable, os.path.join(CONST_ROOT, 'Example', script)] + list(arguments), cwd=str(cwd),
+                          capture_output=True, text=True, timeout=timeout)
+
+
+@pytest.fixture(scope='session')
+def run_script():
+    """
+    Description:
+        The runner of Example/ scripts (_Run_Script).
+    """
+
+    return _Run_Script
+
+
 @pytest.fixture(scope='session')
 def fingerprint_tool():
     """
@@ -73,7 +94,7 @@ def fingerprint_tool():
         The model fingerprint script imported as a module (a script, not part of src/).
     """
 
-    path = os.path.join(CONST_ROOT, 'tools', 'model_fingerprint.py')
+    path = os.path.join(CONST_ROOT, 'Example', 'model_fingerprint.py')
     spec = importlib.util.spec_from_file_location('model_fingerprint', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

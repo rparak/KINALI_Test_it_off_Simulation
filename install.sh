@@ -286,7 +286,7 @@ Make_Folders() {
 #   None
 Print_Next_Steps() {
     Log INFO "Done. Next:"
-    Log INFO "  run the cycle:  .venv/bin/python legacy/test_cell_cycle.py"
+    Log INFO "  run the cycle:  .venv/bin/python Example/run_cycle.py"
     Log INFO "  run the tests:  .venv/bin/python -m pytest -m \"not slow\"   (full: .venv/bin/python -m pytest)"
     Log INFO "  open the viewer: .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml"
 }
