@@ -318,10 +318,21 @@ Requirements:
 Sub-tasks:
 
 - [x] F4.1 Tag and remove legacy planner
-- [ ] F4.2 Remove docs/ after moving remaining content
+- [x] F4.2 Remove docs/ after moving remaining content
 - [ ] F4.3 Structure Data/ and Example/ into subfolders
 - [ ] F4.4 Replace output/ with the generated-artefacts rule
 - [ ] F4.5 Fresh-clone check
+
+## For the step 7 README (from the previous Czech README, removed in F4.2)
+
+- An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the
+  same end effector as the MG06 project (VGC10 with the fork); the robot model from
+  ian-chuang/Manipulator-Mujoco, MIT (`models/aubo_i5/LICENSE_Manipulator-Mujoco`).
+- The cycle in six steps, as users read it (SPEC §4.5), and what the result means: the robot touches
+  nothing but the handle bar while closing and opening; the PCB ends in the right crate within 1 mm of the
+  centre, flat; an unstable run ends with an error instead of restarting silently.
+- In the viewer, `[` / `]` switch between the cameras `cam_pcb` and `cam_tool`.
+- The simplifications (KNOWN_ISSUES > Simplifications of the model) in user terms.
 
 ## Brief coverage (condition C2, 2026-10-24)
 

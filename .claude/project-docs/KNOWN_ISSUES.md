@@ -25,8 +25,8 @@ to validate an output on the real cell.
 ## The crate penetration is −0.14 mm in this environment, −0.08 mm in the brief's reference
 
 The brief's reference result (produced on the original machine of `mg06_cell_mujoco`, environment not
-recorded) gives the deepest PCB penetration into the crate as −0.08 mm; every run here gives −0.14 mm at
-t = 62.46 s. Every other number of the report is identical.
+recorded) gives the deepest PCB penetration into the crate as −0.08 mm, the previous Czech README (git `legacy-planner-reference:docs/README_cs_mg06_cell.md`) −0.07 mm;
+every run here gives −0.14 mm at t = 62.46 s. Every other number of the report is identical.
 
 - **Impact:** none on acceptance (bound 0.5 mm, SPEC §10.1); it shows that the report is reproducible
   only per environment, so the baseline is per environment.
@@ -54,13 +54,19 @@ and the test suite), never into the working directory.
 - **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`.
 - **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
 
-## The previous Czech README has pre-restructure paths
+## Simplifications of the model
 
-`docs/README_cs_mg06_cell.md` (the README of `mg06_cell_mujoco`) still names `cell.py`,
-`test_cell_cycle.py`, `tools/plan_cell.py`, `cell_scene.xml` at the root and the CAD-era file names.
+What the simulation does not model; whoever compares it with the real cell checks these first.
 
-- **Impact:** its commands do not run as written; its physics notes and CAD deviations are still right.
-- **What would close it:** the full README (brief §7 step 7), after which the file is removed.
+- The vacuum is a constant force per touching cup (7 N): no leaks, no build-up of the vacuum (valve,
+  ejector).
+- Robot joint torques and armature are estimates; the acceleration limits are assumed (SPEC §4.4, §4.10).
+- Cables and the robot pedestal (except its top plate) are not in the collision model.
+- The loader's masses are estimates (SPEC §4.10).
+- The PCB's components are one box in collision.
+- **Impact:** the comparison with reality is mainly the structure of the cycle; the absolute 65.8 s depends
+  on the chosen 60 % speed and the assumed accelerations.
+- **What would close it:** the real-cell validation procedure (item above), measured joint data.
 
 ## The PCB is one green mesh: board and components are not told apart
 

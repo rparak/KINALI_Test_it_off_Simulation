@@ -50,9 +50,8 @@ Trajectory are added in steps 3–4 as their own domains; no placeholder module 
 ## Root ✅
 
 The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
-`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `docs`.
-Exceptions, each with its reason: **`pytest.ini`** (the test runner reads it at the root); **`docs`**
-(only `README_cs_mg06_cell.md`, until it is removed in F4). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
+`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`.
+Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
 entries. Pinned by `test/Docs/test_layout.py`.
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
@@ -96,7 +95,7 @@ returned list, printed by the script, exit code 1.
 
 - Everyday `.venv/bin/python -m pytest -m "not slow"`; full `.venv/bin/python -m pytest` before a commit.
 - Reference data: `test/Simulation/data/baseline_report.txt`, `test/Scene/data/baseline_model_fingerprint.json`
-  (moved from `docs/` in F3).
+  (since F3).
 - Equivalence outputs: the printed report, the fingerprint (project-optimize reference).
 
 ## Project rules
@@ -114,6 +113,5 @@ returned list, printed by the script, exit code 1.
 
 ## Departures from the generic skill
 
-- The `docs/` root exception (above), temporary.
 - `.claude/project-docs/FEATURES.md`: a fourth internal document, the feature tracker the owner asked
   for; the generic skill defines three.

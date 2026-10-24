@@ -31,11 +31,10 @@ Description:
     The root holds only the declared entries (style project reference > Root, SPEC §6); written out here,
     never read from the README or the filesystem.
 """
-# The entries git tracks at the root. Exceptions with their reasons: pytest.ini (the runner reads it at
-# the root), docs (the previous Czech README, until it is removed in F4).
+# The entries git tracks at the root. Exception with its reason: pytest.ini (the runner reads it at the root).
 #   Unit [Set<string>]
 CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data', 'docs'}
+                      'src', 'test', 'Example', 'models', 'Data'}
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
 CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')

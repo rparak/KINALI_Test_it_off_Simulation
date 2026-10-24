@@ -49,7 +49,8 @@ Description:
 # Top of deska_robot (= CAD origin of the cell .blend).
 #   Unit [Vector<float> 1x3] (m)
 CONST_ROBOT_BASE = np.array([0.42072, -0.33497, 0.16200])
-# Robot base yaw: all tasks lie within +-60 deg of the pan-joint zero.
+# Robot base yaw: all tasks lie within about +-65 deg of the pan-joint zero (the reference plan uses
+# -64.7 .. +60.2 deg, SPEC §4.10).
 #   Unit [float] (rad)
 CONST_ROBOT_YAW = np.radians(-135.0)
 # The robot joints, base to wrist 3 (prefixed 'aubo/' in the cell).

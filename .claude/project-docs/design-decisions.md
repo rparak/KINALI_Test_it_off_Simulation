@@ -104,6 +104,22 @@ too: rejected, nothing else would show that the physics is unchanged.
 
 Pinned by `test/Simulation/test_core.py` (slow: the report equals the baseline; raw-value pins).
 
+## The MG06 lock has 1.5 mm radial play
+
+**Decision.** The lock's hook and pin in `models/scene.xml` have 1.5 mm radial play instead of the 0.5 mm of
+`mg06_loader_mujoco` (the `GAP` of the MG06 build there).
+
+**Why.** The robot pushes the lid down harder than the free-guided fork of the earlier version: with 0.5 mm
+the lid sank 0.6 mm into the base, the hook hit the pin already at 27° and the handle never reached 29°.
+With 1.5 mm the handle closes to 28.7° (SPEC §4.6) and the lid rises 0.5° in the play.
+
+**Alternatives.** A softer lid contact: rejected, it would change the verified contact parameters.
+
+**Revisit if** the real lock is measured.
+
+Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`) and the report's
+"MG06 closed" line (`test/Simulation/test_core.py`).
+
 ## The PCB is drawn in solder-mask green
 
 **Decision.** The visual geom `pcb_vis` has rgba `0.05 0.42 0.18 1` in `models/scene.xml`; no material
@@ -127,7 +143,7 @@ Pinned by `test/Scene/test_core.py::test_the_pcb_is_green_without_a_material` an
 +100 mm in Y and +0.95 mm in X; the rear-right holder support (`holder_10`) lowered by 0.8 mm; the
 electrical cabinet 200 mm deep instead of 300 mm. The scene is never regenerated from Blender.
 
-**Why.** Without them the cycle does not work in the model (`docs/README_cs_mg06_cell.md`): the loader
+**Why.** Without them the cycle does not work in the model (SPEC §4.10; the previous Czech README): the loader
 lacks about 75 mm of stroke without the +100 mm; the jaw centre sits 0.95 mm left of the nest centre and
 the nest has no width play, so the PCB lands on a pin edge and stays tilted 1.4°; `holder_10` is 0.8 mm
 higher than the other three supports and the PCB's centre of mass lies outside the other three, so the

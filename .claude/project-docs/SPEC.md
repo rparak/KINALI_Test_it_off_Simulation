@@ -295,6 +295,61 @@ fork from `fork_start`); `path: fork_open` = rows with phase `OPEN` after the jo
 `t, lid, press, handle, flange_pos[3], flange_quat[4]` per row; follow it with IK on the flange site (see
 `Plan.replay` in `tools/plan_cell.py`). A later task may approximate these paths by a few MoveL keypoints – only if the
 
+### 4.10 Model details (from the previous Czech README of `mg06_cell_mujoco`; verified state)
+
+Lineage: this project continues `mg06_loader_mujoco` and the full `mg06_cell_mujoco`. The scripts that
+built the scene (Blender → meshes → `scene.xml`, the loader's `MACHINE_DX` shift, the MG06 lock `GAP`) and
+the video scripts are in those projects, not here.
+
+**Robot (AUBO i5).** Base yaw −135° so that every task lies within about ±65° of the pan joint's zero (the
+reference plan uses −64.7° … +60.2°). Torque limits 180/180/150/60/60/60 Nm and armature
+0.2/0.2/0.15/0.04/0.04/0.04 kg·m² are **estimates** (AUBO publishes neither); gravity compensation and
+velocity feed-forward on every joint; the resulting tracking lag is at most 0.013 rad (§4.6). The legacy
+planner timed each MoveJ as min-jerk with T = max(0.5 s, maxⱼ 1.875·Δqⱼ / v_maxⱼ, maxⱼ √(5.774·Δqⱼ / a_maxⱼ)),
+v_max = 60 % of the datasheet speeds, a_max of §4.4, sampled every 4 ms; where a straight joint move
+collided it inserted a via point lifted above the move's midpoint; every robot segment kept ≥ 3 mm to the
+scene, the carried PCB included, in the scene state of its time.
+
+**Suction cups (VGC10).** Each cup is its own body on a slide joint (the bellows: 3 mm travel, 3000 N/m,
+damping 20 N·s/m) with its own adhesion actuator, so a cup holds only where it touches: a tilted or shifted
+pick loses cups as in reality. The cup's collision is a square pad of the cup's area (flat face, clean
+normals), friction 2.0, `solref 0.002`. Measured: all 4 cups touch at both picks; the PCB slips at most
+1.3 mm in the cups, about 0.4 mm of it contact compliance during transfers, the rest the loader jaws
+centring the board as they close. The cups hold the PCB on the top of its component area (in collision the
+components are one box).
+
+**PCB.** In collision: the board box (1.8 mm, `condim 4`), two rear corner strips and one component box.
+Placed in MG06 it does not bounce (tilt 0.02°, §4.6).
+
+**MG06 mechanism.** A real mechanism, its angles change continuously: the lid has over-centre gas springs
+(a spatial tendon with `stiffness` and `springlength`) - below −8° gravity keeps it closed, above it the
+springs keep it open; the handle has a toggle spring with its dead point at about 31°, friction 0.6 N·m
+and damping; the joint ranges end in stops (`solreflimit`); the press plate is coupled to the handle by a
+third-degree polynomial `equality`; the lock is a hook on the handle and a pin in the base with their own
+contact bits, radial play 1.5 mm (design-decisions). The robot therefore really pushes the handle: up to
+294 N between the fork and the handle bar (§4.6).
+
+**Loader.** Axis ranges `y_axis` −199.5 … +220.5 mm (QF12 S420, towards MG06), `z_axis` −3.5 … +296.5 mm
+(QF12 S300, vertical), jaws 0 … 40 mm each (SCHUNK EGI 040-EI, coupled, 40 N per jaw); 0 is the CAD
+position. Home y −100 mm, z 0 (the gripper where the CAD has it); jaws open 35 mm at the start (the robot
+brings the PCB). Fingers KS0010175 with a ledge and front stop KS0010278, tilted 8.94° like the cassette:
+the PCB lies on the ledges by its edges and is clamped over its front ~38 mm. Masses are **estimates**:
+Y carriage 4 kg, vertical carriage with the gripper 1.6 kg, PCB 60 g.
+
+**Leaving and returning to the MG06 handle.** The recorded close/open path (MG06 project) leaves with the
+bar on the bottom of the fork slot and assumes the handle at exactly 29.3°; with the robot the closed
+handle stays at 28.6° and the lid rises 0.5° in the lock's play, and the fork tooth hit the bar. The
+replacement path: (1) move the fork so the bar is centred in the slot (5 mm play each side) and 2 mm off
+its bottom; (2) out 90 mm along the slot, then 120 mm up; (3) return the same way in reverse; (4) join the
+recorded opening path only where its handle angle already points up below the real closed angle, so the
+slot wall meets the bar moving up and the handle is never pushed down (it stays at 28.6° until opening
+starts). Measured fork-to-bar clearance while leaving and returning: 3.8–4.7 mm.
+
+**Look.** A neutral textured floor, three directional lights, two with shadows (`shadowsize 8192`);
+materials: aluminium and metal `specular` 0.75, plastic 0.25, dark parts 0.15; reflections off for render
+speed. Cameras `cam_pcb` (follows the PCB) and `cam_tool` (follows the tool from the side opposite the
+robot), both `targetbody`.
+
 ## 5. Platform
 
 - macOS 26 on Apple silicon (primary, verified on the development machine, Apple M2 Pro) and Ubuntu
@@ -342,7 +397,6 @@ Example/export_cell_scene.py   writes models/cell_scene.xml
 Example/show_cell.py      opens the viewer on the cell
 Example/render_image.py   offscreen image from a camera into output/
 Example/model_fingerprint.py   writes or compares the compiled model's fingerprint
-docs/README_cs_mg06_cell.md    the previous Czech README (until step 7; root exception)
 test/<Domain>/test_core.py     mirroring src/; test/Example/, test/Install/, test/Docs/; reference data in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 output/                   generated reports and images (git-ignored)
@@ -494,7 +548,8 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 - Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test it off – Automated PCBA Testing Cell (MuJoCo)", git
   `427e076:docs/PROJECT_BRIEF.md` (2026-10-24).
-- The previous Czech description of the cell, `docs/README_cs_mg06_cell.md` (git `5e5ee62:README.md`).
+- The previous Czech description of the cell (git `legacy-planner-reference:docs/README_cs_mg06_cell.md`,
+  originally `5e5ee62:README.md`); its content is in §4.10, KNOWN_ISSUES and design-decisions (F4.2).
 - AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/Scene/Core.py`.
 - OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/Scene/Core.py`.
 - KINALI "Test it off": https://www.testitoff.cz/en/about-test-it-off/
