@@ -461,7 +461,7 @@ models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by 
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
 models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Mujoco
 models/robot_tool/        VGC10 + fork MJCF and meshes
-Configuration/Cell.yaml, Configuration/Keypoints.yaml   the cell configuration and the keypoints (§8)
+Configuration/Cell.yaml, Configuration/Keypoints.yaml, Configuration/Program_Default.yaml   the cell configuration, the keypoints, the default program (§8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
@@ -563,9 +563,9 @@ template's base–stand exclusion). Exact distances because MuJoCo's box–box c
 near pair (the carried PCB 1.0 mm above the crate floor), whatever the geom margin
 (`test/Collision/test_core.py`).
 
-## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`
+## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml`
 
-Both files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`): every
+The files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`): every
 field REQUIRED (no optional fields; `Relative_To` may be `null`, `Allow_Contact` an empty list), every problem
 collected and reported at once with its file and key path, unknown keys returned as WARNING notes that the
 scripts print, angles in degrees converted to radians once. Tested in `test/Configuration/`.
@@ -575,13 +575,17 @@ scripts print, angles in degrees converted to radians once. Tested in `test/Conf
 | `Robot.Base_Position`, `Robot.Base_Yaw` | m, deg | CAD, §4.2 | `Scene` |
 | `Vacuum.Pressure`, `Vacuum.Cup_Diameter` (force derived) | Pa, m | VGC10 datasheet, §4.3 | `Scene` |
 | `MG06.Closed_Lid`, `MG06.Closed_Handle` | deg | §4.7 (`LID_CLOSED`, `H_CLOSED`) | posing, the keypoint check |
-| `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>`, `Check_Position`, `Stale_Position`, `Stale_Angle`, `Family_Margin` | m, deg | §2, the owner (0.5 mm), measured (F6) | `Collision`, the keypoint check |
+| `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>` (four groups), `Check_Position`, `Stale_Position`, `Stale_Angle`, `Family_Margin`, `Check_Step` | m, deg | §2, the owner (0.5 mm), measured (F6), F8 | `Collision`, the keypoint and program checks |
+| `MG06.Open_Join_Margin` | deg | the legacy planner (28.45°, §4.9) | `Path: Fork_Open` |
+| `Handover.Ledge_Gap`, `Handover.Ledge_Tolerance` | m | §4.7, the owner (B1, F8) | the program check (no press at the handover) |
+| `Motion.Speed_Fraction`, `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
+| `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test: Process.Test_Duration` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
-the vendored robot MJCF, `models/scene.xml`; read from the compiled model); joint speeds and accelerations
-(step 4, with the trajectory, owner 2026-10-24).
+the vendored robot MJCF, `models/scene.xml`; read from the compiled model); the loader and gripper move times (each
+program command carries its own, with its source in a comment).
 
 `Keypoints.yaml`: `Robot.<name>` (`Joints` [deg] - the source of truth; `Family`; `Check` - a site and the
 position its FK must reach; `Relative_To` - null or a target `pcb_hold@<location>` / a keypoint with a frame
@@ -589,6 +593,13 @@ and an offset [m]; `Fixture` - `Open`, `Closed` or the recorded `{Lid, Handle, S
 `Context` - `Loader`, `Gripper`, `PCB` location; `Allow_Contact` - contact groups; `Note`), `Loader.<position>`
 (`Y`, `Z` [m]: home, travel_place, place, park - the only source of the loader positions, moved from
 `pcb_meta.json`), `Gripper.<state>` [m] (open, grip, clamp). The 22 keypoints are §4.8 at full precision.
+
+`Program_Default.yaml` (`FEATURES.md` F8): `Start` (`Robot` a keypoint, `Loader` a position, `Gripper` a state, `Vacuum`
+On / Off, `PCB` a location, `MG06` Open / Closed) and `Steps`, each with `Name` (unique, lowercase), `Comment`,
+`Allow_Contact` (groups, `[]` for none) and `Commands`, one-key mappings: `Movej: <keypoint>`, `Movel: {To, Speed [m/s]}`,
+`Path: Fork_Close | Fork_Open`, `Loader: {Axis: Y | Z, To: <position>, Duration [s]}`, `Gripper: {To: <state>,
+Duration [s]}`, `Vacuum: On | Off` (YAML booleans), `Wait: <s>`, `Test: Process.Test_Duration` (a Cell.yaml reference).
+Every keypoint, position, state and group it names is checked against `Keypoints.yaml` and `Cell.yaml` at load.
 
 ## 9. Data formats and units
 
@@ -604,7 +615,7 @@ and an offset [m]; `Fixture` - `Open`, `Closed` or the recorded `{Lid, Handle, S
 | `models/scene.xml` and the vendored / tool MJCFs | `Scene` (MjSpec), never written |
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
-| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` | `Configuration` (`Load_Cell_Configuration`, `Load_Keypoints`), written by hand (§8) |
+| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`), written by hand (§8) |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |

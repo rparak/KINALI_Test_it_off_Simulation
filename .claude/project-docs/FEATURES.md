@@ -997,6 +997,10 @@ baselines for both programs in step 6 (SPEC).
       the PCB-table pair `pcb_crate` only inside a crate (`Scene.Crate_Holding`). Found: generated contacts depend on
       unrelated geoms (one more workstation geom makes MuJoCo generate the PCB-crate contacts it missed) - the exact-
       distance decision's reason corrected. 202 -> 208 collected; each new test broken once (7 mutations).
+- [x] F8.2 Configuration: `Cell.yaml` `Motion`, `Process.Test_Duration`, `Handover`, `MG06.Open_Join_Margin`,
+      `Clearance.Check_Step`; `Configuration/Program_Default.yaml` (22 steps, 68 commands, every loader / gripper duration
+      and wait with its legacy source); `Load_Program` (`Test: Process.Test_Duration` as a Cell.yaml reference;
+      `Vacuum: On / Off` as YAML booleans). 208 -> 246 collected; 6 mutations, all failed.
 
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 

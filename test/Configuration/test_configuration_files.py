@@ -33,7 +33,8 @@ import numpy as np
 import pytest
 # Custom Lib.: the loaders under test
 #   ../Configuration/Core
-from Configuration.Core import Load_Cell_Configuration, Load_Keypoints, Configuration_Error_Cls, CONST_CELL_YAML, CONST_KEYPOINTS_YAML
+from Configuration.Core import (Load_Cell_Configuration, Load_Keypoints, Load_Program, Configuration_Error_Cls, CONST_CELL_YAML, CONST_KEYPOINTS_YAML,
+                                CONST_PROGRAM_DEFAULT_YAML)
 
 """
 Description:
@@ -47,9 +48,17 @@ Description:
 CONST_CELL_FIELDS = [('Robot', 'Base_Position'), ('Robot', 'Base_Yaw'), ('Vacuum', 'Pressure'), ('Vacuum', 'Cup_Diameter'),
                      ('MG06', 'Closed_Lid'), ('MG06', 'Closed_Handle'), ('Clearance', 'Robot'), ('Clearance', 'Allowed_Depth'),
                      ('Clearance', 'Check_Position'), ('Clearance', 'Stale_Position'), ('Clearance', 'Stale_Angle'),
-                     ('Clearance', 'Family_Margin'), ('Acceptance', 'Place_Error'), ('Acceptance', 'Place_Tilt'),
+                     ('Clearance', 'Family_Margin'), ('Clearance', 'Check_Step'), ('MG06', 'Open_Join_Margin'), ('Handover', 'Ledge_Gap'),
+                     ('Handover', 'Ledge_Tolerance'), ('Motion', 'Speed_Fraction'), ('Motion', 'Datasheet_Speeds'),
+                     ('Motion', 'Acceleration_Limits'), ('Motion', 'Movej_Min_Duration'), ('Motion', 'Movel_Min_Duration'),
+                     ('Process', 'Test_Duration'), ('Acceptance', 'Place_Error'), ('Acceptance', 'Place_Tilt'),
                      ('Acceptance', 'Crate_Distance'), ('Acceptance', 'Open_Tolerance'), ('Acceptance', 'Penetration'),
                      ('Simulation', 'Phase_Steps'), ('Simulation', 'Cup_Touch')]
+# The default program's steps in order (FEATURES.md F8, the owner's approval 2026-10-24).
+#   Unit [List<string>]
+CONST_PROGRAM_STEPS = ['approach_input', 'pick_input', 'to_loader', 'handover', 'home_after_handover', 'loader_insert', 'loader_park',
+                       'to_mg06', 'close_mg06', 'leave_mg06', 'test', 'return_mg06', 'open_mg06', 'home_after_mg06', 'loader_fetch',
+                       'loader_return', 'to_take', 'take_from_loader', 'to_output', 'place_output', 'home_end', 'settle']
 # Every field of a robot keypoint (all REQUIRED; Relative_To may be null, Allow_Contact empty).
 #   Unit [List<string>]
 CONST_KEYPOINT_FIELDS = ['Joints', 'Family', 'Check', 'Relative_To', 'Fixture', 'Context', 'Allow_Contact', 'Note']
@@ -222,3 +231,99 @@ def test_the_joints_are_the_reference_plans_segment_ends(root, keypoints):
         joints = np.array(keypoint.Joints)
         nearest = q_home if name == 'home' else q[np.argmin(np.max(np.abs(q - joints), axis=1))]
         assert np.max(np.abs(nearest - joints)) <= math.radians(0.5e-6) + 1e-12, name
+
+
+def test_the_motion_process_and_handover_fields_load_in_si_units(cell_configuration):
+    """
+    Description:
+        The step 4 fields of Cell.yaml: 60 % of the datasheet speeds (220 / 230 deg/s), the assumed 3 / 6 rad/s^2 exactly,
+        MoveJ / MoveL at least 0.5 / 0.6 s, the 2.0 s test, the 0.2 deg open join, the 1 mm check step, the 0.3 +- 0.1 mm
+        handover gap.
+    """
+
+    c = cell_configuration
+    assert c.Speed_Fraction == 0.6 and c.Datasheet_Speeds == pytest.approx(np.radians([220, 220, 220, 220, 230, 230]), abs=1e-15)
+    assert c.Acceleration_Limits == [3.0, 3.0, 3.0, 6.0, 6.0, 6.0]
+    assert (c.Movej_Min_Duration, c.Movel_Min_Duration, c.Test_Duration, c.Check_Step) == (0.5, 0.6, 2.0, 0.001)
+    assert c.Open_Join_Margin == pytest.approx(math.radians(0.2)) and (c.Ledge_Gap, c.Ledge_Tolerance) == (0.0003, 0.0001)
+
+
+def test_the_shipped_default_program_loads(keypoints, cell_configuration):
+    """
+    Description:
+        Configuration/Program_Default.yaml loads without notes: the start state, the 22 steps in order, 68 commands; a
+        Movel, a Loader and the Test command parsed with their values.
+    """
+
+    program = Load_Program(keypoints, cell_configuration)
+    assert program.Notes == [] and program.Name == 'Program_Default'
+    assert (program.Start_Robot, program.Start_Loader, program.Start_Gripper, program.Start_Vacuum, program.Start_PCB,
+            program.Start_MG06) == ('home', 'home', 'open', False, 'input_crate', 'Open')
+    assert [s.Name for s in program.Steps] == CONST_PROGRAM_STEPS and sum(len(s.Commands) for s in program.Steps) == 68
+    pick = program.Steps[1]
+    assert pick.Allow_Contact == ['cups_pcb', 'pcb_crate'] and pick.Commands[1].Text == 'Movel input_pcb_press 0.03'
+    assert (pick.Commands[1].Kind, pick.Commands[1].Target, pick.Commands[1].Speed) == ('Movel', 'input_pcb_press', 0.03)
+    insert = program.Steps[5].Commands[1]
+    assert (insert.Kind, insert.Axis, insert.Target, insert.Duration) == ('Loader', 'Y', 'travel_place', 2.0)
+    test = program.Steps[10].Commands[0]
+    assert (test.Kind, test.Target, test.Duration) == ('Test', 'Process.Test_Duration', 2.0)
+
+
+@pytest.mark.parametrize('keys', [('Start', 'Robot'), ('Start', 'Loader'), ('Start', 'Gripper'), ('Start', 'Vacuum'), ('Start', 'PCB'),
+                                  ('Start', 'MG06'), (1, 'Name'), (1, 'Comment'), (1, 'Allow_Contact'), (1, 'Commands')])
+def test_a_missing_program_field_is_named(tmp_path, keypoints, cell_configuration, keys):
+    """
+    Description:
+        Removing a field of the start state or of a step fails the load naming its key path (no optional fields).
+    """
+
+    def Change(t):
+        (t['Start'] if keys[0] == 'Start' else t['Steps'][keys[0]]).pop(keys[1])
+    path = _Mutated(tmp_path, CONST_PROGRAM_DEFAULT_YAML, Change)
+    name = 'Start' if keys[0] == 'Start' else 'Steps[%d]' % keys[0]
+    assert '%s.%s: missing (REQUIRED)' % (name, keys[1]) in _Error(lambda x: Load_Program(keypoints, cell_configuration, x), path)
+
+
+@pytest.mark.parametrize('change, text', [
+    (lambda t: t['Steps'][1]['Commands'][1]['Movel'].pop('Speed'), 'Steps[1].Commands[1].Movel.Speed: missing (REQUIRED)'),
+    (lambda t: t['Steps'][1]['Commands'][1]['Movel'].update(Speed=3.0), 'Steps[1].Commands[1].Movel.Speed: 3.0 is outside'),
+    (lambda t: t['Steps'][0]['Commands'].__setitem__(0, {'Movej': 'nowhere'}), "Steps[0].Commands[0].Movej: 'nowhere' is not one of"),
+    (lambda t: t['Steps'][0]['Commands'].__setitem__(0, {'Jump': 'home'}), "Steps[0].Commands[0]: 'Jump' is not a command"),
+    (lambda t: t['Steps'][5]['Commands'][0]['Loader'].update(Axis='X'), "Steps[5].Commands[0].Loader.Axis: 'X' is not one of Y, Z"),
+    (lambda t: t['Steps'][5]['Commands'][0]['Loader'].update(To='garage'), "Steps[5].Commands[0].Loader.To: 'garage' is not one of"),
+    (lambda t: t['Steps'][5]['Commands'][0]['Loader'].pop('Duration'), 'Steps[5].Commands[0].Loader.Duration: missing (REQUIRED)'),
+    (lambda t: t['Steps'][3]['Commands'][2]['Gripper'].update(To='squeeze'), "Steps[3].Commands[2].Gripper.To: 'squeeze' is not one of"),
+    (lambda t: t['Steps'][1]['Commands'].__setitem__(2, {'Vacuum': 'maybe'}), "Steps[1].Commands[2].Vacuum: must be On or Off"),
+    (lambda t: t['Steps'][10]['Commands'].__setitem__(0, {'Test': 'Process.Coffee_Break'}),
+     "Steps[10].Commands[0].Test: 'Process.Coffee_Break' is not one of Process.Test_Duration"),
+    (lambda t: t['Steps'][8]['Commands'].__setitem__(0, {'Path': 'Fork_Wiggle'}), "Steps[8].Commands[0].Path: 'Fork_Wiggle' is not one of"),
+    (lambda t: t['Steps'][1].update(Allow_Contact=['elbow_table']), 'Steps[1].Allow_Contact:'),
+    (lambda t: t['Steps'][2].update(Name='pick_input'), "Steps[2].Name: 'pick_input' is used by an earlier step"),
+    (lambda t: t['Steps'][2].update(Name='To Loader'), 'Steps[2].Name: must be a lowercase name without spaces'),
+    (lambda t: t['Start'].update(PCB='pocket'), "Start.PCB: 'pocket' is not one of"),
+])
+def test_an_invalid_program_value_is_named(tmp_path, keypoints, cell_configuration, change, text):
+    """
+    Description:
+        Each kind of invalid program value - a command field missing or out of range, an unknown keypoint, command, axis,
+        loader position, gripper state, path, contact group or duration reference, a duplicate or malformed step name, an
+        unknown PCB location - is named with its key path.
+    """
+
+    assert text in _Error(lambda x: Load_Program(keypoints, cell_configuration, x), _Mutated(tmp_path, CONST_PROGRAM_DEFAULT_YAML, change))
+
+
+def test_every_invalid_program_value_is_named_at_once(tmp_path, keypoints, cell_configuration):
+    """
+    Description:
+        Three problems in three steps fail the load once, naming all three; an unknown key in a step is a WARNING note.
+    """
+
+    def Change(t):
+        t['Steps'][0]['Commands'][0] = {'Movej': 'nowhere'}
+        t['Steps'][4]['Comment'] = ''
+        t['Steps'][6]['Commands'][0]['Loader']['Axis'] = 'W'
+    message = _Error(lambda x: Load_Program(keypoints, cell_configuration, x), _Mutated(tmp_path, CONST_PROGRAM_DEFAULT_YAML, Change))
+    assert '3 problem(s)' in message and 'Steps[4].Comment: must say what the step does' in message
+    program = Load_Program(keypoints, cell_configuration, _Mutated(tmp_path, CONST_PROGRAM_DEFAULT_YAML, lambda t: t['Steps'][0].update(Speed=1)))
+    assert program.Notes == [('WARNING', program.Notes[0][1])] and program.Notes[0][1].endswith('Steps[0].Speed: unknown key, ignored (misspelt?)')

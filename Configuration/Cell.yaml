@@ -1,18 +1,19 @@
 ## =========================================================================== ##
 #   Description:
 #     The cell configuration of Test-it-off Simulation: the robot's base pose, the vacuum, the MG06
-#     closed state, the clearances and tolerances of the keypoint check, the acceptance limits of a
-#     cycle run, and two settings of the run (SPEC §8).
+#     closed state, the clearances and tolerances of the keypoint and program checks, the handover's
+#     no-press rule, the robot's motion limits, the MG06 test time, the acceptance limits of a cycle
+#     run, and two settings of the run (SPEC §8).
 #     Read only by src/Configuration/Core.py (Load_Cell_Configuration); written by hand.
 #
 #   REQUIRED: every field is required; a missing or invalid field fails the load, naming it.
-#   Units: in brackets after each field's comment; lengths [m], angles [deg], pressure [Pa]. The loader
-#     converts degrees to radians once.
+#   Units: in brackets after each field's comment; lengths [m], angles [deg], angular speeds [deg/s] and
+#     accelerations [deg/s^2], times [s], pressure [Pa]. The loader converts degrees to radians once.
 #   Frames: positions in the MG06 fixture frame (origin = centre of the MG06 footprint on the table top,
 #     Z up, front of MG06 = -Y; SPEC §4.2).
 #   Not here, on purpose: the joint limits and the loader axis ranges (the model holds them: the vendored
-#     robot MJCF and models/scene.xml); the joint speeds and accelerations (step 4, with the trajectory);
-#     the loader positions and gripper states (Configuration/Keypoints.yaml).
+#     robot MJCF and models/scene.xml); the loader positions and gripper states (Configuration/Keypoints.yaml);
+#     the loader and gripper move times (each command of the program carries its own, with its source).
 ## =========================================================================== ##
 
 # The AUBO i5 on the robot pedestal.
@@ -40,6 +41,11 @@ MG06:
   Closed_Lid: -0.5
   # The handle after closing, the robot away. Source: as above, H_CLOSED, SPEC §4.7. [deg] REQUIRED.
   Closed_Handle: 28.65
+  # Path Fork_Open joins the recorded opening path at its first row whose handle is this far below
+  # Closed_Handle (28.45 deg), so the fork's slot wall meets the bar moving up and the handle is never
+  # pushed down (SPEC §4.7, §4.9). Source: the legacy planner (H_CLOSED - 0.2; git tag
+  # legacy-planner-reference). [deg] REQUIRED.
+  Open_Join_Margin: 0.2
 
 # The keypoint check (SPEC §2 item 3).
 Clearance:
@@ -67,6 +73,44 @@ Clearance:
   # Within this angle of zero, wrist_2's sign does not decide the IK family: a WARNING, not a FAIL
   # (via_mg06_high is at -0.94 deg: the switch between the families, SPEC §4.7). [deg] REQUIRED.
   Family_Margin: 1.0
+  # The program check measures a sample whenever a robot geom or the carried PCB may have moved more
+  # than this since the last measured sample (bounded through the joint steps), and at every segment
+  # end. Source: proposed in FEATURES.md F8, approved by the owner 2026-10-24. [m] REQUIRED.
+  Check_Step: 0.001
+
+# The handover's no-press rule (SPEC §4.7): the PCB is put into the open jaws at the hold pose without
+# pressing it onto the finger ledges, so the jaws do not clamp on the ledge corners.
+Handover:
+  # The gap between the PCB and the finger ledges at loader_handover, the jaws closed on it: 0.3 mm
+  # (SPEC §4.7; measured 0.318 mm, FEATURES.md F8). [m] REQUIRED.
+  Ledge_Gap: 0.0003
+  # The gap may differ from Ledge_Gap by at most this; a smaller gap is a press and fails. Source: the
+  # owner, 2026-10-24 (B1). [m] REQUIRED.
+  Ledge_Tolerance: 0.0001
+
+# The robot's motion limits for the program's MoveJ and MoveL (SPEC §4.4, §4.10).
+Motion:
+  # The fraction of the datasheet joint speeds the program runs at. Source: the reference plan (the
+  # legacy planner's SPEED, git tag legacy-planner-reference), SPEC §4.4. [-] REQUIRED.
+  Speed_Fraction: 0.6
+  # The joint speeds, shoulder_pan .. wrist_3. Source: AUBO i5 datasheet (J1-J4 220 deg/s, J5-J6
+  # 230 deg/s), SPEC §4.4. [deg/s] REQUIRED.
+  Datasheet_Speeds: [220.0, 220.0, 220.0, 220.0, 230.0, 230.0]
+  # The joint accelerations (= 3 rad/s^2 for J1-J3, 6 rad/s^2 for J4-J6). An ASSUMPTION, not in the
+  # datasheet (SPEC §4.4, KNOWN_ISSUES.md). Source: the legacy planner's AMAX. [deg/s^2] REQUIRED.
+  Acceleration_Limits: [171.88733853924697, 171.88733853924697, 171.88733853924697,
+                        343.77467707849394, 343.77467707849394, 343.77467707849394]
+  # The shortest MoveJ (min-jerk; SPEC §4.10). Source: the legacy planner's _jpath. [s] REQUIRED.
+  Movej_Min_Duration: 0.5
+  # The shortest MoveL. Source: the legacy planner's linear_move. [s] REQUIRED.
+  Movel_Min_Duration: 0.6
+
+# The process times the program refers to.
+Process:
+  # The MG06 test: the time the tester needs once the PCB is inside and MG06 is closed; the robot waits
+  # away from the handle (the program's Test: Process.Test_Duration). A PLACEHOLDER: the real test time
+  # of the customer's PCB is not known. Source: the owner, 2026-10-24 (KNOWN_ISSUES.md). [s] REQUIRED.
+  Test_Duration: 2.0
 
 # The acceptance criteria of a cycle run (SPEC §10.1).
 Acceptance:

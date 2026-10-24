@@ -37,7 +37,7 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
-Configuration/         Cell.yaml, Keypoints.yaml (step 3); the program YAML in step 4
+Configuration/         Cell.yaml, Keypoints.yaml (step 3), Program_Default.yaml (step 4)
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
@@ -75,7 +75,7 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `models/scene.xml`, `models/aubo_i5/aubo_i5.xml`, `models/robot_tool/vgc10_opener_free.xml` | `Scene.Core` through MjSpec; never written (mjcf.md) |
 | `models/cell_scene.xml` | written by `Scene.Core.Export_Cell_Scene`; read only by MuJoCo's viewer |
 | `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand (the PCB poses only) |
-| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` | `Configuration.Core.Load_Cell_Configuration`, `Load_Keypoints`; written by hand (a script that finds a value to change prints the line) |
+| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration.Core.Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`; written by hand (a script that finds a value to change prints the line) |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
@@ -85,15 +85,15 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 
 ## Configuration
 
-- Files: `Configuration/Cell.yaml` and `Configuration/Keypoints.yaml` (SPEC §8), read only by
-  `src/Configuration/Core.py` (`Load_Cell_Configuration` -> `Cell_Configuration_Str`, `Load_Keypoints` ->
-  `Keypoints_Str`), tested in `test/Configuration/test_configuration_files.py` (each required field named
+- Files: `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` and `Configuration/Program_Default.yaml` (SPEC §8),
+  read only by `src/Configuration/Core.py` (`Load_Cell_Configuration` -> `Cell_Configuration_Str`, `Load_Keypoints` ->
+  `Keypoints_Str`, `Load_Program` -> `Program_Str`), tested in `test/Configuration/test_configuration_files.py` (each required field named
   literally, mutated copies of the shipped files).
 - Keys Pascal_Snake_Case; the names of keypoints, loader positions, gripper states and contact groups are
   lowercase (they are names, SPEC §4.8). No optional fields: `Relative_To: null` and `Allow_Contact: []` are
   values, not omissions (owner, 2026-10-24).
 - Not configured: what the model holds (joint limits, loader ranges, the lid's open stop) - read from the
-  compiled model; joint speeds and accelerations until step 4 reads them.
+  compiled model. `On` / `Off` in the program are YAML booleans (PyYAML reads an unquoted On as true).
 - Single legal value, so a code constant: the number of suction cups (`Scene.CONST_CUP_N`), the PCB
   locations, the contact groups, the planning margin factor (2 x the clearance).
 - Derived, not stored: the adhesion force (pressure x cup area), the cup pad size, the planning margin.
