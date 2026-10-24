@@ -239,7 +239,7 @@ class Robot_Kinematics_Cls(object):
             (1 - 2) pos, mat [Vector<float> 1x3, Matrix<float> 3x3]: The target position (m) and orientation.
             (3) q0 [Vector<float> 1x6]: The start (rad).
             (4) site [int]: The site id (default: the suction TCP).
-            (5) q_ref [Vector<float> 1x6]: The null-space reference (default: the current iterate).
+            (5) q_ref [Vector<float> 1x6]: The null-space reference (default: the start q0).
             (6) iters [int]: The iteration limit.
             (7) tol [float]: The position tolerance (m); the orientation tolerance is 10 x tol.
             (8) data [mujoco.MjData]: The data (default: the class's).
