@@ -41,7 +41,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python -m pytest -m "not slow"         # everyday, about 80 s
 .venv/bin/python -m pytest                       # before a commit, about 4 min
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
-.venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~15 s
+.venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~18 s
+.venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~17 s
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
 .venv/bin/python Example/Scene/export_cell_scene.py    # models/cell_scene.xml
 .venv/bin/python Example/Render/show_cell.py            # MuJoCo viewer on the cell

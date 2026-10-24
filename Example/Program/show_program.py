@@ -39,17 +39,16 @@ import typing as tp
 import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_CELL_YAML,
-                                CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_IMAGES, CONST_PCB_LOCATIONS)
+from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_TRAJECTORIES,
+                                CONST_IMAGES, CONST_PCB_LOCATIONS)
 #   ../Configuration/Program_Parser - the program's three files
-from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
-                                          CONST_PROGRAM_YAML, CONST_OPTIMIZED_PROGRAM_YAML, CONST_OPTIMIZATION_YAML)
+from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program, CONST_PROGRAM_YAML, CONST_OPTIMIZED_PROGRAM_YAML
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the model's robot joints
 from Kinematics.Core import Robot_Kinematics_Cls
-#   ../Program/Core - posing at a sample, the inputs' hashes
-from Program.Core import Pose_Sample, File_Hash
+#   ../Program/Core - posing at a sample, a stale trajectory
+from Program.Core import Pose_Sample, Stale_Trajectory
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls, Trajectory_Str, CONST_DT
 #   ../Collision/Core, ../Optimizer/Core - an optimized program's inputs (its planning model's hash)
@@ -74,27 +73,6 @@ CONST_KEY_ACTIONS = {268: 'pause', 267: 'next', 46: 'next', 266: 'previous', 269
 # The image camera: the cell's centre (the studio look's statistic, SPEC §4.10) seen from the front right.
 #   Unit [Vector<float> 1x3] (m), [float] (m), [float] (deg), [float] (deg)
 CONST_IMAGE_LOOKAT, CONST_IMAGE_DISTANCE, CONST_IMAGE_AZIMUTH, CONST_IMAGE_ELEVATION = [0.15, -0.40, 0.25], 1.9, 135.0, -28.0
-
-
-def Stale_Inputs(trajectory: Trajectory_Str, program_path: str) -> tp.List[str]:
-    """
-    Description:
-        The input files that changed since the trajectory was built (their sha256 against its metadata).
-
-    Args:
-        (1) trajectory [Trajectory_Str(object)]: The trajectory.
-        (2) program_path [string]: Its program file.
-
-    Returns:
-        (1) parameter [List<string>]: The changed inputs' names; empty when it is current.
-    """
-
-    built = trajectory.Meta.get('inputs_sha256', {})
-    now = {'program': program_path, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
-           'fork_path': CONST_FORK_PATH}
-    if 'optimization' in built:
-        now['optimization'] = CONST_OPTIMIZATION_YAML
-    return [name for name, path in now.items() if built.get(name) != File_Hash(path)]
 
 
 def Sample_Of(trajectory: Trajectory_Str, step: tp.Optional[str], at: tp.Optional[float]) -> int:
@@ -165,7 +143,7 @@ def main():
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
-    stale = Stale_Inputs(trajectory, program_path)
+    stale = Stale_Trajectory(trajectory, program_path)
     optimized_stale = Stale_Optimized_Inputs(program, Build_Planning_Model(cell)) if program.Optimized is not None else []
     if optimized_stale:
         print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '

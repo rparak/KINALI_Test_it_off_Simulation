@@ -35,7 +35,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the files, the cell, the contact categories
 #   ../Configuration/Core
-from Configuration.Core import CONST_REFERENCE_PLAN, PCB_Meta_Str, Cell_Configuration_Str
+from Configuration.Core import CONST_REFERENCE_PLAN, CONST_PCB_LOCATIONS, PCB_Meta_Str, Cell_Configuration_Str
 #   ../Configuration/Program_Parser - a loader position
 from Configuration.Program_Parser import Loader_Position_Str, Program_Str
 #   ../Scene/Core
@@ -449,6 +449,20 @@ class Legacy_Drive_Cls(object):
 
         return Phase_At(self.Plan, t)
 
+    def PCB_Location(self, t: float) -> str:
+        """
+        Description:
+            Where the plan has the PCB at t: a plan does not say ('').
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: ''.
+        """
+
+        return ''
+
     def Fork_Allowed(self, label: str) -> bool:
         """
         Description:
@@ -529,13 +543,15 @@ class Trajectory_Drive_Cls(object):
         the 4 ms samples, with the feed-forward of its stored joint speeds (analytic in MoveJ and MoveSpline); the loader's y
         and z and the gripper's commands, linear between samples (the jaws stop on the PCB in physics); its vacuum events;
         its steps as labels. The fork may touch the handle in the steps whose Allow_Contact has handle_bar; the PCB is placed
-        at J_PARK's first sample, MG06 closed at the Test step's first sample; a step is FREE when it runs a MoveSpline and
-        parallel when it starts a loader job.
+        at J_PARK's first sample, MG06 closed at the Test step's first sample; a step is FREE when free_steps has it
+        (Configuration.Program_Parser.Free_Steps; by default when it runs a MoveSpline) and parallel when it starts a loader
+        job.
 
     Initialization of the Class:
         Args:
             (1) trajectory [Trajectory_Str(object)]: The trajectory.
             (2) program [Program_Str(object)]: Its program (the steps' allowed contacts and lines).
+            (3) free_steps [Set<string>]: Its free transfers, or None for its MoveSpline steps.
 
         Example:
             Initialization:
@@ -547,7 +563,7 @@ class Trajectory_Drive_Cls(object):
                 drive.Robot(t), drive.Loader(t), drive.Label(t)
     """
 
-    def __init__(self, trajectory: Trajectory_Str, program: Program_Str) -> None:
+    def __init__(self, trajectory: Trajectory_Str, program: Program_Str, free_steps: tp.Optional[tp.Set[str]] = None) -> None:
         tr = trajectory
         self.Trajectory, self.T_End, self.Dt, self.N = tr, float(tr.T[-1]), CONST_DT, len(tr.T)
         self.__kv_kp = np.zeros(6)
@@ -556,7 +572,8 @@ class Trajectory_Drive_Cls(object):
         self.__fork = {name for name in tr.Step_Names if name in allowed}
         lines = {name: [tr.Segment_Command[k] for k in range(len(tr.Segment_Command)) if tr.Step_Names[tr.Segment_Step[k]] == name]
                  for name in tr.Step_Names}
-        self.__free = {name for name, texts in lines.items() if any(text.startswith('Robot.MoveSpline') for text in texts)}
+        self.__free = set(free_steps) if free_steps is not None else {name for name, texts in lines.items()
+                                                                      if any(text.startswith('Robot.MoveSpline') for text in texts)}
         self.__parallel = {name for name, texts in lines.items() if any(text.startswith('Loader.Start') for text in texts)}
         park = next(k for k, text in enumerate(tr.Segment_Command) if text == 'Loader.Start(J_PARK)' or text.startswith('Loader.Run(J_PARK) >'))
         test = next(k for k, name in enumerate(tr.Step_Names) if name.endswith('_Test'))
@@ -672,6 +689,20 @@ class Trajectory_Drive_Cls(object):
 
         return self.Trajectory.Segment_Command[int(self.Trajectory.Segment_Id[self.__At(t)[0]])]
 
+    def PCB_Location(self, t: float) -> str:
+        """
+        Description:
+            Where the program has the PCB at t (one of Configuration.Core.CONST_PCB_LOCATIONS).
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: The location.
+        """
+
+        return CONST_PCB_LOCATIONS[int(self.Trajectory.PCB_Location[self.__At(t)[0]])]
+
     def Fork_Allowed(self, label: str) -> bool:
         """
         Description:
@@ -778,9 +809,12 @@ class Step_Physics_Str:
     # The deepest contact per CONST_COLLISION_CHECKS category: (distance, geom 1, geom 2, time).
     #   Unit [Dict<string, Tuple>] (m, -, -, s)
     Contacts: tp.Dict[str, tp.Tuple[float, str, str, float]] = field(default_factory=dict)
-    # A parallel step's closest robot-loader distance (exact, every 4 ms): (distance, time, pair), or None.
+    # The closest robot - loader distance (the carriages and jaws, and the PCB where the program has it in the jaws) and the
+    # closest carried PCB - loader distance (exact, every 4 ms, up to CONST_LOADER_CUT): (distance, time, pair), or None when
+    # never measured (F11).
     #   Unit [Tuple<float, float, string>] (m, s, -)
     Robot_Loader: tp.Optional[tp.Tuple[float, float, str]] = None
+    PCB_Loader: tp.Optional[tp.Tuple[float, float, str]] = None
 
 
 class Physics_Run_Cls(object):
@@ -870,6 +904,7 @@ class Physics_Run_Cls(object):
         robot = {i for i in range(m.nbody) if m.body(i).name.startswith('aubo/')}
         loader = {m.body(n).id for n in CONST_LOADER_BODIES}
         self.robot_bodies, self.not_loader = robot, set(range(m.nbody)) - loader
+        self.not_loader_pcb = self.not_loader - {self.PCB}
         self.collision = Robot_Collision_Cls(m, d)
 
     @property
@@ -960,11 +995,7 @@ class Physics_Run_Cls(object):
                 p0, p1, p2 = self.tcp_history
                 self.tcp_acceleration = float(np.linalg.norm(p2 - 2 * p1 + p0)) / CONST_SAMPLE_PERIOD ** 2
             self.tilt = float(np.arccos(np.clip(-d.site_xmat[self.TCP].reshape(3, 3)[2, 2], -1.0, 1.0)))
-            if record.Parallel:
-                pairs = self.collision.Close_Pairs(self.robot_bodies, CONST_LOADER_CUT, d, exclude=self.not_loader)
-                found = (pairs[0][0], d.time, '%s / %s' % (pairs[0][1], pairs[0][2])) if pairs else (CONST_LOADER_CUT, d.time, '')
-                if record.Robot_Loader is None or found[0] < record.Robot_Loader[0]:
-                    record.Robot_Loader = found
+            self.__Loader_Distances(record)
         if slip_now is not None:
             record.Tilt_Max = max(record.Tilt_Max, self.tilt)
             record.Acceleration_Max = max(record.Acceleration_Max, self.tcp_acceleration)
@@ -978,6 +1009,26 @@ class Physics_Run_Cls(object):
             self.marks['closed'] = (d.qpos[self.qa], d.qpos[self.qh], d.time)
         self.__Lost(cups, slip_now)
         self.__Vacuum_Switch(t, cups)
+
+    def __Loader_Distances(self, record: 'Step_Physics_Str') -> None:
+        """
+        Description:
+            The step's closest robot - loader and carried PCB - loader distances now (F11): the loader's carriages and jaws, with
+            the PCB where the program has it in the jaws; the PCB carried where the program has it on the cups.
+
+        Args:
+            (1) record [Step_Physics_Str(object)]: The step's record.
+        """
+
+        d, location = self.Data, self.Drive.PCB_Location(self.Data.time)
+        for field_name, mine, others in (('Robot_Loader', self.robot_bodies, self.not_loader_pcb if location == 'jaws' else self.not_loader),
+                                         ('PCB_Loader', {self.PCB} if location == 'cups' else None, self.not_loader)):
+            if mine is None:
+                continue
+            pairs = self.collision.Close_Pairs(mine, CONST_LOADER_CUT, d, exclude=others)
+            found = (pairs[0][0], d.time, '%s / %s' % (pairs[0][1], pairs[0][2])) if pairs else (CONST_LOADER_CUT, d.time, '')
+            if getattr(record, field_name) is None or found[0] < getattr(record, field_name)[0]:
+                setattr(record, field_name, found)
 
     def __Vacuum_Switch(self, t: float, cups: tp.Optional[int]) -> None:
         """
@@ -1184,7 +1235,8 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
     Description:
         The acceptance criteria of a program's run (SPEC §10.1, F11): Check_Acceptance's, then every vacuum hold keeps 4 of 4
         cups (from the vacuum on to off: the release at the take and every carry included), the PCB is never lost, every WaitDI
-        on the vacuum switch gets its input in time. The legacy reference run keeps Check_Acceptance's (its take holds the
+        on the vacuum switch gets its input in time, the robot and the carried PCB at least Acceptance.Loader_Distance from the
+        loader in every free transfer. The legacy reference run keeps Check_Acceptance's (its take holds the
         board on 2 of 4 cups, KNOWN_ISSUES.md).
 
     Args:
@@ -1203,4 +1255,101 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
     out.append(Acceptance_Check_Str('the PCB is never lost', r.Fault_Kind != 'lost', r.Fault if r.Fault_Kind == 'lost' else 'never lost'))
     out.append(Acceptance_Check_Str('every WaitDI gets %s in time' % CONST_VACUUM_OK, r.Fault_Kind != 'input',
                                     r.Fault if r.Fault_Kind == 'input' else 'every one'))
+    closest = Free_Loader_Distance(r)
+    out.append(Acceptance_Check_Str('free transfers >= %.1f mm from the loader' % (1000 * cell.Loader_Distance),
+                                    closest is None or closest[0] >= cell.Loader_Distance,
+                                    'no free transfer' if closest is None else '%.2f mm at %.3f s, %s (%s)' % (1000 * closest[0], closest[1],
+                                                                                                             closest[3], closest[2])))
     return out
+
+
+def Free_Loader_Distance(result: Cycle_Result_Str) -> tp.Optional[tp.Tuple[float, float, str, str]]:
+    """
+    Description:
+        The closest robot - loader or carried PCB - loader distance over a run's free transfers (F11).
+
+    Args:
+        (1) result [Cycle_Result_Str(object)]: A run's values.
+
+    Returns:
+        (1) parameter [Tuple<float, float, string, string>]: (distance (m), time (s), pair, step), or None without a free step.
+    """
+
+    found = [(v[0], v[1], v[2], s.Name) for s in result.Steps if s.Free for v in (s.Robot_Loader, s.PCB_Loader) if v is not None]
+    return min(found) if found else None
+
+
+def Program_Warnings(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> tp.List[str]:
+    """
+    Description:
+        The warnings of a program's run, which never fail it (F11, owner): a step whose PCB slip or robot tracking error exceeds
+        Acceptance.Slip_Warning / Tracking_Warning (1.5 x the legacy run's), a free transfer closer to the loader than
+        Clearance.Loader_Free.
+
+    Args:
+        (1) result [Cycle_Result_Str(object)]: A program run's values.
+        (2) cell [Cell_Configuration_Str(object)]: The thresholds.
+
+    Returns:
+        (1) parameter [List<string>]: One sentence per warning.
+    """
+
+    out = []
+    for s in result.Steps:
+        if s.Slip > cell.Slip_Warning:
+            out.append('%s: PCB slip %.2f mm at %.3f s above %.2f mm (1.5 x the legacy run)'
+                       % (s.Name, 1000 * s.Slip, s.Slip_T, 1000 * cell.Slip_Warning))
+        if s.Track_Error > cell.Tracking_Warning:
+            out.append('%s: robot tracking error %.4f rad above %.4f rad (1.5 x the legacy run)' % (s.Name, s.Track_Error, cell.Tracking_Warning))
+        for what, v in (('robot', s.Robot_Loader), ('carried PCB', s.PCB_Loader)):
+            if s.Free and v is not None and v[0] < cell.Loader_Free:
+                out.append('%s: %s %.2f mm from the loader at %.3f s (%s), within Clearance.Loader_Free %.1f mm'
+                           % (s.Name, what, 1000 * v[0], v[1], v[2], 1000 * cell.Loader_Free))
+    return out
+
+
+def Format_Program_Report(result: Cycle_Result_Str, cell: Cell_Configuration_Str, name: str) -> tp.List[str]:
+    """
+    Description:
+        The report of a program's physics run (F11): the program and its fault, the lines of SPEC §4.6 (Format_Report), the
+        vacuum holds, a row per step (FREE or LOCKED, parallel, the tracking error, the slip, the closest robot - loader and
+        carried PCB - loader distances, the deepest contact of a CONST_COLLISION_CHECKS category), the slip of every carrying
+        free transfer with the tool's tilt and the TCP's acceleration then and their maxima, the warnings, the acceptance of SPEC
+        §10.1 (Check_Program_Acceptance) and the project's sentence on simulation results.
+
+    Args:
+        (1) result [Cycle_Result_Str(object)]: A program run's values.
+        (2) cell [Cell_Configuration_Str(object)]: The limits.
+        (3) name [string]: The program.
+
+    Returns:
+        (1) parameter [List<string>]: The lines, without newlines.
+    """
+
+    r = result
+    mm = lambda v: '>%g' % (1000 * CONST_LOADER_CUT) if v is None or v[0] >= CONST_LOADER_CUT else '%.2f' % (1000 * v[0])
+    lines = ['program %s: physics run of its trajectory, cycle %.3f s%s' % (name, r.Cycle_Time, '' if r.Fault is None else '; STOPPED: ' + r.Fault)]
+    lines += Format_Report(r)
+    lines.append('vacuum holds: ' + ('; '.join('%.3f-%.3f s min %d/%d cups%s' % (h.T_On, h.T_Off, h.Min_Cups, CONST_CUPS, ' at %.3f s' % h.T_Min
+                                                                              if h.Min_Cups < CONST_CUPS else '') for h in r.Holds) or 'none'))
+    lines.append('%-24s %15s %-6s %-3s %11s %9s %13s %13s %s' % ('step', 'span s', 'kind', 'par', 'track rad', 'slip mm', 'robot-loader',
+                                                                 'PCB-loader', 'deepest contact'))
+    for s in r.Steps:
+        deepest = min(s.Contacts.items(), key=lambda kv: kv[1][0]) if s.Contacts else None
+        contact = '-' if deepest is None else '%s %.2f mm (%s / %s, t=%s)' % (deepest[0], 1000 * deepest[1][0], *deepest[1][1:])
+        lines.append('%-24s %7.3f-%7.3f %-6s %-3s %11.4f %9.2f %13s %13s %s' % (
+            s.Name or '(start)', s.Start, s.End, 'FREE' if s.Free else 'LOCKED', 'yes' if s.Parallel else '', s.Track_Error, 1000 * s.Slip,
+            mm(s.Robot_Loader), mm(s.PCB_Loader), contact))
+    lines.append('carrying free transfers (slip max and when; tool tilt from vertical and TCP acceleration then; their maxima while carried):')
+    for s in r.Steps:
+        if s.Free and s.Slip > 0:
+            lines.append('  %-22s slip %.2f mm at %.3f s: tilt %.1f deg, acceleration %.2f m/s^2; max tilt %.1f deg, max acceleration %.2f m/s^2'
+                         % (s.Name, 1000 * s.Slip, s.Slip_T, np.degrees(s.Slip_Tilt), s.Slip_Acceleration, np.degrees(s.Tilt_Max),
+                            s.Acceleration_Max))
+    warnings = Program_Warnings(r, cell)
+    lines += ['[WARNING] %s' % w for w in warnings] or ['warnings: none']
+    checks = Check_Program_Acceptance(r, cell)
+    lines += ['%-50s %s  %s' % (c.Name, 'PASS' if c.Passed else 'FAIL', c.Detail) for c in checks]
+    lines.append('%s: the physics run %s SPEC §10.1 (%d of %d). Simulation results only: not validated for the real cell.'
+                 % (name, 'meets' if all(c.Passed for c in checks) else 'FAILS', sum(c.Passed for c in checks), len(checks)))
+    return lines

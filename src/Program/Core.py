@@ -38,9 +38,9 @@ import mujoco
 import os
 # Custom Lib.:
 #   ../Configuration/Core - the cell, the PCB poses, the PCB locations
-from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_ROOT
+from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_ROOT, CONST_CELL_YAML, CONST_FORK_PATH
 #   ../Configuration/Program_Parser - the program's intermediate representation
-from Configuration.Program_Parser import Program_Str, Command_Str
+from Configuration.Program_Parser import Program_Str, Command_Str, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML
 #   ../Scene/Core - the crates, the robot's joints
 from Scene.Core import PCB_In_Crate, Crate_Holding, CONST_ROBOT_JOINTS
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups
@@ -240,6 +240,28 @@ def File_Hash(path: str) -> str:
 
     with open(path, 'rb') as handle:
         return hashlib.sha256(handle.read()).hexdigest()
+
+
+def Stale_Trajectory(trajectory: Trajectory_Str, program_path: str) -> tp.List[str]:
+    """
+    Description:
+        The input files that changed since a trajectory was built (their sha256 against its metadata): a stale trajectory is
+        refused by the viewers and the physics run.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) program_path [string]: Its program file.
+
+    Returns:
+        (1) parameter [List<string>]: The changed inputs' names; empty when it is current.
+    """
+
+    built = trajectory.Meta.get('inputs_sha256', {})
+    now = {'program': program_path, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
+           'fork_path': CONST_FORK_PATH}
+    if 'optimization' in built:
+        now['optimization'] = CONST_OPTIMIZATION_YAML
+    return [name for name, path in now.items() if built.get(name) != File_Hash(path)]
 
 
 def Executed_Commands(program: Program_Str) -> tp.List[tp.Tuple[int, str, Command_Str, str]]:

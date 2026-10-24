@@ -135,6 +135,14 @@ Acceptance:
   Open_Tolerance: 2.0
   # The deepest PCB penetration in any group. Source: the owner, 2026-10-24 (SPEC §10.1 item 7). [m] REQUIRED.
   Penetration: 0.0005
+  # A program's physics run: the robot and the carried PCB at least this far from the loader in every free
+  # transfer (closer than Clearance.Loader_Free is a WARNING). Source: the owner, 2026-10-24 (F11). [m] REQUIRED.
+  Loader_Distance: 0.001
+  # A program's physics run warns (never fails) above these: the PCB's slip in the cups and the robot's joint
+  # tracking error, 1.5 x the legacy run's 1.32 mm and 0.0126 rad (baseline_report.txt). The bounds come in step 6.
+  # Source: the owner, 2026-10-24 (F11). [m], [rad] REQUIRED.
+  Slip_Warning: 0.00198
+  Tracking_Warning: 0.0189
 
 # Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
 # step 6 with the keypoint program, owner 2026-10-24).

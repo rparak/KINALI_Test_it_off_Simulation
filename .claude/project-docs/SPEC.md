@@ -653,6 +653,12 @@ dropped PCB falls through). The run stops at once with the fault `PCB lost at t,
 slip, tool tilt, TCP acceleration` (an acceptance failure, exit 1). An instability (MuJoCo resets the state) raises
 `Simulation_Error_Cls` with the time, the phase, the line and the PCB's last position (exit 2); neither hangs.
 
+**A program's physics run** (F11; `Example/Simulation/run_program.py`): `Trajectory_Drive_Cls(trajectory, program, free_steps)`,
+every 4 ms per step the closest robot - loader distance (the carriages and jaws, and the PCB where the program has it in the jaws)
+and carried PCB - loader distance; `Format_Program_Report` (SPEC §4.6's lines, the vacuum holds, a row per step - FREE or LOCKED,
+parallel, tracking, slip, the loader distances, the deepest contact -, each carrying free transfer's slip with the tool's tilt
+and the TCP's acceleration then and their maxima, the warnings, the 14 checks of §10.1). The legacy run's report is unchanged.
+
 ### 7.7 Keypoints
 
 The robot points at work (`src/Keypoints/Core.py`; the domain keeps its F6 name): a point's tool site
@@ -798,6 +804,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `Motion.Speed_Fraction` (MoveJ's default `v=`), `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
 | `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
+| `Acceptance.Loader_Distance` (0.001), `Slip_Warning` (0.00198), `Tracking_Warning` (0.0189) | m, m, rad | the owner (F11, 2026-10-24: 1 mm; 1.5 x the legacy run's 1.32 mm and 0.0126 rad) | `Simulation.Check_Program_Acceptance`, `Program_Warnings` |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
@@ -932,7 +939,10 @@ A program's run (F11, owner 2026-10-24; `Simulation.Check_Program_Acceptance`) a
 9. the PCB is never lost (§7.6);
 10. every `WaitDI(DI_VACUUM_OK)` gets its input in time: the simulated vacuum switch is true once `Vacuum_OK_Min_Cups` cups have
     touched the PCB for its `Signal_Response`; checked where the WaitDI ends on the trajectory's timeline (physics follows it),
-    a false input stops the run (`vacuum not OK at t, step, line: ...`, exit 1).
+    a false input stops the run (`vacuum not OK at t, step, line: ...`, exit 1);
+11. in every free transfer the robot and the carried PCB stay at least `Acceptance.Loader_Distance` (1 mm) from the loader
+    (closer than `Clearance.Loader_Free` is a warning, as a step's slip above `Slip_Warning` or tracking error above
+    `Tracking_Warning`: reported, never failing; the bounds come in step 6).
 
 The legacy reference run keeps items 1-7: its take carried the board on 2 of 4 cups (KNOWN_ISSUES.md), and its baseline
 report stays the regression of the old run.

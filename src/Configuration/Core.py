@@ -311,6 +311,12 @@ class Cell_Configuration_Str:
     Crate_Distance: float = 0.0
     Open_Tolerance: float = 0.0
     Penetration: float = 0.0
+    # A program's physics run (F11): the free transfers' smallest distance to the loader; the slip and the tracking error
+    # warned above.
+    #   Unit [float] (m), [float] (m), [float] (rad)
+    Loader_Distance: float = 0.0
+    Slip_Warning: float = 0.0
+    Tracking_Warning: float = 0.0
     # The run's phase-label period and the cup-touch distance.
     #   Unit [int] (-), [float] (m)
     Phase_Steps: int = 20
@@ -656,7 +662,8 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance'))
     motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration'))
     process = r.Mapping(root, ('Process',), CONST_PROCESS_KEYS)
-    acceptance = r.Mapping(root, ('Acceptance',), ('Place_Error', 'Place_Tilt', 'Crate_Distance', 'Open_Tolerance', 'Penetration'))
+    acceptance = r.Mapping(root, ('Acceptance',), ('Place_Error', 'Place_Tilt', 'Crate_Distance', 'Open_Tolerance', 'Penetration', 'Loader_Distance',
+                                                   'Slip_Warning', 'Tracking_Warning'))
     simulation = r.Mapping(root, ('Simulation',), ('Phase_Steps', 'Cup_Touch'))
     depth = r.Mapping(clearance, ('Clearance', 'Allowed_Depth'), CONST_CONTACT_GROUPS)
     allowed = {g: r.Number(depth, ('Clearance', 'Allowed_Depth', g), 0.0, 0.01) for g in CONST_CONTACT_GROUPS}
@@ -679,6 +686,9 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Crate_Distance=r.Number(acceptance, ('Acceptance', 'Crate_Distance'), 1e-6, 0.1),
         Open_Tolerance=math.radians(r.Number(acceptance, ('Acceptance', 'Open_Tolerance'), 1e-4, 30.0)),
         Penetration=r.Number(acceptance, ('Acceptance', 'Penetration'), 1e-6, 0.01),
+        Loader_Distance=r.Number(acceptance, ('Acceptance', 'Loader_Distance'), 0.0, 0.05),
+        Slip_Warning=r.Number(acceptance, ('Acceptance', 'Slip_Warning'), 1e-6, 0.05),
+        Tracking_Warning=r.Number(acceptance, ('Acceptance', 'Tracking_Warning'), 1e-6, 1.0),
         Phase_Steps=steps if isinstance(steps, int) and not isinstance(steps, bool) else 0,
         Cup_Touch=r.Number(simulation, ('Simulation', 'Cup_Touch'), 1e-6, 0.01),
         Speed_Fraction=r.Number(motion, ('Motion', 'Speed_Fraction'), 0.01, 1.0),

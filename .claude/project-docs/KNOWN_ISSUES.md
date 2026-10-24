@@ -187,6 +187,17 @@ The take is not re-taught to it (owner): with the press relieved before the jaws
 - **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
   the whole edge.
 
+## The fork's peak force on the handle bar depends on the run's history
+
+The recorded closing path overlaps the handle bar by 0.54 mm at one row (SPEC §4.7); the contact force there is the run's
+"max contact force fork -> handle bar". Measured 2026-10-25 at the same instant of `PATH_FORK_CLOSE` (4.04 s into it): 291 N in
+the taught program, 371 N in the optimized one (291 N before F11's loader clearance re-planned its approach), 294 N in the
+legacy run. The MG06 and PCB states at the path's start agree within 0.02 mm; the robot's settle state differs (taught
+0.00055 rad tracking error and 0.016 rad/s left from its MoveJ, optimized at rest).
+
+- **Impact:** the reported fork force varies by tens of percent with what precedes the path; no criterion bounds it yet.
+- **What would close it:** a bound in step 6 measured over runs, or a recorded path without the 0.54 mm overlap.
+
 ## The loader's actuator model is one load case
 
 `Program.Core.Loader_Actual` (the kinematic checks' loader, F11) takes each axis' mass and gravity load at the trajectory's
