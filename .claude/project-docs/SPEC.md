@@ -475,6 +475,7 @@ src/Collision/Core.py     robot contacts and clearance, contact classification o
 src/Render/Core.py        offscreen image, viewer start
 src/Keypoints/Core.py     the keypoints: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
+src/Trajectory/Core.py    the trajectory file format: the only writer and reader (npz + CSV export, §9)
 Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
@@ -497,7 +498,7 @@ in the template's `Configuration/Cell_SF1.yaml`).
 
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
-`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`. Scripts reach
+`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo). Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
@@ -563,6 +564,12 @@ template's base–stand exclusion). Exact distances because MuJoCo's box–box c
 near pair (the carried PCB 1.0 mm above the crate floor), whatever the geom margin
 (`test/Collision/test_core.py`).
 
+### 7.8 Trajectory
+
+The trajectory file (`src/Trajectory/Core.py`, F8): `Trajectory_Str`, `Write_Trajectory` (the `.npz` and the CSV export
+beside it), `Read_Trajectory` (refuses a missing array, a wrong shape or another format version). It knows nothing of
+MuJoCo; the program build fills it, the viewer and step 5's physics run read it.
+
 ## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml`
 
 The files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`): every
@@ -622,7 +629,7 @@ Every keypoint, position, state and group it names is checked against `Keypoints
 | the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README (and the Phase 2 app) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
-| the trajectory file (step 4) | to be specified in step 4: `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`, `vacuum`, `step_index`, `step_label`, sampled at 4 ms |
+| the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label`, `segment_id`, `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
 
 Scripts that write take `--out DIR`.
 

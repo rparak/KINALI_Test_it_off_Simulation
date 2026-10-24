@@ -28,7 +28,7 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 ## Layout and layers (SPEC §6)
 
 ```
-src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints
+src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory
 Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
                        Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
@@ -55,11 +55,12 @@ Scene                     → Configuration
 Kinematics, Collision     → Scene
 Simulation                → Configuration, Scene, Collision
 Keypoints                 → Configuration, Scene, Kinematics, Collision
+Trajectory                → Configuration (the file format only, no MuJoCo)
 Example/                  → any of src/
 ```
 
-`Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Program and Trajectory are added in
-step 4 as their own domains; no placeholder module before (skeleton rule).
+`Render` takes an `MjModel` / `MjData` and knows nothing of the cell. Trajectory (F8.3) and Program (F8.4) are the
+step 4 domains; Planner comes with F9 (no placeholder module before, skeleton rule).
 
 ## Root ✅
 
@@ -77,6 +78,7 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `Data/PCB/pcb_meta.json` | `Configuration.Core.Read_PCB_Meta`; written by hand (the PCB poses only) |
 | `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`, `Configuration/Program_Default.yaml` | `Configuration.Core.Load_Cell_Configuration`, `Load_Keypoints`, `Load_Program`; written by hand (a script that finds a value to change prints the line) |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
+| `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; written by the program build |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
