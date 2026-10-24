@@ -69,6 +69,11 @@ CONST_PICKS, CONST_CUPS = 2, 4
 # in a parallel step), and the distance the robot-loader pairs are reported up to.
 #   Unit [float] (s), [float] (m)
 CONST_SAMPLE_PERIOD, CONST_LOADER_CUT = 0.004, 0.05
+# The PCB is lost (F11) when the vacuum is on and no cup has touched it for this long (a contact can blink for a step), or when it
+# is this far below the table top (z = 0; the physics model has no table and its floor does not collide, so a dropped PCB falls
+# through; the lowest PCB of a cycle lies on a crate floor, 4 mm).
+#   Unit [float] (s), [float] (m)
+CONST_LOST_TIME, CONST_PCB_FLOOR = 0.02, -0.02
 
 
 class Simulation_Error_Cls(RuntimeError):
@@ -178,6 +183,9 @@ class Cycle_Result_Str:
     # The run's steps (a program's steps or a legacy plan's phases), in order (F11).
     #   Unit [List<Step_Physics_Str>]
     Steps: tp.List['Step_Physics_Str'] = field(default_factory=list)
+    # Why the run stopped before its end ('PCB lost at ...'), or None (F11).
+    #   Unit [string]
+    Fault: tp.Optional[str] = None
 
 
 @dataclass
@@ -394,6 +402,20 @@ class Legacy_Drive_Cls(object):
 
         Returns:
             (1) parameter [string]: The label.
+        """
+
+        return Phase_At(self.Plan, t)
+
+    def Command(self, t: float) -> str:
+        """
+        Description:
+            The line at t: a plan has no lines, so its phase.
+
+        Args:
+            (1) t [float]: The time (s).
+
+        Returns:
+            (1) parameter [string]: The phase.
         """
 
         return Phase_At(self.Plan, t)
@@ -792,6 +814,12 @@ class Physics_Run_Cls(object):
         self.worst, self.vacuum, self.pen, self.marks = {}, [], {}, {}
         self.track_err, self.slip, self.fork_force, self.loader_lag = 0.0, 0.0, 0.0, 0.0
         self.rel0, self.ph = None, ''
+        # The lost PCB (F11): since when no cup touches it with the vacuum on; the last moment cups held it (time, cups, slip,
+        # tilt, acceleration); the PCB's last position (the evidence of an instability, after which MuJoCo resets the state).
+        self.Fault: tp.Optional[str] = None
+        self.no_cups: tp.Optional[float] = None
+        self.held: tp.Optional[tp.Tuple[float, int, float, float, float]] = None
+        self.pcb_last = d.qpos[self.qpcb:self.qpcb + 3].copy()
         self.fc = np.zeros(6)
         # The per-step measurements (F11): the steps by label; the TCP's positions every 4 ms for its acceleration.
         self.steps: tp.Dict[str, Step_Physics_Str] = {}
@@ -807,13 +835,13 @@ class Physics_Run_Cls(object):
     def Done(self) -> bool:
         """
         Description:
-            Whether the run has reached the drive's end.
+            Whether the run has reached the drive's end, or stopped on a fault (the PCB lost).
 
         Returns:
             (1) parameter [bool]: True at the end.
         """
 
-        return self.Data.time >= self.Drive.T_End
+        return self.Data.time >= self.Drive.T_End or self.Fault is not None
 
     def Step(self) -> None:
         """
@@ -835,22 +863,27 @@ class Physics_Run_Cls(object):
         mujoco.mj_step(m, d)
         ph = self.ph
         if d.time < t:
-            raise Simulation_Error_Cls('The simulation became unstable at t = %.3f s (phase: %s): MuJoCo reset the state. '
-                                       'Check the plan around that time and the last change to the model.' % (t, ph or 'start'))
+            p = 1000 * self.pcb_last
+            raise Simulation_Error_Cls('The simulation became unstable at t = %.3f s (phase: %s): MuJoCo reset the state (line: %s; the '
+                                       'PCB was at x %.1f y %.1f z %.1f mm). Check the plan around that time and the last change to the '
+                                       'model.' % (t, ph or 'start', drive.Command(t), p[0], p[1], p[2]))
+        self.pcb_last = d.qpos[self.qpcb:self.qpcb + 3].copy()
         step = int(round(d.time / m.opt.timestep))
         if self.Progress is not None and step % CONST_PROGRESS_STEPS == 0:
             self.Progress(d.time, ph)
         error = np.max(np.abs(d.qpos[self.QR] - q_ref))
         self.track_err = max(self.track_err, error)
         self.loader_lag = max(self.loader_lag, abs(d.qpos[self.qy] - d.ctrl[0]), abs(d.qpos[self.qz] - d.ctrl[1]))
-        # PCB slip in the cups while the vacuum holds it.
-        slip_now = None
-        if d.ctrl[self.A_VAC[0]] > 0.5 and Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch):
-            R = d.xmat[TOOL].reshape(3, 3)
-            rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
-            self.rel0 = rel if self.rel0 is None else self.rel0
-            slip_now = np.linalg.norm(rel - self.rel0)
-            self.slip = max(self.slip, slip_now)
+        # PCB slip in the cups while the vacuum is on: from the first moment a cup touches it, and on when the cups lose it (F11).
+        slip_now, cups = None, None
+        if d.ctrl[self.A_VAC[0]] > 0.5:
+            cups = Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch)
+            if cups or self.rel0 is not None:
+                R = d.xmat[TOOL].reshape(3, 3)
+                rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
+                self.rel0 = rel if self.rel0 is None else self.rel0
+                slip_now = np.linalg.norm(rel - self.rel0)
+                self.slip = max(self.slip, slip_now)
         ff = 0.0
         record = self.steps.setdefault(ph, Step_Physics_Str(Name=ph, Start=t, Free=drive.Free(ph), Parallel=drive.Parallel(ph)))
         for i, c in enumerate(d.contact[:d.ncon]):
@@ -895,6 +928,35 @@ class Physics_Run_Cls(object):
             self.marks['placed'] = (d.qpos[self.qpcb:self.qpcb + 7].copy(), d.time)
         if drive.Closed(self.ph, d.time) and 'closed' not in self.marks:
             self.marks['closed'] = (d.qpos[self.qa], d.qpos[self.qh], d.time)
+        self.__Lost(cups, slip_now)
+
+    def __Lost(self, cups: tp.Optional[int], slip: tp.Optional[float]) -> None:
+        """
+        Description:
+            The lost PCB (F11): with the vacuum on, no cup has touched it for CONST_LOST_TIME, or it fell below CONST_PCB_FLOOR. The
+            run stops (Fault) with the time, the step, the line and the last moment the cups held it.
+
+        Args:
+            (1) cups [int]: The cups touching it with the vacuum on, or None with the vacuum off.
+            (2) slip [float]: Its slip in the cups now (m), or None.
+        """
+
+        d, why = self.Data, None
+        if cups:
+            self.no_cups, self.held = None, (d.time, cups, slip or 0.0, self.tilt, self.tcp_acceleration)
+        elif cups is None:
+            self.no_cups = None
+        elif self.no_cups is None:
+            self.no_cups = d.time
+        elif d.time - self.no_cups >= CONST_LOST_TIME - 1e-9:
+            why = 'no cup has touched it for %.0f ms with the vacuum on' % (1000 * (d.time - self.no_cups))
+        if why is None and d.qpos[self.qpcb + 2] < CONST_PCB_FLOOR:
+            why = 'it is %.0f mm below the table top' % (-1000 * d.qpos[self.qpcb + 2])
+        if why is not None:
+            last = ('; last held at %.3f s by %d of %d cups, slip %.2f mm, tool tilt %.1f deg, TCP acceleration %.2f m/s^2'
+                    % (self.held[0], self.held[1], CONST_CUPS, 1000 * self.held[2], np.degrees(self.held[3]), self.held[4])
+                    if self.held is not None else '')
+            self.Fault = 'PCB lost at t = %.3f s, step %s, line "%s": %s%s.' % (d.time, self.ph, self.Drive.Command(d.time), why, last)
 
     def Result(self) -> 'Cycle_Result_Str':
         """
@@ -906,9 +968,9 @@ class Physics_Run_Cls(object):
         """
 
         d = self.Data
-        if 'placed' not in self.marks:
+        if 'placed' not in self.marks and self.Fault is None:
             raise Simulation_Error_Cls("The run never placed the PCB in MG06 (the phase 'loader: up, to park' / J_PARK's first sample).")
-        pm, tm = self.marks['placed']
+        pm, tm = self.marks.get('placed', (np.full(7, np.nan), np.nan))
         qd, qi = np.zeros(4), np.zeros(4)
         mujoco.mju_negQuat(qi, np.array(self.Meta.Quat))
         mujoco.mju_mulQuat(qd, pm[3:], qi)
@@ -918,7 +980,8 @@ class Physics_Run_Cls(object):
                                 Crate_Centre=Crate_Center('crate_place'),
                                 Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
                                 Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Penetration=self.pen, Contacts=self.worst,
-                                Lid_Open=self.Lid_Open, Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()))
+                                Lid_Open=self.Lid_Open, Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
+                                Fault=self.Fault)
 
 
 def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,

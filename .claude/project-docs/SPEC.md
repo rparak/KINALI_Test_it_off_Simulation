@@ -637,6 +637,19 @@ labels); runs it with physics (servo set-point with velocity feed-forward, min-j
 vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured
 values; formats the report of §4.6; checks §10.1.
 
+Since F11 the physics run (`Physics_Run_Cls`, `Run_Physics`) takes a drive: `Legacy_Drive_Cls` (the plan above, `Run_Cycle`;
+its report stays byte-identical to the baseline) or `Trajectory_Drive_Cls` (a program's 4 ms trajectory: set-points linear
+between samples with the stored `robot_qd` as feed-forward, the loader and gripper commands, the vacuum events, the steps as
+labels; the fork may touch the handle in the steps whose `Allow_Contact` has `handle_bar`). Per step it measures the tracking
+error, the PCB's slip in the cups (from the first cup contact after vacuum on until vacuum off, also after the cups lose it),
+the tool's tilt and the TCP's acceleration, the deepest contacts and, in a parallel step, the closest robot-loader distance.
+
+**The PCB lost** (F11, owner 2026-10-24): with the vacuum on, no cup touches the PCB for 20 ms (`CONST_LOST_TIME`), or the PCB
+is 20 mm or more below the table top (`CONST_PCB_FLOOR`; the physics model has no table and its floor does not collide, so a
+dropped PCB falls through). The run stops at once with the fault `PCB lost at t, step, line: why; last held at t by k cups,
+slip, tool tilt, TCP acceleration` (an acceptance failure, exit 1). An instability (MuJoCo resets the state) raises
+`Simulation_Error_Cls` with the time, the phase, the line and the PCB's last position (exit 2); neither hangs.
+
 ### 7.7 Keypoints
 
 The robot points at work (`src/Keypoints/Core.py`; the domain keeps its F6 name): a point's tool site
@@ -893,7 +906,7 @@ A cycle run passes when:
 4. PCB in the output crate: < 2 mm from the crate centre, horizontally;
 5. MG06 ends open: lid within 2° of its open stop (−39.96°) and handle within 2° of 0° (this reading
    of "ends open" is a decision, design-decisions);
-6. no instability;
+6. no instability (exit 2 with the evidence), and the PCB is never lost (§7.6; the run stops at the loss);
 7. deepest PCB penetration ≤ 0.5 mm in every group (MG06 holder, crate, loader jaws).
 
 Further Phase 1 criteria: every keypoint can be shown in the viewer, and an invalid keypoint (IK fails,

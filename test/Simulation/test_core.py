@@ -38,6 +38,7 @@ import pytest
 # Custom Lib.: the module under test
 #   ../Simulation/Core
 from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report, Trajectory_Drive_Cls,
+                             Legacy_Drive_Cls, Physics_Run_Cls,
                              Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
 #   ../Configuration/Core
 from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
@@ -175,8 +176,9 @@ def test_an_unstable_simulation_fails_instead_of_continuing(root):
     """
     Description:
         With a 0.05 s timestep MuJoCo resets the state; the run raises Simulation_Error_Cls naming the time
-        instead of running on from the reset state (SPEC §4.7). It runs in a fresh interpreter with a
-        timeout: without the guard the time restarts at each reset and the run never ends.
+        instead of running on from the reset state (SPEC §4.7), with the line and the PCB's last position. It runs in a fresh
+        interpreter with a timeout: without the guard the time restarts at each reset and the run never ends. The PCB floats
+        (gravity compensated), so it does not fall through the crate floor at that step and stop the run as lost first.
     """
 
     code = """import sys
@@ -191,6 +193,7 @@ from Simulation.Core import Legacy_Plan_Str, Read_Legacy_Plan, Run_Cycle, Simula
 cell = Load_Cell_Configuration()
 model = Build_Cell_Model(cell)
 model.opt.timestep = 0.05
+model.body_gravcomp[model.body('pcb').id] = 1.0
 real = Read_Legacy_Plan()
 plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:500], T_End=2.0, Loader={'y': [], 'z': [], 'jaw': []}, Events=[],
                        Phases=[[0.0, 'loader: up, to park']], Jaw_Open=real.Jaw_Open)
@@ -204,7 +207,8 @@ except Simulation_Error_Cls as error:
         result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, timeout=120)
     except subprocess.TimeoutExpired:
         pytest.fail('The unstable run did not end within 120 s: the instability guard is missing.')
-    assert re.search(r'^ERROR The simulation became unstable at t = [0-9.]+ s .*MuJoCo reset the state', result.stdout, re.M), \
+    assert re.search(r'^ERROR The simulation became unstable at t = [0-9.]+ s .*MuJoCo reset the state \(line: .*; the PCB was at x '
+                     r'-?[0-9.]+ y -?[0-9.]+ z -?[0-9.]+ mm\)', result.stdout, re.M), \
         result.stdout + result.stderr
 
 
@@ -319,3 +323,50 @@ def test_the_trajectory_drive_classifies_its_steps():
     assert [drive.Placed('', t) for t in (0.0079, 0.008)] == [False, True]
     assert [drive.Free(s) for s in ('S1_Move', 'S2_Close')] == [True, False]
     assert [drive.Parallel(s) for s in ('S1_Move', 'S3_Test')] == [True, False]
+
+
+def _Short_Run(cell_configuration, constants, events):
+    """
+    Description:
+        A physics run of the reference plan's first 0.3 s (the robot at home, the PCB in the input crate) with the given vacuum
+        events.
+    """
+
+    real = Read_Legacy_Plan()
+    plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:100], T_End=0.3, Loader={'y': [], 'z': [], 'jaw': []}, Events=events,
+                           Phases=[[0.0, 'robot: to the input crate']], Jaw_Open=real.Jaw_Open)
+    drive = Legacy_Drive_Cls(plan, constants.Loader['L_HOME'])
+    return Physics_Run_Cls(Build_Cell_Model(cell_configuration), drive, Read_PCB_Meta(), cell_configuration)
+
+
+def test_the_vacuum_on_with_no_cup_on_the_pcb_loses_it(cell_configuration, constants):
+    """
+    Description:
+        F11: with the vacuum on and no cup touching the PCB for 20 ms (the first such step at 0.1005 s) the run stops (Done)
+        with a fault naming the time, the step and the line; the result carries it and the placement is unknown (nan), so the MG06 criterion fails.
+    """
+
+    run = _Short_Run(cell_configuration, constants, [[0.1, 'suction_on']])
+    while not run.Done:
+        run.Step()
+    result = run.Result()
+    assert run.Data.time == pytest.approx(0.1205, abs=1e-6), run.Data.time
+    assert re.fullmatch(r'PCB lost at t = 0\.12[01] s, step robot: to the input crate, line "robot: to the input crate": no cup has touched '
+                        r'it for 20 ms with the vacuum on\.', result.Fault), result.Fault
+    assert 'PCB in MG06 error < 0.5 mm, tilt < 0.2 deg' in _Failed(result)
+
+
+def test_a_pcb_below_the_table_top_is_lost(cell_configuration, constants):
+    """
+    Description:
+        F11: a PCB 20 mm or more below the table top (z = 0) is lost even with the vacuum off (it fell through the cell).
+    """
+
+    run = _Short_Run(cell_configuration, constants, [])
+    run.Data.qpos[run.qpcb + 2] = -0.021
+    run.Step()
+    assert run.Done and run.Fault.endswith(': it is 21 mm below the table top.'), run.Fault
+    run = _Short_Run(cell_configuration, constants, [])
+    run.Data.qpos[run.qpcb + 2] = -0.019
+    run.Step()
+    assert not run.Done and run.Fault is None
