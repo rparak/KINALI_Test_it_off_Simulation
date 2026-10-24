@@ -1,0 +1,8 @@
+{
+  "licence": "MIT License",
+  "holder": "Roman Parak",
+  "class_roots": ["src", "Example"],
+  "test_roots": ["test"],
+  "check_roots": ["src", "Example", "test"],
+  "exclude": []
+}

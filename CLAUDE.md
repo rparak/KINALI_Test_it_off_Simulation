@@ -1,18 +1,32 @@
-# CLAUDE.md
+# KINALI_Test_it_off_Simulation
 
-MuJoCo simulation of the KINALI "Test it off" PCBA test cell. The full brief (goals, model reference, lessons learned,
-target design, work plan) is in [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) - read it before changing anything.
-Feature tracking: [docs/FEATURES.md](docs/FEATURES.md). Old Czech README: [docs/README_cs_mg06_cell.md](docs/README_cs_mg06_cell.md) (paths there are pre-restructure).
+MuJoCo simulation of the KINALI "Test it off" PCBA test cell (AUBO i5 + VGC10/fork, MG06 tester, two-axis
+loader, crates). The internal docs are in `.claude/project-docs/`: the specification `SPEC.md`, the open
+limitations `KNOWN_ISSUES.md`, the reasons behind choices `design-decisions.md`, and the feature tracker
+`FEATURES.md`. `README.md` is the public page; it does not mention the internal docs or the skills.
 
-- Language of code, comments, commits and docs: English (the owner writes in Czech/Slovak).
-- The physics is verified: never change timestep, solver options, solref/solimp/solmix/margin/gap, friction, masses,
-  geometry, actuator gains, the vacuum/adhesion setup or the CAD deviations in the scene without an explicit request.
-- Regression baseline: [docs/baseline_report.txt](docs/baseline_report.txt) (printed report) and
-  [docs/baseline_model_fingerprint.json](docs/baseline_model_fingerprint.json) (compiled model).
+Communicate with the owner in English only: reports, questions, summaries, commit messages and every
+file. The owner's notes may be in Czech or Slovak; answer in English anyway. Commits carry no attribution
+trailer (`.claude/settings.json`).
+
+The verified physics is never changed without an explicit request (SPEC §3, the style project page
+`mjcf.md`). Regression baseline: `docs/baseline_report.txt`, `docs/baseline_model_fingerprint.json`.
+
+## Skills
+
+The skills are personal (`~/.claude/skills/`, `rparak/rp-claude-skills`); this repository tracks only
+their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `.gitignore` excludes one).
+
+- `project-style-rpx` — code, shell, YAML and Markdown conventions; `references/project.md`, `mjcf.md`,
+  `check_style.json`. Use it for every change.
+- `feature-manager` — how a feature, a behaviour change or a bug fix is made; `references/project.md`.
+- `project-optimize` — behaviour-preserving work; the outputs compared in `references/project.md`.
+- `readme-writer` — every README change; `references/project.md`.
 
 ## Commands
 
-Interpreter: `.venv/bin/python` (MuJoCo 3.16.0). Setup: `python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
+Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`.
+The layout is being migrated to the RPX layout (`FEATURES.md` F3); until then:
 
 ```bash
 .venv/bin/kinali-sim run                     # legacy plan, physics + report (output/report.txt) + acceptance; ~16 s
@@ -21,11 +35,5 @@ Interpreter: `.venv/bin/python` (MuJoCo 3.16.0). Setup: `python3 -m venv .venv &
 .venv/bin/python -m pytest -m "not slow"     # fast tests
 .venv/bin/python -m pytest -m slow           # full-cycle regression
 .venv/bin/python tools/model_fingerprint.py --compare docs/baseline_model_fingerprint.json
+.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test   # after F3
 ```
-
-## Layout
-
-`src/kinali_sim/` package (`paths.py` resolves every folder from the package, never from the working directory;
-`model.py` builds the cell; `kinematics.py` IK + collision queries; `cli.py`), `models/` scene MJCFs, `assets/` meshes,
-`data/` PCB poses + recorded fork path, `legacy/` the verified IK planner, plan and cycle run (reference until brief
-§7 step 6), `config/` (empty until step 3), `output/` (git-ignored), `tests/`, `tools/`.
