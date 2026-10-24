@@ -32,8 +32,8 @@ Language: English in every file, report and commit; the owner's notes may be in 
 
 ## Real data for reproducing a premise
 
-The legacy plan `legacy/cell_plan.npz` and its run (`Example/run_cycle.py`; until F3
-`.venv/bin/kinali-sim run`), the baseline report and fingerprint, the scene files. Walk the chain: the
+The legacy plan `legacy/cell_plan.npz` and its run (`Example/run_cycle.py`, and the frozen
+`legacy/test_cell_cycle.py`), the baseline report and fingerprint (`test/<Domain>/data/`), the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
 

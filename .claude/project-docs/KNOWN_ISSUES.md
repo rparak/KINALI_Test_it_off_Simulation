@@ -30,13 +30,12 @@ t = 62.46 s. Every other number of the report is identical.
 
 - **Impact:** none on acceptance (bound 0.5 mm, SPEC §10.1); it shows that the report is reproducible
   only per environment, so the baseline is per environment.
-- **Evidence:** `docs/baseline_report.txt` against git `427e076:docs/PROJECT_BRIEF.md` §3.
+- **Evidence:** `test/Simulation/data/baseline_report.txt` against git `427e076:docs/PROJECT_BRIEF.md` §3 (SPEC §4.6).
 - **What would close it:** the original environment's versions; not expected to be available.
 
 ## MuJoCo warns about an integrator conflict when the robot is attached
 
-Every build of the cell makes MuJoCo log (written to `MUJOCO_LOG.TXT` in the current working directory,
-and printed):
+Every build of the cell makes MuJoCo log, print on stderr and raise as a Python UserWarning:
 
 ```
 WARNING: Attach conflict when attaching 'aubo_i5' to 'mg06_loader_scene', policy is 'warning'
@@ -44,15 +43,16 @@ integrator: parent has 0 (default), child has 3, keeping parent value
 ```
 
 The cause is `<option integrator="implicitfast"/>` (line 4) of the vendored robot MJCF
-`assets/robot/aubo_i5/aubo_i5.xml`, while `scene.xml` sets no integrator (Euler, the default). MuJoCo
+`models/aubo_i5/aubo_i5.xml`, while `models/scene.xml` sets no integrator (Euler, the default). MuJoCo
 keeps the parent's Euler; the verified physics was run that way, so the warning describes the verified
-state. Not fixed on purpose: changing either file changes the physics or the vendored model.
+state. Not fixed on purpose: changing either file changes the physics or the vendored model. MuJoCo's log
+file goes to `logger/MUJOCO_LOG.TXT` (`Configuration.Core.Configure_MuJoCo_Log`, called by every script,
+the legacy shims and the test suite), never into the working directory.
 
-- **Impact:** a log file appears in whatever directory a script is started from; the message is noise,
-  not a fault.
-- **Evidence:** `MjLogConfig` probe 2026-10-24: the file is written at the attach in the scene build.
-- **What would close it:** routing MuJoCo's log into `logger/` (`MjLogConfig.logfile`, `FEATURES.md`
-  F3); the warning itself only if the owner decides the integrator.
+- **Impact:** noise on stderr and in the test summary's warnings; not a fault.
+- **Evidence:** `MjLogConfig` probe 2026-10-24: the message is logged at the attach in the scene build.
+- **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`.
+- **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
 
 ## The legacy cycle's --render video option does not work in the pinned environment
 

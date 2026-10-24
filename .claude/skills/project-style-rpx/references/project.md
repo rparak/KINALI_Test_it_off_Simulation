@@ -8,9 +8,8 @@ project skill of the same name, so a copy would be ignored and drift (`.gitignor
 
 Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, what is never changed).
 
-**Status (2026-10-24):** approved as the target; the code is migrated to it in `FEATURES.md` F3. Until
-F3 is done, the code in git is in the brief's package layout and does not pass the checker (draft run:
-13 files, 429 issues - typing 133, naming 124, docstring 68, semicolon 55, header 37, length 12).
+**Status (2026-10-24):** in force; the code was migrated to it in `FEATURES.md` F3 (before: 13 files,
+429 issues; after: 25 files, 0 issues).
 
 ## Header and checker
 
@@ -58,7 +57,7 @@ The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirem
 Exceptions, each with its reason: **`pytest.ini`** (the test runner reads it at the root); **`legacy`**
 (the regression reference until step 6); **`docs`** (only `README_cs_mg06_cell.md`, until the full
 README of step 7). `logger/` and `output/` exist on disk but are git-ignored, so they are not root
-entries. Pinned by `test/Docs/test_layout.py` (after F3).
+entries. Pinned by `test/Docs/test_layout.py`.
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
 
@@ -71,7 +70,7 @@ entries. Pinned by `test/Docs/test_layout.py` (after F3).
 | `legacy/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by `legacy/plan_cell.py`. Exception: the frozen `legacy/test_cell_cycle.py` keeps its own `np.load` until step 6 |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `output/report.txt` by `Example/run_cycle.py` |
 | the model fingerprint JSON | `Example/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
-| `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts (`Configuration.Core`) and MuJoCo; never read by code |
+| `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
 ## Configuration
 
@@ -106,8 +105,15 @@ returned list, printed by the script, exit code 1.
 
 ## Project rules
 
-- Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and also write
-  them to `logger/<script>.log`; MuJoCo's own log goes to `logger/MUJOCO_LOG.TXT` (SPEC §6).
+- Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and write every line
+  to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
+  to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
+  `test/conftest.py`). `Example/run_cycle.py` prints the report on stdout and its own lines on stderr, so
+  stdout is the report byte for byte.
+- Module-level private helpers: `_Pascal_Snake_Case` (e.g. `Scene.Core._Apply_Look`), like test
+  helpers (the generic skill leaves it *Unsettled*; decided 2026-10-24).
+- Stream protocols are not implemented in `src/` (no `write`/`flush` methods, which the naming rule would
+  refuse); a script prints what `Script_Log_Cls.Line` returns instead.
 - The verified physics values are never changed in a style or structure change (SPEC §3, mjcf.md).
 
 ## Departures from the generic skill

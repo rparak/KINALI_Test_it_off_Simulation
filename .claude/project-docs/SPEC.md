@@ -4,9 +4,7 @@ Status: Approved 2026-10-24
 
 A number marked *measured* names what it was measured on; where a test pins it, the test is named.
 This specification is derived from the owner's project brief (git `427e076:docs/PROJECT_BRIEF.md`,
-removed from the tree when this SPEC replaced it; §15) and from the verified state of the code. §6
-describes the layout **after** the RPX migration (`FEATURES.md` F3); until F3 is approved and done, the
-layout in git is the one recorded there under *Current*.
+removed from the tree when this SPEC replaced it; §15) and from the verified state of the code.
 
 ## 1. Goal
 
@@ -110,7 +108,7 @@ Everything is in the **MG06 fixture frame**: origin = centre of the MG06 footpri
 (0.42072, −0.33497, 0.162) m (top of `deska_robot`, the CAD origin of the cell), yaw **−135°**. The
 cassette / PCB plane in MG06 is tilted **8.94° about X**.
 
-### 4.3 Compiled model (*measured*, MuJoCo 3.16.0, 2026-10-24; `docs/baseline_model_fingerprint.json`)
+### 4.3 Compiled model (*measured*, MuJoCo 3.16.0, 2026-10-24; `test/Scene/data/baseline_model_fingerprint.json`)
 
 nq 24, nv 23, nu 13, na 2, nbody 25, ngeom 509, nmesh 438, neq 2; timestep 0.5 ms, elliptic cones,
 impratio 10, noslip iterations 5, solver Newton, integrator Euler (the scene's; §14, `KNOWN_ISSUES.md`).
@@ -159,7 +157,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 5. Loader: back → down → close (pick) → up → home.
 6. The robot takes the PCB (vacuum on, loader opens), puts it into the right (output) crate, goes home.
 
-### 4.6 Reference result (*measured*, `docs/baseline_report.txt`)
+### 4.6 Reference result (*measured*, `test/Simulation/data/baseline_report.txt`)
 
 The legacy plan `legacy/cell_plan.npz` run with physics, 2026-10-24, on macOS 26.6.2, Apple M2 Pro.
 Baseline environment: Python 3.11.2, numpy 2.4.6, scipy 1.17.1, MuJoCo 3.16.0 (`install.sh`). First
@@ -283,7 +281,7 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 
 ### 4.9 The recorded MG06 fork path (brief §6, verbatim)
 
-`fork_close_open_path.npz` is now `Data/fork_close_open_path.npz` (until F3 `data/`), and
+`fork_close_open_path.npz` is now `Data/fork_close_open_path.npz`, and
 `tools/plan_cell.py` is now `legacy/plan_cell.py`.
 
 
@@ -308,7 +306,7 @@ fork from `fork_start`); `path: fork_open` = rows with phase `OPEN` after the jo
 
 ## 6. Repository structure
 
-Target of `FEATURES.md` F3 (the RPX migration, pending approval):
+The RPX layout (`FEATURES.md` F3, done 2026-10-24):
 
 ```
 README.md                 the public page (stub until step 7)
@@ -349,9 +347,6 @@ output/                   generated reports and images (git-ignored)
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene`; `Simulation` → `Configuration`, `Scene`, `Collision`. Scripts reach
 `src/` through a path built from `__file__`.
-
-*Current* (until F3): `src/kinali_sim/` (package), `models/` (MJCFs), `assets/` (meshes), `data/`,
-`config/`, `output/`, `legacy/`, `tests/`, `tools/`, `docs/`, `pyproject.toml`.
 
 ## 7. Domains
 
@@ -415,8 +410,9 @@ sources in `src/Scene/Core.py`.
 | `Data/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand |
 | `Data/fork_close_open_path.npz` | `legacy/plan_cell.py` only, until step 4 moves its reader into `src/` |
 | `legacy/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by `legacy/plan_cell.py`; the frozen `legacy/test_cell_cycle.py` keeps its own read until step 6 |
-| the report (text) | `Simulation` (`Format_Report`), printed by `Example/run_cycle.py`, copied to `output/report.txt` |
-| the model fingerprint (JSON) | `Example/model_fingerprint.py` |
+| the report (text) | `Simulation` (`Format_Report`), printed by `Example/run_cycle.py`, copied to `--out`/`report.txt` (default `output/`) |
+| the model fingerprint (JSON) | `Example/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
+| `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file (step 4) | to be specified in step 4: `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`, `vacuum`, `step_index`, `step_label`, sampled at 4 ms |
 
 Scripts that write take `--out DIR`.
@@ -424,7 +420,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"`, full `.venv/bin/python -m pytest` before a commit.
+`.venv/bin/python -m pytest -m "not slow"` (99 tests, about 15 s), full `.venv/bin/python -m pytest`
+before a commit (103 tests, about 45 s; Apple M2 Pro, 2026-10-24).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
@@ -446,18 +443,24 @@ commands, editing keypoints and program, the file formats.
 
 ### 10.2 Model and report equivalence
 
-- The compiled model's fingerprint equals `docs/baseline_model_fingerprint.json` except
+- The compiled model's fingerprint equals `test/Scene/data/baseline_model_fingerprint.json` except
   `geoms/pcb_vis/geom_rgba` (the green PCB).
-- The cycle run's printed report diffs empty against `docs/baseline_report.txt`.
+- The cycle run's printed report diffs empty against `test/Simulation/data/baseline_report.txt`.
+- Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow: report, §10.1, raw values)
+  and `test/Example/test_run_cycle.py` (slow: the script's stdout).
 
 ## 11. Installer — `install.sh`
 
-Steps, cheapest check first (project-style-rpx references/shell.md; the details are in `FEATURES.md`
-F3 until implemented): detect the OS and architecture; find Python 3.11 or fail with the install
-command; create `.venv` if absent (a broken one is reported); upgrade pip and install
-`requirements.txt`; verify the install (import mujoco, numpy, scipy, yaml; mujoco is 3.16.0); create
-`logger/` and `output/`; print the next commands. `--detect-only` stops after the plan. Re-runnable,
-no sudo, no global installs. Ubuntu path: written, tested only against stubs, unverified.
+Steps, cheapest check first (project-style-rpx references/shell.md): detect the OS and architecture;
+find Python 3.11 among explicit candidates only (macOS `/opt/homebrew/bin/python3.11`,
+`/usr/local/bin/python3.11`, `python3.11` on PATH; Linux `python3.11` on PATH, `/usr/bin/python3.11`;
+never a bare `python3`) or fail with the install command; create `.venv` if absent, reuse a working one
+(a broken one is reported, deleted only with `--recreate`); upgrade pip and install `requirements.txt`;
+verify the install (import mujoco, numpy, scipy, yaml and print the versions; mujoco must be 3.16.0);
+create `logger/` and `output/`; print the next commands. `--detect-only` stops after the plan.
+Re-runnable, `set -euo pipefail`, no sudo, no global installs. Verified with `--recreate` on macOS
+26.6.2, Apple M2 Pro (2026-10-24). Ubuntu path: written, tested only against stubs, unverified. Pinned
+by `test/Install/test_install.py`.
 
 ## 12. Skills
 
@@ -488,8 +491,8 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 - Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test it off – Automated PCBA Testing Cell (MuJoCo)", git
   `427e076:docs/PROJECT_BRIEF.md` (2026-10-24).
 - The previous Czech description of the cell, `docs/README_cs_mg06_cell.md` (git `5e5ee62:README.md`).
-- AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/kinali_sim/model.py`.
-- OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/kinali_sim/model.py`.
+- AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/Scene/Core.py`.
+- OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/Scene/Core.py`.
 - KINALI "Test it off": https://www.testitoff.cz/en/about-test-it-off/
 
 ## 16. Proposed file formats and commands (brief §5.2–§5.5, verbatim)

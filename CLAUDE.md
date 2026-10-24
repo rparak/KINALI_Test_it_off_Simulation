@@ -10,7 +10,8 @@ file. The owner's notes may be in Czech or Slovak; answer in English anyway. Com
 trailer (`.claude/settings.json`).
 
 The verified physics is never changed without an explicit request (SPEC §3, the style project page
-`mjcf.md`). Regression baseline: `docs/baseline_report.txt`, `docs/baseline_model_fingerprint.json`.
+`mjcf.md`). Regression baseline: `test/Simulation/data/baseline_report.txt`,
+`test/Scene/data/baseline_model_fingerprint.json`.
 
 ## Skills
 
@@ -26,16 +27,18 @@ their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `
 ## Commands
 
 Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python` (Python 3.11).
-The layout is being migrated to the RPX layout (`FEATURES.md` F3); until then:
 
 ```bash
-./install.sh                                  # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
-.venv/bin/python legacy/test_cell_cycle.py    # legacy plan, physics + report; ~15 s
-PYTHONPATH=src .venv/bin/python -m kinali_sim.cli run          # the same + acceptance + output/report.txt
-PYTHONPATH=src .venv/bin/python -m kinali_sim.cli export-xml   # models/cell_scene.xml
-.venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml
-.venv/bin/python -m pytest -m "not slow"     # fast tests
-.venv/bin/python -m pytest -m slow           # full-cycle regression
-.venv/bin/python tools/model_fingerprint.py --compare docs/baseline_model_fingerprint.json
-.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test   # after F3
+./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
+.venv/bin/python -m pytest -m "not slow"         # everyday, about 15 s
+.venv/bin/python -m pytest                       # before a commit, about 45 s
+.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
+.venv/bin/python Example/run_cycle.py [--out DIR] # legacy plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~15 s
+.venv/bin/python Example/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
+.venv/bin/python Example/export_cell_scene.py    # models/cell_scene.xml
+.venv/bin/python Example/show_cell.py            # MuJoCo viewer on the cell
+.venv/bin/python Example/render_image.py         # output/pcb_green.png
+.venv/bin/python legacy/test_cell_cycle.py       # the frozen reference run (until step 6)
 ```
+
+Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT` (git-ignored).

@@ -54,7 +54,7 @@ Sub-tasks:
 - [~] Follow-up: split the PCB mesh into board and components (components above the board top) and colour the
       components grey/black (brief §7 step 2, optional). Not done in F2.
 
-## F3 - RPX migration (owner, 2026-10-24) - plan, waiting for approval
+## F3 - RPX migration (owner, 2026-10-24) - done
 
 Restates the owner's request: the whole project follows project-style-rpx and the other personal
 skills, with github.com/rparak/UR_PathGen_SF_1 as the structural template (structure and conventions
@@ -274,15 +274,30 @@ The questions as asked:
    `python3` step.
 8. **Safety sentence** (SPEC §14 question 1): does an output ever drive the real cell?
 
-### Sub-tasks and commits (after approval)
+### Sub-tasks and commits (done 2026-10-24)
 
-- [ ] F3.1 install: `requirements.txt`, `install.sh`, `test/Install/test_install.py`, `pytest.ini`, `.gitignore`; remove `pyproject.toml`; run `./install.sh --recreate` (Python 3.11)
-- [ ] F3.2 re-baseline in 3.11 (item D): report diff, fingerprint; separate commit if different
-- [ ] F3.3 Configuration + Scene (moves, names, headers, `logger/`), mesh folders into `models/`
-- [ ] F3.4 Kinematics + Collision, legacy shims; plan regeneration ≤ 1e-12 rad
-- [ ] F3.5 Render + Simulation; report diff empty against the baseline and the legacy run
-- [ ] F3.6 Example scripts + tests (`test/`), layout test; style checker clean
-- [ ] F3.7 docs: SPEC §6 *Current* removed, CLAUDE.md, README stub commands, project references' status lines
+Checks after every commit: the fingerprint compare (only `geoms/pcb_vis/geom_rgba`), the fast tests, and
+for Scene / Kinematics / Collision / Simulation / models the cycle report diff against the baseline.
+
+- [x] F3.1 `9bcbd77` install: `requirements.txt`, `install.sh` (`--recreate` run: Python 3.11.2, numpy
+      2.4.6), `test/Install/test_install.py` (16), `pytest.ini`, `pyproject.toml` removed. Re-baseline (D):
+      the 3.11 report is byte-identical to the 3.14 one; no new baseline. Fingerprint 1 diff; fast 43
+      passed; report diff empty.
+- [x] F3.3 `c6282af` Configuration + Scene; meshes into `models/<name>/`; `data` -> `Data` through a
+      temporary name; `legacy/cell.py`. Fingerprint 1 diff; fast 52 passed; report diff empty (legacy and
+      CLI); plan regeneration 1.24e-14 rad.
+- [x] F3.4 `0dc7dad` Kinematics + Collision; `legacy/robot_kin.py`. Fingerprint 1 diff; fast 79 passed;
+      report diff empty; plan regeneration 1.24e-14 rad.
+- [x] F3.5 `803d94d` Render + Simulation (the loop ported). Fingerprint 1 diff; fast 97 passed; report
+      diff empty (legacy and port); every raw value the same float as the frozen legacy run.
+- [x] F3.6 `9c21513` Example scripts, `test/` complete, layout test; `src/kinali_sim`, `tests/`,
+      `tools/` removed. Fingerprint 1 diff; fast 99 passed (103 collected); report diff empty
+      (`Example/run_cycle.py` stdout and `report.txt`, legacy); style checker 25 files, 0 issues.
+- [x] F3.7 docs: SPEC, CLAUDE.md, README stub commands, the skill references, KNOWN_ISSUES.
+
+Mutations that changed nothing (findings about the code, not the tests): the phase label sampled every 10
+instead of 20 steps, and a 0.1 mm instead of 0.5 mm cup-touch threshold, change no output of the legacy
+plan (every phase starts on a 20-step boundary; the cups sit deeper than 0.1 mm).
 
 ## Brief coverage (condition C2, 2026-10-24)
 

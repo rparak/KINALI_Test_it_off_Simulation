@@ -10,8 +10,8 @@ previous Czech description of the cell is in [docs/README_cs_mg06_cell.md](docs/
 > **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"     # install (MuJoCo 3.16.0)
-.venv/bin/kinali-sim run                                        # headless physics run of the cycle + report (output/report.txt)
-.venv/bin/kinali-sim export-xml                                 # write models/cell_scene.xml
+./install.sh                                                    # install: .venv with Python 3.11 and the pinned requirements
+.venv/bin/python Example/run_cycle.py                           # headless physics run of the cycle + report (output/report.txt)
+.venv/bin/python Example/export_cell_scene.py                   # write models/cell_scene.xml
 .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml  # interactive viewer
 ```

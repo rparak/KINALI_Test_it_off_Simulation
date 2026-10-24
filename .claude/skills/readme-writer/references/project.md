@@ -16,7 +16,7 @@ this file then gains its readers, figures and tests.
 
 | What the README shows | Source | Written by | Pinned by |
 |---|---|---|---|
-| (stub) MuJoCo 3.16.0, Python 3.11 | `requirements.txt`, `install.sh` | the owner | `test/Install/test_install.py` (after F3) |
+| (stub) MuJoCo 3.16.0, Python 3.11 | `requirements.txt`, `install.sh` | the owner | `test/Install/test_install.py` |
 
 ## Triggers
 

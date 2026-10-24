@@ -21,7 +21,7 @@ conventions are taken.
 
 **Revisit if** the owner's skills change their layout rules.
 
-Pinned by (after F3) `test/Docs/test_layout.py` (root entries, skill folders).
+Pinned by `test/Docs/test_layout.py` (root entries, project docs, skill references).
 
 ## Simulation now, real-cell transfer planned
 
@@ -57,7 +57,7 @@ contact number and the baseline would no longer be comparable.
 **Revisit if** a MuJoCo release is needed for a feature; the upgrade is its own change with a new
 baseline, the fingerprint re-measured and the margin behaviour re-checked.
 
-Pinned by `test/Scene/test_core.py` (fingerprint) and the slow regression (after F3).
+Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow regression) and `test/Install/test_install.py` (the version check).
 
 ## Python 3.11, pinned requirements, installed by install.sh
 
@@ -97,7 +97,9 @@ is unchanged. Porting it into `src/`: rejected, it is the reference, not the pro
 
 **Revisit if** step 6 passes.
 
-Pinned by `test/Simulation/test_core.py` (slow regression; after F3).
+Pinned by `test/Simulation/test_core.py` (slow: the report equals the baseline; raw-value pins). The port of
+the loop into `src/Simulation` was proven against the frozen run: every measured value the same float
+(2026-10-24, `FEATURES.md` F3.5); the planner regenerates the plan through the shims to 1.24e-14 rad.
 
 ## The PCB is drawn in solder-mask green
 
@@ -114,7 +116,7 @@ components with their own colours: an open follow-up (`KNOWN_ISSUES.md`).
 
 **Revisit if** the PCB mesh is split.
 
-Pinned by `tests/test_model.py::test_pcb_is_green` (to move to `test/Scene/test_core.py`).
+Pinned by `test/Scene/test_core.py::test_the_pcb_is_green_without_a_material` and `test/Render/test_core.py::test_the_pcb_camera_shows_a_green_pcb`.
 
 ## The CAD deviations stay compensated in scene.xml
 
@@ -134,4 +136,4 @@ in the PCB, recommended to check). Regenerating the scene: rejected, it would dr
 
 **Revisit if** the CAD is corrected or the real cell is measured.
 
-Pinned by the fingerprint (`docs/baseline_model_fingerprint.json`).
+Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`).
