@@ -35,7 +35,7 @@ import mujoco
 #   ../Configuration/Core - the configuration's structures
 from Configuration.Core import Cell_Configuration_Str, Keypoints_Str, Robot_Keypoint_Str, PCB_Meta_Str
 #   ../Scene/Core - the crates
-from Scene.Core import PCB_In_Crate, Cup_Block_Geom
+from Scene.Core import PCB_In_Crate, Cup_Block_Geom, Crate_Holding
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls, TCP_For_PCB, PCB_For_TCP, Quaternion_To_Matrix
 #   ../Collision/Core - contacts of the robot and of the carried PCB
@@ -260,19 +260,22 @@ def Pose_Cell(kinematics: Robot_Kinematics_Cls, keypoints: Keypoints_Str, cell: 
     return keypoint
 
 
-def _Group(names: tp.Set[str], geoms: tp.Set[str], cup_block: str) -> tp.Optional[str]:
+def Contact_Group(names: tp.Set[str], geoms: tp.Set[str], cup_block: str, pcb_in_crate: bool) -> tp.Optional[str]:
     """
     Description:
         The contact group of a pair of bodies (and their geoms), or None for a pair no group covers. cups_pcb is
-        the VGC10's face on the PCB: a cup, or the cup block (not the fork, which is on the same tool body).
+        the VGC10's face on the PCB: a cup, or the cup block (not the fork, which is on the same tool body);
+        pcb_crate the PCB on a crate, and on the table boxes (Collision.CONST_TABLE_BOXES) only while the PCB is
+        inside a crate, its floor between them (owner, 2026-10-24); pcb_jaws the PCB on the loader's jaws.
 
     Args:
         (1) names [Set<string>]: The two bodies.
         (2) geoms [Set<string>]: The two geoms.
         (3) cup_block [string]: The cup block's geom (its id as text, it has no name).
+        (4) pcb_in_crate [bool]: The PCB is inside a crate (Scene.Crate_Holding).
 
     Returns:
-        (1) parameter [string]: cups_pcb, handle_bar, pcb_crate, or None.
+        (1) parameter [string]: cups_pcb, handle_bar, pcb_crate, pcb_jaws, or None.
     """
 
     if 'pcb' in names and (any(n.startswith('aubo/tool/vgc10_cup') for n in names) or cup_block in geoms):
@@ -281,6 +284,10 @@ def _Group(names: tp.Set[str], geoms: tp.Set[str], cup_block: str) -> tp.Optiona
         return 'handle_bar'
     if 'pcb' in names and 'workstation' in names and any(g.startswith('crate_') for g in geoms):
         return 'pcb_crate'
+    if 'pcb' in names and 'workstation' in names and pcb_in_crate and any(g.startswith('table_') for g in geoms):
+        return 'pcb_crate'
+    if 'pcb' in names and names & {'jaw_L', 'jaw_R'}:
+        return 'pcb_jaws'
     return None
 
 
@@ -342,10 +349,11 @@ def Check_Keypoint(name: str, kinematics: Robot_Kinematics_Cls, collision: Robot
         contacts += collision.Close_Pairs({kinematics.Model.body('pcb').id}, cell.Clearance, kinematics.Data, exclude=collision.Robot_Bodies)
     allowed, closest = {}, (cell.Clearance, '')
     cup_block = str(Cup_Block_Geom(kinematics.Model))
+    in_crate = Crate_Holding(kinematics.Data.xpos[kinematics.Model.body('pcb').id]) is not None
     for distance, body_1, body_2, geom_1, geom_2 in contacts:
         if body_1 == CONST_MOUNT_BODY and geom_2.startswith(CONST_MOUNT_GEOM_PREFIX):
             continue
-        group = _Group({body_1, body_2}, {geom_1, geom_2}, cup_block)
+        group = Contact_Group({body_1, body_2}, {geom_1, geom_2}, cup_block, in_crate)
         if group is not None and group in keypoint.Allow_Contact:
             allowed[group] = min(allowed.get(group, cell.Clearance), distance)
         elif distance < closest[0]:

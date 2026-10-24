@@ -970,6 +970,34 @@ Each new test broken once; the collected count reported per commit.
 After every commit: the fingerprint compare (only `pcb_vis` rgba), the cycle report diff, the fast tests, the style
 checker (0 issues), the keypoint check table byte-identical.
 
+### Approval (owner, 2026-10-24)
+
+Part A approved; F8 first, stop for acceptance before F9. Answers: 1 loader axes one after the other; 2 a `Duration` per
+loader / gripper command with the legacy values, each with its source; 3 `Stop` dropped; 4 `Allow_Contact` per step, and
+each group's deepest overlap in `Cell.yaml` (a deeper one fails even where allowed); the report shows per step and group
+the minimum distance and where (sample, time) it occurs; 5 F9's multi-seed IK dropped (endpoints fixed by LOCKED steps;
+design-decisions in F9); 6 `pcb_jaws` back, 0.5 mm; 7 the PCB-table pair exempt only while the PCB is in a crate - a
+carried PCB or a PCB in the jaws keeps 3 mm to the table; 8 the keypoint check on the planning model, its table
+byte-identical; 9 the `Fork_Open` velocity step kept, noted for step 5 (tracking error, force on the bar); 10 straight
+home from MG06 (MoveJ, the family switch in joint space); 11 `Data/Optimized/` committed, trajectories git-ignored until
+step 6; 12 loader steps LOCKED in F9; 13 TOPP without a jerk limit, step 5 reports tracking error and PCB slip for both
+versions, acceptance as SPEC §10.1; 14 `Test: Process.Test_Duration` (an explicit reference).
+
+Additions: B1 the no-press check at the handover (PCB-ledge gap 0.3 ± 0.1 mm at `loader_handover` and over the last
+MoveL into it, the gap reported, a press fails); B2 the broad phase identical to the brute-force check on all keypoints
+and ≥ 500 random samples, its speed-up reported; B3 the own TOPP validated analytically (F9); B4 the carried-PCB tilt
+limit in FREE segments (F9); B5 byte-identical outputs on one machine and platform, the platform recorded; B6 new
+baselines for both programs in step 6 (SPEC).
+
+### Status
+
+- [x] F8.1 Collision: `Close_Pairs` with a vectorised broad phase - identical pairs to the per-pair loop on the 22
+      keypoints and 500 random plan samples (B2), 37.9x faster at 3 mm (15.98 -> 0.42 ms per sample); the table top as two
+      boxes in the planning model only; the keypoint check on the planning model (table byte-identical); `pcb_jaws` back;
+      the PCB-table pair `pcb_crate` only inside a crate (`Scene.Crate_Holding`). Found: generated contacts depend on
+      unrelated geoms (one more workstation geom makes MuJoCo generate the PCB-crate contacts it missed) - the exact-
+      distance decision's reason corrected. 202 -> 208 collected; each new test broken once (7 mutations).
+
 ## F9 - Step 4b: the optimized program (owner, 2026-10-24) - design, awaiting approval; built after F8 is accepted
 
 Requirements (restated): the same process as F8 with the process-critical segments unchanged (LOCKED) and the

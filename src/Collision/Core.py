@@ -29,7 +29,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the cell and the robot's joint names
 #   ../Scene/Core
-from Scene.Core import Build_Cell_Model, CONST_ROBOT_JOINTS
+from Scene.Core import Build_Cell_Spec, CONST_ROBOT_JOINTS
 #   ../Configuration/Core
 from Configuration.Core import Cell_Configuration_Str
 
@@ -39,20 +39,37 @@ Description:
 
     Collision queries of a robot configuration against the cell (SPEC §7.4): its contacts (penetration
     below a margin) and its clearance to everything else. The planning model carries a 6 mm geom margin
-    on the robot and PCB geoms, so contacts are generated within the 3 mm planning clearance.
+    on the robot and PCB geoms, so contacts are generated within the 3 mm planning clearance, and the table
+    top as two boxes (the physics model has no table collision).
 """
 # The planning model's geom margin on the robot and PCB geoms, as a multiple of the configured clearance
 # (Configuration/Cell.yaml Clearance.Robot), so that MuJoCo generates contacts within the clearance.
 #   Unit [float] (-)
 CONST_MARGIN_FACTOR = 2.0
+# The table top, which models/scene.xml has only as visual meshes: its two plates, the bounding boxes (no margin: a
+# plate is a box) of the two large connected components of the visual mesh ws_vis_static_217_214_219 (coincident
+# vertices welded; measured 2026-10-24, FEATURES.md F8; the gap between them holds two rails no higher than the top).
+# Planning and checking only: never in the physics model.
+#   Unit [Dict<string, Tuple<Vector<float> 1x3>>] (name -> lower corner, upper corner, m, MG06 fixture frame)
+CONST_TABLE_BOXES = {'table_left': ((-0.21129, -0.86012, -0.038), (-0.01128, 0.18988, 0.002)),
+                     'table_right': ((0.02072, -0.86012, -0.038), (0.54072, 0.18988, 0.002))}
+# The table boxes' collision bits and group: the crates' (contype 2, conaffinity 1, group 3), which meet both the robot
+# and the PCB (the workstation's ws_col_* meshes, 2 / 0, meet the robot only).
+#   Unit [int]
+CONST_TABLE_CONTYPE, CONST_TABLE_CONAFFINITY, CONST_TABLE_GROUP = 2, 1, 3
+# The broad phase's slack: a pair whose bounding spheres are this much farther apart than the cut is still measured,
+# so float rounding of the vectorised sphere distance can never drop a pair the exact distance would keep.
+#   Unit [float] (m)
+CONST_BROAD_SLACK = 1e-9
 
 
 def Build_Planning_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
     """
     Description:
-        The cell for collision queries: the compiled cell with CONST_MARGIN_FACTOR x the clearance as geom
-        margin on every robot and PCB geom (6 mm for the 3 mm clearance). Not for physics (the verified
-        physics uses no margin on the PCB, SPEC §4.7).
+        The cell for collision queries: the cell with the table top as boxes (CONST_TABLE_BOXES, on the workstation
+        body) and CONST_MARGIN_FACTOR x the clearance as geom margin on every robot and PCB geom (6 mm for the 3 mm
+        clearance). Not for physics (the verified physics has no table collision and no margin on the PCB,
+        SPEC §4.7); exact distances (Close_Pairs) ignore the margin.
 
     Args:
         (1) cell [Cell_Configuration_Str(object)]: The cell configuration.
@@ -61,7 +78,15 @@ def Build_Planning_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
         (1) parameter [mujoco.MjModel]: The planning model.
     """
 
-    m = Build_Cell_Model(cell)
+    spec = Build_Cell_Spec(cell)
+    workstation = spec.body('workstation')
+    for name, (lower, upper) in CONST_TABLE_BOXES.items():
+        lower, upper = np.array(lower), np.array(upper)
+        geom = workstation.add_geom()
+        geom.name, geom.type = name, mujoco.mjtGeom.mjGEOM_BOX
+        geom.size, geom.pos = (upper - lower) / 2, (upper + lower) / 2
+        geom.contype, geom.conaffinity, geom.group = CONST_TABLE_CONTYPE, CONST_TABLE_CONAFFINITY, CONST_TABLE_GROUP
+    m = spec.compile()
     margin = CONST_MARGIN_FACTOR * cell.Clearance
     robot_bodies = {i for i in range(m.nbody) if m.body(i).name.startswith('aubo/')}
     for g in range(m.ngeom):
@@ -97,6 +122,12 @@ class Robot_Collision_Cls(object):
         self.__data = mujoco.MjData(model) if data is None else data
         self.__q_address = np.array([model.jnt_qposadr[model.joint('aubo/' + j).id] for j in CONST_ROBOT_JOINTS])
         self.__robot_bodies = {i for i in range(model.nbody) if model.body(i).name.startswith('aubo/')}
+        # The collidable geoms and their bits, bodies and bounding radii, for Close_Pairs' broad phase.
+        self.__collidable = np.array([g for g in range(model.ngeom) if model.geom_contype[g] or model.geom_conaffinity[g]])
+        self.__geom_body = model.geom_bodyid[self.__collidable]
+        self.__geom_type = model.geom_contype[self.__collidable]
+        self.__geom_affinity = model.geom_conaffinity[self.__collidable]
+        self.__geom_radius = model.geom_rbound[self.__collidable]
 
     @property
     def Data(self) -> mujoco.MjData:
@@ -178,19 +209,22 @@ class Robot_Collision_Cls(object):
         m = self.__model
         d = self.__data if data is None else data
         exclude = set() if exclude is None else exclude
-        mine = [g for g in range(m.ngeom) if m.geom_bodyid[g] in bodies and (m.geom_contype[g] or m.geom_conaffinity[g])]
-        others = [g for g in range(m.ngeom) if m.geom_bodyid[g] not in bodies and m.geom_bodyid[g] not in exclude
-                  and (m.geom_contype[g] or m.geom_conaffinity[g])]
+        # Broad phase, vectorised: compatible collision bits and bounding spheres within the cut (plus a slack, so it
+        # keeps every pair the per-pair test kept); the exact distance then decides as before.
+        in_mine = np.isin(self.__geom_body, list(bodies))
+        in_others = ~in_mine & ~np.isin(self.__geom_body, list(exclude))
+        a_index, b_index = np.flatnonzero(in_mine), np.flatnonzero(in_others)
+        bits = ((self.__geom_type[a_index][:, None] & self.__geom_affinity[b_index][None, :]) != 0) \
+            | ((self.__geom_type[b_index][None, :] & self.__geom_affinity[a_index][:, None]) != 0)
+        a_geoms, b_geoms = self.__collidable[a_index], self.__collidable[b_index]
+        gap = np.sqrt(np.sum((d.geom_xpos[a_geoms][:, None, :] - d.geom_xpos[b_geoms][None, :, :]) ** 2, axis=2)) \
+            - self.__geom_radius[a_index][:, None] - self.__geom_radius[b_index][None, :]
         out, ft = [], np.zeros(6)
-        for a in mine:
-            for b in others:
-                if not ((m.geom_contype[a] & m.geom_conaffinity[b]) or (m.geom_contype[b] & m.geom_conaffinity[a])):
-                    continue
-                if np.linalg.norm(d.geom_xpos[a] - d.geom_xpos[b]) - m.geom_rbound[a] - m.geom_rbound[b] > cut:
-                    continue
-                x = mujoco.mj_geomDistance(m, d, a, b, cut, ft)
-                if x < cut:
-                    out.append((x, m.body(m.geom_bodyid[a]).name, m.body(m.geom_bodyid[b]).name, m.geom(a).name or str(a), m.geom(b).name or str(b)))
+        for i, j in zip(*np.nonzero(bits & (gap <= cut + CONST_BROAD_SLACK))):
+            a, b = int(a_geoms[i]), int(b_geoms[j])
+            x = mujoco.mj_geomDistance(m, d, a, b, cut, ft)
+            if x < cut:
+                out.append((x, m.body(m.geom_bodyid[a]).name, m.body(m.geom_bodyid[b]).name, m.geom(a).name or str(a), m.geom(b).name or str(b)))
         return sorted(out)
 
     def Clearance(self, q: np.ndarray, data: tp.Optional[mujoco.MjData] = None, cut: float = 0.05,

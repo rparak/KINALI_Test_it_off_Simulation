@@ -121,22 +121,56 @@ Pinned by: none (text); checked by `git grep` for the old spellings when docs ch
 
 ## The keypoint check measures exact distances, not generated contacts
 
-**Decision.** The keypoint clearance is measured with `mj_geomDistance` for every collidable pair within the
-clearance (`Collision.Close_Pairs`), not read from the contacts MuJoCo generates in a model with an enlarged
-geom margin (the legacy planner's planning model).
+**Decision.** The keypoint clearance (and, from F8, the program's segment check) is measured with `mj_geomDistance`
+for every collidable pair within the clearance (`Collision.Close_Pairs`), not read from the contacts MuJoCo generates in
+a model with an enlarged geom margin (the legacy planner's planning model). `Close_Pairs` filters the pairs with a
+vectorised bounding-sphere broad phase (numpy, a 1e-9 m slack so it keeps every pair the per-pair test kept), then
+measures each candidate exactly: the same pairs and distances as the per-pair loop, 38 times faster (owner's B2, F8.1).
 
-**Why.** MuJoCo's box-box collider generates no contact for boxes that are near but not touching, whatever the
-margin: the carried PCB 1.0 mm above the crate floor produced no contact (2026-10-24). The cup pads, the PCB,
-the crate walls are boxes; a margin-based check missed them. Exact distances also found the cup block 2.1 mm
-above a held PCB (now in `cups_pcb`) and the robot's mount (excluded by a code constant).
+**Why.** Generated contacts miss near pairs depending on unrelated geometry: the carried PCB 1.02 mm above the crate
+floor at `output_place` produces no contact in the cell with the 6 mm margin, and 16 contacts once one more geom - even a
+box 5 m away - is added to the workstation body (measured 2026-10-24, F8.1). *Corrected 2026-10-24: this entry first
+blamed MuJoCo's box-box collider ignoring the margin; adding the table boxes showed the missing contact comes from the
+workstation body's mid-phase, so contact generation is not a reliable distance measure at all.* Exact distances also
+found the cup block 2.1 mm above a held PCB (now in `cups_pcb`) and the robot's mount (excluded by a code constant).
+B2 (2026-10-24, Apple M2 Pro): all 22 keypoints and 500 random samples of `Data/Reference/cell_plan.npz` (seed
+20261024, the PCB held by the cups), robot and PCB queries, cuts 3 and 50 mm - identical pair lists; 15.98 -> 0.42 ms
+per sample at 3 mm (37.9x), 16.13 -> 0.56 ms at 50 mm (28.8x).
 
-**Alternatives.** Contacts with a larger margin: rejected, the box-box collider ignores it. Converting the boxes
-to meshes: a model change.
+**Alternatives.** Contacts with a larger margin: rejected, whether a pair is generated depends on the model's other
+geoms. Converting the boxes to meshes: a model change. The per-pair loop: 14-16 ms per configuration, too slow for a
+4 ms trajectory.
 
-**Revisit if** MuJoCo's box-box collider honours the margin.
+**Revisit if** MuJoCo's contact generation becomes independent of unrelated geoms (then a margin model could be used
+for speed), or `Close_Pairs` is still too slow for a check.
 
-Pinned by `test/Collision/test_core.py::test_exact_distances_find_a_near_box_pair_that_contacts_miss`,
-`test/Keypoints/test_core.py`.
+Pinned by `test/Collision/test_core.py::test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated`,
+`::test_the_vectorised_broad_phase_gives_the_brute_force_pairs`, `test/Keypoints/test_core.py`.
+
+## The check model is the planning model with the table top as two boxes
+
+**Decision.** The table top, which `models/scene.xml` has only as visual meshes, is two boxes in
+`Collision.Build_Planning_Model` only (`CONST_TABLE_BOXES`: the bounding boxes of the two plates of the visual mesh
+`ws_vis_static_217_214_219`, no margin, the crates' collision bits 2 / 1 so they meet the robot and the PCB). The keypoint
+check and the program check use the planning model (owner, 2026-10-24); the physics model and its fingerprint have no
+table. The PCB against the table counts as `pcb_crate` only while the PCB is inside a crate (`Scene.Crate_Holding`: within
+a crate's inner footprint, below its 149 mm walls - the crate floor lies between them); a carried PCB or a PCB in the jaws
+keeps the 3 mm clearance to the table (owner, 2026-10-24).
+
+**Why.** The robot and the carried PCB can reach the table; nothing modelled it. Measured: the robot stays at least 8.9 mm
+from the boxes over the reference plan; the keypoint table is byte-identical with them; the PCB on a crate floor is
+2.00 mm from the table (the floor's thickness) and the carried PCB at `output_place` 3.02 mm - a margin on the boxes'
+top face would fail both, so none is added (a plate is a box).
+
+**Alternatives.** The table in `scene.xml` or the physics model: rejected, the verified physics and its fingerprint stay
+unchanged. A separate check model beside the planning model: two models that can disagree. The PCB-table pair always in
+`pcb_crate`: rejected by the owner (it would hide a carried PCB scraping the table).
+
+**Revisit if** the table is added to the physics model, or the CAD's table changes.
+
+Pinned by `test/Collision/test_core.py::test_the_table_boxes_are_the_plates_of_the_table_mesh`,
+`::test_the_physics_model_has_no_table_collision`, `::test_the_table_is_close_only_to_a_pcb_on_a_crate_floor`,
+`test/Keypoints/test_core.py::test_the_contact_groups_of_a_pair`, `::test_crate_holding_tells_the_inside_of_a_crate`.
 
 ## A fork keypoint carries the MG06 state of the recorded path
 
@@ -157,25 +191,25 @@ hides one.
 Pinned by `test/Keypoints/test_core.py::test_the_fork_keypoints_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre`,
 `::test_fork_closed_end_in_the_wrong_mg06_state_is_reported`.
 
-## The contact groups are only those a keypoint observes
+## The contact groups are only those a keypoint or a program step observes
 
-**Decision.** The keypoint check knows three contact groups, `cups_pcb`, `handle_bar` and `pcb_crate`, each
-declared by at least one keypoint and found there within the clearance. `pcb_jaws` (the carried PCB on the
-loader's jaws) is removed from `Configuration/Cell.yaml`, the loader and the check (owner, 2026-10-24); a PCB-jaw
-pair within the clearance now has no group and fails like any other close pair.
+**Decision.** The check knows four contact groups, `cups_pcb`, `handle_bar`, `pcb_crate` and `pcb_jaws` (the PCB on the
+loader's jaws), each with its deepest allowed overlap in `Configuration/Cell.yaml` `Clearance.Allowed_Depth` (1.6, 0.5,
+0.5, 0.5 mm); a deeper overlap fails even where the group is allowed. A keypoint declares groups in `Allow_Contact`, a
+program step in its `Allow_Contact` (owner, 2026-10-24); every declared group must be observed. *Corrected 2026-10-24:
+`pcb_jaws` was removed in F6.4 because no keypoint observed it; it is back (owner, step 4 answer 6) because the handover and
+take steps of the default program have the carried PCB between the closing jaws (F8).*
 
-**Why.** No keypoint observes a PCB-jaw contact: it was declared at the handover and the take but never present
-(FEATURES.md F6, implementation findings), and a group no keypoint can declare is a field that cannot take
-effect. Allowing only what is present (C1) keeps an unexpected jaw contact visible.
+**Why.** A group nothing declares is a field that cannot take effect; allowing only what is present keeps an unexpected
+contact visible.
 
-**Alternatives.** Keep `pcb_jaws` for step 4: rejected, nothing would test it until then.
+**Alternatives.** Keeping `pcb_jaws` through F6: rejected then, nothing observed it until step 4.
 
-**Revisit if** a keypoint or a step 4 segment really has the PCB on the jaws: the group comes back with that
-keypoint or segment, which observes it.
+**Revisit if** a group is no longer observed by any keypoint or step.
 
-Pinned by `test/Configuration/test_configuration_files.py::test_an_invalid_keypoint_value_is_named` (`pcb_jaws`
-rejected), `::test_the_shipped_cell_configuration_loads_in_si_units`,
-`test/Keypoints/test_core.py::test_every_declared_contact_is_really_present`.
+Pinned by `test/Configuration/test_configuration_files.py::test_an_invalid_keypoint_value_is_named`,
+`::test_the_shipped_cell_configuration_loads_in_si_units`, `test/Keypoints/test_core.py::test_every_declared_contact_is_really_present`,
+`::test_the_contact_groups_of_a_pair`.
 
 ## MuJoCo is pinned to 3.16.0
 

@@ -176,6 +176,25 @@ def PCB_In_Crate(name: str) -> tp.Tuple[np.ndarray, np.ndarray]:
     return np.array([c[0], c[1], CONST_CRATE_FLOOR + CONST_PCB_HALF_T]), np.array([1.0, 0, 0, 0])
 
 
+def Crate_Holding(position: np.ndarray) -> tp.Optional[str]:
+    """
+    Description:
+        The crate whose inside holds a point: within its inner footprint and below its wall top.
+
+    Args:
+        (1) position [Vector<float> 1x3]: The point (m), e.g. the PCB centre.
+
+    Returns:
+        (1) parameter [string]: 'crate_pick' or 'crate_place', or None outside both.
+    """
+
+    for name, crate in CONST_CRATES.items():
+        (x0, y0), (x1, y1) = crate['inner']
+        if x0 <= position[0] <= x1 and y0 <= position[1] <= y1 and position[2] <= CONST_CRATE_TOP:
+            return name
+    return None
+
+
 def _Load_Spec(path: str) -> mujoco.MjSpec:
     """
     Description:

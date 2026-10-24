@@ -29,7 +29,7 @@
 #     Context       the scene: Loader (a Loader position), Gripper (a Gripper state), PCB (input_crate,
 #                   cups, jaws, mg06, output_crate).
 #     Allow_Contact the contact groups allowed within the clearance (cups_pcb, handle_bar,
-#                   pcb_crate), each up to Cell.yaml Clearance.Allowed_Depth; [] when none.
+#                   pcb_crate, pcb_jaws), each up to Cell.yaml Clearance.Allowed_Depth; [] when none.
 #     Note          what the keypoint is for (shown by the viewer and the check).
 ## =========================================================================== ##
 

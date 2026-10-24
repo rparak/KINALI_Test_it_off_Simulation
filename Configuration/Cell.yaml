@@ -46,13 +46,16 @@ Clearance:
   # The smallest distance from the robot, the tool and the carried PCB to the scene (MG06, workstation,
   # crates, loader), except a keypoint's declared contacts. Source: SPEC §2 items 3-4. [m] REQUIRED.
   Robot: 0.003
-  # The deepest contact a keypoint may declare per group: the cups pressed 1.5 mm onto the PCB (SPEC
-  # §4.7) plus 0.1 mm; every other group 0.5 mm (owner, 2026-10-24: a contact the recorded path really
-  # has). [m] REQUIRED.
+  # The deepest contact a keypoint or a program step may declare per group; a deeper overlap fails even
+  # where the group is allowed. cups_pcb: the cups pressed 1.5 mm onto the PCB (SPEC §4.7) plus 0.1 mm;
+  # handle_bar: the fork on the bar of the recorded path; pcb_crate: the PCB on a crate floor (and on the
+  # table under it); pcb_jaws: the carried PCB between the loader's jaws at the handover and the take -
+  # each 0.5 mm (owner, 2026-10-24). [m] REQUIRED.
   Allowed_Depth:
     cups_pcb: 0.0016
     handle_bar: 0.0005
     pcb_crate: 0.0005
+    pcb_jaws: 0.0005
   # A keypoint's FK against its Check value: the SPEC §4.8 table is rounded to 0.1 mm (measured
   # residue of the full-precision joints: at most 0.081 mm). [m] REQUIRED.
   Check_Position: 0.0001

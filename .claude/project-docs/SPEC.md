@@ -524,8 +524,10 @@ null-space pull to a reference), the TCP pose that holds the PCB at a given pose
 ### 7.4 Collision
 
 Robot contacts of a configuration (penetration below a margin), the clearance between robot geoms and
-everything else (bounding-sphere filtered `mj_geomDistance`), planning margin 3 mm (6 mm geom margin on
-robot and PCB geoms of the planning model). The classification of a run's contacts into the checked
+everything else (bounding-sphere filtered `mj_geomDistance`; `Close_Pairs` with a vectorised broad phase, identical to
+the per-pair loop), planning margin 3 mm (6 mm geom margin on robot and PCB geoms of the planning model). The planning
+model is also the check model: it carries the table top as two boxes (`CONST_TABLE_BOXES`, measured from the table's
+visual mesh; never in the physics model, design-decisions). The classification of a run's contacts into the checked
 categories of §4.6.
 
 ### 7.5 Render
@@ -551,10 +553,11 @@ The check (per keypoint, one table row; FAIL on any rule, WARN when wrist_2 is w
 joint limits (the model); the family (wrist_2's sign); `Check` within `Clearance.Check_Position`; a
 `Relative_To` target within `Stale_Position` / `Stale_Angle`; the clearance - **exact** distances
 (`Collision.Close_Pairs`, `mj_geomDistance`) from the robot's geoms, and from the PCB's when the cups carry it,
-to every collidable geom: every pair closer than `Clearance.Robot` fails unless its group is in
-`Allow_Contact` and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on the PCB, not
-the fork), `handle_bar` (the tool on the MG06 handle), `pcb_crate` (the carried PCB in a crate) - only groups a
-keypoint observes; any other pair within the clearance, the carried PCB on the jaws included, fails. Not checked:
+to every collidable geom of the planning model (the table included): every pair closer than `Clearance.Robot` fails
+unless its group is in `Allow_Contact` and no deeper than `Allowed_Depth`. Groups: `cups_pcb` (a cup or the cup block on
+the PCB, not the fork), `handle_bar` (the tool on the MG06 handle), `pcb_crate` (the PCB on a crate, and on the table
+only while the PCB is inside a crate), `pcb_jaws` (the PCB on the loader's jaws) - only groups a keypoint or step
+observes; any other pair within the clearance fails. Not checked:
 the robot's mount (its base on the pedestal plate, distance 0 by construction; a code constant, as the
 template's base–stand exclusion). Exact distances because MuJoCo's box–box collider generates no contact for a
 near pair (the carried PCB 1.0 mm above the crate floor), whatever the geom margin

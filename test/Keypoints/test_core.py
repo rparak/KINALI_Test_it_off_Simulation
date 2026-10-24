@@ -34,10 +34,10 @@ import mujoco
 # Custom Lib.: the module under test
 #   ../Keypoints/Core
 from Keypoints.Core import (Check_Keypoint, Check_Keypoints, Format_Check_Table, Pose_Cell, Fixture_State, Resolve_Keypoint,
-                            Keypoints_Error_Cls)
+                            Contact_Group, Keypoints_Error_Cls)
 #   ../Configuration/Core, ../Collision/Core, ../Kinematics/Core
 from Configuration.Core import Read_PCB_Meta
-from Collision.Core import Robot_Collision_Cls, Cup_Contacts
+from Collision.Core import Build_Planning_Model, Robot_Collision_Cls, Cup_Contacts
 from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP, TCP_For_PCB
 
 """
@@ -53,9 +53,14 @@ CONST_FORK = ['fork_start', 'fork_closed_end', 'fork_bar_centred', 'fork_out_of_
 
 
 @pytest.fixture(scope='module')
-def tools(cell_model):
-    collision = Robot_Collision_Cls(cell_model)
-    return Robot_Kinematics_Cls(cell_model, collision.Data), collision, Read_PCB_Meta()
+def planning_model(cell_configuration):
+    return Build_Planning_Model(cell_configuration)
+
+
+@pytest.fixture(scope='module')
+def tools(planning_model):
+    collision = Robot_Collision_Cls(planning_model)
+    return Robot_Kinematics_Cls(planning_model, collision.Data), collision, Read_PCB_Meta()
 
 
 @pytest.fixture(scope='module')
@@ -247,3 +252,37 @@ def test_a_wrong_family_is_reported(tools, keypoints, cell_configuration):
     result = Check_Keypoint('home', kinematics, collision, broken, cell_configuration, meta)
     assert not result.Family_Ok and result.Verdict == 'FAIL'
     assert 'family wrist_down, but wrist_2 is 90.00 deg' in result.Failures
+
+
+def test_the_contact_groups_of_a_pair(planning_model):
+    """
+    Description:
+        The groups (owner, 2026-10-24): a cup or the cup block on the PCB is cups_pcb; the fork on the handle handle_bar;
+        the PCB on a crate geom pcb_crate; the PCB on a table box pcb_crate only while the PCB is inside a crate, otherwise
+        no group (the 3 mm clearance applies); the PCB on a jaw pcb_jaws; anything else none.
+    """
+
+    from Scene.Core import Cup_Block_Geom
+    block = str(Cup_Block_Geom(planning_model))
+    assert Contact_Group({'pcb', 'aubo/tool/vgc10_cup2'}, {'pcb_board', '7'}, block, False) == 'cups_pcb'
+    assert Contact_Group({'pcb', 'aubo/tool/ee_tool'}, {'pcb_board', block}, block, False) == 'cups_pcb'
+    assert Contact_Group({'aubo/tool/ee_tool', 'mg06_handle'}, {'1', '2'}, block, False) == 'handle_bar'
+    assert Contact_Group({'pcb', 'workstation'}, {'pcb_board', 'crate_place_0'}, block, False) == 'pcb_crate'
+    assert Contact_Group({'pcb', 'workstation'}, {'pcb_board', 'table_right'}, block, True) == 'pcb_crate'
+    assert Contact_Group({'pcb', 'workstation'}, {'pcb_board', 'table_right'}, block, False) is None
+    assert Contact_Group({'pcb', 'jaw_R'}, {'pcb_board', '412'}, block, False) == 'pcb_jaws'
+    assert Contact_Group({'aubo/tool/ee_tool', 'workstation'}, {'1', 'table_left'}, block, True) is None
+
+
+def test_crate_holding_tells_the_inside_of_a_crate():
+    """
+    Description:
+        A point inside a crate's inner footprint and below its wall top (149 mm) is in that crate; above the walls, or
+        between the crates, it is in none.
+    """
+
+    from Scene.Core import Crate_Holding
+    assert Crate_Holding(np.array([0.15720, -0.75160, 0.0049])) == 'crate_pick'
+    assert Crate_Holding(np.array([0.40620, -0.75160, 0.1300])) == 'crate_place'
+    assert Crate_Holding(np.array([0.40620, -0.75160, 0.1500])) is None
+    assert Crate_Holding(np.array([0.28, -0.75160, 0.0049])) is None

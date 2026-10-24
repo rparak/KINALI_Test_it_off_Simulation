@@ -37,11 +37,11 @@ import argparse
 #   ../Configuration/Core - the configuration, the logs
 from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Load_Keypoints, Read_PCB_Meta, Script_Log_Cls,
                                 Configuration_Error_Cls)
-#   ../Scene/Core - the cell
-from Scene.Core import Build_Cell_Model, Scene_Error_Cls
-#   ../Kinematics/Core, ../Collision/Core - FK and exact distances
+#   ../Scene/Core - the cell's errors
+from Scene.Core import Scene_Error_Cls
+#   ../Kinematics/Core, ../Collision/Core - FK, the check model (the planning model: the table included) and exact distances
 from Kinematics.Core import Robot_Kinematics_Cls
-from Collision.Core import Robot_Collision_Cls
+from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Keypoints/Core - the check
 from Keypoints.Core import Check_Keypoint, Format_Check_Table
 
@@ -63,7 +63,7 @@ def main():
     log = Script_Log_Cls('check_keypoints')
     try:
         cell, keypoints, meta = Load_Cell_Configuration(), Load_Keypoints(), Read_PCB_Meta()
-        model = Build_Cell_Model(cell)
+        model = Build_Planning_Model(cell)
     except (Configuration_Error_Cls, Scene_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
