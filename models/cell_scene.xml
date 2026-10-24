@@ -986,7 +986,7 @@
     <body name="pcb" pos="0.0057 -0.308294 0.149609" quat="0.996958 0.0779371 0 0">
       <inertial pos="0 0 0" mass="0.06" diaginertia="3.13794e-05 7.1537e-05 0.000102884" />
       <joint name="pcb_free" type="free" />
-      <geom name="pcb_vis" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.91 0.45 0.03 1" mesh="pcb_local" />
+      <geom name="pcb_vis" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="2" rgba="0.05 0.42 0.18 1" mesh="pcb_local" />
       <geom name="pcb_board" size="0.0598 0.0396 0.0009" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />
       <geom name="pcb_rear_l" size="0.00205 0.0019 0.0009" pos="-0.05775 0.0415 0" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />
       <geom name="pcb_rear_r" size="0.00225 0.0019 0.0009" pos="0.05755 0.0415 0" type="box" condim="4" group="3" friction="0.8 0.02 0.001" solmix="100" solref="0.002" solimp="0.99 0.999 0.0005" rgba="1 0.5 0 0.4" />

@@ -41,13 +41,14 @@ Requirements:
 3. Fingerprint compare shows exactly one difference: `geoms/pcb_vis/geom_rgba`.
 4. `kinali-sim run` still reproduces the baseline report.
 5. Proof image `output/pcb_green.png` from camera `cam_pcb` at the initial state.
-6. README stub: install, `kinali-sim run`, `kinali-sim export-xml`, viewer command.
+6. README stub: install, `kinali-sim run`, `kinali-sim export-xml`, viewer command. The previous Czech README is kept
+   as `docs/README_cs_mg06_cell.md` until the full README (brief §7 step 7).
 
 Sub-tasks:
 
-- [ ] C1 rgba change, grep for other PCB colour / material settings
-- [ ] C2 export, load and viewer check, proof image
-- [ ] C3 fingerprint: exactly one difference; report unchanged
-- [ ] C4 README stub
+- [x] C1 rgba change, grep for other PCB colour / material settings
+- [x] C2 export, load and viewer check, proof image
+- [x] C3 fingerprint: exactly one difference; report unchanged
+- [x] C4 README stub
 - [~] Follow-up: split the PCB mesh into board and components (components above the board top) and colour the
       components grey/black (brief §7 step 2, optional). Not done in F2.

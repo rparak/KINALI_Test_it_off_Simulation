@@ -2,7 +2,7 @@
 
 MuJoCo simulation of the KINALI "Test it off" PCBA test cell. The full brief (goals, model reference, lessons learned,
 target design, work plan) is in [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) - read it before changing anything.
-Feature tracking: [docs/FEATURES.md](docs/FEATURES.md).
+Feature tracking: [docs/FEATURES.md](docs/FEATURES.md). Old Czech README: [docs/README_cs_mg06_cell.md](docs/README_cs_mg06_cell.md) (paths there are pre-restructure).
 
 - Language of code, comments, commits and docs: English (the owner writes in Czech/Slovak).
 - The physics is verified: never change timestep, solver options, solref/solimp/solmix/margin/gap, friction, masses,
