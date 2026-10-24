@@ -1,6 +1,9 @@
 # Known issues
 
-**Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
+**Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT
+validated for driving the real cell.** Before any use on real hardware they must go through the
+real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety
+limits active.
 
 This file lists what the project does not model or has not verified. It contains only what has been
 decided or measured.
@@ -18,18 +21,6 @@ to validate an output on the real cell.
   accelerations (the acceleration limits of SPEC §4.4 are assumed), the vacuum and gripper behaviour
   (the adhesion model, the jaw force), and the collision margins (the 3 mm planning clearance), run
   first at reduced speed with the controller's safety limits active.
-
-## The baseline was measured on Python 3.14.7 / numpy 2.5.4; the re-baseline in the pinned Python 3.11 environment is pending
-
-`docs/baseline_report.txt` and `docs/baseline_model_fingerprint.json` were produced on 2026-10-24 with
-Python 3.14.7, numpy 2.5.4, MuJoCo 3.16.0, macOS 26.6.2, Apple M2 Pro. The pinned environment is
-Python 3.11 with numpy 2.4.6 (design-decisions). The cycle has not yet been run there.
-
-- **Impact:** until the re-baseline, an empty diff is proven only in the 3.14 environment.
-- **Evidence:** SPEC §4.6; `.venv` of 2026-10-24.
-- **What would close it:** `install.sh`, the cycle run and the fingerprint compare in the 3.11
-  environment; an identical report is recorded as the baseline environment, a different one is stored
-  as the new baseline in its own commit with the differences listed here (`FEATURES.md` F3, item D).
 
 ## The crate penetration is −0.14 mm in this environment, −0.08 mm in the brief's reference
 
@@ -62,6 +53,17 @@ state. Not fixed on purpose: changing either file changes the physics or the ven
 - **Evidence:** `MjLogConfig` probe 2026-10-24: the file is written at the attach in the scene build.
 - **What would close it:** routing MuJoCo's log into `logger/` (`MjLogConfig.logfile`, `FEATURES.md`
   F3); the warning itself only if the owner decides the integrator.
+
+## The legacy cycle's --render video option does not work in the pinned environment
+
+`legacy/test_cell_cycle.py --render FILE.mp4` imports `imageio` (and Pillow), which are not in
+`requirements.txt` (owner's pin list, 2026-10-24). Pillow is installed as a dependency of matplotlib;
+`imageio` is not, so the option fails at its import. The cycle run and `--record` are unaffected.
+
+- **Impact:** no video of the legacy cycle from this environment.
+- **Evidence:** `install.sh` output 2026-10-24 (no imageio installed).
+- **What would close it:** a video option in the `Example/` run script written with a pinned package, or
+  imageio added to the pins (owner's decision); otherwise it goes with `legacy/` in step 6.
 
 ## The previous Czech README has pre-restructure paths
 

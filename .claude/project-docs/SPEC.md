@@ -161,9 +161,9 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 
 ### 4.6 Reference result (*measured*, `docs/baseline_report.txt`)
 
-The legacy plan `legacy/cell_plan.npz` run with physics, 2026-10-24, MuJoCo 3.16.0, Python 3.14.7,
-numpy 2.5.4, macOS 26.6.2 on an Apple M2 Pro (re-baseline in the pinned Python 3.11 environment
-pending, `KNOWN_ISSUES.md`):
+The legacy plan `legacy/cell_plan.npz` run with physics, 2026-10-24, on macOS 26.6.2, Apple M2 Pro.
+Baseline environment: Python 3.11.2, numpy 2.4.6, scipy 1.17.1, MuJoCo 3.16.0 (`install.sh`). First
+measured with Python 3.14.7 / numpy 2.5.4; the two reports are byte-identical:
 
 ```
 cycle time 65.8 s

@@ -25,12 +25,14 @@ their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `
 
 ## Commands
 
-Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`.
+Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python` (Python 3.11).
 The layout is being migrated to the RPX layout (`FEATURES.md` F3); until then:
 
 ```bash
-.venv/bin/kinali-sim run                     # legacy plan, physics + report (output/report.txt) + acceptance; ~16 s
-.venv/bin/kinali-sim export-xml              # models/cell_scene.xml
+./install.sh                                  # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
+.venv/bin/python legacy/test_cell_cycle.py    # legacy plan, physics + report; ~15 s
+PYTHONPATH=src .venv/bin/python -m kinali_sim.cli run          # the same + acceptance + output/report.txt
+PYTHONPATH=src .venv/bin/python -m kinali_sim.cli export-xml   # models/cell_scene.xml
 .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml
 .venv/bin/python -m pytest -m "not slow"     # fast tests
 .venv/bin/python -m pytest -m slow           # full-cycle regression

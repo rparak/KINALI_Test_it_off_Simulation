@@ -70,14 +70,16 @@ project-style-rpx prescribes the installer and pinned direct dependencies. The i
 explicitly because a bare `python3` on this machine is miniforge's.
 
 **Alternatives.** Keeping the Python 3.14.7 / numpy 2.5.4 environment the baseline was first measured
-in: rejected by the owner; the baseline is re-measured in the pinned environment instead
-(`KNOWN_ISSUES.md`). `pyproject.toml` with an editable install: rejected, the skills use no package and
+in: rejected by the owner. The baseline was re-measured in the pinned environment (2026-10-24, Python
+3.11.2, numpy 2.4.6, MuJoCo 3.16.0, `install.sh --recreate`): the cycle report is byte-identical to the
+3.14 one and the fingerprint compare shows only `geoms/pcb_vis/geom_rgba`, so no new baseline was
+needed and the 3.11 environment is the baseline environment (SPEC §4.6). `pyproject.toml` with an editable install: rejected, the skills use no package and
 no `__init__.py`.
 
 **Revisit if** a pinned package has no wheel for a target, or the owner moves both projects to a newer
 Python.
 
-Pinned by `test/Install/test_install.py` (after F3).
+Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
 ## The legacy plan stays the regression reference until step 6
 

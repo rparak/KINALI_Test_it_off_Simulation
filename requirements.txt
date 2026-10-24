@@ -1,0 +1,15 @@
+# Pinned for Python 3.11 (macOS Apple silicon, Ubuntu Linux); installed and verified 2026-10-24.
+# Simulation, kinematics and collision queries (src/, legacy/); scipy is planned (no user yet)
+mujoco==3.16.0
+numpy==2.4.6
+scipy==1.17.1
+# Cell configuration (planned: the YAML loader of Phase 1 step 3)
+PyYAML==6.0.3
+# Collision-set build only (planned: this project has no collision-set build yet); the tests never run CoACD
+trimesh==5.1.1
+rtree==1.4.1
+coacd==1.0.14
+# Offscreen images (planned: the image script of the RPX migration) and README figures (planned)
+matplotlib==3.11.2
+# Tests
+pytest==9.1.1

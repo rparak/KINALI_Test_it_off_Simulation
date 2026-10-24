@@ -21,7 +21,7 @@ def other_cwd(tmp_path, monkeypatch):
 
 
 def test_root_is_the_repository():
-    assert (paths.ROOT / 'pyproject.toml').is_file()
+    assert (paths.ROOT / 'install.sh').is_file()
     assert Path.cwd() != paths.ROOT
 
 

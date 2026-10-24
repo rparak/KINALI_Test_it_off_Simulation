@@ -1,11 +1,13 @@
-output/*
-!output/.gitkeep
 __pycache__/
 *.egg-info
 .venv/
 .pytest_cache/
 .DS_Store
 MUJOCO_LOG.TXT
+
+# Run-time output, created by install.sh and the scripts
+logger/
+output/
 
 # The personal skills live in ~/.claude/skills/; this repository keeps only their project layer
 # (.claude/skills/<skill>/references/). A SKILL.md here would be ignored in favour of the personal
