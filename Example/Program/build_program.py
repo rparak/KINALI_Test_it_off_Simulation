@@ -45,9 +45,11 @@ import numpy as np
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Load_Keypoints, Load_Program, Read_PCB_Meta, Script_Log_Cls,
-                                Configuration_Error_Cls, CONST_CELL_YAML, CONST_KEYPOINTS_YAML, CONST_PROGRAM_DEFAULT_YAML, CONST_FORK_PATH,
-                                CONST_TRAJECTORIES, CONST_REPORTS, CONST_REFERENCE_PLAN)
+from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls,
+                                CONST_CELL_YAML, CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_REPORTS, CONST_REFERENCE_PLAN)
+#   ../Configuration/Program_Parser - the program's three files
+from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
+                                          CONST_PROGRAM_YAML)
 #   ../Scene/Core - the cell's errors
 from Scene.Core import Scene_Error_Cls
 #   ../Kinematics/Core, ../Collision/Core - FK, IK and exact distances on the planning model (the table included)
@@ -68,14 +70,14 @@ Description:
 # plan's first phase of it; a block ends where the next begins. The cut points are where both run the same process step
 # (FEATURES.md F8).
 #   Unit [List<Tuple<string>>]
-CONST_LEGACY_BLOCKS = [('pick from the input crate', 'approach_input', 'robot: pick the PCB from crate 1 (vacuum)'),
-                       ('to the loader, handover, home', 'to_loader', 'robot: put the PCB into the loader gripper'),
-                       ('loader: insert and park', 'loader_insert', 'loader: up, towards MG06'),
-                       ('to MG06, close it', 'to_mg06', 'robot: to the MG06 handle'),
-                       ('leave, test (wait), return', 'leave_mg06', 'robot: leave MG06 (fixture closed)'),
-                       ('open MG06, home', 'open_mg06', 'robot: open MG06'),
-                       ('loader: fetch and return', 'loader_fetch', 'loader: back to MG06'),
-                       ('take, place, home', 'to_take', 'robot: take the PCB from the loader (vacuum)')]
+CONST_LEGACY_BLOCKS = [('pick from the input crate', 'S1_Approach_Input', 'robot: pick the PCB from crate 1 (vacuum)'),
+                       ('to the loader, handover, home', 'S3_To_Loader', 'robot: put the PCB into the loader gripper'),
+                       ('loader: insert and park', 'S6_Loader_Insert', 'loader: up, towards MG06'),
+                       ('to MG06, close it', 'S8_To_MG06', 'robot: to the MG06 handle'),
+                       ('leave, test (wait), return', 'S10_Leave_MG06', 'robot: leave MG06 (fixture closed)'),
+                       ('open MG06, home', 'S13_Open_MG06', 'robot: open MG06'),
+                       ('loader: fetch and return', 'S15_Loader_Fetch', 'loader: back to MG06'),
+                       ('take, place, home', 'S17_To_Take', 'robot: take the PCB from the loader (vacuum)')]
 
 
 def Git_State() -> tp.Tuple[str, bool]:
@@ -111,14 +113,15 @@ def Build_Meta(program_path: str) -> tp.Dict[str, tp.Any]:
     """
 
     commit, dirty = Git_State()
-    inputs = {name: File_Hash(path) for name, path in (('program', program_path), ('keypoints', CONST_KEYPOINTS_YAML), ('cell', CONST_CELL_YAML),
-                                                        ('fork_path', CONST_FORK_PATH))}
+    inputs = {name: File_Hash(path) for name, path in (('program', program_path), ('constants', CONST_CONSTANTS_YAML),
+                                                        ('simulation', CONST_SIMULATION_YAML), ('cell', CONST_CELL_YAML), ('fork_path',
+                                                                                                                           CONST_FORK_PATH))}
     return {'inputs_sha256': inputs, 'git_commit': commit, 'git_dirty': dirty,
             'platform': {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version(),
                          'numpy': np.__version__, 'mujoco': mujoco.__version__}}
 
 
-def Compare_Legacy(trajectory: Trajectory_Str, keypoints_joints: tp.Dict[str, np.ndarray]) -> tp.List[str]:
+def Compare_Legacy(trajectory: Trajectory_Str, points_joints: tp.Dict[str, np.ndarray]) -> tp.List[str]:
     """
     Description:
         The diagnostic against the reference plan Data/Reference/cell_plan.npz (never an acceptance bound): the cycle times;
@@ -128,7 +131,7 @@ def Compare_Legacy(trajectory: Trajectory_Str, keypoints_joints: tp.Dict[str, np
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The program's trajectory.
-        (2) keypoints_joints [Dict<string, Vector<float> 1x6>]: The stored joints of the keypoints the program uses (rad).
+        (2) points_joints [Dict<string, Vector<float> 1x6>]: The joints of the points the program uses (rad).
 
     Returns:
         (1) parameter [List<string>]: The lines.
@@ -162,9 +165,9 @@ def Compare_Legacy(trajectory: Trajectory_Str, keypoints_joints: tp.Dict[str, np
     vacuum_l = [(float(t), e) for t, e in plan.Events]
     for (tp_, ep), (tl, el) in zip(vacuum_p, vacuum_l):
         lines.append('  %-12s program %8.3f s, legacy %8.3f s, %+.3f s' % (ep, tp_, tl, tp_ - tl))
-    nearest = {name: float(np.min(np.max(np.abs(plan.Q - q), axis=1))) for name, q in keypoints_joints.items()}
+    nearest = {name: float(np.min(np.max(np.abs(plan.Q - q), axis=1))) for name, q in points_joints.items()}
     in_plan = {n: d for n, d in nearest.items() if d < 1e-6}
-    lines.append('  keypoints the program stops at: %d; %d are rows of the plan (stored joints within %.1e rad of the nearest row), not in it: %s'
+    lines.append('  points the program stops at: %d; %d are rows of the plan (their joints within %.1e rad of the nearest row), not in it: %s'
                  % (len(nearest), len(in_plan), max(in_plan.values()), ', '.join(sorted(set(nearest) - set(in_plan))) or 'none'))
     return lines
 
@@ -179,8 +182,8 @@ def main():
             .venv/bin/python Example/Program/build_program.py [--program FILE] [--out DIR] [--compare-legacy]
     """
 
-    parser = argparse.ArgumentParser(description='Build and check a program (default: Configuration/Program_Default.yaml).')
-    parser.add_argument('--program', default=CONST_PROGRAM_DEFAULT_YAML, help='the program file')
+    parser = argparse.ArgumentParser(description='Build and check a program (default: Configuration/Program.yaml).')
+    parser.add_argument('--program', default=CONST_PROGRAM_YAML, help='the program file (with Configuration/Constants.yaml and Simulation.yaml)')
     parser.add_argument('--out', help='the folder for the trajectory and the report (default: Data/Generated/Trajectories and Reports)')
     parser.add_argument('--compare-legacy', action='store_true', help='add the diagnostic against Data/Reference/cell_plan.npz')
     args = parser.parse_args()
@@ -188,24 +191,25 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('build_program')
     try:
-        cell, keypoints, meta = Load_Cell_Configuration(), Load_Keypoints(), Read_PCB_Meta()
-        program = Load_Program(keypoints, cell, args.program)
-        for level, message in cell.Notes + keypoints.Notes + program.Notes:
+        cell, meta = Load_Cell_Configuration(), Read_PCB_Meta()
+        constants = Load_Constants()
+        program = Load_Program(constants, Load_Simulation(constants), cell, args.program)
+        for level, message in cell.Notes + program.Notes:
             print(log.Line('[%s] %s' % (level, message)))
         model = Build_Planning_Model(cell)
         collision = Robot_Collision_Cls(model)
         kinematics = Robot_Kinematics_Cls(model, collision.Data)
-        trajectory, notes = Build_Program(program, keypoints, cell, meta, kinematics, Build_Meta(args.program))
+        trajectory, notes = Build_Program(program, cell, meta, kinematics, Build_Meta(args.program))
     except (Configuration_Error_Cls, Scene_Error_Cls, Program_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
     npz, csv = Write_Trajectory(trajectory, os.path.join(args.out or CONST_TRAJECTORIES, program.Name + '.npz'))
-    result = Check_Trajectory(trajectory, program, notes, kinematics, collision, keypoints, cell, meta)
+    result = Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta)
     lines = Format_Check_Report(result, trajectory, cell)
     if args.compare_legacy:
         try:
-            joints = {name: np.array(keypoints.Robot[name].Joints) for name in (k.Name for k in result.Keypoints)}
+            joints = {name: np.array(program.Constants.Points[name].Joints) for name in (k.Name for k in result.Keypoints)}
             lines += Compare_Legacy(trajectory, joints)
         except Simulation_Error_Cls as error:
             lines.append('[WARNING] %s' % error)

@@ -29,7 +29,7 @@ def test_the_shipped_keypoints_pass_and_the_table_lists_them_all(tmp_path, run_s
     """
     Description:
         From an unrelated directory the check exits 0 with a table row per keypoint (23: SPEC §4.8's 22 and the program's
-        input_pcb_clear), the summary 0 FAIL / 1 WARN (via_mg06_high, the family switch) / 22 PASS, and nothing written to the working directory.
+        P_INPUT_CLEAR), the summary 0 FAIL / 1 WARN (P_VIA_HOME_MG06, the family switch) / 22 PASS, and nothing written to the working directory.
     """
 
     result = run_script('Keypoints/check_keypoints.py', [], tmp_path)
@@ -43,10 +43,10 @@ def test_the_shipped_keypoints_pass_and_the_table_lists_them_all(tmp_path, run_s
 def test_one_keypoint_and_an_unknown_name(tmp_path, run_script):
     """
     Description:
-        --name checks one keypoint; an unknown name is an [ERROR] line listing the keypoints, exit 1.
+        --name checks one point; an unknown name is an [ERROR] line listing the points, exit 1.
     """
 
-    result = run_script('Keypoints/check_keypoints.py', ['--name', 'fork_closed_end'], tmp_path)
+    result = run_script('Keypoints/check_keypoints.py', ['--name', 'P_MG06_CLOSE_END'], tmp_path)
     assert result.returncode == 0 and '1 keypoint(s): 0 FAIL, 0 WARN, 1 PASS' in result.stdout and 'handle_bar -0.33' in result.stdout
     result = run_script('Keypoints/check_keypoints.py', ['--name', 'nowhere'], tmp_path)
-    assert result.returncode == 1 and "[ERROR] There is no keypoint 'nowhere'" in result.stdout
+    assert result.returncode == 1 and "[ERROR] There is no point 'nowhere'" in result.stdout

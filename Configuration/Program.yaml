@@ -1,0 +1,203 @@
+## =========================================================================== ##
+#   Description:
+#     The program of the Test-it-off cell: what the cell's controllers run (SPEC §8, FEATURES.md F10). The
+#     robot's Program is the master of the cycle; it starts the loader's jobs (a PLC) and the tester's job and
+#     waits for them. Read only by src/Configuration/Program_Parser.py (Load_Program); written by hand. Every
+#     name is a constant of Configuration/Constants.yaml; the simulation's data (start state, contacts, signal
+#     timing) is in Configuration/Simulation.yaml, never here.
+#
+#   Program: segments S<n>_<Name>, run in order (n = 1, 2, ... without gaps; renumber on insert; <Name> unique).
+#     A segment is one taught step and ends with the robot at rest at a named point (a job-only segment: where
+#     it already stands). Loader_Jobs and Tester_Jobs: J_<NAME> -> the job's lines.
+#   One command per line, call syntax; the only literal values are speeds, durations, waits and timeouts.
+#     Robot (in Program):
+#       Robot.MoveJ(P_, v=, a=, r=)    joint move to the point's Joints; v = fraction of the AUBO i5 datasheet
+#                                      joint speeds in (0, 1] (omitted: Cell.yaml Motion.Speed_Fraction)
+#       Robot.MoveL(P_, v=, a=, r=)    straight tool line to the point; v = peak tool speed [m/s] (required)
+#       Robot.MovePath(PATH_)          the recorded path; the robot must stand at its Start, ends at its End
+#       Robot.SetDO(DO_, ON|OFF)       set a digital output
+#       Robot.WaitDI(DI_, timeout=)    wait for a digital input [s]
+#       Loader.Run(J_), Tester.Run(J_) start a station's job and wait until it is done
+#       Wait(t)                        everything holds [s]
+#     a= and r= (acceleration, blend radius) are reserved: only 0 or omitted (no blending). Loader.Start /
+#     Loader.WaitDone and Tester.Start / Tester.WaitDone are reserved for F9 (Run = Start + WaitDone).
+#     Loader job:  MoveY(L_, t=) / MoveZ(L_, t=) one axis to the position's value in t [s]; Gripper(G_, t=) the
+#                  jaw command in t [s]; Wait(t) [s].
+#     Tester job:  Test(Process.Test_Duration) the MG06 test for Cell.yaml's duration.
+#   Sources: every speed, duration and wait is the legacy planner's (git show
+#     legacy-planner-reference:legacy/plan_cell.py, main), named per line as "legacy: <its call>".
+## =========================================================================== ##
+
+# The robot's program: the whole cycle.
+Program:
+  # From home to 120 mm above the PCB in the input crate, through free space.
+  S1_Approach_Input:
+    - Robot.MoveJ(P_INPUT_ABOVE)                          # legacy: joint_move(q_pa, 'home -> above crate 1')
+
+  # Straight down to 15 mm above the PCB, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto it
+  # (SPEC §4.7), vacuum on, wait for it, straight up until the board clears the crate's 149 mm walls.
+  S2_Pick_Input:
+    - Robot.MoveL(P_INPUT_APPROACH, v=0.20)               # legacy: linear_move(..., 'down into crate 1', speed=0.20)
+    - Robot.MoveL(P_INPUT_PICK, v=0.03)                   # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, ON)                          # legacy: event('suction_on')
+    - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # legacy: hold(0.3)
+    - Robot.MoveL(P_INPUT_CLEAR, v=0.20)                  # legacy: linear_move(..., 'up out of the crate', speed=0.20), to 170 mm (F8.5)
+
+  # Carry the PCB, clear of the crate, over a free-space via to 160 mm above the loader jaws, along the plate
+  # normal, so the board does not swing over the crates or MG06's front.
+  S3_To_Loader:
+    - Robot.MoveJ(P_VIA_INPUT_LOADER)                     # legacy: the via joint_move inserted (SPEC §4.10)
+    - Robot.MoveJ(P_LOADER_ABOVE)                         # legacy: joint_move(q_via, 'above crate -> above the loader')
+
+  # Down along the plate normal into the open jaws, the last 15 mm at 30 mm/s, to the hold pose with no press: the
+  # board stays 0.3 mm above the finger ledges (SPEC §4.7). The jaws clamp, vacuum off, straight back up.
+  S4_Handover:
+    - Robot.MoveL(P_LOADER_APPROACH, v=0.20)              # legacy: linear_move(..., 'down to the loader', speed=0.20)
+    - Robot.MoveL(P_LOADER_PLACE, v=0.03)                 # legacy: linear_move(..., 'PCB into the open jaws', speed=0.03)
+    - Loader.Run(J_CLAMP)
+    - Wait(0.25)                                          # legacy: hold(0.25)
+    - Robot.SetDO(DO_VACUUM, OFF)                         # legacy: event('suction_off')
+    - Wait(0.2)                                           # legacy: hold(0.2)
+    - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'robot up from the loader', speed=0.20)
+
+  # Back home, out of the loader's way.
+  S5_Home_After_Handover:
+    - Robot.MoveJ(P_HOME)                                 # legacy: joint_move(q_home, '-> home')
+
+  # The loader takes the PCB into MG06.
+  S6_Loader_Insert:
+    - Loader.Run(J_INSERT)
+
+  # The loader parks behind MG06 while the robot works it.
+  S7_Loader_Park:
+    - Loader.Run(J_PARK)
+
+  # Over the free-space switch from the wrist-up to the wrist-down family (P_VIA_HOME_MG06, SPEC §4.7), above the
+  # handle, to the start of the recorded fork path. Joint moves only: a line never crosses wrist_2 = 0.
+  S8_To_MG06:
+    - Robot.MoveJ(P_VIA_HOME_MG06)                        # legacy: the via joint_move inserted (SPEC §4.10)
+    - Robot.MoveJ(P_MG06_ABOVE)                           # legacy: joint_move(q_fvia, 'home -> above the handle')
+    - Robot.MoveJ(P_MG06_FORK_START)                      # legacy: joint_move(q_f0, '-> fork start pose')
+
+  # The recorded closing path (lid down, handle to 29 deg; SPEC §4.9), then the bar to the centre of the fork slot,
+  # 2 mm off its bottom, at 20 mm/s (SPEC §4.10).
+  S9_Close_MG06:
+    - Robot.MovePath(PATH_FORK_CLOSE)                     # legacy: replay(..., 'close MG06')
+    - Robot.MoveL(P_MG06_BAR_CENTRE, v=0.02)              # legacy: linear_move(p_c, ..., 'bar to the slot centre', speed=0.02)
+
+  # Out of the bar 90 mm along the slot, then 120 mm up; MG06 stays closed (SPEC §4.10).
+  S10_Leave_MG06:
+    - Robot.MoveL(P_MG06_SLOT_EXIT, v=0.12)               # legacy: linear_move(p_out, ..., speed=0.12)
+    - Robot.MoveL(P_MG06_WAIT, v=0.25)                    # legacy: linear_move(p_up, ..., 'up', speed=0.25)
+
+  # MG06 closed, the PCB inside, the robot away above the slot exit: the tester runs.
+  S11_Test:
+    - Tester.Run(J_TEST)
+
+  # Back down and along the slot onto the bar centre, the same path as the leave, MG06 still closed.
+  S12_Return_MG06:
+    - Robot.MoveL(P_MG06_SLOT_EXIT, v=0.25)               # legacy: linear_move(p_out, ..., 'down', speed=0.25)
+    - Robot.MoveL(P_MG06_BAR_CENTRE, v=0.12)              # legacy: linear_move(p_c, ..., 'fork onto the bar', speed=0.12)
+
+  # The slot wall onto the bar from below at 30 mm/s, where the recorded opening path's handle is already below the
+  # real closed angle (the handle is never pushed down, SPEC §4.7), then the recorded opening path.
+  S13_Open_MG06:
+    - Robot.MoveL(P_MG06_OPEN_JOIN, v=0.03)               # legacy: linear_move(..., 'slot wall onto the bar (upwards)', speed=0.03)
+    - Robot.MovePath(PATH_FORK_OPEN)                      # legacy: replay(i_open[i_open > k], 'open MG06')
+
+  # Above the handle, back over the free-space family switch, home: joint moves only. A direct move from above the
+  # handle to home drives the fork 8.4 mm through the handle bar (F8.5).
+  S14_Home_After_MG06:
+    - Robot.MoveJ(P_MG06_ABOVE)                           # legacy: joint_move(q_fvia, 'away from the handle')
+    - Robot.MoveJ(P_VIA_HOME_MG06)                        # legacy: the via joint_move(q_home) inserted (in the reference plan)
+    - Robot.MoveJ(P_HOME)                                 # legacy: joint_move(q_home, '-> home')
+
+  # The loader fetches the tested PCB from MG06.
+  S15_Loader_Fetch:
+    - Loader.Run(J_FETCH)
+
+  # The loader brings the PCB home to the take position.
+  S16_Loader_Return:
+    - Loader.Run(J_RETURN)
+
+  # From home to 160 mm above the PCB in the jaws, along the plate normal.
+  S17_To_Take:
+    - Robot.MoveJ(P_LOADER_ABOVE)                         # legacy: joint_move(q_via, 'home -> above the loader')
+
+  # Down along the plate normal, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto the PCB in the
+  # jaws, vacuum on, the jaws open, slowly out of the jaws, then up.
+  S18_Take_From_Loader:
+    - Robot.MoveL(P_LOADER_APPROACH, v=0.20)              # legacy: linear_move(..., 'down to the loader', speed=0.20)
+    - Robot.MoveL(P_LOADER_PICK, v=0.03)                  # legacy: linear_move(..., 'cups onto the PCB', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, ON)                          # legacy: event('suction_on')
+    - Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)             # legacy: hold(0.3)
+    - Loader.Run(J_RELEASE)
+    - Wait(0.15)                                          # legacy: hold(0.15)
+    - Robot.MoveL(P_LOADER_EXIT, v=0.05)                  # legacy: linear_move(..., 'up out of the jaws', speed=0.05)
+    - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'up', speed=0.20)
+
+  # Carry the PCB over a free-space via to 120 mm above the output crate.
+  S19_To_Output:
+    - Robot.MoveJ(P_VIA_LOADER_OUTPUT)                    # legacy: the via joint_move inserted (SPEC §4.10)
+    - Robot.MoveJ(P_OUTPUT_ABOVE)                         # legacy: joint_move(q_ca, '-> above crate 2')
+
+  # Straight down into the output crate, the last 15 mm at 30 mm/s, to 1 mm above the crate floor, vacuum off,
+  # straight up out of the crate.
+  S20_Place_Output:
+    - Robot.MoveL(P_OUTPUT_APPROACH, v=0.20)              # legacy: linear_move(..., 'down into crate 2', speed=0.20)
+    - Robot.MoveL(P_OUTPUT_PLACE, v=0.03)                 # legacy: linear_move(..., 'PCB down to the crate floor', speed=0.03)
+    - Robot.SetDO(DO_VACUUM, OFF)                         # legacy: event('suction_off')
+    - Wait(0.3)                                           # legacy: hold(0.3)
+    - Robot.MoveL(P_OUTPUT_ABOVE, v=0.20)                 # legacy: linear_move(..., 'up', speed=0.20)
+
+  # Back home: the cycle is finished.
+  S21_Home_End:
+    - Robot.MoveJ(P_HOME)                                 # legacy: joint_move(q_home, '-> home')
+
+# The loader's jobs (its PLC): one axis after the other.
+Loader_Jobs:
+  # Clamp the PCB the robot holds at the handover.
+  J_CLAMP:
+    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+
+  # Lift the PCB to the travel height, carry it to MG06, lower it into the holder, open.
+  J_INSERT:
+    - MoveZ(L_TRAVEL, t=0.8)                              # legacy: loader_move('z', Z_TRAVEL, 0.8)
+    - MoveY(L_TRAVEL, t=2.0)                              # legacy: loader_move('y', YP, 2.0)
+    - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+
+  # Rise out of MG06 and park behind it (y -199.5 mm, z +20 mm).
+  J_PARK:
+    - MoveZ(L_TRAVEL, t=0.5)                              # legacy: loader_move('z', Z_TRAVEL, 0.5)
+    - MoveY(L_PARK, t=1.8)                                # legacy: loader_move('y', Y_PARK, 1.8)
+    - MoveZ(L_PARK, t=0.8)                                # legacy: loader_move('z', Z_PARK, 0.8)
+    - Wait(0.15)                                          # legacy: hold(0.15)
+
+  # Back to MG06 at the travel height, down into the holder, clamp the tested PCB.
+  J_FETCH:
+    - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
+    - MoveY(L_TRAVEL, t=2.2)                              # legacy: loader_move('y', YP, 2.2)
+    - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
+    - Wait(0.1)                                           # legacy: hold(0.1)
+    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Wait(0.2)                                           # legacy: hold(0.2)
+
+  # Lift the PCB out of MG06 and bring it home to the take position.
+  J_RETURN:
+    - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
+    - MoveY(L_HOME, t=2.0)                                # legacy: loader_move('y', Y0, 2.0)
+    - MoveZ(L_HOME, t=0.8)                                # legacy: loader_move('z', 0.0, 0.8)
+    - Wait(0.2)                                           # legacy: hold(0.2)
+
+  # Release the PCB the robot has taken (the vacuum holds it).
+  J_RELEASE:
+    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+
+# The tester's job (MG06).
+Tester_Jobs:
+  # The MG06 test, for Cell.yaml's Process.Test_Duration (a placeholder, KNOWN_ISSUES.md).
+  J_TEST:
+    - Test(Process.Test_Duration)                         # legacy held 1.0 s here (owner, 2026-10-24: 2.0 s)

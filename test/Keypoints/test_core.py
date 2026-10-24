@@ -29,12 +29,10 @@ import copy
 import numpy as np
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
-# MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
-import mujoco
 # Custom Lib.: the module under test
 #   ../Keypoints/Core
-from Keypoints.Core import (Check_Keypoint, Check_Keypoints, Format_Check_Table, Pose_Cell, Fixture_State, Resolve_Keypoint,
-                            Contact_Group, Keypoints_Error_Cls)
+from Keypoints.Core import (Check_Keypoint, Check_Keypoints, Format_Check_Table, Pose_Cell, Resolve_Keypoint, Contact_Group, Keypoints_Error_Cls,
+                            Family)
 #   ../Configuration/Core, ../Collision/Core, ../Kinematics/Core
 from Configuration.Core import Read_PCB_Meta
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls, Cup_Contacts
@@ -44,12 +42,16 @@ from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP, TCP_For_PCB
 Description:
     Initialization of constants.
 
-    The keypoint check, posing and resolution (SPEC §2 item 3, FEATURES.md F6). The limits are the owner's
-    (0.5 mm on the recorded fork path, 3 mm clearance) and SPEC §4.7 (the 1.5 mm press), written out here.
+    The point check, posing and resolution (SPEC §2 item 3, §7.7; FEATURES.md F6, F10). The limits are the owner's (0.5 mm on
+    the recorded fork path, 3 mm clearance, the Pose to 1e-5 m / 1e-3 deg) and SPEC §4.7 (the 1.5 mm press), written out here.
 """
-# The fork keypoints posed in their recorded / settled MG06 state (C1).
+# The fork points posed in their recorded / settled MG06 state (C1).
 #   Unit [List<string>]
-CONST_FORK = ['fork_start', 'fork_closed_end', 'fork_bar_centred', 'fork_out_of_bar', 'fork_retreat_up', 'fork_open_join']
+CONST_FORK = ['P_MG06_FORK_START', 'P_MG06_CLOSE_END', 'P_MG06_BAR_CENTRE', 'P_MG06_SLOT_EXIT', 'P_MG06_WAIT', 'P_MG06_OPEN_JOIN']
+# The derived points: from a Reference (Constants.yaml) or a PCB hold (Simulation.yaml).
+#   Unit [List<string>]
+CONST_DERIVED = ['P_INPUT_ABOVE', 'P_INPUT_APPROACH', 'P_INPUT_PICK', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', 'P_LOADER_APPROACH', 'P_LOADER_PLACE',
+                 'P_LOADER_PICK', 'P_LOADER_EXIT', 'P_OUTPUT_ABOVE', 'P_OUTPUT_APPROACH', 'P_OUTPUT_PLACE']
 
 
 @pytest.fixture(scope='module')
@@ -64,170 +66,193 @@ def tools(planning_model):
 
 
 @pytest.fixture(scope='module')
-def results(tools, keypoints, cell_configuration):
+def results(tools, constants, simulation, cell_configuration):
     kinematics, collision, meta = tools
-    return {r.Name: r for r in Check_Keypoints(kinematics, collision, keypoints, cell_configuration, meta)}
+    return {r.Name: r for r in Check_Keypoints(kinematics, collision, constants, simulation, cell_configuration, meta)}
 
 
-def test_every_keypoint_passes_the_check(results):
+def test_every_point_passes_the_check(results):
     """
     Description:
-        All 23 keypoints (SPEC §4.8's 22 and the program's input_pcb_clear) pass; via_mg06_high only warns (wrist_2 at
-        -0.94 deg, the family switch within the 1 deg margin, SPEC §4.7).
+        All 23 points (SPEC §4.8's 22 and the program's P_INPUT_CLEAR) pass; P_VIA_HOME_MG06 only warns (wrist_2 at -0.94 deg,
+        the family switch within the 1 deg margin, SPEC §4.7).
     """
 
     verdicts = {name: r.Verdict for name, r in results.items()}
     assert len(verdicts) == 23 and {n for n, v in verdicts.items() if v == 'FAIL'} == set()
-    assert {n for n, v in verdicts.items() if v == 'WARN'} == {'via_mg06_high'}
+    assert {n for n, v in verdicts.items() if v == 'WARN'} == {'P_VIA_HOME_MG06'}
 
 
-def test_every_keypoint_reaches_its_check_value(results):
+def test_every_pose_is_fk_of_its_joints(results):
     """
     Description:
-        FK of every keypoint is within 0.1 mm of its Check position (SPEC §4.8's rounding).
+        Every point's Pose (the tool frame in the robot base frame, written from FK to 9 decimals) is FK(Joints, Tool) within
+        1e-5 m and 1e-3 deg - measured within 1e-8 m.
     """
 
-    assert max(r.Check_Error for r in results.values()) <= 0.0001
+    assert max(r.Check_Error for r in results.values()) <= 1e-8 and max(r.Check_Angle for r in results.values()) <= math.radians(1e-3)
 
 
-def test_every_family_matches_wrist_2(results, keypoints):
-    """
-    Description:
-        Every keypoint's family is the sign of its wrist_2 (wrist_up > 0, wrist_down < 0), except within the 1 deg
-        margin of the switch.
-    """
-
-    for name, keypoint in keypoints.Robot.items():
-        wrist_2 = math.degrees(keypoint.Joints[4])
-        assert results[name].Family_Ok and (abs(wrist_2) < 1.0 or (wrist_2 > 0) == (keypoint.Family == 'wrist_up')), name
-
-
-def test_the_relative_keypoints_are_not_stale(results):
+def test_the_family_is_wrist_2s_sign(results, constants):
     """
     Description:
-        Every Relative_To keypoint (11 of SPEC §4.8 and input_pcb_clear) reaches its target within 0.05 mm / 0.01 deg
-        (measured at most 24 um).
+        The family is derived from wrist_2: wrist_down for the MG06 fork points, P_MG06_ABOVE and P_VIA_HOME_MG06, wrist_up for
+        every PCB-handling point.
     """
 
-    relative = [r for r in results.values() if r.Stale_Position is not None]
-    assert len(relative) == 12 and max(r.Stale_Position for r in relative) <= 0.00005
-    assert max(r.Stale_Angle for r in relative) <= math.radians(0.01)
+    down = {n for n, r in results.items() if r.Family == 'wrist_down'}
+    assert down == set(CONST_FORK) | {'P_MG06_ABOVE', 'P_MG06_CLOSE_END', 'P_VIA_HOME_MG06'}
+    assert all(Family(constants.Points[n].Joints) == r.Family for n, r in results.items())
 
 
-def test_every_declared_contact_is_really_present(results, keypoints):
+def test_the_derived_points_are_not_stale(results):
     """
     Description:
-        Allow_Contact allows only what the keypoint really has (owner, C1): every declared group is found within
-        the clearance, the press keypoints 1.48 mm deep (the 1.5 mm press), the fork on the bar at most 0.5 mm.
+        The 12 derived points reach their Reference's pose moved by their Offset (9) or their PCB-hold target (3) within
+        0.05 mm / 0.01 deg (measured at most 0.0387 mm, P_LOADER_EXIT); the others have no target.
     """
 
-    for name, keypoint in keypoints.Robot.items():
-        assert sorted(keypoint.Allow_Contact) == [g for g, _ in results[name].Allowed], name
-    for name in ('input_pcb_press', 'loader_take_press'):
+    derived = {n for n, r in results.items() if r.Stale_Position is not None}
+    assert derived == set(CONST_DERIVED)
+    assert max(results[n].Stale_Position for n in derived) == pytest.approx(0.0000387, abs=0.000001)
+    assert max(results[n].Stale_Angle for n in derived) <= math.radians(0.01)
+
+
+def test_every_declared_contact_is_really_present(results, simulation):
+    """
+    Description:
+        Contacts allow only what the point really has (owner, C1): every declared group is found within the clearance, the
+        press points 1.48 mm deep (the 1.5 mm press), the fork on the bar at most 0.5 mm.
+    """
+
+    for name, scene in simulation.Points.items():
+        assert sorted(scene.Contacts) == [g for g, _ in results[name].Allowed], name
+    for name in ('P_INPUT_PICK', 'P_LOADER_PICK'):
         assert dict(results[name].Allowed)['cups_pcb'] == pytest.approx(-0.0015, abs=0.00005)
 
 
 @pytest.mark.parametrize('name', CONST_FORK)
-def test_the_fork_keypoints_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre(tools, keypoints, cell_configuration, name):
+def test_the_fork_points_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre(tools, constants, simulation, cell_configuration, name):
     """
     Description:
-        Posed with MG06 as on the recorded fork path (or settled closed), the fork is at most 0.5 mm into the handle
-        bar (C1: fork_closed_end 0.33 mm, fork_open_join +0.08 mm, fork_bar_centred +3.93 mm).
+        Posed with MG06 as on the recorded fork path (or settled closed), the fork is at most 0.5 mm into the handle bar
+        (C1: P_MG06_CLOSE_END 0.33 mm, P_MG06_OPEN_JOIN +0.08 mm, P_MG06_BAR_CENTRE +3.93 mm).
     """
 
     kinematics, collision, meta = tools
-    Pose_Cell(kinematics, keypoints, cell_configuration, meta, name)
-    tool, handle = kinematics.Model.body('aubo/tool/ee_tool').id, kinematics.Model.body('mg06_handle').id
+    Pose_Cell(kinematics, constants, simulation, cell_configuration, meta, name)
+    tool = kinematics.Model.body('aubo/tool/ee_tool').id
     pairs = [p for p in collision.Close_Pairs({tool}, 0.01, kinematics.Data) if p[2] == 'mg06_handle']
     assert all(p[0] >= -0.0005 for p in pairs), pairs[:1]
 
 
-def test_fork_closed_end_in_the_wrong_mg06_state_is_reported(tools, keypoints, cell_configuration):
+def test_the_close_end_in_the_wrong_mg06_state_is_reported(tools, constants, simulation, cell_configuration):
     """
     Description:
-        The fork keypoint's MG06 state matters (C1): fork_closed_end posed with MG06 settled closed (handle 28.65 deg,
-        not the recorded 29.13 deg) puts the bar 5.95 mm into the fork - the check fails on the allowed depth. With
-        MG06 open the handle is rotated away and the fork hangs in free space (24.6 mm from MG06's base, measured
-        2026-10-24): no contact to report (the owner expected one; FEATURES.md F6, open question).
+        The fork point's MG06 state matters (C1): P_MG06_CLOSE_END posed with MG06 settled closed (handle 28.65 deg, not the
+        recorded 29.13 deg) puts the bar 5.95 mm into the fork - the check fails on the allowed depth; with MG06 open the
+        handle is rotated away and the fork hangs in free space.
     """
 
     kinematics, collision, meta = tools
-    closed = Check_Keypoint('fork_closed_end', kinematics, collision, keypoints, cell_configuration, meta, fixture='Closed')
+    closed = Check_Keypoint('P_MG06_CLOSE_END', kinematics, collision, constants, simulation, cell_configuration, meta, fixture='Closed')
     assert closed.Verdict == 'FAIL' and dict(closed.Allowed)['handle_bar'] == pytest.approx(-0.00595, abs=0.0001)
     assert any('allowed contact handle_bar is 5.95 mm deep' in f for f in closed.Failures)
-    opened = Check_Keypoint('fork_closed_end', kinematics, collision, keypoints, cell_configuration, meta, fixture='Open')
+    opened = Check_Keypoint('P_MG06_CLOSE_END', kinematics, collision, constants, simulation, cell_configuration, meta, fixture='Open')
     assert opened.Verdict == 'PASS' and opened.Allowed == []
 
 
-def test_a_colliding_keypoint_is_reported(tools, keypoints, cell_configuration):
+def test_a_colliding_point_is_reported(tools, constants, simulation, cell_configuration):
     """
     Description:
-        home with the shoulder lifted to 1.8 rad (the arm into MG06, test/Collision) fails the clearance, naming the
-        upper arm and MG06's base, and the table lists the failure; a joint beyond the model limit fails too.
+        P_HOME with the shoulder lifted to 1.8 rad (the arm into MG06) fails the clearance, naming the upper arm and MG06's base
+        (its Pose fails too: no longer FK of its joints), and the table lists the failures; a joint beyond the limit fails too.
     """
 
     kinematics, collision, meta = tools
-    broken = copy.deepcopy(keypoints)
-    broken.Robot['home'].Joints[1] = 1.8
-    result = Check_Keypoint('home', kinematics, collision, broken, cell_configuration, meta)
+    broken = copy.deepcopy(constants)
+    broken.Points['P_HOME'].Joints[1] = 1.8
+    result = Check_Keypoint('P_HOME', kinematics, collision, broken, simulation, cell_configuration, meta)
     assert result.Verdict == 'FAIL' and 'aubo/upper_arm_link' in result.Min_Pair and result.Min_Distance < -0.02
-    assert any(line.startswith('  home: ') for line in Format_Check_Table([result], broken))
-    broken.Robot['home'].Joints[0] = 3.2
-    assert not Check_Keypoint('home', kinematics, collision, broken, cell_configuration, meta).Limits_Ok
+    assert any(f.startswith('Pose ') for f in result.Failures) and any(line.startswith('  P_HOME: ') for line in Format_Check_Table([result]))
+    broken.Points['P_HOME'].Joints[0] = 3.2
+    assert not Check_Keypoint('P_HOME', kinematics, collision, broken, simulation, cell_configuration, meta).Limits_Ok
 
 
-def test_a_stale_keypoint_is_reported_and_resolved(tools, keypoints, cell_configuration):
+def test_a_stale_point_is_reported_and_resolved(tools, constants, simulation, cell_configuration):
     """
     Description:
-        input_pcb_press with its pan joint 0.05 deg off is stale (beyond 0.05 mm), named with the resolver command;
-        Resolve_Keypoint returns joints within the tolerance, in the same family; a keypoint without Relative_To
-        is refused.
+        P_INPUT_ABOVE with its pan joint 0.05 deg off is stale against its Reference (beyond 0.05 mm), named with the resolver
+        command; Resolve_Keypoint returns joints within the tolerance, in the same family, and their Pose; a point without a
+        target is refused.
     """
 
     kinematics, collision, meta = tools
-    broken = copy.deepcopy(keypoints)
-    broken.Robot['input_pcb_press'].Joints[0] += math.radians(0.05)
-    result = Check_Keypoint('input_pcb_press', kinematics, collision, broken, cell_configuration, meta)
-    assert result.Stale_Position > 0.00005 and any('resolve_keypoint.py --name input_pcb_press' in f for f in result.Failures)
-    broken.Robot['input_pcb_press'].Joints = list(Resolve_Keypoint('input_pcb_press', kinematics, broken, meta))
-    again = Check_Keypoint('input_pcb_press', kinematics, collision, broken, cell_configuration, meta)
-    assert again.Stale_Position <= 0.00005 and again.Family_Ok
-    with pytest.raises(Keypoints_Error_Cls, match='has no Relative_To target'):
-        Resolve_Keypoint('home', kinematics, keypoints, meta)
+    broken = copy.deepcopy(constants)
+    broken.Points['P_INPUT_ABOVE'].Joints[0] += math.radians(0.05)
+    result = Check_Keypoint('P_INPUT_ABOVE', kinematics, collision, broken, simulation, cell_configuration, meta)
+    assert result.Stale_Position > 0.00005
+    assert any('Reference target' in f and 'resolve_keypoint.py --name P_INPUT_ABOVE' in f for f in result.Failures)
+    joints, pose = Resolve_Keypoint('P_INPUT_ABOVE', kinematics, broken, simulation, meta, cell_configuration)
+    broken.Points['P_INPUT_ABOVE'].Joints, broken.Points['P_INPUT_ABOVE'].Pose = list(joints), list(pose)
+    again = Check_Keypoint('P_INPUT_ABOVE', kinematics, collision, broken, simulation, cell_configuration, meta)
+    assert again.Stale_Position <= 0.00005 and again.Check_Error <= 1e-8 and again.Family == 'wrist_up'
+    with pytest.raises(Keypoints_Error_Cls, match='has no Reference or PCB_Hold target'):
+        Resolve_Keypoint('P_HOME', kinematics, constants, simulation, meta, cell_configuration)
 
 
-def test_input_pcb_press_poses_the_pcb_in_the_crate_with_four_cups_touching(cell_model, keypoints, cell_configuration):
+def test_a_pose_that_is_not_fk_is_reported(tools, constants, simulation, cell_configuration):
     """
     Description:
-        Posed at input_pcb_press (the physics model), the PCB lies in the input crate and all 4 cups touch it within
-        the cup-touch threshold (Cell.yaml Simulation.Cup_Touch).
+        P_HOME's Pose 0.02 mm off in x (beyond 1e-5 m) fails, naming the Pose's error and the resolver; its yaw 0.002 deg off
+        (beyond 1e-3 deg) fails too.
+    """
+
+    kinematics, collision, meta = tools
+    broken = copy.deepcopy(constants)
+    broken.Points['P_HOME'].Pose[0] += 0.00002
+    result = Check_Keypoint('P_HOME', kinematics, collision, broken, simulation, cell_configuration, meta)
+    assert result.Verdict == 'FAIL' and any(f.startswith('Pose 0.0200 mm') and 'FK(Joints, T_SUCTION)' in f for f in result.Failures)
+    broken = copy.deepcopy(constants)
+    broken.Points['P_HOME'].Pose[5] += math.radians(0.002)
+    assert Check_Keypoint('P_HOME', kinematics, collision, broken, simulation, cell_configuration, meta).Verdict == 'FAIL'
+
+
+def test_the_pick_poses_the_pcb_in_the_crate_with_four_cups_touching(cell_model, constants, simulation, cell_configuration):
+    """
+    Description:
+        Posed at P_INPUT_PICK (the physics model), the PCB lies in the input crate and all 4 cups touch it within the cup-touch
+        threshold (Cell.yaml Simulation.Cup_Touch).
     """
 
     kinematics = Robot_Kinematics_Cls(cell_model)
-    Pose_Cell(kinematics, keypoints, cell_configuration, Read_PCB_Meta(), 'input_pcb_press')
+    Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_INPUT_PICK')
     m, d = cell_model, kinematics.Data
     assert d.xpos[m.body('pcb').id] == pytest.approx([0.15720, -0.75160, 0.0049], abs=1e-6)
     cups = {m.body('aubo/tool/vgc10_cup%d' % i).id for i in range(4)}
     assert Cup_Contacts(m, d, m.body('pcb').id, cups, cell_configuration.Cup_Touch) == 4
 
 
-def test_posing_sets_loader_jaws_and_mg06(cell_model, keypoints, cell_configuration):
+def test_posing_sets_loader_jaws_and_mg06(cell_model, constants, simulation, cell_configuration):
     """
     Description:
-        Posing at fork_closed_end sets the loader at park, the jaws open, MG06 at the recorded row 286 with the press
-        plate on the model's coupling; overrides replace the context (MG06 closed: -0.5 / 28.65 deg).
+        Posing at P_MG06_CLOSE_END sets the loader at L_PARK, the jaws open, MG06 at the recorded row 286 with the press plate on
+        the model's coupling; overrides replace the scene (MG06 closed: -0.5 / 28.65 deg); P_LOADER_PICK poses the jaws at
+        G_CLAMP's Jaw_Actual (on the PCB), not at its command.
     """
 
     kinematics = Robot_Kinematics_Cls(cell_model)
     a, q = kinematics.Scene_Address, kinematics.Data.qpos
-    Pose_Cell(kinematics, keypoints, cell_configuration, Read_PCB_Meta(), 'fork_closed_end')
+    Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_MG06_CLOSE_END')
     assert (q[a['y_axis']], q[a['z_axis']], q[a['jaw_L']]) == (-0.1995, 0.02, 0.035)
     assert math.degrees(q[a['handle_hinge']]) == pytest.approx(29.125260, abs=1e-6)
     assert q[a['press_slide']] == pytest.approx(0.0104554 * q[a['handle_hinge']] ** 3, rel=1e-9)
-    Pose_Cell(kinematics, keypoints, cell_configuration, Read_PCB_Meta(), 'fork_closed_end', loader='home', fixture='Closed')
+    Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_MG06_CLOSE_END', loader='L_HOME', fixture='Closed')
     assert q[a['y_axis']] == -0.1 and math.degrees(q[a['lid_hinge']]) == pytest.approx(-0.5)
-    with pytest.raises(Keypoints_Error_Cls, match="no keypoint 'nowhere'"):
-        Pose_Cell(kinematics, keypoints, cell_configuration, Read_PCB_Meta(), 'nowhere')
+    Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_LOADER_PICK')
+    assert q[a['jaw_L']] == 0.017750000000000002
+    with pytest.raises(Keypoints_Error_Cls, match="no point 'nowhere'"):
+        Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'nowhere')
 
 
 def test_pcb_for_tcp_inverts_tcp_for_pcb():
@@ -239,20 +264,6 @@ def test_pcb_for_tcp_inverts_tcp_for_pcb():
     meta = Read_PCB_Meta()
     position, quat = PCB_For_TCP(*TCP_For_PCB(np.array(meta.Hold_Pos), np.array(meta.Quat)))
     assert position == pytest.approx(meta.Hold_Pos, abs=1e-12) and quat == pytest.approx(meta.Quat, abs=1e-12)
-
-
-def test_a_wrong_family_is_reported(tools, keypoints, cell_configuration):
-    """
-    Description:
-        home declared wrist_down (its wrist_2 is +90 deg) fails the family rule, naming the family and the angle.
-    """
-
-    kinematics, collision, meta = tools
-    broken = copy.deepcopy(keypoints)
-    broken.Robot['home'].Family = 'wrist_down'
-    result = Check_Keypoint('home', kinematics, collision, broken, cell_configuration, meta)
-    assert not result.Family_Ok and result.Verdict == 'FAIL'
-    assert 'family wrist_down, but wrist_2 is 90.00 deg' in result.Failures
 
 
 def test_the_contact_groups_of_a_pair(planning_model):

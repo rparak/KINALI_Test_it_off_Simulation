@@ -38,7 +38,7 @@ import pytest
 from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report,
                              Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
 #   ../Configuration/Core
-from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints
+from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
 #   ../Scene/Core
 from Scene.Core import Build_Cell_Model
 
@@ -177,7 +177,8 @@ def test_an_unstable_simulation_fails_instead_of_continuing(root):
 
     code = """import sys
 sys.path.insert(0, %r)
-from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints
+from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration
+from Configuration.Program_Parser import Load_Constants
 Configure_MuJoCo_Log()
 from Scene.Core import Build_Cell_Model
 from Simulation.Core import Legacy_Plan_Str, Read_Legacy_Plan, Run_Cycle, Simulation_Error_Cls
@@ -188,7 +189,7 @@ real = Read_Legacy_Plan()
 plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:500], T_End=2.0, Loader={'y': [], 'z': [], 'jaw': []}, Events=[],
                        Phases=[[0.0, 'loader: up, to park']], Jaw_Open=real.Jaw_Open)
 try:
-    Run_Cycle(model, plan, Read_PCB_Meta(), cell, Load_Keypoints().Loader['home'])
+    Run_Cycle(model, plan, Read_PCB_Meta(), cell, Load_Constants().Loader['L_HOME'])
     print('NO ERROR')
 except Simulation_Error_Cls as error:
     print('ERROR', error)
@@ -202,8 +203,8 @@ except Simulation_Error_Cls as error:
 
 
 @pytest.fixture(scope='module')
-def reference_run(cell_configuration, keypoints):
-    return Run_Cycle(Build_Cell_Model(cell_configuration), Read_Legacy_Plan(), Read_PCB_Meta(), cell_configuration, keypoints.Loader['home'])
+def reference_run(cell_configuration, constants):
+    return Run_Cycle(Build_Cell_Model(cell_configuration), Read_Legacy_Plan(), Read_PCB_Meta(), cell_configuration, constants.Loader['L_HOME'])
 
 
 @pytest.mark.slow

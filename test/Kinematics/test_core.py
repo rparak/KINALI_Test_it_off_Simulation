@@ -42,15 +42,15 @@ Description:
 #   Unit [Dict<string, Tuple>] (rad, -, m)
 CONST_KEYPOINTS = {
     'home': ([0.7896, 0.6910, 1.8333, -0.4286, 1.5708, 0.0042], 'tcp', [0.3000, -0.5200, 0.4000]),
-    'above_input_pcb': ([0.4649, -0.1335, 2.0022, 0.5650, 1.5708, -0.3205], 'tcp', [0.1559, -0.7470, 0.1324]),
-    'via_input_to_loader': ([0.0465, 0.0565, 1.4637, -0.1952, 1.4994, -0.7367], 'tcp', [0.0164, -0.5608, 0.3958]),
-    'above_loader': ([-0.3720, 0.1896, 1.7926, -0.0310, 1.4280, -1.1529], 'tcp', [0.0045, -0.3298, 0.3158]),
-    'loader_handover': ([-0.4296, 0.0867, 2.1469, 0.4347, 1.4246, -1.2110], 'tcp', [0.0045, -0.3049, 0.1578]),
-    'via_mg06_high': ([-0.0138, 0.2020, 0.7805, -1.6993, -0.0164, 0.4996], 'flange', [0.1251, -0.3218, 0.9331]),
-    'fork_start': ([-1.1328, 0.0136, 1.1340, -2.0213, -1.9182, 1.1519], 'flange', [0.0550, -0.1074, 0.7531]),
-    'fork_closed_end': ([-0.5157, 0.0227, 2.4098, -0.7545, -1.3011, 1.1518], 'flange', [0.0550, -0.2840, 0.3154]),
-    'fork_retreat_up': ([-0.8243, 0.2137, 2.0471, -1.3081, -1.6097, 1.1518], 'flange', [0.0550, -0.2028, 0.4825]),
-    'above_output': ([1.0463, 0.0611, 2.2028, 0.5709, 1.5708, 0.2609], 'tcp', [0.4050, -0.7470, 0.1334]),
+    'P_INPUT_ABOVE': ([0.4649, -0.1335, 2.0022, 0.5650, 1.5708, -0.3205], 'tcp', [0.1559, -0.7470, 0.1324]),
+    'P_VIA_INPUT_LOADER': ([0.0465, 0.0565, 1.4637, -0.1952, 1.4994, -0.7367], 'tcp', [0.0164, -0.5608, 0.3958]),
+    'P_LOADER_ABOVE': ([-0.3720, 0.1896, 1.7926, -0.0310, 1.4280, -1.1529], 'tcp', [0.0045, -0.3298, 0.3158]),
+    'P_LOADER_PLACE': ([-0.4296, 0.0867, 2.1469, 0.4347, 1.4246, -1.2110], 'tcp', [0.0045, -0.3049, 0.1578]),
+    'P_VIA_HOME_MG06': ([-0.0138, 0.2020, 0.7805, -1.6993, -0.0164, 0.4996], 'flange', [0.1251, -0.3218, 0.9331]),
+    'P_MG06_FORK_START': ([-1.1328, 0.0136, 1.1340, -2.0213, -1.9182, 1.1519], 'flange', [0.0550, -0.1074, 0.7531]),
+    'P_MG06_CLOSE_END': ([-0.5157, 0.0227, 2.4098, -0.7545, -1.3011, 1.1518], 'flange', [0.0550, -0.2840, 0.3154]),
+    'P_MG06_WAIT': ([-0.8243, 0.2137, 2.0471, -1.3081, -1.6097, 1.1518], 'flange', [0.0550, -0.2028, 0.4825]),
+    'P_OUTPUT_ABOVE': ([1.0463, 0.0611, 2.2028, 0.5709, 1.5708, 0.2609], 'tcp', [0.4050, -0.7470, 0.1334]),
 }
 # Position tolerance of the table check: 4-decimal joints move the TCP by up to ~0.2 mm, the printed
 # position is rounded to 0.05 mm.
@@ -97,13 +97,13 @@ def test_the_tcp_over_a_pcb_in_the_input_crate(kinematics):
     """
     Description:
         The TCP holding a PCB flat in the input crate sits 7.5 mm above the board centre, offset by the
-        cup position (SPEC §4.4); with the 120 mm lift it is above_input_pcb's TCP (SPEC §4.8).
+        cup position (SPEC §4.4); with the 120 mm lift it is P_INPUT_ABOVE's TCP (SPEC §4.8).
     """
 
     p, R = TCP_For_PCB(*PCB_In_Crate('crate_pick'))
     assert p == pytest.approx([0.15595, -0.74700, 0.0124], abs=5e-6)
     assert np.allclose(R, np.diag([1.0, -1.0, -1.0]))
-    assert p + [0, 0, 0.12] == pytest.approx(CONST_KEYPOINTS['above_input_pcb'][2], abs=CONST_TABLE_TOLERANCE)
+    assert p + [0, 0, 0.12] == pytest.approx(CONST_KEYPOINTS['P_INPUT_ABOVE'][2], abs=CONST_TABLE_TOLERANCE)
 
 
 def test_a_quaternion_becomes_its_rotation_matrix():

@@ -39,8 +39,9 @@ import time
 import typing as tp
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Load_Keypoints, Read_PCB_Meta, Script_Log_Cls,
-                                Configuration_Error_Cls)
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls
+#   ../Configuration/Program_Parser - the points and their scenes
+from Configuration.Program_Parser import Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the kinematics posing uses
@@ -64,7 +65,7 @@ CONST_KEYS = {267: 1, 46: 1, 266: -1}
 def main():
     """
     Description:
-        Step through the robot keypoints of Configuration/Keypoints.yaml in MuJoCo's viewer, the whole cell posed at
+        Step through the robot points of Configuration/Constants.yaml in MuJoCo's viewer, the whole cell posed at
         each (static, not simulated): Page Down or '.' next, Page Up previous; the keypoint and its note are printed.
         Needs mjpython on macOS (the passive viewer); --headless poses every keypoint once and exits.
 
@@ -79,16 +80,17 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('step_keypoints')
     try:
-        cell, keypoints, meta = Load_Cell_Configuration(), Load_Keypoints(), Read_PCB_Meta()
+        cell, constants, meta = Load_Cell_Configuration(), Load_Constants(), Read_PCB_Meta()
+        simulation = Load_Simulation(constants)
         model = Build_Cell_Model(cell)
     except (Configuration_Error_Cls, Scene_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
     kinematics = Robot_Kinematics_Cls(model)
-    names = list(keypoints.Robot)
+    names = list(constants.Points)
     if args.start is not None and args.start not in names:
-        print(log.Line("[ERROR] There is no keypoint '%s'; the keypoints are %s." % (args.start, ', '.join(names))))
+        print(log.Line("[ERROR] There is no point '%s'; the points are %s." % (args.start, ', '.join(names))))
         log.Close()
         return 1
     state = {'index': names.index(args.start) if args.start else 0, 'pending': True}
@@ -102,8 +104,8 @@ def main():
             (1) index [int]: The keypoint's position in the file.
         """
 
-        keypoint = Pose_Cell(kinematics, keypoints, cell, meta, names[index])
-        print(log.Line('[INFO] %2d/%d %s: %s' % (index + 1, len(names), keypoint.Name, keypoint.Note)), flush=True)
+        point = Pose_Cell(kinematics, constants, simulation, cell, meta, names[index])
+        print(log.Line('[INFO] %2d/%d %s: %s' % (index + 1, len(names), point.Name, point.Description)), flush=True)
 
     if args.headless:
         for index in range(len(names)):

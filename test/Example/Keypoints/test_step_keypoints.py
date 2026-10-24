@@ -25,20 +25,20 @@
 def test_headless_stepping_poses_every_keypoint_in_order(tmp_path, run_script):
     """
     Description:
-        --headless poses the 23 keypoints once, in the file's order (home first, output_place last), exit 0.
+        --headless poses the 23 points once, in the file's order (P_HOME first, P_OUTPUT_PLACE last), exit 0.
     """
 
     result = run_script('Keypoints/step_keypoints.py', ['--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     lines = [line for line in result.stdout.splitlines() if line.startswith('[INFO] ')]
-    assert len(lines) == 23 and lines[0].startswith('[INFO]  1/23 home:') and lines[-1].startswith('[INFO] 23/23 output_place:')
+    assert len(lines) == 23 and lines[0].startswith('[INFO]  1/23 P_HOME:') and lines[-1].startswith('[INFO] 23/23 P_OUTPUT_PLACE:')
 
 
 def test_an_unknown_start_is_an_error_line(tmp_path, run_script):
     """
     Description:
-        --start with an unknown keypoint is an [ERROR] line, exit 1.
+        --start with an unknown point is an [ERROR] line, exit 1.
     """
 
     result = run_script('Keypoints/step_keypoints.py', ['--start', 'nowhere', '--headless'], tmp_path)
-    assert result.returncode == 1 and "[ERROR] There is no keypoint 'nowhere'" in result.stdout
+    assert result.returncode == 1 and "[ERROR] There is no point 'nowhere'" in result.stdout

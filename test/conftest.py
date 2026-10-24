@@ -67,14 +67,36 @@ def cell_configuration():
 
 
 @pytest.fixture(scope='session')
-def keypoints():
+def constants():
     """
     Description:
-        The shipped keypoints (Configuration/Keypoints.yaml).
+        The shipped constants (Configuration/Constants.yaml).
     """
 
-    from Configuration.Core import Load_Keypoints
-    return Load_Keypoints()
+    from Configuration.Program_Parser import Load_Constants
+    return Load_Constants()
+
+
+@pytest.fixture(scope='session')
+def simulation(constants):
+    """
+    Description:
+        The shipped simulation data (Configuration/Simulation.yaml).
+    """
+
+    from Configuration.Program_Parser import Load_Simulation
+    return Load_Simulation(constants)
+
+
+@pytest.fixture(scope='session')
+def program(constants, simulation, cell_configuration):
+    """
+    Description:
+        The shipped program (Configuration/Program.yaml) with its constants and simulation data.
+    """
+
+    from Configuration.Program_Parser import Load_Program
+    return Load_Program(constants, simulation, cell_configuration)
 
 
 @pytest.fixture(scope='session')

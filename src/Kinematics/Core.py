@@ -332,3 +332,51 @@ def PCB_For_TCP(tcp_pos: np.ndarray, tcp_mat: np.ndarray) -> tp.Tuple[np.ndarray
     mujoco.mju_mat2Quat(quat, R.flatten())
     return tcp_pos - R @ CONST_SUCTION_IN_PCB, quat
 
+
+
+def RPY_To_Matrix(rpy: tp.Sequence[float]) -> np.ndarray:
+    """
+    Description:
+        A rotation from fixed-axis roll, pitch, yaw: R = Rz(yaw) Ry(pitch) Rx(roll) (the Constants.yaml Pose convention).
+
+    Args:
+        (1) rpy [Vector<float> 1x3]: Roll, pitch, yaw (rad).
+
+    Returns:
+        (1) parameter [Matrix<float> 3x3]: The rotation matrix.
+    """
+
+    (cr, sr), (cp, sp), (cy, sy) = [(np.cos(a), np.sin(a)) for a in rpy]
+    return np.array([[cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+                     [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+                     [-sp, cp * sr, cp * cr]])
+
+
+def Matrix_To_RPY(R: np.ndarray) -> np.ndarray:
+    """
+    Description:
+        Fixed-axis roll, pitch, yaw of a rotation, R = Rz(yaw) Ry(pitch) Rx(roll) (the inverse of RPY_To_Matrix).
+
+    Args:
+        (1) R [Matrix<float> 3x3]: The rotation matrix.
+
+    Returns:
+        (1) parameter [Vector<float> 1x3]: Roll, pitch, yaw (rad).
+    """
+
+    return np.array([np.arctan2(R[2, 1], R[2, 2]), np.arcsin(-np.clip(R[2, 0], -1.0, 1.0)), np.arctan2(R[1, 0], R[0, 0])])
+
+
+def Rotation_Angle(R_1: np.ndarray, R_2: np.ndarray) -> float:
+    """
+    Description:
+        The angle of the rotation between two orientations.
+
+    Args:
+        (1 - 2) R_1, R_2 [Matrix<float> 3x3]: The orientations.
+
+    Returns:
+        (1) parameter [float]: The angle (rad).
+    """
+
+    return float(np.arccos(np.clip((np.trace(R_1.T @ R_2) - 1) / 2, -1.0, 1.0)))

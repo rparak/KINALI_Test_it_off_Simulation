@@ -36,24 +36,27 @@ import pytest
 def trajectory(tmp_path_factory, run_script):
     out = tmp_path_factory.mktemp('built')
     run_script('Program/build_program.py', ['--out', str(out)], tmp_path_factory.mktemp('cwd'))
-    return str(out / 'Program_Default.npz')
+    return str(out / 'Program.npz')
 
 
 @pytest.mark.slow
 def test_headless_posing_at_a_step_and_at_a_time(trajectory, tmp_path, run_script):
     """
     Description:
-        --step test (or 11) poses the cell at the end of the test step, --time 3.276 at the press (the PCB still in the input
-        crate); the step, the time and the comment are printed; exit 0, nothing written to the working directory.
+        --step S11_Test (or 11) poses the cell at the end of the test segment, --time 3.276 at the press (the PCB still in the input
+        crate); the step, the time and the command line being executed are printed; exit 0, nothing written to the working directory.
     """
 
-    result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'test', '--headless'], tmp_path)
+    result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'S11_Test', '--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert '[INFO] step 11/22 test   t = 35.136 s / 68.852 s   PCB mg06 (sample 8784): MG06 closed' in result.stdout
+    assert ('[INFO] step 11/22 S11_Test   t = 35.136 s / 68.852 s   PCB mg06 (sample 8784): Tester.Run(J_TEST) > Test(Process.Test_Duration)'
+            in result.stdout)
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', '11', '--headless'], tmp_path)
-    assert 'step 11/22 test' in result.stdout
+    assert 'step 11/22 S11_Test' in result.stdout
     result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--time', '3.276', '--headless'], tmp_path)
-    assert '[INFO] step 2/22 pick_input   t = 3.276 s / 68.852 s   PCB input_crate (sample 819)' in result.stdout and os.listdir(tmp_path) == []
+    assert ('[INFO] step 2/22 S2_Pick_Input   t = 3.276 s / 68.852 s   PCB input_crate (sample 819): Robot.MoveL(P_INPUT_PICK, v=0.03)'
+            in result.stdout)
+    assert os.listdir(tmp_path) == []
 
 
 @pytest.mark.slow
@@ -64,7 +67,7 @@ def test_the_image_is_written(trajectory, tmp_path, run_script):
     """
 
     path = tmp_path / 'moment.png'
-    result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'handover', '--image', str(path)], tmp_path)
+    result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'S4_Handover', '--image', str(path)], tmp_path)
     assert result.returncode == 0 and mpimg.imread(str(path)).shape[:2] == (720, 960)
 
 

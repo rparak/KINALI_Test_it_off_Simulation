@@ -35,8 +35,9 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Load_Keypoints, Read_PCB_Meta, Script_Log_Cls,
-                                Configuration_Error_Cls)
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls
+#   ../Configuration/Program_Parser - the points and their scenes
+from Configuration.Program_Parser import Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell's errors
 from Scene.Core import Scene_Error_Cls
 #   ../Kinematics/Core, ../Collision/Core - FK, the check model (the planning model: the table included) and exact distances
@@ -62,23 +63,24 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('check_keypoints')
     try:
-        cell, keypoints, meta = Load_Cell_Configuration(), Load_Keypoints(), Read_PCB_Meta()
+        cell, constants, meta = Load_Cell_Configuration(), Load_Constants(), Read_PCB_Meta()
+        simulation = Load_Simulation(constants)
         model = Build_Planning_Model(cell)
     except (Configuration_Error_Cls, Scene_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
-    for level, message in cell.Notes + keypoints.Notes:
+    for level, message in cell.Notes + constants.Notes + simulation.Notes:
         print(log.Line('[%s] %s' % (level, message)))
-    names = list(keypoints.Robot)
+    names = list(constants.Points)
     if args.name is not None and args.name not in names:
-        print(log.Line("[ERROR] There is no keypoint '%s'; the keypoints are %s." % (args.name, ', '.join(names))))
+        print(log.Line("[ERROR] There is no point '%s'; the points are %s." % (args.name, ', '.join(names))))
         log.Close()
         return 1
     collision = Robot_Collision_Cls(model)
     kinematics = Robot_Kinematics_Cls(model, collision.Data)
-    results = [Check_Keypoint(name, kinematics, collision, keypoints, cell, meta) for name in ([args.name] if args.name else names)]
-    for line in Format_Check_Table(results, keypoints):
+    results = [Check_Keypoint(name, kinematics, collision, constants, simulation, cell, meta) for name in ([args.name] if args.name else names)]
+    for line in Format_Check_Table(results):
         print(log.Line(line))
     failed = [r.Name for r in results if r.Verdict == 'FAIL']
     print(log.Line('[%s] %d keypoint(s): %d FAIL, %d WARN, %d PASS. Simulation results only: not validated for the real cell.'

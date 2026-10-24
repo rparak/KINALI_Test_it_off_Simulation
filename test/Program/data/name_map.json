@@ -1,0 +1,352 @@
+{
+ "source": "F10 (2026-10-24): points, steps, loader positions, gripper commands and paths decided before the change (owner); the command texts pair the 69 executed segments in order, old text -> new text",
+ "files": {
+  "Configuration/Keypoints.yaml": "Configuration/Constants.yaml + Configuration/Simulation.yaml (scenes)",
+  "Configuration/Program_Default.yaml": "Configuration/Program.yaml (+ Simulation.yaml: start, contacts, End_Settle)"
+ },
+ "program": {
+  "Program_Default": "Program"
+ },
+ "points": {
+  "home": "P_HOME",
+  "above_input_pcb": "P_INPUT_ABOVE",
+  "input_pcb_approach": "P_INPUT_APPROACH",
+  "input_pcb_press": "P_INPUT_PICK",
+  "input_pcb_clear": "P_INPUT_CLEAR",
+  "via_input_to_loader": "P_VIA_INPUT_LOADER",
+  "above_loader": "P_LOADER_ABOVE",
+  "loader_approach": "P_LOADER_APPROACH",
+  "loader_handover": "P_LOADER_PLACE",
+  "loader_take_press": "P_LOADER_PICK",
+  "loader_out_of_jaws": "P_LOADER_EXIT",
+  "via_mg06_high": "P_VIA_HOME_MG06",
+  "above_handle": "P_MG06_ABOVE",
+  "fork_start": "P_MG06_FORK_START",
+  "fork_closed_end": "P_MG06_CLOSE_END",
+  "fork_bar_centred": "P_MG06_BAR_CENTRE",
+  "fork_out_of_bar": "P_MG06_SLOT_EXIT",
+  "fork_retreat_up": "P_MG06_WAIT",
+  "fork_open_join": "P_MG06_OPEN_JOIN",
+  "via_loader_to_output": "P_VIA_LOADER_OUTPUT",
+  "above_output": "P_OUTPUT_ABOVE",
+  "output_approach": "P_OUTPUT_APPROACH",
+  "output_place": "P_OUTPUT_PLACE"
+ },
+ "steps": {
+  "approach_input": "S1_Approach_Input",
+  "pick_input": "S2_Pick_Input",
+  "to_loader": "S3_To_Loader",
+  "handover": "S4_Handover",
+  "home_after_handover": "S5_Home_After_Handover",
+  "loader_insert": "S6_Loader_Insert",
+  "loader_park": "S7_Loader_Park",
+  "to_mg06": "S8_To_MG06",
+  "close_mg06": "S9_Close_MG06",
+  "leave_mg06": "S10_Leave_MG06",
+  "test": "S11_Test",
+  "return_mg06": "S12_Return_MG06",
+  "open_mg06": "S13_Open_MG06",
+  "home_after_mg06": "S14_Home_After_MG06",
+  "loader_fetch": "S15_Loader_Fetch",
+  "loader_return": "S16_Loader_Return",
+  "to_take": "S17_To_Take",
+  "take_from_loader": "S18_Take_From_Loader",
+  "to_output": "S19_To_Output",
+  "place_output": "S20_Place_Output",
+  "home_end": "S21_Home_End",
+  "settle": "End_Settle"
+ },
+ "loader_positions": {
+  "home": "L_HOME",
+  "travel_place": "L_TRAVEL",
+  "place": "L_PLACE",
+  "park": "L_PARK"
+ },
+ "gripper": {
+  "open": "G_OPEN",
+  "clamp": "G_CLAMP",
+  "grip": "G_CLAMP (Simulation.yaml Jaw_Actual)"
+ },
+ "paths": {
+  "Fork_Close": "PATH_FORK_CLOSE",
+  "Fork_Open": "PATH_FORK_OPEN"
+ },
+ "commands": [
+  [
+   "Movej above_input_pcb",
+   "Robot.MoveJ(P_INPUT_ABOVE)"
+  ],
+  [
+   "Movel input_pcb_approach 0.2",
+   "Robot.MoveL(P_INPUT_APPROACH, v=0.20)"
+  ],
+  [
+   "Movel input_pcb_press 0.03",
+   "Robot.MoveL(P_INPUT_PICK, v=0.03)"
+  ],
+  [
+   "Vacuum On",
+   "Robot.SetDO(DO_VACUUM, ON)"
+  ],
+  [
+   "Wait 0.3",
+   "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)"
+  ],
+  [
+   "Movel input_pcb_clear 0.2",
+   "Robot.MoveL(P_INPUT_CLEAR, v=0.20)"
+  ],
+  [
+   "Movej via_input_to_loader",
+   "Robot.MoveJ(P_VIA_INPUT_LOADER)"
+  ],
+  [
+   "Movej above_loader",
+   "Robot.MoveJ(P_LOADER_ABOVE)"
+  ],
+  [
+   "Movel loader_approach 0.2",
+   "Robot.MoveL(P_LOADER_APPROACH, v=0.20)"
+  ],
+  [
+   "Movel loader_handover 0.03",
+   "Robot.MoveL(P_LOADER_PLACE, v=0.03)"
+  ],
+  [
+   "Gripper clamp 0.35",
+   "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)"
+  ],
+  [
+   "Wait 0.25",
+   "Wait(0.25)"
+  ],
+  [
+   "Vacuum Off",
+   "Robot.SetDO(DO_VACUUM, OFF)"
+  ],
+  [
+   "Wait 0.2",
+   "Wait(0.2)"
+  ],
+  [
+   "Movel above_loader 0.2",
+   "Robot.MoveL(P_LOADER_ABOVE, v=0.20)"
+  ],
+  [
+   "Movej home",
+   "Robot.MoveJ(P_HOME)"
+  ],
+  [
+   "Loader Z travel_place 0.8",
+   "Loader.Run(J_INSERT) > MoveZ(L_TRAVEL, t=0.8)"
+  ],
+  [
+   "Loader Y travel_place 2",
+   "Loader.Run(J_INSERT) > MoveY(L_TRAVEL, t=2.0)"
+  ],
+  [
+   "Loader Z place 0.6",
+   "Loader.Run(J_INSERT) > MoveZ(L_PLACE, t=0.6)"
+  ],
+  [
+   "Wait 0.1",
+   "Loader.Run(J_INSERT) > Wait(0.1)"
+  ],
+  [
+   "Gripper open 0.35",
+   "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.35)"
+  ],
+  [
+   "Wait 0.1",
+   "Loader.Run(J_INSERT) > Wait(0.1)"
+  ],
+  [
+   "Loader Z travel_place 0.5",
+   "Loader.Run(J_PARK) > MoveZ(L_TRAVEL, t=0.5)"
+  ],
+  [
+   "Loader Y park 1.8",
+   "Loader.Run(J_PARK) > MoveY(L_PARK, t=1.8)"
+  ],
+  [
+   "Loader Z park 0.8",
+   "Loader.Run(J_PARK) > MoveZ(L_PARK, t=0.8)"
+  ],
+  [
+   "Wait 0.15",
+   "Loader.Run(J_PARK) > Wait(0.15)"
+  ],
+  [
+   "Movej via_mg06_high",
+   "Robot.MoveJ(P_VIA_HOME_MG06)"
+  ],
+  [
+   "Movej above_handle",
+   "Robot.MoveJ(P_MG06_ABOVE)"
+  ],
+  [
+   "Movej fork_start",
+   "Robot.MoveJ(P_MG06_FORK_START)"
+  ],
+  [
+   "Path Fork_Close",
+   "Robot.MovePath(PATH_FORK_CLOSE)"
+  ],
+  [
+   "Movel fork_bar_centred 0.02",
+   "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.02)"
+  ],
+  [
+   "Movel fork_out_of_bar 0.12",
+   "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.12)"
+  ],
+  [
+   "Movel fork_retreat_up 0.25",
+   "Robot.MoveL(P_MG06_WAIT, v=0.25)"
+  ],
+  [
+   "Test Process.Test_Duration (2 s)",
+   "Tester.Run(J_TEST) > Test(Process.Test_Duration)"
+  ],
+  [
+   "Movel fork_out_of_bar 0.25",
+   "Robot.MoveL(P_MG06_SLOT_EXIT, v=0.25)"
+  ],
+  [
+   "Movel fork_bar_centred 0.12",
+   "Robot.MoveL(P_MG06_BAR_CENTRE, v=0.12)"
+  ],
+  [
+   "Movel fork_open_join 0.03",
+   "Robot.MoveL(P_MG06_OPEN_JOIN, v=0.03)"
+  ],
+  [
+   "Path Fork_Open",
+   "Robot.MovePath(PATH_FORK_OPEN)"
+  ],
+  [
+   "Movej above_handle",
+   "Robot.MoveJ(P_MG06_ABOVE)"
+  ],
+  [
+   "Movej via_mg06_high",
+   "Robot.MoveJ(P_VIA_HOME_MG06)"
+  ],
+  [
+   "Movej home",
+   "Robot.MoveJ(P_HOME)"
+  ],
+  [
+   "Loader Z travel_place 0.6",
+   "Loader.Run(J_FETCH) > MoveZ(L_TRAVEL, t=0.6)"
+  ],
+  [
+   "Loader Y travel_place 2.2",
+   "Loader.Run(J_FETCH) > MoveY(L_TRAVEL, t=2.2)"
+  ],
+  [
+   "Loader Z place 0.6",
+   "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)"
+  ],
+  [
+   "Wait 0.1",
+   "Loader.Run(J_FETCH) > Wait(0.1)"
+  ],
+  [
+   "Gripper clamp 0.35",
+   "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.35)"
+  ],
+  [
+   "Wait 0.2",
+   "Loader.Run(J_FETCH) > Wait(0.2)"
+  ],
+  [
+   "Loader Z travel_place 0.6",
+   "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)"
+  ],
+  [
+   "Loader Y home 2",
+   "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)"
+  ],
+  [
+   "Loader Z home 0.8",
+   "Loader.Run(J_RETURN) > MoveZ(L_HOME, t=0.8)"
+  ],
+  [
+   "Wait 0.2",
+   "Loader.Run(J_RETURN) > Wait(0.2)"
+  ],
+  [
+   "Movej above_loader",
+   "Robot.MoveJ(P_LOADER_ABOVE)"
+  ],
+  [
+   "Movel loader_approach 0.2",
+   "Robot.MoveL(P_LOADER_APPROACH, v=0.20)"
+  ],
+  [
+   "Movel loader_take_press 0.03",
+   "Robot.MoveL(P_LOADER_PICK, v=0.03)"
+  ],
+  [
+   "Vacuum On",
+   "Robot.SetDO(DO_VACUUM, ON)"
+  ],
+  [
+   "Wait 0.3",
+   "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)"
+  ],
+  [
+   "Gripper open 0.35",
+   "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)"
+  ],
+  [
+   "Wait 0.15",
+   "Wait(0.15)"
+  ],
+  [
+   "Movel loader_out_of_jaws 0.05",
+   "Robot.MoveL(P_LOADER_EXIT, v=0.05)"
+  ],
+  [
+   "Movel above_loader 0.2",
+   "Robot.MoveL(P_LOADER_ABOVE, v=0.20)"
+  ],
+  [
+   "Movej via_loader_to_output",
+   "Robot.MoveJ(P_VIA_LOADER_OUTPUT)"
+  ],
+  [
+   "Movej above_output",
+   "Robot.MoveJ(P_OUTPUT_ABOVE)"
+  ],
+  [
+   "Movel output_approach 0.2",
+   "Robot.MoveL(P_OUTPUT_APPROACH, v=0.20)"
+  ],
+  [
+   "Movel output_place 0.03",
+   "Robot.MoveL(P_OUTPUT_PLACE, v=0.03)"
+  ],
+  [
+   "Vacuum Off",
+   "Robot.SetDO(DO_VACUUM, OFF)"
+  ],
+  [
+   "Wait 0.3",
+   "Wait(0.3)"
+  ],
+  [
+   "Movel above_output 0.2",
+   "Robot.MoveL(P_OUTPUT_ABOVE, v=0.20)"
+  ],
+  [
+   "Movej home",
+   "Robot.MoveJ(P_HOME)"
+  ],
+  [
+   "Wait 0.8",
+   "End_Settle(0.8)"
+  ]
+ ]
+}

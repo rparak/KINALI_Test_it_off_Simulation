@@ -43,9 +43,11 @@ import numpy as np
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Load_Keypoints, Load_Program, Script_Log_Cls, Configuration_Error_Cls,
-                                CONST_PROGRAM_DEFAULT_YAML, CONST_KEYPOINTS_YAML, CONST_CELL_YAML, CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_IMAGES,
-                                CONST_PCB_LOCATIONS)
+from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_CELL_YAML,
+                                CONST_FORK_PATH, CONST_TRAJECTORIES, CONST_IMAGES, CONST_PCB_LOCATIONS)
+#   ../Configuration/Program_Parser - the program's three files
+from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML,
+                                          CONST_PROGRAM_YAML)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the model's robot joints
@@ -63,7 +65,7 @@ Description:
 """
 # The program file of each version (the optimized one comes with F9).
 #   Unit [Dict<string, string>]
-CONST_VERSIONS = {'default': CONST_PROGRAM_DEFAULT_YAML}
+CONST_VERSIONS = {'default': CONST_PROGRAM_YAML}
 # The keys (GLFW codes): Home pause / resume, Page Down or '.' the next step's start, Page Up the current (or previous) step's
 # start, End the current step's end. Every letter and , / ; ' \\ ` toggles a MuJoCo flag and the viewer binds Space, the
 # arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
@@ -88,7 +90,8 @@ def Stale_Inputs(trajectory: Trajectory_Str, program_path: str) -> tp.List[str]:
     """
 
     built = trajectory.Meta.get('inputs_sha256', {})
-    now = {'program': program_path, 'keypoints': CONST_KEYPOINTS_YAML, 'cell': CONST_CELL_YAML, 'fork_path': CONST_FORK_PATH}
+    now = {'program': program_path, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
+           'fork_path': CONST_FORK_PATH}
     return [name for name, path in now.items() if built.get(name) != File_Hash(path)]
 
 
@@ -120,7 +123,8 @@ def main():
     """
     Description:
         Play a program's trajectory in MuJoCo's viewer: the whole cell posed from the trajectory sample by sample in real
-        time (kinematic, no physics), the step's name and comment shown; Home pauses / resumes, Page Down or '.' jumps to the
+        time (kinematic, no physics), the segment's name and the command line being executed shown; Home pauses / resumes,
+        Page Down or '.' jumps to the
         next step, Page Up back to the current step's start, End to its end. --step N / --time T pose one moment; --headless
         prints it; --image writes an offscreen render. Reads the trajectory Example/Program/build_program.py wrote and refuses
         one whose inputs changed since. The viewer needs mjpython on macOS (the passive viewer).
@@ -146,8 +150,8 @@ def main():
         return 1
     program_path = CONST_VERSIONS[args.version]
     try:
-        cell, keypoints = Load_Cell_Configuration(), Load_Keypoints()
-        program = Load_Program(keypoints, cell, program_path)
+        cell, constants = Load_Cell_Configuration(), Load_Constants()
+        program = Load_Program(constants, Load_Simulation(constants), cell, program_path)
         path = args.trajectory or os.path.join(CONST_TRAJECTORIES, program.Name + '.npz')
         trajectory = Read_Trajectory(path)
         model = Build_Cell_Model(cell)
@@ -169,24 +173,24 @@ def main():
         log.Close()
         return 1
     kinematics = Robot_Kinematics_Cls(model)
-    comments = [s.Comment for s in program.Steps]
 
     def Describe(i: int) -> tp.Tuple[str, str]:
         """
         Description:
-            The step of sample i, as the viewer's two text columns and the printed line.
+            The segment and the command line of sample i, as the viewer's two text columns and the printed line.
 
         Args:
             (1) i [int]: The sample.
 
         Returns:
-            (1) parameter [string]: 'step k/n name' and the time.
-            (2) parameter [string]: The step's comment.
+            (1) parameter [string]: 'step k/n S<k>_<Name>', the time and the PCB's location.
+            (2) parameter [string]: The command line being executed.
         """
 
         k = int(trajectory.Step_Index[i])
         return ('step %d/%d %s   t = %.3f s / %.3f s   PCB %s' % (k + 1, len(trajectory.Step_Names), trajectory.Step_Names[k], trajectory.T[i],
-                                                                trajectory.T[-1], CONST_PCB_LOCATIONS[trajectory.PCB_Location[i]]), comments[k])
+                                                                trajectory.T[-1], CONST_PCB_LOCATIONS[trajectory.PCB_Location[i]]),
+                trajectory.Segment_Command[int(trajectory.Segment_Id[i])])
 
     Pose_Sample(kinematics, trajectory, sample)
     title, comment = Describe(sample)
@@ -242,7 +246,7 @@ def main():
                     Pose_Sample(kinematics, trajectory, state['sample'])
                     title, comment = Describe(state['sample'])
                     viewer.set_texts((mujoco.mjtFontScale.mjFONTSCALE_150, mujoco.mjtGridPos.mjGRID_TOPLEFT, title, comment))
-                if int(trajectory.Step_Index[state['sample']]) != int(trajectory.Step_Index[max(shown, 0)]) or shown < 0:
+                if int(trajectory.Segment_Id[state['sample']]) != int(trajectory.Segment_Id[max(shown, 0)]) or shown < 0:
                     print(log.Line('[INFO] %s: %s' % (title, comment)), flush=True)
                 shown = state['sample']
             viewer.sync()

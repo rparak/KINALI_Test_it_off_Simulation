@@ -33,17 +33,21 @@ from dataclasses import dataclass, field
 import numpy as np
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
+# OS (Operating system interfaces)
+import os
 # Custom Lib.:
-#   ../Configuration/Core - the program, the keypoints, the cell; the recorded fork path's file
-from Configuration.Core import (Program_Str, Program_Command_Str, Keypoints_Str, Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS,
-                                CONST_FORK_PATH)
+#   ../Configuration/Core - the cell, the PCB poses, the PCB locations
+from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_ROOT
+#   ../Configuration/Program_Parser - the program's intermediate representation
+from Configuration.Program_Parser import Program_Str, Command_Str
 #   ../Scene/Core - the crates, the robot's joints
 from Scene.Core import PCB_In_Crate, Crate_Holding, CONST_ROBOT_JOINTS
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups
-from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, PCB_For_TCP
-#   ../Keypoints/Core - the keypoints' MG06 state and frames, the press plate's coupling, the contact groups, the keypoint check
-from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Group, Check_Keypoint, Keypoint_Check_Str, CONST_WRIST_2,
-                            CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX)
+from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, PCB_For_TCP, RPY_To_Matrix, Rotation_Angle
+#   ../Keypoints/Core - the points' MG06 state, poses and targets, the press plate's coupling, the contact groups, the point check
+from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Group, Check_Keypoint, Keypoint_Check_Str, Point_Pose, Base_Pose,
+                            Target_Pose, CONST_WRIST_2, CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX, CONST_POSE_POSITION, CONST_POSE_ANGLE,
+                            CONST_TOOL_POSITION, CONST_TOOL_ANGLE)
 #   ../Collision/Core - exact distances
 from Collision.Core import Robot_Collision_Cls
 #   ../Scene/Core - the cup block
@@ -80,9 +84,10 @@ CONST_STRETCH_MARGIN, CONST_STRETCH_TRIES = 1.01, 8
 # (the 1.5 mm press plus 0.5 mm); the PCB is between the jaws when it is within this of the jaws' hold pose.
 #   Unit [float] (m)
 CONST_PCB_TOLERANCE = 0.002
-# The recorded fork paths: the keypoint each starts and ends at (SPEC §4.9; FEATURES.md F8: within 0.021 mm / 0.002 deg).
-#   Unit [Dict<string, Tuple<string>>]
-CONST_PATH_ENDS = {'Fork_Close': ('fork_start', 'fork_closed_end'), 'Fork_Open': ('fork_open_join', 'fork_start')}
+# The loader position Data/PCB/pcb_meta.json's hold pose is measured at (the jaws' hold pose moves with the loader from
+# there): a single legal value.
+#   Unit [string]
+CONST_LOADER_HOME = 'L_HOME'
 # The check reports every pair within this distance (the clearance decides the verdict), so a near pair outside the
 # clearance is visible too.
 #   Unit [float] (m)
@@ -98,7 +103,10 @@ CONST_DIFFERENCE_TOLERANCE = 1e-3
 # The keypoint whose handover is checked for a press (owner's B1, SPEC §4.7), and the angle within which a jaw geom's
 # direction from the PCB is the board's -normal (a finger ledge under the board, not a jaw face beside it).
 #   Unit [string], [float] (rad)
-CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'loader_handover', math.radians(45.0)
+CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'P_LOADER_PLACE', math.radians(45.0)
+# The step the simulation appends after the program's last segment (Simulation.yaml End_Settle).
+#   Unit [string]
+CONST_END_SETTLE = 'End_Settle'
 # The trajectory's units, joint order and TCP, stored in its metadata (SPEC §17: controller-friendly).
 #   Unit [Dict<string, Any>]
 CONST_META = {'units': {'length': 'm', 'angle': 'rad', 'time': 's', 'speed': 'rad/s'},
@@ -163,23 +171,25 @@ def Min_Jerk_Rate(s: np.ndarray) -> np.ndarray:
     return 30 * s * s * (1 - s) ** 2
 
 
-def Movej_Duration(q0: np.ndarray, q1: np.ndarray, cell: Cell_Configuration_Str) -> float:
+def Movej_Duration(q0: np.ndarray, q1: np.ndarray, cell: Cell_Configuration_Str, speed: tp.Optional[float] = None) -> float:
     """
     Description:
         The duration of a min-jerk joint move (SPEC §4.10, the legacy planner's rule): T = max(Movej_Min_Duration,
-        max_j 1.875 |dq_j| / v_max_j, max_j sqrt(5.774 |dq_j| / a_max_j)), v_max = Speed_Fraction x the datasheet speeds,
-        a_max the acceleration limits; 1.875 and 5.774 are min-jerk's peak speed and acceleration per unit of travel.
+        max_j 1.875 |dq_j| / v_max_j, max_j sqrt(5.774 |dq_j| / a_max_j)), v_max = the speed fraction (the MoveJ's v=, or
+        Cell.yaml Motion.Speed_Fraction) x the datasheet speeds, a_max the acceleration limits; 1.875 and 5.774 are
+        min-jerk's peak speed and acceleration per unit of travel.
 
     Args:
         (1 - 2) q0, q1 [Vector<float> 1x6]: The start and the end (rad).
         (3) cell [Cell_Configuration_Str(object)]: The motion limits.
+        (4) speed [float]: The fraction of the datasheet joint speeds, or None for Speed_Fraction.
 
     Returns:
         (1) parameter [float]: T (s), before rounding to whole samples.
     """
 
     dq = np.abs(np.asarray(q1) - np.asarray(q0))
-    v_max = cell.Speed_Fraction * np.array(cell.Datasheet_Speeds)
+    v_max = (cell.Speed_Fraction if speed is None else speed) * np.array(cell.Datasheet_Speeds)
     return max(cell.Movej_Min_Duration, float(np.max(1.875 * dq / v_max)), float(np.max(np.sqrt(5.774 * dq / np.array(cell.Acceleration_Limits)))))
 
 
@@ -221,6 +231,109 @@ def File_Hash(path: str) -> str:
         return hashlib.sha256(handle.read()).hexdigest()
 
 
+def Executed_Commands(program: Program_Str) -> tp.List[tp.Tuple[int, str, Command_Str, str]]:
+    """
+    Description:
+        The commands as the cell runs them, each one a trajectory segment: every line of every segment in order, a Run's
+        job lines in its place (named '<Run line> > <job line>'), then the simulation's End_Settle hold as a last step.
+
+    Args:
+        (1) program [Program_Str(object)]: The program.
+
+    Returns:
+        (1) parameter [List<Tuple<int, string, Command_Str, string>>]: (step index, step name, command, its text).
+    """
+
+    out = []
+    for index, segment in enumerate(program.Segments):
+        for command in segment.Commands:
+            if command.Kind == 'Run':
+                out += [(index, segment.Key, line, '%s > %s' % (command.Text, line.Text)) for line in command.Job]
+            else:
+                out.append((index, segment.Key, command, command.Text))
+    settle = program.Simulation.End_Settle
+    if settle > 0:
+        out.append((len(program.Segments), CONST_END_SETTLE, Command_Str(Kind='Wait', Station='Simulation', Duration=settle,
+                                                                         Text='%s(%g)' % (CONST_END_SETTLE, settle)),
+                                                                         '%s(%g)' % (CONST_END_SETTLE, settle)))
+    return out
+
+
+def Step_Names(program: Program_Str) -> tp.List[str]:
+    """
+    Description:
+        The trajectory's steps: the segments' keys, then End_Settle when the simulation holds at the end.
+
+    Args:
+        (1) program [Program_Str(object)]: The program.
+
+    Returns:
+        (1) parameter [List<string>]: The names.
+    """
+
+    return [s.Key for s in program.Segments] + ([CONST_END_SETTLE] if program.Simulation.End_Settle > 0 else [])
+
+
+def Validate_Constants(program: Program_Str, kinematics: Robot_Kinematics_Cls, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str) -> tp.List[str]:
+    """
+    Description:
+        The checks of Constants.yaml against the model (Program_Parser checks everything else): every tool's Flange_Offset
+        against its model site (CONST_TOOL_POSITION, CONST_TOOL_ANGLE), every point's Pose against FK(Joints, Tool)
+        (CONST_POSE_POSITION, CONST_POSE_ANGLE), every derived point (Reference, PCB_Hold) against its target within the
+        stale tolerance (Cell.yaml Clearance.Stale_Position, Stale_Angle), every loader position within the model's axis
+        ranges and every gripper command within the jaws' range. Each problem names Constants.yaml, its line and the constant.
+
+    Args:
+        (1) program [Program_Str(object)]: The program (its constants and simulation data).
+        (2) kinematics [Robot_Kinematics_Cls(object)]: FK on the model.
+        (3) cell [Cell_Configuration_Str(object)]: The base pose and the tolerances.
+        (4) pcb_meta [PCB_Meta_Str(object)]: The PCB poses (the PCB-hold targets).
+
+    Returns:
+        (1) parameter [List<string>]: The problems; empty when every constant matches the model.
+    """
+
+    c, s, model = program.Constants, program.Simulation, kinematics.Model
+    file, problems = os.path.relpath(c.Path, CONST_ROOT) if os.path.isabs(c.Path) else c.Path, []
+    flange = kinematics.Site_Flange
+    for name, tool in c.Tools.items():
+        p_f, R_f = kinematics.Site_Pose(np.zeros(6), flange)
+        p_t, R_t = kinematics.Site_Pose(np.zeros(6), model.site(s.Tool_Site[name]).id)
+        position = float(np.linalg.norm(R_f.T @ (p_t - p_f) - tool.Flange_Offset[:3]))
+        angle = Rotation_Angle(RPY_To_Matrix(tool.Flange_Offset[3:]), R_f.T @ R_t)
+        if position > CONST_TOOL_POSITION or angle > CONST_TOOL_ANGLE:
+            problems.append('%s:%d: Tools.%s.Flange_Offset: %.4f mm / %.4f deg from the model site %s' % (file, tool.Line, name, 1000 * position,
+                                                                                                    math.degrees(angle), s.Tool_Site[name]))
+    for name, point in c.Points.items():
+        position, rotation = Base_Pose(*Point_Pose(point, kinematics, s), cell)
+        error, angle = float(np.linalg.norm(position - point.Pose[:3])), Rotation_Angle(RPY_To_Matrix(point.Pose[3:]), rotation)
+        if error > CONST_POSE_POSITION or angle > CONST_POSE_ANGLE:
+            problems.append('%s:%d: Points.%s.Pose: %.4f mm / %.4f deg from FK(Joints, %s) (at most %.2f mm / %.3f deg); print the corrected '
+                            'Pose with Example/Keypoints/resolve_keypoint.py --name %s' % (file, point.Line, name, 1000 * error, math.degrees(angle),
+                                                                                         point.Tool, 1000 * CONST_POSE_POSITION,
+                                                                                         math.degrees(CONST_POSE_ANGLE), name))
+        target = Target_Pose(name, c, s, pcb_meta, kinematics)
+        if target is not None:
+            p, R = Point_Pose(point, kinematics, s)
+            stale, angle = float(np.linalg.norm(p - target[0])), Rotation_Angle(target[1], R)
+            if stale > cell.Stale_Position or angle > cell.Stale_Angle:
+                problems.append('%s:%d: Points.%s.%s: the point is %.3f mm / %.3f deg from its target (at most %.3f mm / %.3f deg)'
+                                % (file, point.Line, name, 'Reference' if point.Reference else 'PCB_Hold (Simulation.yaml)', 1000 * stale,
+                                   math.degrees(angle), 1000 * cell.Stale_Position, math.degrees(cell.Stale_Angle)))
+    for name, position in c.Loader.items():
+        for axis, joint in (('Y', 'y_axis'), ('Z', 'z_axis')):
+            low, high = model.jnt_range[model.joint(joint).id]
+            if not low <= getattr(position, axis) <= high:
+                problems.append('%s:%d: Loader_Positions.%s.%s: %g m is outside the model\'s %s range [%g, %g] m'
+                                % (file, position.Line, name, axis, getattr(position, axis), joint, low, high))
+    low, high = model.jnt_range[model.joint('jaw_L').id]
+    for name, command in c.Gripper.items():
+        if not low <= command.Jaw <= high:
+            problems.append('%s:%d: Gripper_Commands.%s.Jaw: %g m is outside the jaws\' range [%g, %g] m' % (file, command.Line, name,
+                                                                                                             command.Jaw, low, high))
+    return problems
+
+
 class _Builder_Cls(object):
     """
     Description:
@@ -229,46 +342,53 @@ class _Builder_Cls(object):
 
     Initialization of the Class:
         Args:
-            (1) program [Program_Str(object)]: The program.
-            (2) keypoints [Keypoints_Str(object)]: Its keypoints.
-            (3) cell [Cell_Configuration_Str(object)]: The motion limits and tolerances.
-            (4) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
-            (5) kinematics [Robot_Kinematics_Cls(object)]: FK and IK.
-            (6) fork_path [string]: The recorded fork path file.
+            (1) program [Program_Str(object)]: The program (its constants and simulation data).
+            (2) cell [Cell_Configuration_Str(object)]: The motion limits and tolerances.
+            (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+            (4) kinematics [Robot_Kinematics_Cls(object)]: FK and IK.
 
         Example:
             Initialization:
                 # Initialization of the class.
-                Cls = _Builder_Cls(program, keypoints, cell, pcb_meta, kinematics, CONST_FORK_PATH)
+                Cls = _Builder_Cls(program, cell, pcb_meta, kinematics)
 
             Features:
                 # One command after the other, then the trajectory.
-                Cls.Command(step_index, step, command)
+                Cls.Movej(command, step_index, segment)
     """
 
-    def __init__(self, program: Program_Str, keypoints: Keypoints_Str, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str,
-                 kinematics: Robot_Kinematics_Cls, fork_path: str) -> None:
+    def __init__(self, program: Program_Str, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str, kinematics: Robot_Kinematics_Cls) -> None:
         # << PRIVATE >> #
-        self.__keypoints, self.__cell, self.__meta, self.__kinematics = keypoints, cell, pcb_meta, kinematics
+        self.__constants, self.__simulation = program.Constants, program.Simulation
+        self.__cell, self.__meta, self.__kinematics = cell, pcb_meta, kinematics
+        constants, simulation = program.Constants, program.Simulation
         model = kinematics.Model
         self.__lid_open = float(model.jnt_range[model.joint('lid_hinge').id][0])
-        recorded = np.load(fork_path)
-        self.__fork_log, phases = recorded['log'], np.array([str(p) for p in recorded['phase']])
-        close_rows, open_rows = np.where(np.char.startswith(phases, 'CLOSE'))[0], np.where(np.char.startswith(phases, 'OPEN'))[0]
-        join = next(i for i in open_rows if self.__fork_log[i, 3] <= cell.Closed_Handle - cell.Open_Join_Margin)
-        self.__path_rows = {'Fork_Close': np.arange(1, close_rows[-1] + 1), 'Fork_Open': open_rows[open_rows > join]}
+        # The recorded paths: CLOSE the rows from 1 to the last CLOSE row, OPEN the OPEN rows after the join (SPEC §4.9).
+        self.__path_logs, self.__path_rows = {}, {}
+        for name, path in constants.Paths.items():
+            recorded = np.load(path.File)
+            log, phases = recorded['log'], np.array([str(p) for p in recorded['phase']])
+            rows = np.where(np.char.startswith(phases, path.Phase))[0]
+            if path.Phase == 'CLOSE':
+                rows = np.arange(1, rows[-1] + 1)
+            else:
+                join = next(i for i in rows if log[i, 3] <= cell.Closed_Handle - cell.Open_Join_Margin)
+                rows = rows[rows > join]
+            self.__path_logs[name], self.__path_rows[name] = log, rows
         self.__v_max = cell.Speed_Fraction * np.array(cell.Datasheet_Speeds)
         self.__a_max = np.array(cell.Acceleration_Limits)
-        start = keypoints.Robot[program.Start_Robot]
+        # The jaws' stop on the PCB (Simulation.yaml Jaw_Actual).
+        self.__grip = max(simulation.Jaw_Actual.values())
         # The current state.
-        self.q = np.array(start.Joints)
-        self.y, self.z = keypoints.Loader[program.Start_Loader].Y, keypoints.Loader[program.Start_Loader].Z
-        self.grip_command = keypoints.Gripper[program.Start_Gripper]
-        self.vacuum = program.Start_Vacuum
-        self.location = program.Start_PCB
+        self.q = np.array(constants.Points[simulation.Start_Robot].Joints)
+        self.y, self.z = constants.Loader[simulation.Start_Loader].Y, constants.Loader[simulation.Start_Loader].Z
+        self.grip_command = constants.Gripper[simulation.Start_Gripper].Jaw
+        self.vacuum = simulation.Start_Vacuum
+        self.location = simulation.Start_PCB
         # The bellows' compression when the vacuum went on, and the TCP's position then (Held_Pose).
         self.press, self.press_tcp = 0.0, np.zeros(3)
-        self.lid, self.handle = (self.__lid_open, 0.0) if program.Start_MG06 == 'Open' else (cell.Closed_Lid, cell.Closed_Handle)
+        self.lid, self.handle = (self.__lid_open, 0.0) if simulation.Start_MG06 == 'Open' else (cell.Closed_Lid, cell.Closed_Handle)
         self.pcb = self.__Rest_Pose(self.location)
         # The samples: sample 0 is the start state.
         self.samples: tp.Dict[str, tp.List[tp.Any]] = {k: [] for k in ('q', 'qd', 'y', 'z', 'grip', 'vac', 'step', 'seg', 'loc', 'pcb', 'lid',
@@ -314,7 +434,7 @@ class _Builder_Cls(object):
             (1) parameter [Vector<float> 1x3]: The position (m).
         """
 
-        home = self.__keypoints.Loader['home']
+        home = self.__constants.Loader[CONST_LOADER_HOME]
         return np.array(self.__meta.Hold_Pos) + [0.0, self.y - home.Y, self.z - home.Z]
 
     def Held_Pose(self, q: np.ndarray) -> np.ndarray:
@@ -367,7 +487,7 @@ class _Builder_Cls(object):
         elif self.location == 'jaws':
             self.pcb = np.r_[self.Jaw_Hold(), self.__meta.Quat]
         between = self.location == 'jaws' or (self.location == 'cups' and self.Between_Jaws(self.pcb))
-        jaw = max(self.grip_command, self.__keypoints.Gripper['grip']) if between else self.grip_command
+        jaw = max(self.grip_command, self.__grip) if between else self.grip_command
         for key, value in (('q', q), ('qd', qd), ('y', self.y), ('z', self.z), ('grip', self.grip_command), ('vac', int(self.vacuum)), ('step', step),
                            ('seg', segment), ('loc', CONST_PCB_LOCATIONS.index(self.location)), ('pcb', self.pcb), ('lid', self.lid),
                            ('handle', self.handle), ('jaw', jaw)):
@@ -377,18 +497,18 @@ class _Builder_Cls(object):
     def Fixture(self, target: str) -> tp.Tuple[float, float, float, float]:
         """
         Description:
-            MG06 over a motion: from its state at the motion's start to the Fixture of the motion's target keypoint (Open,
+            MG06 over a motion: from its state at the motion's start to the Fixture of the motion's target point (Open,
             Closed or its recorded row), along the motion's time law - the handle settles as the fork lets it go
             (FEATURES.md F8.5).
 
         Args:
-            (1) target [string]: The keypoint.
+            (1) target [string]: The point.
 
         Returns:
             (1 - 4) parameter [float]: The lid and handle at the start and at the end (rad).
         """
 
-        lid, handle, _ = Fixture_State(self.__keypoints.Robot[target], self.__cell, self.__kinematics.Model)
+        lid, handle, _ = Fixture_State(self.__simulation.Points[target], self.__cell, self.__kinematics.Model)
         return self.lid, self.handle, lid, handle
 
     def Move_Fixture(self, state: tp.Tuple[float, float, float, float], s: float) -> None:
@@ -416,20 +536,20 @@ class _Builder_Cls(object):
 
         raise Program_Error_Cls('Step %s, %s: %s' % (step, command, text))
 
-    def Movej(self, target: str, step: int, segment: int) -> None:
+    def Movej(self, command: Command_Str, step: int, segment: int) -> None:
         """
         Description:
-            A min-jerk joint move to a keypoint's stored Joints (Movej_Duration, rounded to whole samples), the speeds
-            analytic.
+            A min-jerk joint move to a point's Joints (Movej_Duration at the command's speed fraction, rounded to whole
+            samples), the speeds analytic.
 
         Args:
-            (1) target [string]: The keypoint.
+            (1) command [Command_Str(object)]: The command.
             (2 - 3) step, segment [int]: The indices.
         """
 
-        q0, q1 = self.q.copy(), np.array(self.__keypoints.Robot[target].Joints)
-        n = max(1, int(round(Movej_Duration(q0, q1, self.__cell) / CONST_DT)))
-        fixture = self.Fixture(target)
+        q0, q1 = self.q.copy(), np.array(command.Joints)
+        n = max(1, int(round(Movej_Duration(q0, q1, self.__cell, command.Speed) / CONST_DT)))
+        fixture = self.Fixture(command.Target)
         first = len(self.samples['q'])
         for i in range(1, n + 1):
             s = i / n
@@ -455,10 +575,10 @@ class _Builder_Cls(object):
             (2) parameter [float]: The line's length (m).
         """
 
-        keypoint = self.__keypoints.Robot[target]
-        site = Site_Id(self.__kinematics.Model, keypoint.Check_Frame)
+        point = self.__constants.Points[target]
+        site = Site_Id(self.__kinematics.Model, self.__simulation, point.Tool)
         p0, R0 = self.__kinematics.Site_Pose(self.q, site)
-        p1, R1 = self.__kinematics.Site_Pose(np.array(keypoint.Joints), site)
+        p1, R1 = self.__kinematics.Site_Pose(np.array(point.Joints), site)
         q0, q1 = np.zeros(4), np.zeros(4)
         mujoco.mju_mat2Quat(q0, R0.flatten())
         mujoco.mju_mat2Quat(q1, R1.flatten())
@@ -493,9 +613,9 @@ class _Builder_Cls(object):
             (1) parameter [Vector<float> 1x6]: The stored joints (rad).
         """
 
-        keypoint = self.__keypoints.Robot[target]
-        stored = np.array(keypoint.Joints)
-        site = Site_Id(self.__kinematics.Model, keypoint.Check_Frame)
+        point = self.__constants.Points[target]
+        stored = np.array(point.Joints)
+        site = Site_Id(self.__kinematics.Model, self.__simulation, point.Tool)
         p, R = self.__kinematics.Site_Pose(last, site)
         p1, R1 = self.__kinematics.Site_Pose(stored, site)
         position = float(np.linalg.norm(p - p1))
@@ -506,18 +626,18 @@ class _Builder_Cls(object):
                                   'switch families (SPEC §4.7); use Movej.' % (math.degrees(last[CONST_WRIST_2]), target,
                                                                               math.degrees(stored[CONST_WRIST_2])))
         if position > self.__cell.Stale_Position or angle > self.__cell.Stale_Angle or jump > CONST_SNAP_JOINTS:
-            self.Fail(step, text, 'the motion ends %.3f mm / %.4f deg / %.5f rad from the stored joints of %s (stale keypoint?); check it with '
+            self.Fail(step, text, 'the motion ends %.3f mm / %.4f deg / %.5f rad from the stored joints of %s (stale point?); check it with '
                                   'Example/Keypoints/check_keypoints.py --name %s' % (1000 * position, math.degrees(angle), jump, target, target))
         return stored
 
-    def Movel(self, command: Program_Command_Str, step_name: str, step: int, segment: int) -> None:
+    def Movel(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
         """
         Description:
             A MoveL (Movel_Samples), ending exactly on the target's stored joints (Snap); stretched while a sampled joint
             speed or acceleration (finite differences, from rest to rest) exceeds its limit, each stretch noted.
 
         Args:
-            (1) command [Program_Command_Str(object)]: The command.
+            (1) command [Command_Str(object)]: The command.
             (2) step_name [string]: The step.
             (3 - 4) step, segment [int]: The indices.
         """
@@ -543,7 +663,7 @@ class _Builder_Cls(object):
             self.Move_Fixture(fixture, float(Min_Jerk((i + 1) / len(out))))
             self.Append(q, np.zeros(6), step, segment)
 
-    def Path(self, command: Program_Command_Str, step_name: str, step: int, segment: int) -> None:
+    def Path(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
         """
         Description:
             A recorded fork path (SPEC §4.9): flange IK per recorded row seeded from the previous row, the recorded times
@@ -551,13 +671,13 @@ class _Builder_Cls(object):
             exactly on its end keypoint (Snap). A path that starts moving is noted (a velocity step at the join).
 
         Args:
-            (1) command [Program_Command_Str(object)]: The command.
+            (1) command [Command_Str(object)]: The command.
             (2) step_name [string]: The step.
             (3 - 4) step, segment [int]: The indices.
         """
 
-        rows, (first_keypoint, last_keypoint) = self.__path_rows[command.Target], CONST_PATH_ENDS[command.Target]
-        log, kinematics = self.__fork_log, self.__kinematics
+        rows, first_keypoint, last_keypoint = self.__path_rows[command.Target], command.Path_Start, command.Path_End
+        log, kinematics = self.__path_logs[command.Target], self.__kinematics
         p, R = kinematics.Site_Pose(self.q, kinematics.Site_Flange)
         before = log[rows[0] - 1]
         offset = float(np.linalg.norm(p - before[4:7]))
@@ -599,7 +719,7 @@ class _Builder_Cls(object):
         for _ in range(int(round(duration / CONST_DT))):
             self.Append(self.q, np.zeros(6), step, segment)
 
-    def Loader_Or_Gripper(self, command: Program_Command_Str, step_name: str, step: int, segment: int) -> None:
+    def Loader_Or_Gripper(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:
         """
         Description:
             A loader axis or the gripper command moved min-jerk over its duration from its current value; the robot holds.
@@ -607,17 +727,15 @@ class _Builder_Cls(object):
             opening while the cups hold it releases the jaws only; opening with the PCB in the jaws alone would drop it.
 
         Args:
-            (1) command [Program_Command_Str(object)]: The command.
+            (1) command [Command_Str(object)]: The command.
             (2) step_name [string]: The step.
             (3 - 4) step, segment [int]: The indices.
         """
 
-        keypoints = self.__keypoints
-        if command.Kind == 'Loader':
-            channel = 'y' if command.Axis == 'Y' else 'z'
-            target = getattr(keypoints.Loader[command.Target], command.Axis)
+        if command.Kind in ('MoveY', 'MoveZ'):
+            channel, target = ('y' if command.Axis == 'Y' else 'z'), command.Position
         else:
-            channel, target = 'grip_command', keypoints.Gripper[command.Target]
+            channel, target = 'grip_command', command.Jaw
             closing = target < self.grip_command
             at_place = self.location == 'mg06' and float(np.linalg.norm(np.array(self.__meta.Place_Pos) - self.Jaw_Hold())) <= CONST_PCB_TOLERANCE
             if closing and at_place:
@@ -626,26 +744,27 @@ class _Builder_Cls(object):
                 if float(np.linalg.norm(np.array(self.__meta.Place_Pos) - self.Jaw_Hold())) > CONST_PCB_TOLERANCE:
                     self.Fail(step_name, command.Text, 'opening the jaws away from MG06 with the PCB only in the jaws would drop it.')
                 self.location, self.pcb = 'mg06', self.__Rest_Pose('mg06')
-            self.events.append((len(self.samples['q']) * CONST_DT - CONST_DT, 'gripper_' + command.Target))
+            self.events.append((len(self.samples['q']) * CONST_DT - CONST_DT, 'gripper_' + command.Target[2:].lower()))
         start = getattr(self, channel)
         n = max(1, int(round(command.Duration / CONST_DT)))
         for i in range(1, n + 1):
             setattr(self, channel, target if i == n else start + (target - start) * float(Min_Jerk(i / n)))
             self.Append(self.q, np.zeros(6), step, segment)
 
-    def Vacuum(self, command: Program_Command_Str, step_name: str) -> None:
+    def Vacuum(self, command: Command_Str, step_name: str) -> None:
         """
         Description:
-            The vacuum event and its PCB rules: on, with the cups on the PCB (in a crate or in the jaws), the PCB goes onto
-            the cups with the bellows' compression measured along the tool axis (Held_Pose); off, the PCB clamped in the jaws stays in them, the PCB
+            The vacuum output (SetDO on DO_VACUUM: its actuator) and its PCB rules: on, with the cups on the PCB (in a crate
+            or in the jaws), the PCB goes onto the cups with the bellows' compression measured along the tool axis
+            (Held_Pose); off, the PCB clamped in the jaws stays in them, the PCB
             in a crate lies on its floor; off anywhere else would drop it.
 
         Args:
-            (1) command [Program_Command_Str(object)]: The command.
+            (1) command [Command_Str(object)]: The command.
             (2) step_name [string]: The step.
         """
 
-        on = command.Target == 'On'
+        on = command.Value == 'ON'
         if on and not self.vacuum and self.location in ('input_crate', 'jaws'):
             held = np.r_[PCB_For_TCP(*self.__kinematics.Site_Pose(self.q))]
             if float(np.linalg.norm(held[:3] - self.pcb[:3])) > CONST_PCB_TOLERANCE:
@@ -658,7 +777,7 @@ class _Builder_Cls(object):
             self.Fail(step_name, command.Text, "vacuum on with no PCB under the cups (the PCB is in %s)." % self.location)
         elif not on and self.vacuum and self.location == 'cups':
             crate = Crate_Holding(self.pcb[:3])
-            if self.Between_Jaws(self.pcb) and self.grip_command < self.__keypoints.Gripper['grip']:
+            if self.Between_Jaws(self.pcb) and self.grip_command < self.__grip:
                 self.location, self.pcb = 'jaws', self.__Rest_Pose('jaws')
             elif crate is not None:
                 location = 'input_crate' if crate == 'crate_pick' else 'output_crate'
@@ -670,63 +789,64 @@ class _Builder_Cls(object):
             else:
                 self.Fail(step_name, command.Text, 'vacuum off in free space would drop the PCB.')
         self.vacuum = on
-        self.events.append((len(self.samples['q']) * CONST_DT - CONST_DT, 'vacuum_' + command.Target.lower()))
+        self.events.append((len(self.samples['q']) * CONST_DT - CONST_DT, '%s_%s' % (command.Actuator, command.Value.lower())))
 
 
 
-def Build_Program(program: Program_Str, keypoints: Keypoints_Str, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str,
-                  kinematics: Robot_Kinematics_Cls, meta: tp.Dict[str, tp.Any], fork_path: str = CONST_FORK_PATH
-                  ) -> tp.Tuple[Trajectory_Str, tp.List[Build_Note_Str]]:
+def Build_Program(program: Program_Str, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str, kinematics: Robot_Kinematics_Cls,
+                  meta: tp.Dict[str, tp.Any]) -> tp.Tuple[Trajectory_Str, tp.List[Build_Note_Str]]:
     """
     Description:
-        The trajectory of a program: sample 0 is the start state, then each command's samples in order (a vacuum event
-        takes no time), every motion ending at rest; the joint speeds analytic in MoveJ, central differences elsewhere. A
-        Test requires MG06 settled closed with the PCB inside.
+        The trajectory of a program: its constants first checked against the model (Validate_Constants); sample 0 is the
+        simulation's start state, then each executed command's samples in order (Executed_Commands; a SetDO takes no time,
+        a WaitDI holds its simulated response, a Run its job's lines), every motion ending at rest; the joint speeds analytic
+        in MoveJ, central differences elsewhere. A Test requires MG06 settled closed with the PCB inside.
 
     Args:
-        (1) program [Program_Str(object)]: The program.
-        (2) keypoints [Keypoints_Str(object)]: Its keypoints.
-        (3) cell [Cell_Configuration_Str(object)]: The motion limits, tolerances and the test duration.
-        (4) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
-        (5) kinematics [Robot_Kinematics_Cls(object)]: FK and IK (on the planning model).
-        (6) meta [Dict<string, Any>]: Metadata for the trajectory (the inputs' hashes, the git commit, the platform).
-        (7) fork_path [string]: The recorded fork path file.
+        (1) program [Program_Str(object)]: The program (its constants and simulation data).
+        (2) cell [Cell_Configuration_Str(object)]: The motion limits, tolerances and the test duration.
+        (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+        (4) kinematics [Robot_Kinematics_Cls(object)]: FK and IK (on the planning model).
+        (5) meta [Dict<string, Any>]: Metadata for the trajectory (the inputs' hashes, the git commit, the platform).
 
     Returns:
         (1) parameter [Trajectory_Str(object)]: The trajectory.
         (2) parameter [List<Build_Note_Str>]: The notes (stretches, the recorded path's velocity step).
     """
 
-    b = _Builder_Cls(program, keypoints, cell, pcb_meta, kinematics, fork_path)
-    for step_index, step in enumerate(program.Steps):
-        for command in step.Commands:
-            segment = len(b.segments)
-            first = len(b.samples['q']) if segment else 0
-            if command.Kind == 'Movej':
-                b.Movej(command.Target, step_index, segment)
-            elif command.Kind == 'Movel':
-                b.Movel(command, step.Name, step_index, segment)
-            elif command.Kind == 'Path':
-                b.Path(command, step.Name, step_index, segment)
-            elif command.Kind in ('Loader', 'Gripper'):
-                b.Loader_Or_Gripper(command, step.Name, step_index, segment)
-            elif command.Kind == 'Vacuum':
-                b.Vacuum(command, step.Name)
-            else:
-                if command.Kind == 'Test' and (b.location != 'mg06' or b.lid != cell.Closed_Lid or b.handle != cell.Closed_Handle):
-                    b.Fail(step.Name, command.Text, 'the test needs the PCB in MG06 and MG06 settled closed (PCB in %s, handle %.2f deg).'
-                                                    % (b.location, math.degrees(b.handle)))
-                b.Hold(command.Duration, step_index, segment)
-            b.segments.append((step_index, command.Text, first, len(b.samples['q'])))
+    problems = Validate_Constants(program, kinematics, cell, pcb_meta)
+    if problems:
+        raise Program_Error_Cls('The constants do not match the model (%d problem(s)); correct them:\n  %s' % (len(problems), '\n  '.join(problems)))
+    b = _Builder_Cls(program, cell, pcb_meta, kinematics)
+    executed = Executed_Commands(program)
+    for step_index, step_name, command, text in executed:
+        segment = len(b.segments)
+        first = len(b.samples['q']) if segment else 0
+        if command.Kind == 'MoveJ':
+            b.Movej(command, step_index, segment)
+        elif command.Kind == 'MoveL':
+            b.Movel(command, step_name, step_index, segment)
+        elif command.Kind == 'MovePath':
+            b.Path(command, step_name, step_index, segment)
+        elif command.Kind in ('MoveY', 'MoveZ', 'Gripper'):
+            b.Loader_Or_Gripper(command, step_name, step_index, segment)
+        elif command.Kind == 'SetDO':
+            b.Vacuum(command, step_name)
+        else:
+            if command.Kind == 'Test' and (b.location != 'mg06' or b.lid != cell.Closed_Lid or b.handle != cell.Closed_Handle):
+                b.Fail(step_name, text, 'the test needs the PCB in MG06 and MG06 settled closed (PCB in %s, handle %.2f deg).'
+                                        % (b.location, math.degrees(b.handle)))
+            b.Hold(command.Duration, step_index, segment)
+        b.segments.append((step_index, text, first, len(b.samples['q'])))
     # The joint speeds: central differences, zero where the robot holds (sample 0, every non-motion command) and at the
     # end of every MoveL and Path (they end at rest); analytic in MoveJ.
     q = np.array(b.samples['q'])
     qd = np.gradient(q, CONST_DT, axis=0) if len(q) > 1 else np.zeros_like(q)
     qd[0] = 0.0
-    for (_, text, first, last), command in zip(b.segments, [c for step in program.Steps for c in step.Commands]):
-        if command.Kind in ('Movel', 'Path'):
+    for (_, text, first, last), (_, _, command, _) in zip(b.segments, executed):
+        if command.Kind in ('MoveL', 'MovePath'):
             qd[last - 1] = 0.0
-        elif command.Kind != 'Movej':
+        elif command.Kind != 'MoveJ':
             qd[first:last] = 0.0
     analytic = np.array(b.samples['qd'])
     for first, last in b.analytic:
@@ -738,7 +858,7 @@ def Build_Program(program: Program_Str, keypoints: Keypoints_Str, cell: Cell_Con
                                 Step_Index=np.array(b.samples['step'], np.int32), Segment_Id=np.array(b.samples['seg'], np.int32),
                                 PCB_Location=np.array(b.samples['loc'], np.int8), PCB_Pose=np.array(b.samples['pcb']),
                                 MG06_Lid=np.array(b.samples['lid']), MG06_Handle=np.array(b.samples['handle']), Jaw=np.array(b.samples['jaw']),
-                                Step_Names=[s.Name for s in program.Steps], Segment_Step=np.array([s[0] for s in b.segments], np.int32),
+                                Step_Names=Step_Names(program), Segment_Step=np.array([s[0] for s in b.segments], np.int32),
                                 Segment_Command=[s[1] for s in b.segments], Segment_Start=np.array([s[2] for s in b.segments], np.int32),
                                 Segment_End=np.array([s[3] for s in b.segments], np.int32), Events=[(round(t, 6), e) for t, e in b.events],
                                 Meta=dict(CONST_META, program=program.Name, **meta))
@@ -827,7 +947,7 @@ class Handover_Check_Str:
     """
     Description:
         The no-press check of the handover (owner's B1, SPEC §4.7): the PCB-ledge gap with the jaws at grip over the MoveL into
-        loader_handover (its minimum), at loader_handover, and while the jaws clamp the PCB on the cups (min, max).
+        P_LOADER_PLACE (its minimum), at P_LOADER_PLACE, and while the jaws clamp the PCB on the cups (min, max).
     """
 
     # The gaps.
@@ -855,7 +975,7 @@ class Program_Check_Str:
     # The step checks, in order.
     #   Unit [List<Step_Check_Str>]
     Steps: tp.List[Step_Check_Str] = field(default_factory=list)
-    # The handover's no-press check (None when the program has no MoveL into loader_handover).
+    # The handover's no-press check (None when the program has no MoveL into P_LOADER_PLACE).
     #   Unit [Handover_Check_Str(object)]
     Handover: tp.Optional[Handover_Check_Str] = None
     # The keypoint check of every keypoint the program uses.
@@ -923,8 +1043,7 @@ def _Peaks(trajectory: Trajectory_Str, first: int, last: int, cell: Cell_Configu
 
 
 def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp.List[Build_Note_Str], kinematics: Robot_Kinematics_Cls,
-                     collision: Robot_Collision_Cls, keypoints: Keypoints_Str, cell: Cell_Configuration_Str,
-                     pcb_meta: PCB_Meta_Str) -> Program_Check_Str:
+                     collision: Robot_Collision_Cls, cell: Cell_Configuration_Str, pcb_meta: PCB_Meta_Str) -> Program_Check_Str:
     """
     Description:
         The check of a program's trajectory (FEATURES.md F8), on the planning model (the table included):
@@ -937,7 +1056,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         - the robot joints within the model's limits; the peak joint speed and acceleration of every MoveJ (allowing its
           rounding to whole samples) and MoveL within the Cell.yaml limits; the recorded paths' peaks reported, not limited;
         - the handover's no-press rule (B1): the PCB-ledge gap within Handover.Ledge_Gap +- Ledge_Tolerance at
-          loader_handover and while the jaws clamp the PCB on the cups, and no smaller along the MoveL into it;
+          P_LOADER_PLACE and while the jaws clamp the PCB on the cups, and no smaller along the MoveL into it;
         - the keypoint check of every keypoint the program uses (stale, Check, limits, clearance in its context).
 
     Args:
@@ -946,9 +1065,8 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         (3) notes [List<Build_Note_Str>]: The build's notes.
         (4) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
         (5) collision [Robot_Collision_Cls(object)]: On the same model and data.
-        (6) keypoints [Keypoints_Str(object)]: The keypoints.
-        (7) cell [Cell_Configuration_Str(object)]: The clearance, the depths, the limits, the handover gap.
-        (8) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+        (6) cell [Cell_Configuration_Str(object)]: The clearance, the depths, the limits, the handover gap.
+        (7) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
 
     Returns:
         (1) parameter [Program_Check_Str(object)]: The result.
@@ -960,13 +1078,16 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
     not_workstation = {i for i in range(model.nbody) if model.body(i).name != 'workstation'}
     cup_block = str(Cup_Block_Geom(model))
     lower, upper = kinematics.Limits
-    commands = [c for step in program.Steps for c in step.Commands]
+    executed = Executed_Commands(program)
+    commands = [command for _, _, command, _ in executed]
+    texts = [text for _, _, _, text in executed]
+    allow = [s.Allow_Contact for s in program.Segments] + [[]]
     ends = set(int(e) - 1 for e in tr.Segment_End if e > 0)
     result = Program_Check_Str(Program=program.Name, Cycle_Time=float(tr.T[-1]), Notes=list(notes))
-    for step_index, step in enumerate(program.Steps):
+    for step_index, name in enumerate(Step_Names(program)):
         samples = np.flatnonzero(tr.Step_Index == step_index)
-        check = Step_Check_Str(Name=step.Name, Start=float(tr.T[samples[0]]), Duration=float(len(samples) * CONST_DT),
-                               Allowed={g: None for g in step.Allow_Contact})
+        check = Step_Check_Str(Name=name, Start=float(tr.T[samples[0]]), Duration=float(len(samples) * CONST_DT),
+                               Allowed={g: None for g in allow[step_index]})
         result.Steps.append(check)
     # The motion bound: the robot's reach from its first joint (with the carried PCB), the scene's moving parts.
     last = None
@@ -1006,7 +1127,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
             elif check.Closest is None or distance < check.Closest.Distance:
                 check.Closest = found
         result.Checked += 1
-    for step_index, (step, check) in enumerate(zip(program.Steps, result.Steps)):
+    for step_index, check in enumerate(result.Steps):
         if check.Closest is not None and check.Closest.Distance < cell.Clearance:
             c = check.Closest
             why = '' if not c.Group else ' (group %s not allowed in this step)' % c.Group
@@ -1020,24 +1141,26 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                                                                                                 found.Time, 1000 * cell.Allowed_Depth[group]))
         for segment, command in enumerate(commands):
             first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
-            if tr.Segment_Step[segment] != step_index or command.Kind not in ('Movej', 'Movel', 'Path') or end <= first:
+            if tr.Segment_Step[segment] != step_index or command.Kind not in ('MoveJ', 'MoveL', 'MovePath') or end <= first:
                 continue
             speed, acceleration = _Peaks(tr, max(first, 1), end, cell)
-            if command.Kind == 'Path':
+            if command.Kind == 'MovePath':
                 check.Path_Speed, check.Path_Acceleration = max(check.Path_Speed, speed), max(check.Path_Acceleration, acceleration)
                 continue
             check.Peak_Speed, check.Peak_Acceleration = max(check.Peak_Speed, speed), max(check.Peak_Acceleration, acceleration)
-            # A MoveJ's rule rounds its duration to whole samples: up to half a sample shorter, so up to this much faster.
-            scale = 1.0 + 0.5 / (end - max(first, 1)) if command.Kind == 'Movej' else 1.0
-            if speed > scale * (1 + CONST_DIFFERENCE_TOLERANCE) or acceleration > scale**2 * (1 + CONST_DIFFERENCE_TOLERANCE):
+            # A MoveJ runs at its v= (of the datasheet speeds; the limits are at Speed_Fraction) and its rule rounds its duration
+            # to whole samples: up to half a sample shorter, so up to this much faster.
+            rounding = 1.0 + 0.5 / (end - max(first, 1)) if command.Kind == 'MoveJ' else 1.0
+            fraction = command.Speed / cell.Speed_Fraction if command.Kind == 'MoveJ' else 1.0
+            if speed > fraction * rounding * (1 + CONST_DIFFERENCE_TOLERANCE) or acceleration > rounding**2 * (1 + CONST_DIFFERENCE_TOLERANCE):
                 check.Failures.append('%s: peak joint speed %.3f / acceleration %.3f of the limits (allowed %.3f / %.3f)'
-                                      % (command.Text, speed, acceleration, scale, scale**2))
+                                      % (texts[segment], speed, acceleration, fraction * rounding, rounding**2))
     # B1: the handover's no-press rule.
     for segment, command in enumerate(commands):
-        if command.Kind != 'Movel' or command.Target != CONST_HANDOVER_KEYPOINT:
+        if command.Kind != 'MoveL' or command.Target != CONST_HANDOVER_KEYPOINT:
             continue
         first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
-        grip = keypoints.Gripper['grip']
+        grip = max(program.Simulation.Jaw_Actual.values())
         line = []
         for i in range(first, end):
             Pose_Sample(kinematics, tr, i)
@@ -1069,11 +1192,12 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         result.Handover = handover
     used = []
     for command in commands:
-        names = [command.Target] if command.Kind in ('Movej', 'Movel') else []
-        names += list(CONST_PATH_ENDS[command.Target]) if command.Kind == 'Path' else []
+        names = [command.Target] if command.Kind in ('MoveJ', 'MoveL') else []
+        names += [command.Path_Start, command.Path_End] if command.Kind == 'MovePath' else []
         used += [n for n in names if n not in used]
-    used = [program.Start_Robot] + [n for n in used if n != program.Start_Robot]
-    result.Keypoints = [Check_Keypoint(name, kinematics, collision, keypoints, cell, pcb_meta) for name in used]
+    start = program.Simulation.Start_Robot
+    used = [start] + [n for n in used if n != start]
+    result.Keypoints = [Check_Keypoint(name, kinematics, collision, program.Constants, program.Simulation, cell, pcb_meta) for name in used]
     for check in result.Steps:
         check.Verdict = 'FAIL' if check.Failures else 'PASS'
     failed = any(c.Failures for c in result.Steps) or (result.Handover is not None and result.Handover.Failures) \

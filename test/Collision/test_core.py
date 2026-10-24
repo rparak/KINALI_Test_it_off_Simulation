@@ -38,7 +38,7 @@ Description:
     Configurations measured 2026-10-24: home is clear of everything within the 3 mm planning clearance;
     home with the shoulder lifted to 1.8 rad drives the upper arm about 21.7 mm into the MG06 base plate.
 """
-# The home keypoint (SPEC §4.8).
+# The home point P_HOME (SPEC §4.8).
 #   Unit [Vector<float> 1x6] (rad)
 CONST_HOME = [0.7896, 0.6910, 1.8333, -0.4286, 1.5708, 0.0042]
 # Home with the shoulder lift at 1.8 rad.
@@ -95,10 +95,10 @@ def test_a_colliding_configuration_is_reported_with_its_pair(planning):
     assert distance < 0 and pair is not None
 
 
-def test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated(cell_configuration, keypoints):
+def test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated(cell_configuration, constants, simulation):
     """
     Description:
-        Posed at output_place, the carried PCB's board is 1.02 mm above the crate floor. Whether MuJoCo generates a
+        Posed at P_OUTPUT_PLACE, the carried PCB's board is 1.02 mm above the crate floor. Whether MuJoCo generates a
         contact for it (6 mm margin on the PCB) depends on unrelated geometry: none in the cell with the margin, 16 once
         one more geom - here a box 5 m away - sits on the workstation body (measured 2026-10-24: the workstation body's
         mid-phase, not the box-box collider). Close_Pairs measures the pair exactly in both models (design-decisions).
@@ -124,7 +124,7 @@ def test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated(ce
     for extra_geom in (False, True):
         model = Model(extra_geom)
         collision = Robot_Collision_Cls(model)
-        Pose_Cell(Robot_Kinematics_Cls(model, collision.Data), keypoints, cell_configuration, Read_PCB_Meta(), 'output_place')
+        Pose_Cell(Robot_Kinematics_Cls(model, collision.Data), constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_OUTPUT_PLACE')
         d, pcb = collision.Data, model.body('pcb').id
         generated.append(len([c for c in d.contact[:d.ncon] if pcb in (model.geom_bodyid[c.geom1], model.geom_bodyid[c.geom2])
                               and any((model.geom(g).name or '').startswith('crate_') for g in (c.geom1, c.geom2))]))
@@ -158,11 +158,11 @@ def _Brute_Close_Pairs(model, data, bodies, cut, exclude=()):
     return sorted(out)
 
 
-def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configuration, keypoints, root):
+def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configuration, constants, simulation, root):
     """
     Description:
         B2: Close_Pairs (vectorised broad phase) returns exactly the brute-force pairs - the same pairs, the same
-        distances, so the same minimum - for the robot and for the carried PCB, at every keypoint posed in its context
+        distances, so the same minimum - for the robot and for the carried PCB, at every point posed in its scene
         and at 500 random samples of Data/Reference/cell_plan.npz (seed 20261024, the PCB held by the cups), with the
         3 mm clearance and a 50 mm cut.
     """
@@ -185,8 +185,8 @@ def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configurati
                 assert fast == _Brute_Close_Pairs(model, data, bodies, cut, exclude)
         return True
 
-    for name in keypoints.Robot:
-        Pose_Cell(kinematics, keypoints, cell_configuration, meta, name)
+    for name in constants.Points:
+        Pose_Cell(kinematics, constants, simulation, cell_configuration, meta, name)
         assert Same(), name
     q = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))['q']
     for i in np.random.default_rng(20261024).choice(len(q), 500, replace=False):
@@ -248,11 +248,11 @@ def test_the_physics_model_has_no_table_collision(cell_model):
     assert not any((cell_model.geom(g).name or '').startswith('table_') for g in range(cell_model.ngeom))
 
 
-def test_the_table_is_close_only_to_a_pcb_on_a_crate_floor(cell_configuration, keypoints):
+def test_the_table_is_close_only_to_a_pcb_on_a_crate_floor(cell_configuration, constants, simulation):
     """
     Description:
-        Measured 2026-10-24 (FEATURES.md F8): the carried PCB at output_place is 3.02 mm above the table, and a PCB on a
-        crate floor (input_pcb_press, PCB in the input crate) 2.00 mm - the crate floor's thickness.
+        Measured 2026-10-24 (FEATURES.md F8): the carried PCB at P_OUTPUT_PLACE is 3.02 mm above the table, and a PCB on a
+        crate floor (P_INPUT_PICK, PCB in the input crate) 2.00 mm - the crate floor's thickness.
     """
 
     from Configuration.Core import Read_PCB_Meta
@@ -261,7 +261,7 @@ def test_the_table_is_close_only_to_a_pcb_on_a_crate_floor(cell_configuration, k
     collision = Robot_Collision_Cls(model)
     kinematics = Robot_Kinematics_Cls(model, collision.Data)
     pcb = {model.body('pcb').id}
-    for name, expected in (('output_place', 0.00302), ('input_pcb_press', 0.0020)):
-        Pose_Cell(kinematics, keypoints, cell_configuration, Read_PCB_Meta(), name)
+    for name, expected in (('P_OUTPUT_PLACE', 0.00302), ('P_INPUT_PICK', 0.0020)):
+        Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), name)
         table = [p for p in collision.Close_Pairs(pcb, 0.01, collision.Data, exclude=collision.Robot_Bodies) if p[4].startswith('table_')]
         assert min(p[0] for p in table) == pytest.approx(expected, abs=0.00002), name

@@ -1,0 +1,267 @@
+## =========================================================================== ##
+#   Description:
+#     The constants of the Test-it-off cell program: every named value the cell controllers use - the
+#     robot's tools and points, the loader positions, the gripper commands, the recorded paths, the I/O
+#     signals - declared once (SPEC §8). Configuration/Program.yaml uses them by name;
+#     Configuration/Simulation.yaml holds what only the simulation needs. Read only by
+#     src/Configuration/Program_Parser.py (Load_Constants); written by hand. A corrected point comes from
+#     Example/Keypoints/resolve_keypoint.py, which prints its Joints and Pose lines; nothing writes this file.
+#
+#   REQUIRED: every field is required (Reference and Offset are null on a point that is not derived from
+#     another); a missing or invalid field fails the load, naming it.
+#   Names: UPPERCASE with the prefix of their section: T_ tool, P_ robot point, L_ loader position,
+#     G_ gripper command, PATH_ recorded path, DO_ / DI_ digital output / input. Each has a one-line
+#     Description. Every constant declared here is used by Program.yaml or Simulation.yaml.
+#   Point roles (the name's last word): ABOVE the retreat height above a place, APPROACH 15 mm before
+#     contact, PICK the cups pressed onto the PCB (vacuum on), PLACE the PCB set down (no press), EXIT out of
+#     the jaws, CLEAR the PCB clear of the crate walls, WAIT where the robot waits during the test; VIA a
+#     free-space via; the MG06 fork operations FORK_START (the recorded path's start and end), CLOSE_END
+#     (the closing path's end), BAR_CENTRE (the bar centred in the fork slot), SLOT_EXIT (out of the bar
+#     along the slot), OPEN_JOIN (where the opening path is joined).
+#
+#   Units: lengths [m], angles [deg], jaw [m per jaw].
+#   Frames:
+#     Joints   the six robot joints in the model's order and directions - shoulder_pan, shoulder_lift,
+#              elbow, wrist_1, wrist_2, wrist_3 (their agreement with the AUBO controller's convention is not
+#              verified, KNOWN_ISSUES.md). Joints are authoritative: they fix the pose and the IK family;
+#              playback reads them only.
+#     Pose     the point's tool frame in the ROBOT BASE frame (Configuration/Cell.yaml Robot.Base_Position,
+#              Base_Yaw): [x, y, z, R, P, Y], position [m], orientation [deg] as fixed-axis roll, pitch,
+#              yaw - R = Rz(Y) Ry(P) Rx(R) (to verify against the AUBO controller, KNOWN_ISSUES.md). A check
+#              value: FK(Joints, Tool) must match it within 1e-5 m and 1e-3 deg.
+#     Reference: <P_ constant> | null   the point this one is derived from
+#     Offset: [dx, dy, dz] | null       displacement from Reference, in the Reference point's tool frame [m]
+#              (T_SUCTION: +Z from the flange towards the cups); the point's FK must equal Reference's pose moved
+#              by it within Cell.yaml Clearance.Stale_Position and Stale_Angle (0.05 mm, 0.01 deg).
+#     Loader   Y towards MG06, Z up, the model's axis zeros (SPEC §4.10).
+## =========================================================================== ##
+
+# The tools on the flange: the tool frame's pose in the flange frame [x, y, z (m), R, P, Y (deg)].
+Tools:
+  T_SUCTION:
+    Description: "The VGC10's cup face, 260.6 mm from the flange along its Z; +Z towards the cups (SPEC §4.3)."
+    Flange_Offset: [0.0, 0.0, 0.2606, 0.0, 0.0, 0.0]
+  T_FLANGE:
+    Description: "The robot flange itself: the recorded fork path and the fork points are taught on it."
+    Flange_Offset: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+# The robot points, in the order of the cycle. Joints [deg] from the reference plan at full precision
+# (SPEC §4.8); P_INPUT_CLEAR is the default program's auxiliary point (FEATURES.md F8.5).
+Points:
+  P_HOME:
+    Description: "Start and end of the cycle, tool down."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [45.242793, 39.593430, 105.038309, -24.555084, 89.999924, 0.242831]
+    Pose: [0.216200182, 0.045479912, 0.237993034, 179.999962678, 0.000075843, 134.999962000]
+  P_INPUT_ABOVE:
+    Description: "120 mm above the PCB in the input crate."
+    Tool: T_SUCTION
+    Reference: P_INPUT_PICK
+    Offset: [0.0, 0.0, -0.1215]
+    Joints: [26.638997, -7.651760, 114.718665, 32.370425, 90.000000, -18.361003]
+    Pose: [0.478569866, 0.104128526, -0.029599949, -180.000000000, 0.000000000, 135.000000000]
+  P_INPUT_APPROACH:
+    Description: "15 mm above the PCB, the start of the slow approach."
+    Tool: T_SUCTION
+    Reference: P_INPUT_PICK
+    Offset: [0.0, 0.0, -0.0165]
+    Joints: [26.638999, -18.681976, 121.413334, 50.095310, 90.000000, -18.361001]
+    Pose: [0.478569874, 0.104128548, -0.134591429, -180.000000000, 0.000000000, 135.000000000]
+  P_INPUT_PICK:
+    Description: "Cups pressed 1.5 mm onto the PCB, then vacuum on (SPEC §4.7)."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [26.638999, -20.811883, 122.063611, 52.875494, 90.000000, -18.361001]
+    Pose: [0.478569871, 0.104128547, -0.151075703, 180.000000000, 0.000000000, 135.000000000]
+  P_INPUT_CLEAR:
+    Description: "170 mm above the PCB's place in the input crate: the carried board is clear of the crate walls."
+    Tool: T_SUCTION
+    Reference: P_INPUT_PICK
+    Offset: [0.0, 0.0, -0.1715]
+    Joints: [26.639005, -4.054115, 110.110691, 24.164834, 89.999999, -18.360995]
+    Pose: [0.478569681, 0.104128500, 0.020398751, 179.999973740, 0.000009769, 135.000000000]
+  P_VIA_INPUT_LOADER:
+    Description: "Free-space via between the input crate and the loader."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [2.661983, 3.238736, 83.863972, -11.182552, 85.909206, -42.208688]
+    Pose: [0.445620636, -0.126240418, 0.233779743, -175.911046943, 1.811953783, 134.999928353]
+  P_LOADER_ABOVE:
+    Description: "160 mm along the plate normal above the hold pose in the jaws."
+    Tool: T_SUCTION
+    Reference: P_LOADER_PLACE
+    Offset: [0.0, 0.0, -0.1600]
+    Joints: [-21.315111, 10.864292, 102.705812, -1.774282, 81.818434, -66.056436]
+    Pose: [0.290676286, -0.298017549, 0.153784869, -171.060031328, 0.000065844, 135.000014831]
+  P_LOADER_APPROACH:
+    Description: "15 mm along the plate normal above the hold pose."
+    Tool: T_SUCTION
+    Reference: P_LOADER_PLACE
+    Offset: [0.0, 0.0, -0.0150]
+    Joints: [-24.302450, 6.056345, 121.429453, 22.190782, 81.641270, -69.069848]
+    Pose: [0.274744960, -0.313949717, 0.010557703, -171.059999833, -0.000000610, 135.000000585]
+  P_LOADER_PLACE:
+    Description: "PCB at the hold pose, no press: 0.3 mm above the finger ledges (SPEC §4.7)."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [-24.615662, 4.968975, 123.008998, 24.903697, 81.624008, -69.385948]
+    Pose: [0.273097899, -0.315596785, -0.004249242, -171.060000215, 0.000000512, 134.999999856]
+  P_LOADER_PICK:
+    Description: "Cups pressed 1.5 mm onto the PCB held in the jaws, then vacuum on."
+    Tool: T_SUCTION
+    Reference: P_LOADER_PLACE
+    Offset: [0.0, 0.0, 0.0015]
+    Joints: [-24.646931, 4.853708, 123.162497, 25.177060, 81.622298, -69.417507]
+    Pose: [0.272933678, -0.315760998, -0.005725531, -171.059999567, 0.000000094, 134.999999954]
+  P_LOADER_EXIT:
+    Description: "30 mm along the plate normal out of the jaws."
+    Tool: T_SUCTION
+    Reference: P_LOADER_PLACE
+    Offset: [0.0, 0.0, -0.0300]
+    Joints: [-23.990359, 7.020419, 119.780831, 19.532351, 81.658720, -68.754906]
+    Pose: [0.276390180, -0.312304502, 0.025348094, -171.060000426, 0.000000143, 134.999999938]
+  P_VIA_HOME_MG06:
+    Description: "Free-space switch between the wrist-up and wrist-down families (SPEC §4.7)."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-0.788522, 11.575078, 44.717233, -97.364679, -0.940915, 28.627733]
+    Pose: [0.199697121, -0.218316197, 0.771091130, -86.529820402, 78.095877379, -176.781602525]
+  P_MG06_ABOVE:
+    Description: "Above the MG06 handle, before the fork start."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-47.013661, 11.779830, 55.387120, -136.392660, -92.013789, 65.999979]
+    Pose: [0.097658236, -0.278126511, 0.691102950, -89.999877146, 65.999977243, -134.999759768]
+  P_MG06_FORK_START:
+    Description: "Start and end of the recorded fork path (SPEC §4.9)."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-64.906783, 0.782055, 64.972241, -115.809544, -109.906717, 66.000126]
+    Pose: [0.097667945, -0.419539604, 0.591107286, -89.999375843, 66.000034066, -134.999495804]
+  P_MG06_CLOSE_END:
+    Description: "End of PATH_FORK_CLOSE: the bar on the slot bottom, the handle at 29.1 deg."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-29.547477, 1.304953, 138.071309, -43.231989, -74.548206, 65.994483]
+    Pose: [0.222569012, -0.294637228, 0.153395784, -89.996078881, 65.994923888, -134.995689027]
+  P_MG06_BAR_CENTRE:
+    Description: "The bar centred in the slot, 2 mm off its bottom, MG06 settled closed (SPEC §4.10)."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-29.322855, 2.899541, 137.288607, -45.609282, -74.323561, 65.994536]
+    Pose: [0.223282828, -0.293922979, 0.163898129, -89.996090252, 65.994982328, -134.995722413]
+  P_MG06_SLOT_EXIT:
+    Description: "90 mm along the slot, out of the bar."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-47.226025, 3.337062, 130.325032, -53.010438, -92.226730, 65.995045]
+    Pose: [0.165158530, -0.352047263, 0.200531401, -89.996089644, 65.994983095, -134.995722850]
+  P_MG06_WAIT:
+    Description: "120 mm up from P_MG06_SLOT_EXIT; the robot waits here while MG06 is closed and tests."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-47.228767, 12.241795, 117.292067, -74.948137, -92.229473, 65.995045]
+    Pose: [0.165149166, -0.352056630, 0.320530705, -89.996092107, 65.994983058, -134.995724101]
+  P_MG06_OPEN_JOIN:
+    Description: "Join of PATH_FORK_OPEN: the recorded handle already below the real closed angle (SPEC §4.7)."
+    Tool: T_FLANGE
+    Reference: null
+    Offset: null
+    Joints: [-28.842276, 3.103794, 137.267423, -45.838179, -73.840454, 66.003235]
+    Pose: [0.224808794, -0.292397543, 0.164875737, -90.004269969, 66.002731751, -135.005722901]
+  P_VIA_LOADER_OUTPUT:
+    Description: "Free-space via between the loader and the output crate."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [40.641633, 40.288130, 105.134859, -28.325689, 86.846955, -4.206289]
+    Pose: [0.212737329, -0.003223714, 0.233782653, -176.600580473, 2.906824847, 135.021533326]
+  P_OUTPUT_ABOVE:
+    Description: "121 mm above the PCB rest pose in the output crate (120 mm above P_OUTPUT_PLACE)."
+    Tool: T_SUCTION
+    Reference: P_OUTPUT_PLACE
+    Offset: [0.0, 0.0, -0.1200]
+    Joints: [59.946352, 3.501203, 126.209780, 32.708616, 90.000052, 14.946365]
+    Pose: [0.302495066, 0.280199701, -0.028599179, 179.999975731, -0.000060299, 134.999987000]
+  P_OUTPUT_APPROACH:
+    Description: "16 mm above the PCB rest pose (15 mm above P_OUTPUT_PLACE), the start of the slow approach."
+    Tool: T_SUCTION
+    Reference: P_OUTPUT_PLACE
+    Offset: [0.0, 0.0, -0.0150]
+    Joints: [59.945628, -9.725211, 133.984858, 53.710068, 90.000000, 14.945628]
+    Pose: [0.302500278, 0.280198126, -0.133591422, -179.999999034, 0.000000258, 135.000000000]
+  P_OUTPUT_PLACE:
+    Description: "PCB 1 mm above the output crate floor, then vacuum off."
+    Tool: T_SUCTION
+    Reference: null
+    Offset: null
+    Joints: [59.945628, -12.144714, 134.701735, 56.846449, 90.000000, 14.945628]
+    Pose: [0.302500284, 0.280198135, -0.148581491, -180.000000000, 0.000000000, 135.000000000]
+
+# The loader positions: the Y and Z axis set-points [m]. Source: the former Data/PCB/pcb_meta.json and the
+# legacy planner (Z_TRAVEL = place + 12 mm; the park position), SPEC §4.4.
+Loader_Positions:
+  L_HOME:
+    Description: "The loader's home: the gripper where the CAD has it; the handover and take position."
+    Y: -0.1
+    Z: 0.0
+  L_TRAVEL:
+    Description: "Above the MG06 holder, at the travel height (place + 12 mm)."
+    Y: 0.19665834418149383
+    Z: 0.07921731047501317
+  L_PLACE:
+    Description: "The PCB placed in the MG06 holder."
+    Y: 0.19665834418149383
+    Z: 0.06721731047501317
+  L_PARK:
+    Description: "Parked while the robot closes and opens MG06."
+    Y: -0.1995
+    Z: 0.02
+
+# The gripper commands (SCHUNK EGI 040-EI), the jaw set-point per jaw [m]. Source: the former pcb_meta.json
+# jaw_open; the clamp command 12 mm behind the part, held by the 40 N force limit (SPEC §4.3, §4.4).
+Gripper_Commands:
+  G_OPEN:
+    Description: "Fully open."
+    Jaw: 0.035
+  G_CLAMP:
+    Description: "Clamp: 12 mm behind the part; the force limit holds it (where the jaws stop: Simulation.yaml Jaw_Actual)."
+    Jaw: 0.005750000000000002
+
+# The recorded flange paths (SPEC §4.9): File (repository-relative), Phase (CLOSE: the rows from 1 to the last
+# CLOSE row; OPEN: the OPEN rows after the join - the first with the handle below Cell.yaml MG06.Closed_Handle
+# minus MG06.Open_Join_Margin), the points they start and end at.
+Paths:
+  PATH_FORK_CLOSE:
+    Description: "Close MG06: lid down, handle to 29 deg, the bar on the fork slot's bottom."
+    File: Data/Paths/fork_close_open_path.npz
+    Phase: CLOSE
+    Start: P_MG06_FORK_START
+    End: P_MG06_CLOSE_END
+  PATH_FORK_OPEN:
+    Description: "Open MG06: the handle up, the lid up, the fork off the handle."
+    File: Data/Paths/fork_close_open_path.npz
+    Phase: OPEN
+    Start: P_MG06_OPEN_JOIN
+    End: P_MG06_FORK_START
+
+# The digital signals. Port: a PLACEHOLDER - the real cell's I/O map is not defined (KNOWN_ISSUES.md).
+Signals:
+  DO_VACUUM:
+    Description: "The VGC10 vacuum valve: ON sucks, OFF releases."
+    Port: "placeholder, real-cell I/O map not defined"
+  DI_VACUUM_OK:
+    Description: "The VGC10 vacuum reached: the PCB is held."
+    Port: "placeholder, real-cell I/O map not defined"

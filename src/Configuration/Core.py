@@ -27,6 +27,8 @@ import os
 import json
 # Math (Mathematical functions)
 import math
+# Re (Regular expressions)
+import re
 # Typing (Support for type hints)
 import typing as tp
 # Dataclasses (Data Classes)
@@ -41,8 +43,8 @@ Description:
     Initialization of constants.
 
     The repository's folders and files, built from this module's location (src/Configuration/Core.py),
-    never from the working directory (SPEC §7.1); the only reader of the YAML configuration
-    (Configuration/Cell.yaml, Configuration/Keypoints.yaml) and of Data/PCB/pcb_meta.json; the route of
+    never from the working directory (SPEC §7.1); the project's YAML loader (Read_YAML) and the only reader of
+    Configuration/Cell.yaml (the program's three files: Configuration/Program_Parser.py) and of Data/PCB/pcb_meta.json; the route of
     MuJoCo's log and of a script's lines into logger/. It prints nothing.
 """
 # The repository root: two folders above src/Configuration/.
@@ -52,7 +54,6 @@ CONST_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__fil
 #   Unit [string]
 CONST_CONFIGURATION = os.path.join(CONST_ROOT, 'Configuration')
 CONST_CELL_YAML = os.path.join(CONST_CONFIGURATION, 'Cell.yaml')
-CONST_KEYPOINTS_YAML = os.path.join(CONST_CONFIGURATION, 'Keypoints.yaml')
 # The MJCF files and their meshes (style project page mjcf.md).
 #   Unit [string]
 CONST_MODELS = os.path.join(CONST_ROOT, 'models')
@@ -96,26 +97,17 @@ CONST_REPORT_NAME = 'report.txt'
 #   Unit [string]
 CONST_MUJOCO_LOG = os.path.join(CONST_LOGGER, 'MUJOCO_LOG.TXT')
 # The keys of Data/PCB/pcb_meta.json, each a position [m] (3 values) or a quaternion (4 values, w first); every
-# key is required. (The loader positions moved to Configuration/Keypoints.yaml, owner 2026-10-24.)
+# key is required. (The loader positions are constants of Configuration/Constants.yaml.)
 #   Unit [Dict<string, int>] (key -> number of values)
 CONST_PCB_META_KEYS = {'cad_pos': 3, 'place_pos': 3, 'hold_pos': 3, 'quat': 4}
-# The values the keypoint file's closed sets allow.
+# The closed sets the configuration files share: the PCB's locations, the contact groups, MG06's states.
 #   Unit [Tuple<string>]
-CONST_FAMILIES = ('wrist_up', 'wrist_down')
-CONST_FRAMES = ('suction_tcp', 'tool_flange')
 CONST_PCB_LOCATIONS = ('input_crate', 'cups', 'jaws', 'mg06', 'output_crate')
-CONST_HOLD_LOCATIONS = ('input_crate', 'jaws', 'output_crate')
 CONST_CONTACT_GROUPS = ('cups_pcb', 'handle_bar', 'pcb_crate', 'pcb_jaws')
 CONST_FIXTURE_STATES = ('Open', 'Closed')
 # The durations of Cell.yaml's Process section a program's Test command may name (Test: Process.<key>).
 #   Unit [Tuple<string>]
 CONST_PROCESS_KEYS = ('Test_Duration',)
-# The program file (SPEC §8): the default program, its commands, the recorded paths a Path command names.
-#   Unit [string], [Tuple<string>]
-CONST_PROGRAM_DEFAULT_YAML = os.path.join(CONST_CONFIGURATION, 'Program_Default.yaml')
-CONST_COMMANDS = ('Movej', 'Movel', 'Path', 'Loader', 'Gripper', 'Vacuum', 'Wait', 'Test')
-CONST_PATHS = ('Fork_Close', 'Fork_Open')
-CONST_LOADER_AXES = ('Y', 'Z')
 
 
 class Configuration_Error_Cls(ValueError):
@@ -305,12 +297,10 @@ class Cell_Configuration_Str:
     #   Unit [float] (rad)
     Closed_Lid: float = 0.0
     Closed_Handle: float = 0.0
-    # The keypoint check: clearance, allowed contact depth per group, the Check and stale tolerances, the
-    # family margin.
-    #   Unit [float] (m), [Dict<string, float>] (m), [float] (m), [float] (m), [float] (rad), [float] (rad)
+    # The point and program checks: clearance, allowed contact depth per group, the stale tolerances, the family margin.
+    #   Unit [float] (m), [Dict<string, float>] (m), [float] (m), [float] (rad), [float] (rad)
     Clearance: float = 0.0
     Allowed_Depth: tp.Dict[str, float] = field(default_factory=dict)
-    Check_Position: float = 0.0
     Stale_Position: float = 0.0
     Stale_Angle: float = 0.0
     Family_Margin: float = 0.0
@@ -336,7 +326,7 @@ class Cell_Configuration_Str:
     # The MG06 test duration (the program's Test command).
     #   Unit [float] (s)
     Test_Duration: float = 0.0
-    # Fork_Open joins the recorded path where its handle is this far below the closed handle.
+    # PATH_FORK_OPEN joins the recorded path where its handle is this far below the closed handle.
     #   Unit [float] (rad)
     Open_Join_Margin: float = 0.0
     # The segment check: the largest move of a robot or PCB point between two checked samples.
@@ -346,85 +336,6 @@ class Cell_Configuration_Str:
     #   Unit [float] (m)
     Ledge_Gap: float = 0.0
     Ledge_Tolerance: float = 0.0
-    # The loader's notes: (level, message) for each unknown key.
-    #   Unit [List<Tuple<string>>]
-    Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
-
-
-@dataclass
-class Robot_Keypoint_Str:
-    """
-    Description:
-        One robot keypoint of Configuration/Keypoints.yaml in canonical units. Built by Load_Keypoints.
-    """
-
-    # The keypoint's name.
-    #   Unit [string]
-    Name: str = ''
-    # The six joint angles, shoulder_pan .. wrist_3 (the source of truth).
-    #   Unit [Vector<float> 1x6] (rad)
-    Joints: tp.List[float] = field(default_factory=list)
-    # The IK family: wrist_up or wrist_down.
-    #   Unit [string]
-    Family: str = ''
-    # The check value: a site and the position the joints must reach.
-    #   Unit [string], [Vector<float> 1x3] (m)
-    Check_Frame: str = ''
-    Check_Position: tp.List[float] = field(default_factory=list)
-    # Relative_To: the target (pcb_hold@<location> or a keypoint), the frame and the offset in it; None when
-    # the keypoint has none.
-    #   Unit [string], [string], [Vector<float> 1x3] (m)
-    Relative_Target: tp.Optional[str] = None
-    Relative_Frame: tp.Optional[str] = None
-    Relative_Offset: tp.Optional[tp.List[float]] = None
-    # The MG06 state: 'Open', 'Closed' or 'Recorded' (then the lid and handle angles and their source).
-    #   Unit [string], [float] (rad), [float] (rad), [string]
-    Fixture: str = ''
-    Fixture_Lid: tp.Optional[float] = None
-    Fixture_Handle: tp.Optional[float] = None
-    Fixture_Source: tp.Optional[str] = None
-    # The scene: the loader position, the gripper state and the PCB location.
-    #   Unit [string]
-    Loader: str = ''
-    Gripper: str = ''
-    PCB: str = ''
-    # The contact groups allowed within the clearance.
-    #   Unit [List<string>]
-    Allow_Contact: tp.List[str] = field(default_factory=list)
-    # What the keypoint is for.
-    #   Unit [string]
-    Note: str = ''
-
-
-@dataclass
-class Loader_Position_Str:
-    """
-    Description:
-        A named loader position (the Y and Z axis set-points).
-    """
-
-    # The Y axis (towards MG06) and the Z axis (up).
-    #   Unit [float] (m)
-    Y: float = 0.0
-    Z: float = 0.0
-
-
-@dataclass
-class Keypoints_Str:
-    """
-    Description:
-        The keypoint file: robot keypoints in file order, loader positions, gripper states.
-    """
-
-    # The robot keypoints by name, in the order of the file (the cycle's order).
-    #   Unit [Dict<string, Robot_Keypoint_Str>]
-    Robot: tp.Dict[str, Robot_Keypoint_Str] = field(default_factory=dict)
-    # The loader positions by name.
-    #   Unit [Dict<string, Loader_Position_Str>]
-    Loader: tp.Dict[str, Loader_Position_Str] = field(default_factory=dict)
-    # The gripper states by name: the jaw set-point per jaw.
-    #   Unit [Dict<string, float>] (m)
-    Gripper: tp.Dict[str, float] = field(default_factory=dict)
     # The loader's notes: (level, message) for each unknown key.
     #   Unit [List<Tuple<string>>]
     Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
@@ -586,10 +497,105 @@ class _Reader_Cls(object):
         return value
 
 
-def _Read_YAML(path: str) -> tp.Any:
+class Located_Text_Cls(str):
     """
     Description:
-        A YAML file parsed, or a Configuration_Error_Cls naming the file.
+        A string read from a configuration file that remembers its line, so a message can name where it is.
+
+    Initialization of the Class:
+        Args:
+            (1) text [string]: The text (the str value).
+
+        Example:
+            Initialization:
+                # Built by the YAML loader for every string scalar and key.
+                Cls = Located_Text_Cls('P_HOME')
+
+            Features:
+                # The line in its file (0 when unknown).
+                Cls.Line
+    """
+
+    Line: int = 0
+
+
+class _YAML_Loader_Cls(yaml.SafeLoader):
+    """
+    Description:
+        The configuration's YAML loader: a duplicate key in a mapping fails with its line; only true / false are
+        booleans (ON, OFF, On, Off, yes, no stay strings: the program's words, not YAML 1.1's booleans); every string
+        scalar and key is a Located_Text_Cls carrying its line.
+
+    Initialization of the Class:
+        Args:
+            (1) stream [file]: The open file.
+
+        Example:
+            Initialization:
+                # Initialization of the class (through yaml.load).
+                document = yaml.load(handle, Loader=_YAML_Loader_Cls)
+
+            Features:
+                # A string's line.
+                document['Program']['S1_Approach_Input'][0].Line
+    """
+
+
+def _Construct_Mapping(loader: yaml.SafeLoader, node: yaml.MappingNode) -> tp.Dict[tp.Any, tp.Any]:
+    """
+    Description:
+        A mapping, failing on a key it already has (PyYAML keeps the last one silently).
+
+    Args:
+        (1) loader [yaml.SafeLoader]: The loader.
+        (2) node [yaml.MappingNode]: The node.
+
+    Returns:
+        (1) parameter [Dict<Any, Any>]: The mapping.
+    """
+
+    loader.flatten_mapping(node)
+    seen = {}
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=True)
+        if key in seen:
+            raise yaml.constructor.ConstructorError('while constructing a mapping', node.start_mark,
+                                                    "found duplicate key '%s' (first at line %d)" % (key, seen[key]), key_node.start_mark)
+        seen[key] = key_node.start_mark.line + 1
+    return loader.construct_mapping(node, deep=True)
+
+
+def _Construct_Text(loader: yaml.SafeLoader, node: yaml.ScalarNode) -> Located_Text_Cls:
+    """
+    Description:
+        A string scalar as a Located_Text_Cls with its line (1-based).
+
+    Args:
+        (1) loader [yaml.SafeLoader]: The loader.
+        (2) node [yaml.ScalarNode]: The node.
+
+    Returns:
+        (1) parameter [Located_Text_Cls]: The text.
+    """
+
+    text = Located_Text_Cls(loader.construct_scalar(node))
+    text.Line = node.start_mark.line + 1
+    return text
+
+
+# The loader's resolvers: SafeLoader's, with the boolean resolver narrowed to true / false.
+_YAML_Loader_Cls.yaml_implicit_resolvers = {first: [(tag, regexp) for tag, regexp in resolvers if tag != 'tag:yaml.org,2002:bool']
+                                            for first, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()}
+_YAML_Loader_Cls.add_implicit_resolver('tag:yaml.org,2002:bool', re.compile(r'^(?:true|True|TRUE|false|False|FALSE)$'), list('tTfF'))
+_YAML_Loader_Cls.add_constructor('tag:yaml.org,2002:str', _Construct_Text)
+_YAML_Loader_Cls.add_constructor('tag:yaml.org,2002:map', _Construct_Mapping)
+
+
+def Read_YAML(path: str) -> tp.Any:
+    """
+    Description:
+        A configuration file parsed by the project's YAML loader (_YAML_Loader_Cls: duplicate keys fail, only true /
+        false are booleans, strings carry their line), or a Configuration_Error_Cls naming the file and the line.
 
     Args:
         (1) path [string]: The file.
@@ -600,7 +606,7 @@ def _Read_YAML(path: str) -> tp.Any:
 
     try:
         with open(path, encoding='utf-8') as handle:
-            return yaml.safe_load(handle)
+            return yaml.load(handle, Loader=_YAML_Loader_Cls)
     except FileNotFoundError as error:
         raise Configuration_Error_Cls('The configuration file %s does not exist. Restore it from git.' % path) from error
     except yaml.YAMLError as error:
@@ -637,11 +643,11 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     """
 
     r = _Reader_Cls(path)
-    root = r.Mapping(_Read_YAML(path), (), ('Robot', 'Vacuum', 'MG06', 'Clearance', 'Handover', 'Motion', 'Process', 'Acceptance', 'Simulation'))
+    root = r.Mapping(Read_YAML(path), (), ('Robot', 'Vacuum', 'MG06', 'Clearance', 'Handover', 'Motion', 'Process', 'Acceptance', 'Simulation'))
     robot = r.Mapping(root, ('Robot',), ('Base_Position', 'Base_Yaw'))
     vacuum = r.Mapping(root, ('Vacuum',), ('Pressure', 'Cup_Diameter'))
     mg06 = r.Mapping(root, ('MG06',), ('Closed_Lid', 'Closed_Handle', 'Open_Join_Margin'))
-    clearance = r.Mapping(root, ('Clearance',), ('Robot', 'Allowed_Depth', 'Check_Position', 'Stale_Position', 'Stale_Angle', 'Family_Margin',
+    clearance = r.Mapping(root, ('Clearance',), ('Robot', 'Allowed_Depth', 'Stale_Position', 'Stale_Angle', 'Family_Margin',
                                                  'Check_Step'))
     handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance'))
     motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration'))
@@ -661,7 +667,6 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Closed_Lid=math.radians(r.Number(mg06, ('MG06', 'Closed_Lid'), -40.0, 0.0)),
         Closed_Handle=math.radians(r.Number(mg06, ('MG06', 'Closed_Handle'), 0.0, 60.0)),
         Clearance=r.Number(clearance, ('Clearance', 'Robot'), 1e-4, 0.05), Allowed_Depth=allowed,
-        Check_Position=r.Number(clearance, ('Clearance', 'Check_Position'), 1e-7, 0.01),
         Stale_Position=r.Number(clearance, ('Clearance', 'Stale_Position'), 1e-7, 0.01),
         Stale_Angle=math.radians(r.Number(clearance, ('Clearance', 'Stale_Angle'), 1e-6, 5.0)),
         Family_Margin=math.radians(r.Number(clearance, ('Clearance', 'Family_Margin'), 0.0, 30.0)),
@@ -685,286 +690,3 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     _Finish(r, path)
     cell.Notes = r.Notes
     return cell
-
-
-def Load_Keypoints(path: str = CONST_KEYPOINTS_YAML) -> Keypoints_Str:
-    """
-    Description:
-        Load Configuration/Keypoints.yaml, the only reader of that file: every field REQUIRED and validated
-        (Relative_To may be null; Allow_Contact may be an empty list), the references between sections checked
-        (a Context's loader position and gripper state, a Relative_To keypoint), every problem collected and
-        reported at once with its key path, unknown keys returned as WARNING notes, degrees converted to radians.
-
-    Args:
-        (1) path [string]: The file (default Configuration/Keypoints.yaml).
-
-    Returns:
-        (1) parameter [Keypoints_Str(object)]: The keypoints.
-    """
-
-    r = _Reader_Cls(path)
-    root = r.Mapping(_Read_YAML(path), (), ('Robot', 'Loader', 'Gripper'))
-    loader = {}
-    for name, value in r.Mapping(root, ('Loader',)).items():
-        position = r.Mapping(root['Loader'], ('Loader', name), ('Y', 'Z'))
-        loader[name] = Loader_Position_Str(Y=r.Number(position, ('Loader', name, 'Y'), -1.0, 1.0),
-                                           Z=r.Number(position, ('Loader', name, 'Z'), -1.0, 1.0))
-    gripper = {name: r.Number(root['Gripper'], ('Gripper', name), 0.0, 0.05) for name in r.Mapping(root, ('Gripper',))}
-    robot_tree = r.Mapping(root, ('Robot',))
-    known = ('Joints', 'Family', 'Check', 'Relative_To', 'Fixture', 'Context', 'Allow_Contact', 'Note')
-    robot = {}
-    for name in robot_tree:
-        k = ('Robot', str(name))
-        tree = r.Mapping(robot_tree, k, known)
-        joints = [math.radians(v) for v in r.Vector(tree, k + ('Joints',), 6, -360.0, 360.0)]
-        check = r.Mapping(tree, k + ('Check',), ('Frame', 'Position'))
-        keypoint = Robot_Keypoint_Str(Name=str(name), Joints=joints, Family=r.Choice(tree, k + ('Family',), CONST_FAMILIES),
-                                      Check_Frame=r.Choice(check, k + ('Check', 'Frame'), CONST_FRAMES),
-                                      Check_Position=r.Vector(check, k + ('Check', 'Position'), 3, -5.0, 5.0))
-        relative = r.Get(tree, k + ('Relative_To',))
-        if relative is not None:
-            relative = r.Mapping(tree, k + ('Relative_To',), ('Target', 'Frame', 'Offset'))
-            target = r.Get(relative, k + ('Relative_To', 'Target'))
-            location = str(target)[len('pcb_hold@'):] if str(target).startswith('pcb_hold@') else None
-            if target is not None and location is None and target not in robot_tree:
-                r.Fail(k + ('Relative_To', 'Target'), '%r is neither pcb_hold@<location> nor a keypoint' % (target,))
-            if location is not None and location not in CONST_HOLD_LOCATIONS:
-                r.Fail(k + ('Relative_To', 'Target'), "'%s' is not one of %s" % (location, ', '.join(CONST_HOLD_LOCATIONS)))
-            if target == name:
-                r.Fail(k + ('Relative_To', 'Target'), 'a keypoint cannot be relative to itself')
-            keypoint.Relative_Target = str(target)
-            keypoint.Relative_Frame = r.Choice(relative, k + ('Relative_To', 'Frame'), CONST_FRAMES)
-            keypoint.Relative_Offset = r.Vector(relative, k + ('Relative_To', 'Offset'), 3, -1.0, 1.0)
-        fixture = r.Get(tree, k + ('Fixture',))
-        if isinstance(fixture, dict):
-            state = r.Mapping(tree, k + ('Fixture',), ('Lid', 'Handle', 'Source'))
-            keypoint.Fixture = 'Recorded'
-            # A recorded lid may stand slightly past its closed stop (0 deg): the contact solver presses it in
-            # (row 286: +0.0024 deg).
-            keypoint.Fixture_Lid = math.radians(r.Number(state, k + ('Fixture', 'Lid'), -40.0, 1.0))
-            keypoint.Fixture_Handle = math.radians(r.Number(state, k + ('Fixture', 'Handle'), -1.0, 60.0))
-            source = r.Get(state, k + ('Fixture', 'Source'))
-            if source is not None and (not isinstance(source, str) or not source.strip()):
-                r.Fail(k + ('Fixture', 'Source'), 'must name where the state comes from')
-            keypoint.Fixture_Source = source
-        elif fixture is not None:
-            keypoint.Fixture = r.Choice(tree, k + ('Fixture',), CONST_FIXTURE_STATES)
-        context = r.Mapping(tree, k + ('Context',), ('Loader', 'Gripper', 'PCB'))
-        keypoint.Loader = r.Choice(context, k + ('Context', 'Loader'), tuple(loader))
-        keypoint.Gripper = r.Choice(context, k + ('Context', 'Gripper'), tuple(gripper))
-        keypoint.PCB = r.Choice(context, k + ('Context', 'PCB'), CONST_PCB_LOCATIONS)
-        allow = r.Get(tree, k + ('Allow_Contact',))
-        if allow is not None:
-            if not isinstance(allow, list) or any(a not in CONST_CONTACT_GROUPS for a in allow):
-                r.Fail(k + ('Allow_Contact',), '%r must be a list of %s ([] for none)' % (allow, ', '.join(CONST_CONTACT_GROUPS)))
-            else:
-                keypoint.Allow_Contact = list(allow)
-        note = r.Get(tree, k + ('Note',))
-        if note is not None and (not isinstance(note, str) or not note.strip()):
-            r.Fail(k + ('Note',), 'must say what the keypoint is for')
-        keypoint.Note = note if isinstance(note, str) else ''
-        robot[str(name)] = keypoint
-    _Finish(r, path)
-    return Keypoints_Str(Robot=robot, Loader=loader, Gripper=gripper, Notes=r.Notes)
-
-
-@dataclass
-class Program_Command_Str:
-    """
-    Description:
-        One command of a program step (SPEC §8), validated. Fields a command does not have stay at their defaults.
-    """
-
-    # The command: Movej, Movel, Path, Loader, Gripper, Vacuum, Wait or Test.
-    #   Unit [string]
-    Kind: str = ''
-    # What it moves to or names: a robot keypoint (Movej, Movel), a recorded path (Path), a loader position (Loader), a
-    # gripper state (Gripper), 'On' / 'Off' (Vacuum), the Cell.yaml key path of a duration (Test).
-    #   Unit [string]
-    Target: str = ''
-    # Movel's peak TCP speed.
-    #   Unit [float] (m/s)
-    Speed: float = 0.0
-    # Loader's axis.
-    #   Unit [string]
-    Axis: str = ''
-    # The duration of a Loader, Gripper or Wait command (Test: the referenced duration, in s).
-    #   Unit [float] (s)
-    Duration: float = 0.0
-    # The command as the report and the trajectory name it, e.g. 'Movel input_pcb_press 0.03'.
-    #   Unit [string]
-    Text: str = ''
-
-
-@dataclass
-class Program_Step_Str:
-    """
-    Description:
-        One named step of a program.
-    """
-
-    # The step's name (unique, lowercase) and what it does.
-    #   Unit [string]
-    Name: str = ''
-    Comment: str = ''
-    # The contact groups any sample of the step may have within the clearance.
-    #   Unit [List<string>]
-    Allow_Contact: tp.List[str] = field(default_factory=list)
-    # The commands, in order.
-    #   Unit [List<Program_Command_Str>]
-    Commands: tp.List[Program_Command_Str] = field(default_factory=list)
-
-
-@dataclass
-class Program_Str:
-    """
-    Description:
-        A program file: the start state of the cell and the steps (SPEC §8). Built by Load_Program.
-    """
-
-    # The program's name (the file name without .yaml) and its file.
-    #   Unit [string]
-    Name: str = ''
-    Path: str = ''
-    # The start state: the robot keypoint, the loader position, the gripper state, the vacuum, the PCB location, MG06.
-    #   Unit [string], [bool]
-    Start_Robot: str = ''
-    Start_Loader: str = ''
-    Start_Gripper: str = ''
-    Start_Vacuum: bool = False
-    Start_PCB: str = ''
-    Start_MG06: str = ''
-    # The steps, in order.
-    #   Unit [List<Program_Step_Str>]
-    Steps: tp.List[Program_Step_Str] = field(default_factory=list)
-    # The loader's notes: (level, message) for each unknown key.
-    #   Unit [List<Tuple<string>>]
-    Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
-
-
-def _Read_Command(r: _Reader_Cls, item: tp.Any, keys: tp.Tuple[str, ...], keypoints: Keypoints_Str,
-                  cell: Cell_Configuration_Str) -> Program_Command_Str:
-    """
-    Description:
-        One command of a step: a one-key mapping, its fields validated against the keypoints and the cell.
-
-    Args:
-        (1) r [_Reader_Cls(object)]: The reader (collects the problems).
-        (2) item [Any]: The parsed list item.
-        (3) keys [Tuple<string>]: Its key path, e.g. ('Steps[2]', 'Commands[1]').
-        (4) keypoints [Keypoints_Str(object)]: The keypoints, loader positions and gripper states it may name.
-        (5) cell [Cell_Configuration_Str(object)]: The cell configuration (the durations a Test names).
-
-    Returns:
-        (1) parameter [Program_Command_Str(object)]: The command (Kind '' with a problem when it is invalid).
-    """
-
-    if not isinstance(item, dict) or len(item) != 1:
-        r.Fail(keys, 'a command is a one-key mapping (%s), not %r' % (', '.join(CONST_COMMANDS), item))
-        return Program_Command_Str()
-    kind, value = next(iter(item.items()))
-    if kind not in CONST_COMMANDS:
-        r.Fail(keys, "'%s' is not a command; the commands are %s" % (kind, ', '.join(CONST_COMMANDS)))
-        return Program_Command_Str()
-    k, tree = keys + (kind,), {kind: value}
-    command = Program_Command_Str(Kind=kind)
-    if kind == 'Movej':
-        command.Target = r.Choice(tree, k, tuple(keypoints.Robot))
-        command.Text = 'Movej %s' % command.Target
-    elif kind == 'Movel':
-        fields = r.Mapping(tree, k, ('To', 'Speed'))
-        command.Target = r.Choice(fields, k + ('To',), tuple(keypoints.Robot))
-        command.Speed = r.Number(fields, k + ('Speed',), 0.001, 1.0)
-        command.Text = 'Movel %s %g' % (command.Target, command.Speed)
-    elif kind == 'Path':
-        command.Target = r.Choice(tree, k, CONST_PATHS)
-        command.Text = 'Path %s' % command.Target
-    elif kind == 'Loader':
-        fields = r.Mapping(tree, k, ('Axis', 'To', 'Duration'))
-        command.Axis = r.Choice(fields, k + ('Axis',), CONST_LOADER_AXES)
-        command.Target = r.Choice(fields, k + ('To',), tuple(keypoints.Loader))
-        command.Duration = r.Number(fields, k + ('Duration',), 0.05, 30.0)
-        command.Text = 'Loader %s %s %g' % (command.Axis, command.Target, command.Duration)
-    elif kind == 'Gripper':
-        fields = r.Mapping(tree, k, ('To', 'Duration'))
-        command.Target = r.Choice(fields, k + ('To',), tuple(keypoints.Gripper))
-        command.Duration = r.Number(fields, k + ('Duration',), 0.05, 30.0)
-        command.Text = 'Gripper %s %g' % (command.Target, command.Duration)
-    elif kind == 'Vacuum':
-        # On / Off are YAML booleans (PyYAML reads an unquoted On as true).
-        if not isinstance(value, bool):
-            r.Fail(k, 'must be On or Off, not %r' % (value,))
-        command.Target = 'On' if value is True else 'Off'
-        command.Text = 'Vacuum %s' % command.Target
-    elif kind == 'Wait':
-        command.Duration = r.Number(tree, k, 0.0, 600.0)
-        command.Text = 'Wait %g' % command.Duration
-    else:
-        references = tuple('Process.' + key for key in CONST_PROCESS_KEYS)
-        command.Target = r.Choice(tree, k, references)
-        command.Duration = cell.Test_Duration
-        command.Text = 'Test %s (%g s)' % (command.Target, command.Duration)
-    return command
-
-
-def Load_Program(keypoints: Keypoints_Str, cell: Cell_Configuration_Str, path: str = CONST_PROGRAM_DEFAULT_YAML) -> Program_Str:
-    """
-    Description:
-        Load a program file (Configuration/Program_Default.yaml), the only reader of that format: every field REQUIRED and
-        validated (Allow_Contact may be an empty list), every keypoint, loader position, gripper state and contact group it
-        names checked against the keypoints and the cell, every problem collected and reported at once with its key path
-        (Steps[3].Commands[1].Movel.Speed), unknown keys returned as WARNING notes.
-
-    Args:
-        (1) keypoints [Keypoints_Str(object)]: The keypoints the program names.
-        (2) cell [Cell_Configuration_Str(object)]: The cell configuration (the Test duration).
-        (3) path [string]: The file (default Configuration/Program_Default.yaml).
-
-    Returns:
-        (1) parameter [Program_Str(object)]: The program.
-    """
-
-    r = _Reader_Cls(path)
-    root = r.Mapping(_Read_YAML(path), (), ('Start', 'Steps'))
-    start = r.Mapping(root, ('Start',), ('Robot', 'Loader', 'Gripper', 'Vacuum', 'PCB', 'MG06'))
-    vacuum = r.Get(start, ('Start', 'Vacuum'))
-    if vacuum is not None and not isinstance(vacuum, bool):
-        r.Fail(('Start', 'Vacuum'), 'must be On or Off, not %r' % (vacuum,))
-    program = Program_Str(Name=os.path.splitext(os.path.basename(path))[0], Path=path,
-                          Start_Robot=r.Choice(start, ('Start', 'Robot'), tuple(keypoints.Robot)),
-                          Start_Loader=r.Choice(start, ('Start', 'Loader'), tuple(keypoints.Loader)),
-                          Start_Gripper=r.Choice(start, ('Start', 'Gripper'), tuple(keypoints.Gripper)),
-                          Start_Vacuum=vacuum is True, Start_PCB=r.Choice(start, ('Start', 'PCB'), CONST_PCB_LOCATIONS),
-                          Start_MG06=r.Choice(start, ('Start', 'MG06'), CONST_FIXTURE_STATES))
-    steps = r.Get(root, ('Steps',))
-    if steps is not None and (not isinstance(steps, list) or not steps):
-        r.Fail(('Steps',), 'must be a list of steps, not %r' % (steps,))
-        steps = []
-    names = set()
-    for i, item in enumerate(steps or []):
-        k = ('Steps[%d]' % i,)
-        tree = r.Mapping({k[0]: item}, k, ('Name', 'Comment', 'Allow_Contact', 'Commands'))
-        name, comment = r.Get(tree, k + ('Name',)), r.Get(tree, k + ('Comment',))
-        if name is not None and (not isinstance(name, str) or not name or name != name.lower() or ' ' in name):
-            r.Fail(k + ('Name',), 'must be a lowercase name without spaces, not %r' % (name,))
-        elif name in names:
-            r.Fail(k + ('Name',), "'%s' is used by an earlier step; step names are unique" % name)
-        names.add(name)
-        if comment is not None and (not isinstance(comment, str) or not comment.strip()):
-            r.Fail(k + ('Comment',), 'must say what the step does')
-        step = Program_Step_Str(Name=str(name), Comment=comment if isinstance(comment, str) else '')
-        allow = r.Get(tree, k + ('Allow_Contact',))
-        if allow is not None:
-            if not isinstance(allow, list) or any(a not in CONST_CONTACT_GROUPS for a in allow):
-                r.Fail(k + ('Allow_Contact',), '%r must be a list of %s ([] for none)' % (allow, ', '.join(CONST_CONTACT_GROUPS)))
-            else:
-                step.Allow_Contact = list(allow)
-        commands = r.Get(tree, k + ('Commands',))
-        if commands is not None and (not isinstance(commands, list) or not commands):
-            r.Fail(k + ('Commands',), 'must be a list of commands, not %r' % (commands,))
-            commands = []
-        step.Commands = [_Read_Command(r, c, k + ('Commands[%d]' % j,), keypoints, cell) for j, c in enumerate(commands or [])]
-        program.Steps.append(step)
-    _Finish(r, path)
-    program.Notes = r.Notes
-    return program

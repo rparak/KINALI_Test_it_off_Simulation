@@ -12,7 +12,7 @@
 #   Frames: positions in the MG06 fixture frame (origin = centre of the MG06 footprint on the table top,
 #     Z up, front of MG06 = -Y; SPEC §4.2).
 #   Not here, on purpose: the joint limits and the loader axis ranges (the model holds them: the vendored
-#     robot MJCF and models/scene.xml); the loader positions and gripper states (Configuration/Keypoints.yaml);
+#     robot MJCF and models/scene.xml); the loader positions and gripper commands (Configuration/Constants.yaml);
 #     the loader and gripper move times (each command of the program carries its own, with its source).
 ## =========================================================================== ##
 
@@ -41,7 +41,7 @@ MG06:
   Closed_Lid: -0.5
   # The handle after closing, the robot away. Source: as above, H_CLOSED, SPEC §4.7. [deg] REQUIRED.
   Closed_Handle: 28.65
-  # Path Fork_Open joins the recorded opening path at its first row whose handle is this far below
+  # PATH_FORK_OPEN joins the recorded opening path at its first row whose handle is this far below
   # Closed_Handle (28.45 deg), so the fork's slot wall meets the bar moving up and the handle is never
   # pushed down (SPEC §4.7, §4.9). Source: the legacy planner (H_CLOSED - 0.2; git tag
   # legacy-planner-reference). [deg] REQUIRED.
@@ -56,7 +56,7 @@ Clearance:
   # where the group is allowed. cups_pcb: the cups pressed 1.5 mm onto the PCB (SPEC §4.7) plus 0.1 mm;
   # handle_bar: the fork on the bar of the recorded path; pcb_crate: the PCB on a crate floor (and on the
   # table under it); pcb_jaws: the carried PCB between the loader's jaws at the handover and the take -
-  # each 0.5 mm (owner, 2026-10-24), except handle_bar: Fork_Close recorded path overlaps the bar by
+  # each 0.5 mm (owner, 2026-10-24), except handle_bar: PATH_FORK_CLOSE's recorded path overlaps the bar by
   # 0.539 mm at one row (physics-verified path, up to 294 N); measured + margin, 0.6 mm (owner,
   # 2026-10-24). [m] REQUIRED.
   Allowed_Depth:
@@ -64,16 +64,14 @@ Clearance:
     handle_bar: 0.0006
     pcb_crate: 0.0005
     pcb_jaws: 0.0005
-  # A keypoint's FK against its Check value: the SPEC §4.8 table is rounded to 0.1 mm (measured
-  # residue of the full-precision joints: at most 0.081 mm). [m] REQUIRED.
-  Check_Position: 0.0001
-  # A keypoint's FK against its Relative_To target before it counts as stale: the legacy IK left up to
+  # A derived point's FK (Constants.yaml Reference + Offset, Simulation.yaml PCB_Hold) against its target
+  # before it counts as stale: the legacy IK left up to
   # 24 um (measured 2026-10-24, FEATURES.md F6). [m] REQUIRED.
   Stale_Position: 0.00005
   # The same, for the orientation. Source: as above (measured at most 0.0001 deg). [deg] REQUIRED.
   Stale_Angle: 0.01
   # Within this angle of zero, wrist_2's sign does not decide the IK family: a WARNING, not a FAIL
-  # (via_mg06_high is at -0.94 deg: the switch between the families, SPEC §4.7). [deg] REQUIRED.
+  # (P_VIA_HOME_MG06 is at -0.94 deg: the switch between the families, SPEC §4.7). [deg] REQUIRED.
   Family_Margin: 1.0
   # The program check measures a sample whenever a robot geom or the carried PCB may have moved more
   # than this since the last measured sample (bounded through the joint steps), and at every segment
@@ -83,7 +81,7 @@ Clearance:
 # The handover's no-press rule (SPEC §4.7): the PCB is put into the open jaws at the hold pose without
 # pressing it onto the finger ledges, so the jaws do not clamp on the ledge corners.
 Handover:
-  # The gap between the PCB and the finger ledges at loader_handover, the jaws closed on it: 0.3 mm
+  # The gap between the PCB and the finger ledges at P_LOADER_PLACE, the jaws closed on it: 0.3 mm
   # (SPEC §4.7; measured 0.318 mm, FEATURES.md F8). [m] REQUIRED.
   Ledge_Gap: 0.0003
   # The gap may differ from Ledge_Gap by at most this; a smaller gap is a press and fails. Source: the

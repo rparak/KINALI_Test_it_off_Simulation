@@ -35,9 +35,10 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Custom Lib.:
 #   ../Configuration/Core - paths, the PCB data, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints, Script_Log_Cls,
-                                Configuration_Error_Cls, CONST_REFERENCE_PLAN,
-                                CONST_REPORTS, CONST_REPORT_NAME, CONST_ROOT)
+from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls,
+                                CONST_REFERENCE_PLAN, CONST_REPORTS, CONST_REPORT_NAME, CONST_ROOT)
+#   ../Configuration/Program_Parser - the loader's home position (Constants.yaml L_HOME)
+from Configuration.Program_Parser import Load_Constants
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Simulation/Core - the run, the report, the acceptance
@@ -75,11 +76,11 @@ def main():
     note = lambda line: print(log.Line(line), file=sys.stderr, flush=True)
     progress = (lambda t, phase: note('[INFO] t = %5.1f s  %s' % (t, phase))) if args.progress else None
     try:
-        cell, keypoints = Load_Cell_Configuration(), Load_Keypoints()
-        for level, message in cell.Notes + keypoints.Notes:
+        cell, constants = Load_Cell_Configuration(), Load_Constants()
+        for level, message in cell.Notes + constants.Notes:
             note('[%s] %s' % (level, message))
         result = Run_Cycle(Build_Cell_Model(cell), Read_Legacy_Plan(os.path.abspath(args.plan)), Read_PCB_Meta(), cell,
-                           keypoints.Loader['home'], progress)
+                           constants.Loader['L_HOME'], progress)
     except (Configuration_Error_Cls, Scene_Error_Cls, Simulation_Error_Cls) as error:
         note('[ERROR] %s' % error)
         log.Close()

@@ -22,31 +22,36 @@
 ## =========================================================================== ##
 
 # System (Default)
+import os
 import re
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
 
 
-def test_the_resolved_line_is_printed_close_to_the_shipped_joints(tmp_path, run_script, keypoints):
+def test_the_resolved_lines_are_printed_close_to_the_shipped_point(tmp_path, run_script, constants):
     """
     Description:
-        The resolver prints a Joints line (6 values, 1e-6 deg) for input_pcb_press within 0.01 deg of the shipped
-        joints (they differ by the legacy IK's 24 um residue only); it writes nothing.
+        The resolver prints the Joints line (6 values, 1e-6 deg) of P_INPUT_ABOVE from its Reference within 0.01 deg of the
+        shipped joints (they differ by the legacy IK's residue, 0.024 mm), and its Pose line (6 values, 9 decimals) within
+        0.05 mm of the shipped Pose; it writes nothing.
     """
 
-    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'input_pcb_press'], tmp_path)
+    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'P_INPUT_ABOVE'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
-    line = next(l for l in result.stdout.splitlines() if l.strip().startswith('Joints: ['))
-    values = [float(v) for v in re.findall(r'-?\d+\.\d{6}', line)]
-    assert len(values) == 6
-    assert np.max(np.abs(np.radians(values) - keypoints.Robot['input_pcb_press'].Joints)) < np.radians(0.01)
+    joints = next(l for l in result.stdout.splitlines() if l.strip().startswith('Joints: ['))
+    values = [float(v) for v in re.findall(r'-?\d+\.\d{6}', joints)]
+    assert len(values) == 6 and np.max(np.abs(np.radians(values) - constants.Points['P_INPUT_ABOVE'].Joints)) < np.radians(0.01)
+    pose = next(l for l in result.stdout.splitlines() if l.strip().startswith('Pose: ['))
+    values = [float(v) for v in re.findall(r'-?\d+\.\d{9}', pose)]
+    assert len(values) == 6 and np.max(np.abs(np.array(values[:3]) - constants.Points['P_INPUT_ABOVE'].Pose[:3])) < 0.00005
+    assert os.listdir(tmp_path) == []
 
 
-def test_a_keypoint_without_relative_to_is_refused(tmp_path, run_script):
+def test_a_point_without_a_target_is_refused(tmp_path, run_script):
     """
     Description:
-        A keypoint defined by its joints only (home) has nothing to resolve: [ERROR], exit 1.
+        A point defined by its joints only (P_HOME: no Reference, no PCB_Hold) has nothing to resolve: [ERROR], exit 1.
     """
 
-    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'home'], tmp_path)
-    assert result.returncode == 1 and '[ERROR] Keypoint home has no Relative_To target to resolve' in result.stdout
+    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'P_HOME'], tmp_path)
+    assert result.returncode == 1 and '[ERROR] Point P_HOME has no Reference or PCB_Hold target to resolve' in result.stdout
