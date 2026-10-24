@@ -349,6 +349,168 @@ physics or the model.
 - [x] Test-it-off: the logo is not used (owner, 2026-10-24); the PNG removed, the product named only.
 - [x] The name "Test-it-off Simulation" and the spelling Test-it-off everywhere (design-decisions).
 
+## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - design, waiting for approval
+
+Requirements (restated): the cell configuration and the named keypoints in YAML in the root `Configuration/`
+(SPEC §6, §8); one loader with validation; IK resolution by family and seed; posing the whole cell at a
+keypoint in the viewer; a headless keypoint check; the 22 keypoints of SPEC §4.8 at full precision; a
+controller-friendly format (SPEC §17). No change to the physics, the model, the cycle run or the baseline.
+
+### Measured for this design (2026-10-24, read-only)
+
+- **Full precision.** Every §4.8 keypoint is a segment end of `Data/Reference/cell_plan.npz` where the plan
+  holds still (joint speed exactly 0 over the neighbouring samples; `home` = the file's `q_home`). Those rows
+  differ from the §4.8 table by at most 7.6e-5 rad, and their FK differs from the table's TCP / flange
+  position by at most 0.081 mm (`loader_approach`) - within the table's rounding (1e-4 rad, 0.1 mm).
+- **Relative definitions** reproduce the plan: `input_pcb_press` = the TCP holding the PCB in the input crate
+  + 1.5 mm along tool +Z: 24 µm, 0.0000°; `loader_handover` = the TCP holding the PCB at the jaws' hold pose:
+  19 µm; `output_place` = holding the PCB in the output crate - 1 mm along tool +Z: 19 µm. The residue is the
+  legacy IK's tolerance, so a stale-resolution tolerance of 1 µm would be wrong: proposed 0.05 mm / 0.01°.
+- **Contacts within 3 mm** (planning model, robot side): `home` none; `input_pcb_press` the four cups 1.5 mm
+  into the PCB; `fork_closed_end` the fork 6.0 mm into the handle bar (the tight recorded path, SPEC §4.7);
+  `output_place` the cups on the PCB (0.0 mm). The carried PCB is not a robot body: the check needs a second
+  query, the PCB against the scene (the jaws at the handover, the crate floor at the place).
+- **Viewer keys.** Every letter and `, / ; ' \` `` ` `` toggles a visual or render flag (`mjVISSTRING`,
+  `mjRNDSTRING`); the viewer also binds Space, Backspace, the arrows, Tab, Esc, `[ ]`, `- =`, F1-F5, 0-5.
+  Not in those: `.`, Page Up / Page Down, Home / End. A key callback needs `mujoco.viewer.launch_passive`,
+  which on macOS runs only under `.venv/bin/mjpython` (present).
+- **Model limits.** The robot joints are ±3.04 rad in the vendored `models/aubo_i5/aubo_i5.xml` (and
+  `ctrlrange ±3.04` set in `Scene.Core`); the loader ranges, MG06 lid / handle ranges in `models/scene.xml`.
+
+### Proposal
+
+**1. `Configuration/Cell.yaml`** (the template's `Configuration/Cell_SF1.yaml` form; keys Pascal_Snake_Case,
+every field `REQUIRED.` with unit and source; angles in deg, lengths in m, converted once by the loader):
+
+| Section.Field | Unit | Source | Read by (now) |
+|---|---|---|---|
+| `Robot.Base_Position`, `Robot.Base_Yaw` | m, deg | CAD (top of `deska_robot`), SPEC §4.2 | `Scene` (today `CONST_ROBOT_BASE/YAW`) |
+| `Robot.Joint_Limits` | deg | the vendored MJCF ±3.04 rad - **question 1** | the check (and `Scene`'s ctrlrange) |
+| `Robot.Speed_Fraction`, `Robot.Datasheet_Speeds`, `Robot.Acceleration_Limits` (*assumed*) | -, deg/s, deg/s² | AUBO i5 datasheet; SPEC §4.4 | step 4 - **question 2** |
+| `Vacuum.Pressure`, `Vacuum.Cup_Diameter` (force derived, not stored) | Pa, m | VGC10 datasheet, SPEC §4.3 | `Scene` (today constants) |
+| `MG06.Open_Lid`, `MG06.Closed_Lid`, `MG06.Closed_Handle` | deg | scene stop; SPEC §4.7 (−0.5°, 28.65°) | posing, the check |
+| `Clearance.Robot` (3 mm), `Clearance.Stale_Position` (0.05 mm), `Clearance.Stale_Angle` (0.01°), `Clearance.Check_Position` (0.1 mm) | m, deg | SPEC §2, measured above | the check, `Collision` (planning margin = 2 × clearance, derived) |
+| `Acceptance.*` (0.5 mm, 0.2°, 2 mm, 2°, 0.5 mm penetration) | m, deg | SPEC §10.1 | `Simulation.Check_Acceptance` (today constants) |
+| `Simulation.Phase_Steps` (20), `Simulation.Cup_Touch` (0.5 mm) | -, m | the legacy run; no effect on the reference plan (F3.5); sensitivity in step 6 | `Simulation`, `Collision` |
+
+Values that move from code constants into the file are written so they convert to the same floats; the
+fingerprint and the report diff prove it after the move (one commit).
+
+**2. `Configuration/Keypoints.yaml`** - header: angles [deg], lengths [m], joint order shoulder_pan,
+shoulder_lift, elbow, wrist_1, wrist_2, wrist_3 (the model's `aubo/<name>` joints), frames named
+(`suction_tcp`, `tool_flange`, `fork_center`; the MG06 fixture frame for positions). Sections:
+
+- `Robot.<keypoint>`: `Joints` (REQUIRED, the source of truth, deg with 6 decimals: the round trip moves the
+  pose < 0.1 µm), `Family` (REQUIRED, `wrist_up` / `wrist_down`), `Context` (REQUIRED: the scene the keypoint is
+  checked and shown in - `Loader`, `Gripper`, `PCB`, `MG06`), `Note` (REQUIRED); optional (a recorded project
+  exception to "no optional fields"): `Check` (frame + position [+ rpy] as a check value), `Relative_To`
+  (`Target` = another keypoint or `pcb_hold@<location>`, `Frame`, `Offset` [m] in that frame's axes),
+  `Allow_Contact` (named groups: `cups_pcb`, `handle_bar`, `pcb_jaws`, `pcb_crate`).
+- `Loader.<position>`: `Y`, `Z` [m] (home, travel_place, place, park). `Gripper.<state>`: [m] per jaw (open,
+  grip, clamp). The PCB locations are code constants (a single legal set): `input_crate`, `cups`, `jaws`,
+  `mg06`, `output_crate`.
+
+```yaml
+Robot:
+  home:
+    # The parking pose, tool down. Full precision from Data/Reference/cell_plan.npz (q_home); SPEC §4.8.
+    Joints: [45.242793, 39.593430, 105.038309, -24.555084, 89.999924, 0.242831]   # [deg] REQUIRED.
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.3000, -0.5200, 0.4000]}               # [m] SPEC §4.8
+    Context: {Loader: home, Gripper: open, PCB: input_crate, MG06: open}
+    Note: Start and end of the cycle.
+  input_pcb_press:
+    Joints: [26.638999, -20.811883, 122.063611, 52.875494, 90.000000, -18.361001]
+    Family: wrist_up
+    Relative_To: {Target: pcb_hold@input_crate, Frame: suction_tcp, Offset: [0, 0, 0.0015]}   # [m] 1.5 mm press
+    Allow_Contact: [cups_pcb]
+    Context: {Loader: home, Gripper: open, PCB: input_crate, MG06: open}
+    Note: Cups pressed 1.5 mm onto the PCB, then vacuum on (SPEC §4.7).
+  loader_handover:
+    Joints: [-24.615662, 4.968975, 123.008998, 24.903697, 81.624008, -69.385948]
+    Family: wrist_up
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0, 0, 0]}
+    Allow_Contact: [cups_pcb, pcb_jaws]
+    Context: {Loader: home, Gripper: open, PCB: cups, MG06: open}
+    Note: PCB at the hold pose, no press - 0.3 mm above the finger ledges (SPEC §4.7).
+  fork_closed_end:
+    Joints: [-29.547477, 1.304953, 138.071309, -43.231989, -74.548206, 65.994483]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.0550, -0.2840, 0.3154]}
+    Allow_Contact: [handle_bar]
+    Context: {Loader: park, Gripper: open, PCB: mg06, MG06: closed}
+    Note: End of the recorded closing path (path fork_close, SPEC §4.9); the bar on the slot bottom.
+  output_place:
+    Joints: [59.945628, -12.144714, 134.701735, 56.846449, 90.000000, 14.945628]
+    Family: wrist_up
+    Relative_To: {Target: pcb_hold@output_crate, Frame: suction_tcp, Offset: [0, 0, -0.001]}   # 1 mm above the floor
+    Allow_Contact: [cups_pcb, pcb_crate]
+    Context: {Loader: home, Gripper: open, PCB: cups, MG06: open}
+    Note: PCB 1 mm above the output crate floor, then vacuum off.
+Loader:
+  home: {Y: -0.1000, Z: 0.0}            # [m] SPEC §4.4
+  park: {Y: -0.1995, Z: 0.020}
+Gripper:
+  open: 0.035                           # [m] per jaw, SPEC §4.4
+  clamp: 0.00575                        # jaw_grip - 12 mm: the force-limited clamp command
+```
+
+**3. Determinism.** `Joints` is REQUIRED for every robot keypoint and is the only thing posing and playback
+read: no IK at show or play time. `Relative_To` and `Check` are check values. `check_keypoints.py` recomputes the
+target and fails a keypoint whose `Joints` do not reach it within `Clearance.Stale_Position` /
+`Stale_Angle` ("stale"), naming the difference and the command that prints the corrected line:
+`Example/Keypoints/resolve_keypoint.py --name <k>` (IK by `Family`, seeded from the keypoint's current joints or
+`--seed <keypoint>`, refused if the solution changes family). The script prints the `Joints:` line; no tool
+writes the YAML (project-style-rpx references/yaml.md) - the owner pastes it, git records it.
+
+**4. Precision.** The 22 `Joints` come from the plan's stationary segment-end rows (`q_home` for home),
+rounded to 6 decimals of a degree. Tests: each within 1e-4 rad of the §4.8 table, FK within 0.1 mm of the
+§4.8 position, and within 1 µm of the plan row's FK. The method is recorded in SPEC §4.8.
+
+**5. API.** `Configuration.Core` stays the only YAML reader (the template's `Load_Configuration`,
+`Load_Job`): `Load_Cell_Configuration(path) -> Cell_Configuration_Str`, `Load_Keypoints(path) -> Keypoints_Str`
+(`Robot_Keypoint_Str`, `Loader_Position_Str`, ...), every problem collected and named by file and key path
+(`Configuration/Keypoints.yaml: Robot.home.Joints: 5 values, 6 required`), unknown keys returned as WARNING
+notes. A new domain `src/Keypoints/Core.py` (→ Configuration, Scene, Kinematics, Collision): `Target_Pose`,
+`Resolve_Keypoint`, `Pose_Cell` (robot + loader + jaws + PCB at a location + MG06 open / closed into an
+`MjData`), `Check_Keypoints -> List[Keypoint_Check_Str]`, `Format_Check_Table`. `Collision.Core` gains the
+carried-PCB clearance query. `Scene`, `Simulation`, `Collision` read the moved values from
+`Cell_Configuration_Str` (the scripts and tests load it once).
+
+**6. Scripts (`Example/Keypoints/`)**: `show_keypoint.py --name <k> [--loader <pos>] [--gripper <state>]
+[--pcb <location>] [--mg06 open|closed] [--headless] [--image FILE]` (blocking viewer under python;
+`--image` writes an offscreen render into `Data/Generated/Images/`); `step_keypoints.py` (passive viewer
+under `mjpython` on macOS; **Page Down** next, **Page Up** previous, `.` as an alternative - question 4);
+`check_keypoints.py` (the table, exit 1 on a failure); `resolve_keypoint.py --name <k> [--seed <k>]`.
+
+**7. Check rules**, one row per keypoint: joint limits (from the model); `Family` = sign of wrist_2 (a
+WARNING within 1° of zero: `via_mg06_high` is at −0.94°); `Check` within 0.1 mm (and 0.1° if a rotation is
+given); `Relative_To` within the stale tolerance; clearance ≥ 3 mm from the robot and tool - and the PCB when
+`Context.PCB` is `cups` - to MG06, the workstation, the crates and the loader, except the `Allow_Contact`
+groups (each allowed contact is listed with its depth, so an allowed contact that grows is visible). Table:
+keypoint | family | limits | check | stale | min. clearance (pair) | allowed contacts | verdict; exit 1 on
+any FAIL.
+
+**8. KNOWN_ISSUES**: the model's joint zeros and directions against the real AUBO i5 controller are not
+verified (recorded now).
+
+### Questions (Part A)
+
+1. Joint limits and loader ranges: keep the model (vendored MJCF, `scene.xml`) as their only source and let
+   the check read them from the compiled model (recommended: one source of truth, nothing patched), or put
+   them into `Cell.yaml` and patch the model from it (the template's way for its robot)?
+2. Speeds and accelerations: add them in step 4 with their reader, the trajectory (recommended: the skills
+   allow no field without a reader), or now as fields read by nothing yet?
+3. `Data/PCB/pcb_meta.json` holds the loader positions (`y_home`, `y_place`, `z_place`, `jaw_grip`,
+   `jaw_open`) and an unread `machine_shift`. Move the loader positions into `Keypoints.yaml` (one source;
+   `Simulation` reads the home position from there; a format change) and drop `machine_shift` (recorded in SPEC
+   §4.7 already)?
+4. Viewer keys: Page Down / Page Up (plus `.`) - not verifiable from here; the owner presses them once.
+5. YAML keys Pascal_Snake_Case (the skill) instead of the lowercase `joints`, `tcp`, `family` of the request;
+   the keypoint names stay lowercase (they are names, SPEC §4.8).
+6. The optional fields (`Check`, `Relative_To`, `Allow_Contact`) as a recorded exception to the skill's "no
+   optional fields".
+
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
 - An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the

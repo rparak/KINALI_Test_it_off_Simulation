@@ -22,6 +22,18 @@ to validate an output on the real cell.
   (the adhesion model, the jaw force), and the collision margins (the 3 mm planning clearance), run
   first at reduced speed with the controller's safety limits active.
 
+## The model's joint zeros and directions are not verified against the real AUBO i5 controller
+
+The joint angles of this project (the keypoints, and from step 4 the trajectories) are the MuJoCo model's:
+the vendored AUBO i5 MJCF (ian-chuang/Manipulator-Mujoco) defines each joint's zero and axis direction
+(shoulder lift, wrist 1 and wrist 3 about −Y, SPEC §4.3). Whether they equal the AUBO controller's convention
+(zero pose, positive direction, joint order) has not been checked.
+
+- **Impact:** a keypoint copied to the real controller as joint values could command a different pose
+  (SPEC §17).
+- **What would close it:** comparing a few poses on the real robot (or the AUBO documentation's zero pose and
+  directions) with the model, as part of the real-cell validation procedure.
+
 ## The crate penetration is −0.14 mm in this environment, −0.08 mm in the brief's reference
 
 The brief's reference result (produced on the original machine of `mg06_cell_mujoco`, environment not
