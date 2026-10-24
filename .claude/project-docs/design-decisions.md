@@ -42,6 +42,45 @@ not possible, the procedure and the real cell's measurements do not exist yet.
 
 Pinned by: nothing yet (the formats come in steps 3–4; their tests will pin unit and order).
 
+## Brand: JIC Smart Factory, collaboration JIC Smart Factory × KINALI, product Test it off
+
+**Decision.** An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test it off system, an automated workcell for testing assembled printed circuit boards (PCBA). (owner, 2026-10-24). The project carries the JIC Smart Factory brand with the
+KINALI and Test it off logos:
+- where: the README header (now) and the Phase 2 application's header (later);
+- how: black SVG on light grounds, white SVG on dark grounds (GitHub dark mode, a possibly dark Phase 2 app),
+  `Media/<Logo>_Black.svg` / `_White.svg`, written by `Example/Media/make_logo_variants.py` by recolouring the
+  vector originals (paths and viewBox kept);
+- the originals stay in `Media/Original/` for regeneration; the JIC Smart Factory original is byte-identical
+  to jic-sf-ui-style's `assets/logos/jic-smart-factory.svg` (sha256 pinned in the test), the brand's source
+  of truth;
+- the KINALI and Test it off logos are used with KINALI's consent (owner confirmed, 2026-10-24);
+- no funding band: the project has no external or public funding.
+
+**Why.** One monochrome family reads on both grounds and beside each other; the owner's decision.
+
+**Alternatives.** The JIC purple original as jic-sf-ui-style prescribes ("never recoloured"; "the purple
+version is for white grounds"): overruled by the owner for this project (a recorded departure in the style
+project reference). Tracing the raster Test it off logo: not done without the owner's decision on a tracing
+tool (`KNOWN_ISSUES.md`).
+
+**Revisit if** JIC Smart Factory or KINALI supply official monochrome vector logos (they replace the
+recoloured ones), or the brand rules change.
+
+Pinned by `test/Example/Media/test_make_logo_variants.py` (originals' hashes, one colour, geometry kept,
+byte-identical regeneration).
+
+## Phase 2 GUI toolkit: PyQt5 or PyQt6 - open
+
+**Open, not decided.** Recorded so the choice is made with its consequences in view.
+
+- **PyQt5 (recommended by the brand skill):** jic-sf-ui-style is a ready PyQt5 package (palette, fonts,
+  logos, pixel icons, example app, tests), so the brand comes for free; but Qt 5.15 is the end of Qt 5 and
+  will age; MuJoCo's OpenGL in a `QOpenGLWidget` works on both.
+- **PyQt6 (brief §8):** Qt 6 is the current line with long support; but the brand package would have to be
+  ported (enum and API changes) and then maintained separately from the skill's PyQt5 version.
+
+**Decide when** Phase 2 starts.
+
 ## MuJoCo is pinned to 3.16.0
 
 **Decision.** `mujoco==3.16.0` in `requirements.txt`; the installer checks the version.

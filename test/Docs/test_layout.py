@@ -34,7 +34,7 @@ Description:
 # The entries git tracks at the root. Exception with its reason: pytest.ini (the runner reads it at the root).
 #   Unit [Set<string>]
 CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data'}
+                      'src', 'test', 'Example', 'models', 'Data', 'Media'}
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
 CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')

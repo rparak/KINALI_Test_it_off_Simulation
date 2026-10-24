@@ -8,6 +8,9 @@ removed from the tree when this SPEC replaced it; §15) and from the verified st
 
 ## 1. Goal
 
+**Project context** (owner, 2026-10-24): An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test it off system, an automated workcell for testing assembled printed circuit boards (PCBA). The project has no external or public
+funding. Brand: JIC Smart Factory, in collaboration with KINALI, product Test it off (design-decisions).
+
 Simulate the robotic workcell **"Test it off"** by KINALI (automated PCBA testing for electronics
 manufacturers, https://www.testitoff.cz/en/about-test-it-off/) in MuJoCo, so that a robot program for
 the whole process - PCB from the input crate, through the MG06 tester, to the output crate - can be
@@ -43,12 +46,15 @@ Phase 1 (brief §7, in this order):
    as the regression input. (The legacy planner and cycle test were removed in F4; git tag `legacy-planner-reference`.)
 7. **Docs**: the README (readme-writer) and `CLAUDE.md`.
 
-Phase 2 (later): a PyQt6 window rendering MuJoCo through OpenGL (`QOpenGLWidget` + `mujoco.MjrContext` / `mujoco.Renderer`, or an
+Phase 2 (later): a PyQt5 or PyQt6 window (open, see design-decisions: *Phase 2 GUI toolkit*) rendering MuJoCo through
+OpenGL (`QOpenGLWidget` + `mujoco.MjrContext` / `mujoco.Renderer`, or an
 offscreen `mujoco.Renderer` into a `QImage` as a fallback), with the keypoint list and editing (jog
 joints / TCP, IK family, save), the program list (run from a step, step by step), play / pause / step,
 a timeline, camera selection (`free`, `cam_pcb`, `cam_tool`) and the check results, with mouse camera
 control; the simulation runs in a worker thread or a QTimer with fixed real-time stepping. The Phase 1
-core has no GUI dependency, so the Qt application reuses it unchanged. The brief's outline, verbatim:
+core has no GUI dependency, so the Qt application reuses it unchanged. The application carries the project's
+brand (design-decisions: the brand): the JIC Smart Factory, KINALI and Test it off logos in black or white SVG
+(`Media/`), no funding band. The brief's outline, verbatim:
 
 - `QOpenGLWidget` hosting MuJoCo rendering (`MjvScene`, `MjrContext` in the widget's GL context) or offscreen
   `mujoco.Renderer` → `QImage` as a fallback; mouse camera control.
@@ -428,6 +434,8 @@ Data/PCB/pcb_meta.json    PCB poses and loader axis positions
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
+Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
+Media/Original/           the owner's logo originals, kept untouched for regeneration
 src/Configuration/Core.py the repository paths, the PCB meta reader, the MuJoCo log route
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
@@ -439,6 +447,7 @@ Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Render/show_cell.py            opens the viewer on the cell
 Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
+Example/Media/make_logo_variants.py    the black / white SVG logos + Data/Generated/Images/logo_check.png
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
@@ -516,6 +525,7 @@ sources in `src/Scene/Core.py`.
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
+| the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README (and the Phase 2 app) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file (step 4) | to be specified in step 4: `t`, `robot_q[6]`, `robot_qd[6]`, `loader_y`, `loader_z`, `gripper`, `vacuum`, `step_index`, `step_label`, sampled at 4 ms |

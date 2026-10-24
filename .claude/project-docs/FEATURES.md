@@ -330,6 +330,24 @@ Sub-tasks:
 Per-commit checks (fingerprint / fast tests / cycle diff / style): bf210a3, c3ccae9, 50a9793, 5fb719b - each
 1 difference (pcb_vis rgba) / 99 passed / empty / 0 issues.
 
+## F5 - Logos and the JIC Smart Factory × KINALI brand (owner, 2026-10-24)
+
+Requirements: black SVG versions of the JIC Smart Factory, KINALI and Test it off logos (white for dark
+grounds), by official vector (a), recoloured vector (b) or, only after the owner's approval of a tool,
+traced raster (c); never a PNG wrapped in SVG; clean SVGs (viewBox, no width/height, no metadata); originals
+kept; a deterministic script in Example/Media/; a check image in Data/Generated/Images/; Media/ in the root
+layout; the brand and the open Phase 2 toolkit recorded; a README logo header. No change in src/, the
+physics or the model.
+
+- [x] Inventory: JIC Smart Factory (SVG, vector, purple #640aba, identical to jic-sf-ui-style's asset) -> b;
+      KINALI (SVG, vector, white #fff) -> b; Test it off (PNG 2608 x 1768, raster, colour on white) -> c,
+      stopped for the owner's decision on a tracing tool.
+- [x] Example/Media/make_logo_variants.py, Media/JIC_Smart_Factory_*.svg, Media/KINALI_*.svg, logo_check.png
+- [x] Tests (15), each rule broken once; layout test with Media
+- [x] SPEC §1, §2, §6, §9; design-decisions (brand; Phase 2 toolkit open); KNOWN_ISSUES (raster logo); style
+      and readme-writer references; README header and context
+- [ ] Test it off variants (waiting: official SVG from KINALI, or an approved tracing tool)
+
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
 - An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the

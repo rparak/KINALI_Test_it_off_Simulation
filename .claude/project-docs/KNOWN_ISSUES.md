@@ -68,6 +68,17 @@ What the simulation does not model; whoever compares it with the real cell check
   on the chosen 60 % speed and the assumed accelerations.
 - **What would close it:** the real-cell validation procedure (item above), measured joint data.
 
+## The Test it off logo exists only as a raster
+
+The owner's Test it off logo is `Media/Original/test-it-off.png` (2608 × 1768 px, opaque, a colour logo on
+white: #35404A with blue and teal accents). There is no vector original, so there is no
+`Media/Test_it_off_Black.svg` / `_White.svg` yet, and the README header shows the JIC Smart Factory and KINALI
+logos only. A PNG is never wrapped into an SVG.
+
+- **Impact:** the Test it off logo is missing from the README header and the planned Phase 2 header.
+- **What would close it:** an official vector (SVG) from KINALI (recommended), or a traced vector with a
+  tracing tool the owner approves (not in `requirements.txt`).
+
 ## The PCB is one green mesh: board and components are not told apart
 
 `pcb_vis` is a single mesh; components are drawn in the same green as the board.

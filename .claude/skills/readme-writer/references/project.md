@@ -32,15 +32,24 @@ None yet.
 
 ## Figures
 
-None yet. `Data/Generated/Images/` holds run outputs (proof images), not README figures.
+None yet. `Data/Generated/Images/` holds run outputs (proof images), not README figures. The README's images are
+the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (light: `_Black.svg`, dark: `_White.svg`).
 
 ## Rules
 
 - Root layout: `.claude/skills/project-style-rpx/references/project.md` > Root.
 - Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content.
+- The logo header at the top: JIC Smart Factory, KINALI (and Test it off when its vector exists), each a
+  `<picture>` with `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
+- The project context in the introduction uses only the owner's sentence (SPEC §1); nothing about funding,
+  partners or claims beyond it.
 - The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening
   (outputs are simulation results, not validated for the real cell; the validation procedure, reduced
   speed, the controller's safety limits).
+
+Known checker results that are decisions, not defects: the two `[caption]` ERRORs on the logo header (lines 4
+and 9). The header's logos are a brand mark, not figures: they carry no "Figure N:" caption (2026-10-24, a
+judgement call put to the owner). Every other figure added later is captioned and numbered.
 
 ## README tests
 

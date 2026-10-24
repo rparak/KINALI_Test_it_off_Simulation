@@ -8,6 +8,9 @@ project skill of the same name, so a copy would be ignored and drift (`.gitignor
 
 Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, what is never changed).
 
+Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for every visual of the project - the README header now,
+the Phase 2 application later (toolkit open, design-decisions). Its logo rules apply with one departure (below).
+
 **Status (2026-10-24):** in force; the code was migrated to it in `FEATURES.md` F3 (before: 13 files,
 429 issues; after: 25 files, 0 issues).
 
@@ -31,6 +34,8 @@ test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz
 Configuration/         (step 3) the cell, keypoint and program YAML; created with its first file
+Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI; Test_it_off
+                       when a vector exists), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -55,7 +60,7 @@ Trajectory are added in steps 3–4 as their own domains; no placeholder module 
 ## Root ✅
 
 The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
-`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`.
+`pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `Media`.
 Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` exists on disk
 but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`.
 
@@ -69,6 +74,7 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`); step 4 adds one |
 | `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
 | the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
+| the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
@@ -118,5 +124,8 @@ returned list, printed by the script, exit code 1.
 
 ## Departures from the generic skill
 
+- The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
+  says its logos are "never recoloured" and the purple JIC logo is for white grounds (design-decisions: the
+  brand). Replace them with official monochrome vectors when supplied.
 - `.claude/project-docs/FEATURES.md`: a fourth internal document, the feature tracker the owner asked
   for; the generic skill defines three.
