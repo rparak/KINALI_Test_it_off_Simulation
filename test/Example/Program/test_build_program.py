@@ -41,19 +41,18 @@ def test_the_default_program_is_built_checked_and_written(built):
     """
     Description:
         From an unrelated directory the script writes the trajectory (npz, csv) and the check report into --out, prints the
-        report and the legacy diagnostic, and writes nothing into the working directory. Exit 1: the check fails on the
-        recorded Fork_Close overlap (0.54 mm against 0.5 mm, the owner's open decision, KNOWN_ISSUES).
+        report and the legacy diagnostic, and writes nothing into the working directory; exit 0, every step passes.
     """
 
     out, cwd, result = built
-    assert result.returncode == 1, result.stdout + result.stderr
+    assert result.returncode == 0, result.stdout + result.stderr
     assert sorted(os.listdir(out)) == ['Program_Default.csv', 'Program_Default.npz', 'Program_Default_check.txt'] and os.listdir(cwd) == []
     report = open(os.path.join(out, 'Program_Default_check.txt'), encoding='utf-8').read()
     assert report.startswith('program Program_Default: 22 steps, 17214 samples (4 ms), cycle time 68.852 s;')
     assert '  cycle time: program 68.852 s, legacy 65.768 s, difference +3.084 s' in report
     assert '  vacuum_on    program    3.276 s, legacy    3.276 s, +0.000 s' in report
     assert all(line in result.stdout for line in report.splitlines())
-    assert '[ERROR] Program_Default: the check failed.' in result.stdout
+    assert '[INFO] Program_Default: the check passed.' in result.stdout
 
 
 @pytest.mark.slow

@@ -319,18 +319,18 @@ def _Check(commands, keypoints, cell, tools, allow=(), start='home', pcb='input_
     return Check_Trajectory(trajectory, program, notes, kinematics, Robot_Collision_Cls(kinematics.Model, kinematics.Data), keypoints, cell, meta)
 
 
-def test_the_default_program_check_finds_only_the_recorded_fork_overlap(checked):
+def test_the_default_program_passes_its_check(checked):
     """
     Description:
-        The default program's check (measured 2026-10-24): 21 of 22 steps pass; close_mg06 fails on handle_bar 0.54 mm deep,
-        on a recorded row of Fork_Close (the recorded path itself; Cell.yaml allows 0.5 mm) - the owner's decision. Every
+        The default program's check (measured 2026-10-24): every step passes; close_mg06's deepest handle_bar overlap is the
+        recorded Fork_Close row's 0.54 mm, within Cell.yaml's 0.6 mm (owner, 2026-10-24: measured + margin). Every
         allowed group occurs where declared; the press at the pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples
         measured than exist); the cycle is 68.852 s.
     """
 
-    assert [s.Name for s in checked.Steps if s.Verdict == 'FAIL'] == ['close_mg06']
+    assert [s.Name for s in checked.Steps if s.Verdict == 'FAIL'] == [] and checked.Verdict == 'PASS'
     close = next(s for s in checked.Steps if s.Name == 'close_mg06')
-    assert len(close.Failures) == 1 and close.Failures[0].startswith('handle_bar 0.54 mm deep')
+    assert close.Allowed['handle_bar'].Distance == pytest.approx(-0.000539, abs=0.000002)
     pick = next(s for s in checked.Steps if s.Name == 'pick_input')
     assert pick.Allowed['cups_pcb'].Distance == pytest.approx(-0.00148, abs=0.00002) and pick.Allowed['pcb_crate'] is not None
     assert all(f is not None for s in checked.Steps for f in s.Allowed.values())
@@ -422,7 +422,7 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     Description:
         The report: a header with the cycle time; a row per step with its peaks and verdict, the closest pair per allowed group
         and of the rest with sample and time; the handover's gaps; the stretched MoveLs; the Fork_Open note; the events; the
-        keypoints used (23: 22 PASS, 1 WARN); the failure; the closing sentence on simulation results.
+        keypoints used (23: 22 PASS, 1 WARN); no failure; the closing sentence on simulation results.
     """
 
     from Program.Core import Format_Check_Report
@@ -434,5 +434,5 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     assert 'handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into loader_handover min 0.318 mm' in text
     assert 'stretched MoveLs: none' in text and 'note: open_mg06, Path Fork_Open: the recorded path starts moving' in text
     assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 23 (0 FAIL, 1 WARN, 22 PASS;' in text
-    assert any(line.startswith('  close_mg06: handle_bar 0.54 mm deep') for line in lines)
-    assert lines[-1] == 'Program_Default: the program check FAILED. Simulation results only: not validated for the real cell.'
+    assert not any(line.startswith('  close_mg06: ') for line in lines)
+    assert lines[-1] == 'Program_Default: the program check passed. Simulation results only: not validated for the real cell.'

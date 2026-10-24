@@ -84,25 +84,15 @@ The recorded opening path is joined at a row where the flange already moves at 3
 - **Evidence:** `Program.Build_Program`'s note; `Data/Paths/fork_close_open_path.npz` rows 662-665.
 - **What would close it:** step 5's run of the default program reports the tracking error and the bar force there.
 
-## The recorded closing path overlaps the handle bar by 0.54 mm (limit 0.5 mm)
-
-Replayed kinematically, `Path: Fork_Close` puts the fork 0.539 mm into the handle bar on a recorded row (26.016 s of the
-default program); `Cell.yaml` `Allowed_Depth.handle_bar` is 0.5 mm (owner, 2026-10-24), so the default program's check
-fails on this one step. The path is the recorded, physics-verified motion (SPEC §4.6: up to 294 N on the bar).
-
-- **Impact:** `Example/Program/build_program.py` exits 1 on the default program until the owner decides (raise the limit to
-  the measured overlap plus a margin, or accept the failure as the recorded path's).
-- **Evidence:** the check report; between recorded rows the overlap is at most 0.468 mm.
-- **Pinned by:** `test/Program/test_core.py::test_the_default_program_check_finds_only_the_recorded_fork_overlap`.
-- **What would close it:** the owner's decision on the `handle_bar` depth, or a re-recorded path.
-
 ## The recorded fork paths exceed the assumed acceleration limits
 
-The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint accelerations (`Fork_Close`) and 8.44x at
-`Fork_Open`'s join (the velocity step); the limits themselves are an assumption (SPEC §4.4).
+The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint accelerations (`Fork_Close`), and
+`Fork_Open`'s join is a velocity step from rest to 39.1 mm/s (8.44x the assumed acceleration); the limits themselves are an
+assumption (SPEC §4.4). The program check reports these peaks and does not limit them (owner, 2026-10-24).
 
-- **Impact:** on the real robot the recorded timing may not be executable as is; the simulation ran it (SPEC §4.6).
-- **What would close it:** the real AUBO i5's acceleration limits, and the paths re-timed to them if needed.
+- **Impact:** for the real-cell transfer (SPEC §17) the recorded timing is not executable as is: a real controller needs a
+  ramped join into `Fork_Open` and the paths limited to the real joint accelerations. The simulation ran them (SPEC §4.6).
+- **What would close it:** the real AUBO i5's acceleration limits, and the paths re-timed (ramped join, limited path) to them.
 
 ## Simplifications of the model
 

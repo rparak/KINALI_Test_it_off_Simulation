@@ -978,8 +978,9 @@ each group's deepest overlap in `Cell.yaml` (a deeper one fails even where allow
 the minimum distance and where (sample, time) it occurs; 5 F9's multi-seed IK dropped (endpoints fixed by LOCKED steps;
 design-decisions in F9); 6 `pcb_jaws` back, 0.5 mm; 7 the PCB-table pair exempt only while the PCB is in a crate - a
 carried PCB or a PCB in the jaws keeps 3 mm to the table; 8 the keypoint check on the planning model, its table
-byte-identical; 9 the `Fork_Open` velocity step kept, noted for step 5 (tracking error, force on the bar); 10 straight
-home from MG06 (MoveJ, the family switch in joint space); 11 `Data/Optimized/` committed, trajectories git-ignored until
+byte-identical; 9 the `Fork_Open` velocity step kept, noted for step 5 (tracking error, force on the bar); 10 home from
+MG06 by joint moves, the family switch in joint space - *corrected 2026-10-24 (owner): through `via_mg06_high`, the legacy
+route; "straight home" rested on Part A's wrong claim (F8.5)*; 11 `Data/Optimized/` committed, trajectories git-ignored until
 step 6; 12 loader steps LOCKED in F9; 13 TOPP without a jerk limit, step 5 reports tracking error and PCB slip for both
 versions, acceptance as SPEC §10.1; 14 `Test: Process.Test_Duration` (an explicit reference).
 

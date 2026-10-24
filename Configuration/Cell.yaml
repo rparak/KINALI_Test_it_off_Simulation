@@ -56,10 +56,12 @@ Clearance:
   # where the group is allowed. cups_pcb: the cups pressed 1.5 mm onto the PCB (SPEC §4.7) plus 0.1 mm;
   # handle_bar: the fork on the bar of the recorded path; pcb_crate: the PCB on a crate floor (and on the
   # table under it); pcb_jaws: the carried PCB between the loader's jaws at the handover and the take -
-  # each 0.5 mm (owner, 2026-10-24). [m] REQUIRED.
+  # each 0.5 mm (owner, 2026-10-24), except handle_bar: Fork_Close recorded path overlaps the bar by
+  # 0.539 mm at one row (physics-verified path, up to 294 N); measured + margin, 0.6 mm (owner,
+  # 2026-10-24). [m] REQUIRED.
   Allowed_Depth:
     cups_pcb: 0.0016
-    handle_bar: 0.0005
+    handle_bar: 0.0006
     pcb_crate: 0.0005
     pcb_jaws: 0.0005
   # A keypoint's FK against its Check value: the SPEC §4.8 table is rounded to 0.1 mm (measured

@@ -114,7 +114,7 @@ def test_the_shipped_cell_configuration_loads_in_si_units():
     assert cell.Base_Position == [0.42072, -0.33497, 0.162] and cell.Base_Yaw == pytest.approx(math.radians(-135.0), abs=0)
     assert (cell.Vacuum_Pressure, cell.Cup_Diameter, cell.Clearance) == (40000.0, 0.015, 0.003)
     assert cell.Closed_Lid == pytest.approx(math.radians(-0.5)) and cell.Closed_Handle == pytest.approx(math.radians(28.65))
-    assert cell.Allowed_Depth == {'cups_pcb': 0.0016, 'handle_bar': 0.0005, 'pcb_crate': 0.0005, 'pcb_jaws': 0.0005}
+    assert cell.Allowed_Depth == {'cups_pcb': 0.0016, 'handle_bar': 0.0006, 'pcb_crate': 0.0005, 'pcb_jaws': 0.0005}
     assert (cell.Place_Error, cell.Crate_Distance, cell.Penetration, cell.Phase_Steps, cell.Cup_Touch) == (0.0005, 0.002, 0.0005, 20, 0.0005)
 
 

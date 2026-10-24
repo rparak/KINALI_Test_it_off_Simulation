@@ -194,8 +194,10 @@ Pinned by `test/Keypoints/test_core.py::test_the_fork_keypoints_in_their_recorde
 ## The contact groups are only those a keypoint or a program step observes
 
 **Decision.** The check knows four contact groups, `cups_pcb`, `handle_bar`, `pcb_crate` and `pcb_jaws` (the PCB on the
-loader's jaws), each with its deepest allowed overlap in `Configuration/Cell.yaml` `Clearance.Allowed_Depth` (1.6, 0.5,
-0.5, 0.5 mm); a deeper overlap fails even where the group is allowed. A keypoint declares groups in `Allow_Contact`, a
+loader's jaws), each with its deepest allowed overlap in `Configuration/Cell.yaml` `Clearance.Allowed_Depth` (1.6, 0.6,
+0.5, 0.5 mm); a deeper overlap fails even where the group is allowed. `handle_bar` is 0.6 mm (owner, 2026-10-24): the
+recorded `Fork_Close` path overlaps the bar by 0.539 mm at one row - the physics-verified path (up to 294 N on the bar,
+SPEC §4.6) - measured plus a margin; it was 0.5 mm, and the default program's check failed on that one row (F8.5). A keypoint declares groups in `Allow_Contact`, a
 program step in its `Allow_Contact` (owner, 2026-10-24); every declared group must be observed. *Corrected 2026-10-24:
 `pcb_jaws` was removed in F6.4 because no keypoint observed it; it is back (owner, step 4 answer 6) because the handover and
 take steps of the default program have the carried PCB between the closing jaws (F8).*
