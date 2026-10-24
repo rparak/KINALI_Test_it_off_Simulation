@@ -2472,7 +2472,7 @@
    "geom_priority": "b6589fc6ab0dc82c",
    "geom_quat": "428115154456c001",
    "geom_rgba": "03548699f6649160",
-   "geom_size": "f8a45c992c70bf04",
+   "geom_size": "25b9c1eb209384fa",
    "geom_solimp": "6d4c9d0cbea1c1f6",
    "geom_solmix": "e8dc057d3346e56a",
    "geom_solref": "1e9a676b8781ddcd",
@@ -11506,11 +11506,11 @@
   },
   "grid": {
    "mat_emission": "38f6d7875e3195bd",
-   "mat_reflectance": "38f6d7875e3195bd",
+   "mat_reflectance": "1414856679cd2f80",
    "mat_rgba": "01a295908de37bfe",
-   "mat_shininess": "1b390cd54a0c0d4f",
-   "mat_specular": "7f27c972e974f204",
-   "mat_texrepeat": "5eef6aedb68893e5"
+   "mat_shininess": "aa6cc0b767036cab",
+   "mat_specular": "c794f70ae8867c81",
+   "mat_texrepeat": "30289572de5fee62"
   },
   "look_alu": {
    "mat_emission": "38f6d7875e3195bd",
@@ -15195,7 +15195,7 @@
   "ngeom": 509,
   "njnt": 18,
   "nkey": 0,
-  "nlight": 3,
+  "nlight": 2,
   "nmat": 10,
   "nmesh": 438,
   "npair": 0,

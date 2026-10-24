@@ -52,12 +52,9 @@ Description:
 # The solder-mask green of the PCB visual (design-decisions: the PCB is drawn in solder-mask green).
 #   Unit [Vector<float> 1x4] (-)
 CONST_GREEN = [0.05, 0.42, 0.18, 1.0]
-# The accepted differences from the baseline fingerprint: the green PCB, and until the baseline is updated (F7, the
-# next commit) the studio look's visual-only fields - the floor plane's size, the floor material, the number of lights.
+# The one accepted difference from the baseline fingerprint (the green PCB).
 #   Unit [List<string>]
-CONST_ACCEPTED_DIFFERENCES = ['geoms/floor/geom_size', 'geoms/pcb_vis/geom_rgba', 'materials/grid/mat_reflectance',
-                              'materials/grid/mat_shininess', 'materials/grid/mat_specular', 'materials/grid/mat_texrepeat',
-                              'sizes/nlight']
+CONST_ACCEPTED_DIFFERENCES = ['geoms/pcb_vis/geom_rgba']
 # The studio look (F7, SPEC §4.7 Look): the sky's zenith, horizon and nadir colours.
 #   Unit [List<float>] (rgb 0-1)
 CONST_SKY_ZENITH, CONST_HORIZON, CONST_SKY_NADIR = [0.20, 0.22, 0.25], [0.42, 0.45, 0.49], [0.64, 0.68, 0.73]

@@ -30,12 +30,9 @@ import json
 Description:
     Initialization of constants.
 """
-# The accepted differences from the baseline: the green PCB, and until the baseline is updated (F7, the next commit)
-# the studio look's visual-only fields.
+# The one accepted difference from the baseline (the green PCB).
 #   Unit [List<string>]
-CONST_ACCEPTED_DIFFERENCES = ['geoms/floor/geom_size', 'geoms/pcb_vis/geom_rgba', 'materials/grid/mat_reflectance',
-                              'materials/grid/mat_shininess', 'materials/grid/mat_specular', 'materials/grid/mat_texrepeat',
-                              'sizes/nlight']
+CONST_ACCEPTED_DIFFERENCES = ['geoms/pcb_vis/geom_rgba']
 
 
 def test_the_default_compare_names_only_the_green_pcb(tmp_path, run_script):
