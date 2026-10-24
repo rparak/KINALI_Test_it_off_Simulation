@@ -1,7 +1,7 @@
 """Fingerprint of the compiled cell model: sizes, solver options and per-name hashes of every physical / visual
 property, so a restructure can prove that nothing in the model changed.
 
-usage:  python tools/model_fingerprint.py                       # write docs/baseline_model_fingerprint.json
+usage:  python tools/model_fingerprint.py                       # write test/Scene/data/baseline_model_fingerprint.json
         python tools/model_fingerprint.py --out FILE            # write FILE
         python tools/model_fingerprint.py --compare FILE        # compare the current model with FILE (exit 1 on a difference)
 
@@ -13,13 +13,15 @@ from pathlib import Path
 import numpy as np, mujoco
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = ROOT / 'docs' / 'baseline_model_fingerprint.json'
+DEFAULT_OUT = ROOT / 'test' / 'Scene' / 'data' / 'baseline_model_fingerprint.json'
 
 
 def build_model():
-    sys.path.insert(0, str(ROOT / 'src'))                 # works without pip install -e
-    from kinali_sim import model
-    return model.build_model()
+    sys.path.insert(0, str(ROOT / 'src'))
+    from Configuration.Core import Configure_MuJoCo_Log
+    from Scene.Core import Build_Cell_Model
+    Configure_MuJoCo_Log()
+    return Build_Cell_Model()
 
 
 def h(x):

@@ -1,6 +1,6 @@
 <mujoco model="mg06_loader_scene">
   
-  <compiler angle="radian" meshdir="../assets" />
+  <compiler angle="radian" meshdir="." />
 
   <option timestep="0.0005" impratio="10" cone="elliptic" noslip_iterations="5" />
 
@@ -437,33 +437,33 @@
     <mesh name="ws_col_Profile_8_40x40_light_L_340_V_choz__07" file="workstation/assets/collision/Profile_8_40x40_light_L_340_V_choz__07.stl" />
     <mesh name="ws_col_Profile_8_40x40_light_L_900_V_choz__08" file="workstation/assets/collision/Profile_8_40x40_light_L_900_V_choz__08.stl" />
     <mesh name="ws_col_WTGovde_1_2mm_600x600x300_stp_V_choz__09" file="workstation/assets/collision/WTGovde_1_2mm_600x600x300_stp_V_choz__09.stl" />
-    <mesh name="aubo/base_link_0" file="robot/aubo_i5/meshes/visual/base_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/base_link_1" file="robot/aubo_i5/meshes/visual/base_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/shoulder_link_0" file="robot/aubo_i5/meshes/visual/shoulder_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/shoulder_link_1" file="robot/aubo_i5/meshes/visual/shoulder_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/upper_arm_link_0" file="robot/aubo_i5/meshes/visual/upper_arm_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/upper_arm_link_1" file="robot/aubo_i5/meshes/visual/upper_arm_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/forearm_link_0" file="robot/aubo_i5/meshes/visual/forearm_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/forearm_link_1" file="robot/aubo_i5/meshes/visual/forearm_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_1_link_0" file="robot/aubo_i5/meshes/visual/wrist_1_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_1_link_1" file="robot/aubo_i5/meshes/visual/wrist_1_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_2_link_0" file="robot/aubo_i5/meshes/visual/wrist_2_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_2_link_1" file="robot/aubo_i5/meshes/visual/wrist_2_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_3_link_0" file="robot/aubo_i5/meshes/visual/wrist_3_link_0.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_3_link_1" file="robot/aubo_i5/meshes/visual/wrist_3_link_1.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_3_link_2" file="robot/aubo_i5/meshes/visual/wrist_3_link_2.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_3_link_3" file="robot/aubo_i5/meshes/visual/wrist_3_link_3.obj" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/base_link_collision" file="robot/aubo_i5/meshes/collision/base_link_collision.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/shoulder_link_collision" file="robot/aubo_i5/meshes/collision/shoulder_link_collision.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/upper_arm_link_collision_0" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_0.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/upper_arm_link_collision_1" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_1.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/upper_arm_link_collision_2" file="robot/aubo_i5/meshes/collision/upper_arm_link_collision_2.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/forearm_link_collision_0" file="robot/aubo_i5/meshes/collision/forearm_link_collision_0.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/forearm_link_collision_1" file="robot/aubo_i5/meshes/collision/forearm_link_collision_1.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/forearm_link_collision_2" file="robot/aubo_i5/meshes/collision/forearm_link_collision_2.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_1_link_collision" file="robot/aubo_i5/meshes/collision/wrist_1_link_collision.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_2_link_collision" file="robot/aubo_i5/meshes/collision/wrist_2_link_collision.stl" scale="0.001 0.001 0.001" />
-    <mesh name="aubo/wrist_3_link_collision" file="robot/aubo_i5/meshes/collision/wrist_3_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/base_link_0" file="aubo_i5/meshes/visual/base_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/base_link_1" file="aubo_i5/meshes/visual/base_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_0" file="aubo_i5/meshes/visual/shoulder_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_1" file="aubo_i5/meshes/visual/shoulder_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_0" file="aubo_i5/meshes/visual/upper_arm_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_1" file="aubo_i5/meshes/visual/upper_arm_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_0" file="aubo_i5/meshes/visual/forearm_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_1" file="aubo_i5/meshes/visual/forearm_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_0" file="aubo_i5/meshes/visual/wrist_1_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_1" file="aubo_i5/meshes/visual/wrist_1_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_0" file="aubo_i5/meshes/visual/wrist_2_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_1" file="aubo_i5/meshes/visual/wrist_2_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_0" file="aubo_i5/meshes/visual/wrist_3_link_0.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_1" file="aubo_i5/meshes/visual/wrist_3_link_1.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_2" file="aubo_i5/meshes/visual/wrist_3_link_2.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_3" file="aubo_i5/meshes/visual/wrist_3_link_3.obj" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/base_link_collision" file="aubo_i5/meshes/collision/base_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/shoulder_link_collision" file="aubo_i5/meshes/collision/shoulder_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_0" file="aubo_i5/meshes/collision/upper_arm_link_collision_0.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_1" file="aubo_i5/meshes/collision/upper_arm_link_collision_1.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/upper_arm_link_collision_2" file="aubo_i5/meshes/collision/upper_arm_link_collision_2.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_0" file="aubo_i5/meshes/collision/forearm_link_collision_0.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_1" file="aubo_i5/meshes/collision/forearm_link_collision_1.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/forearm_link_collision_2" file="aubo_i5/meshes/collision/forearm_link_collision_2.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_1_link_collision" file="aubo_i5/meshes/collision/wrist_1_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_2_link_collision" file="aubo_i5/meshes/collision/wrist_2_link_collision.stl" scale="0.001 0.001 0.001" />
+    <mesh name="aubo/wrist_3_link_collision" file="aubo_i5/meshes/collision/wrist_3_link_collision.stl" scale="0.001 0.001 0.001" />
     <mesh name="aubo/tool/tool_vis_00" file="robot_tool/assets/tool/vis_00.stl" inertia="shell" />
     <mesh name="aubo/tool/tool_vis_01" file="robot_tool/assets/tool/vis_01.stl" inertia="shell" />
     <mesh name="aubo/tool/tool_vis_02" file="robot_tool/assets/tool/vis_02.stl" inertia="shell" />

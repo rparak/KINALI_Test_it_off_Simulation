@@ -1,7 +1,7 @@
 """Kinematics helpers for the AUBO i5 in the MG06 cell: IK (damped least squares), Cartesian targets for the
 suction TCP / flange, and collision checks of a robot configuration against the scene."""
 import numpy as np, mujoco
-from kinali_sim import model as cell
+import cell   # legacy/cell.py (F3.3 transition; F3.4 replaces this module)
 
 M = cell.build_model()
 D = mujoco.MjData(M)

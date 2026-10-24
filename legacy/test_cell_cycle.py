@@ -7,8 +7,8 @@ actually touch, so a badly placed tool or a shifted PCB makes the pick fail like
 usage:  python legacy/test_cell_cycle.py [--record frames.npz] [--render cell_cycle.mp4] [--progress]
 """
 import sys, os, json, numpy as np, mujoco
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))   # runs without pip install -e
-from kinali_sim import model as cell, paths
+HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
+import cell
 
 m = cell.build_model(); d = mujoco.MjData(m)
 P = cell.P
@@ -36,7 +36,7 @@ def loader_target(ch, t):
 KV_KP = m.actuator_biasprm[A_ROBOT, 2] / m.actuator_biasprm[A_ROBOT, 1]     # kv/kp of the joint servos
 
 
-def load_plan(path=paths.LEGACY_PLAN):
+def load_plan(path=os.path.join(HERE, 'cell_plan.npz')):
     """load a plan file (cell_plan.npz, written by legacy/plan_cell.py) into the module state used by run()"""
     global PL, DT, QPLAN, T_END, LOADER, EVENTS, PHASES, START, VPLAN
     PL = np.load(path)

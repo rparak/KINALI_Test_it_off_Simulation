@@ -6,9 +6,9 @@
 
 Exit codes of `run`: 0 all checks pass, 1 a check failed, 2 the simulation became unstable.
 """
-import sys, io, argparse, contextlib, importlib.util
+import os, sys, io, argparse, contextlib, importlib.util
 from pathlib import Path
-from kinali_sim import paths
+from Configuration.Core import CONST_ROOT, CONST_LEGACY, CONST_LEGACY_PLAN, CONST_OUTPUT, CONST_REPORT_NAME, CONST_CELL_SCENE_XML
 
 # brief §5.6 acceptance limits
 PLACE_ERR_MM, PLACE_TILT_DEG = 0.5, 0.2         # PCB in MG06
@@ -19,7 +19,7 @@ N_PICKS, N_CUPS = 2, 4                          # vacuum ON events (crate pick, 
 
 def load_legacy_cycle():
     """import legacy/test_cell_cycle.py as a module (it builds the model and loads the default plan on import)"""
-    spec = importlib.util.spec_from_file_location('legacy_test_cell_cycle', paths.LEGACY / 'test_cell_cycle.py')
+    spec = importlib.util.spec_from_file_location('legacy_test_cell_cycle', os.path.join(CONST_LEGACY, 'test_cell_cycle.py'))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -53,16 +53,16 @@ class _Tee(io.TextIOBase):
 
 
 def cmd_export_xml(a):
-    from kinali_sim import model
-    out = Path(a.out) if a.out else paths.CELL_SCENE_XML
-    model.export_xml(out)
+    from Scene.Core import Export_Cell_Scene
+    out = Path(a.out) if a.out else Path(CONST_CELL_SCENE_XML)
+    Export_Cell_Scene(str(out))
     print(f'wrote {out}')
     return 0
 
 
 def cmd_run(a):
-    plan = Path(a.plan).resolve() if a.plan else paths.LEGACY_PLAN
-    report = Path(a.report) if a.report else paths.REPORT
+    plan = Path(a.plan).resolve() if a.plan else Path(CONST_LEGACY_PLAN)
+    report = Path(a.report) if a.report else Path(CONST_OUTPUT) / CONST_REPORT_NAME
     cycle = load_legacy_cycle()
     buf = io.StringIO(); code = 0
     with contextlib.redirect_stdout(_Tee(sys.stdout, buf)):
@@ -83,11 +83,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog='kinali-sim', description='KINALI Test it off cell simulation (MuJoCo)')
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('export-xml', help='write the whole cell as one MJCF for the MuJoCo viewer')
-    p.add_argument('--out', help=f'output file (default {paths.CELL_SCENE_XML.relative_to(paths.ROOT)})')
+    p.add_argument('--out', help=f'output file (default {os.path.relpath(CONST_CELL_SCENE_XML, CONST_ROOT)})')
     p.set_defaults(func=cmd_export_xml)
     p = sub.add_parser('run', help='headless physics run of a legacy plan + report + acceptance checks')
-    p.add_argument('--plan', help=f'plan file (default {paths.LEGACY_PLAN.relative_to(paths.ROOT)})')
-    p.add_argument('--report', help=f'report file (default {paths.REPORT.relative_to(paths.ROOT)})')
+    p.add_argument('--plan', help=f'plan file (default {os.path.relpath(CONST_LEGACY_PLAN, CONST_ROOT)})')
+    p.add_argument('--report', help=f'report file (default {os.path.relpath(os.path.join(CONST_OUTPUT, CONST_REPORT_NAME), CONST_ROOT)})')
     p.set_defaults(func=cmd_run)
     a = ap.parse_args(argv)
     return a.func(a)
