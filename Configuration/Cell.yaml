@@ -1,0 +1,91 @@
+## =========================================================================== ##
+#   Description:
+#     The cell configuration of Test-it-off Simulation: the robot's base pose, the vacuum, the MG06
+#     closed state, the clearances and tolerances of the keypoint check, the acceptance limits of a
+#     cycle run, and two settings of the run (SPEC §8).
+#     Read only by src/Configuration/Core.py (Load_Cell_Configuration); written by hand.
+#
+#   REQUIRED: every field is required; a missing or invalid field fails the load, naming it.
+#   Units: in brackets after each field's comment; lengths [m], angles [deg], pressure [Pa]. The loader
+#     converts degrees to radians once.
+#   Frames: positions in the MG06 fixture frame (origin = centre of the MG06 footprint on the table top,
+#     Z up, front of MG06 = -Y; SPEC §4.2).
+#   Not here, on purpose: the joint limits and the loader axis ranges (the model holds them: the vendored
+#     robot MJCF and models/scene.xml); the joint speeds and accelerations (step 4, with the trajectory);
+#     the loader positions and gripper states (Configuration/Keypoints.yaml).
+## =========================================================================== ##
+
+# The AUBO i5 on the robot pedestal.
+Robot:
+  # The robot base: the top of the plate deska_robot, the CAD origin of the cell. Source: CAD
+  # (Test_it_off_-_Copy.blend), SPEC §4.2. [m] REQUIRED.
+  Base_Position: [0.42072, -0.33497, 0.16200]
+  # The base's rotation about Z: every task lies within about +-65 deg of the pan joint's zero (the
+  # reference plan uses -64.7 .. +60.2 deg). Source: SPEC §4.2, §4.10. [deg] REQUIRED.
+  Base_Yaw: -135.0
+
+# The OnRobot VGC10's four suction cups: one adhesion actuator per cup, force = pressure x cup area
+# (derived, not stored: 4 x pi x 0.0075^2 x 40e3 = 28 N, 7 N per cup).
+Vacuum:
+  # The vacuum, within the VGC10 datasheet's recommended 20-60 %. Source: OnRobot VGC10 datasheet,
+  # SPEC §4.3. [Pa] REQUIRED.
+  Pressure: 40000.0
+  # The silicone cup diameter (D15). Source: OnRobot VGC10 datasheet, SPEC §4.1. [m] REQUIRED.
+  Cup_Diameter: 0.015
+
+# The MG06 fixture's settled closed state (the open state is the lid's stop in models/scene.xml).
+MG06:
+  # The lid after closing, risen in the lock's play. Source: measured in the cell simulation, the
+  # legacy planner's LID_CLOSED (git tag legacy-planner-reference), SPEC §4.7. [deg] REQUIRED.
+  Closed_Lid: -0.5
+  # The handle after closing, the robot away. Source: as above, H_CLOSED, SPEC §4.7. [deg] REQUIRED.
+  Closed_Handle: 28.65
+
+# The keypoint check (SPEC §2 item 3).
+Clearance:
+  # The smallest distance from the robot, the tool and the carried PCB to the scene (MG06, workstation,
+  # crates, loader), except a keypoint's declared contacts. Source: SPEC §2 items 3-4. [m] REQUIRED.
+  Robot: 0.003
+  # The deepest contact a keypoint may declare per group: the cups pressed 1.5 mm onto the PCB (SPEC
+  # §4.7) plus 0.1 mm; every other group 0.5 mm (owner, 2026-10-24: a contact the recorded path really
+  # has). [m] REQUIRED.
+  Allowed_Depth:
+    cups_pcb: 0.0016
+    handle_bar: 0.0005
+    pcb_jaws: 0.0005
+    pcb_crate: 0.0005
+  # A keypoint's FK against its Check value: the SPEC §4.8 table is rounded to 0.1 mm (measured
+  # residue of the full-precision joints: at most 0.081 mm). [m] REQUIRED.
+  Check_Position: 0.0001
+  # A keypoint's FK against its Relative_To target before it counts as stale: the legacy IK left up to
+  # 24 um (measured 2026-10-24, FEATURES.md F6). [m] REQUIRED.
+  Stale_Position: 0.00005
+  # The same, for the orientation. Source: as above (measured at most 0.0001 deg). [deg] REQUIRED.
+  Stale_Angle: 0.01
+  # Within this angle of zero, wrist_2's sign does not decide the IK family: a WARNING, not a FAIL
+  # (via_mg06_high is at -0.94 deg: the switch between the families, SPEC §4.7). [deg] REQUIRED.
+  Family_Margin: 1.0
+
+# The acceptance criteria of a cycle run (SPEC §10.1).
+Acceptance:
+  # PCB in MG06: the position error and the tilt against the place target. Source: brief §5.6. [m] REQUIRED.
+  Place_Error: 0.0005
+  # [deg] REQUIRED.
+  Place_Tilt: 0.2
+  # PCB in the output crate: the horizontal distance from the crate centre. Source: brief §5.6. [m] REQUIRED.
+  Crate_Distance: 0.002
+  # MG06 ends open: the lid within this of its open stop and the handle within this of zero. Source: SPEC
+  # §10.1 item 5 (a decision, design-decisions). [deg] REQUIRED.
+  Open_Tolerance: 2.0
+  # The deepest PCB penetration in any group. Source: the owner, 2026-10-24 (SPEC §10.1 item 7). [m] REQUIRED.
+  Penetration: 0.0005
+
+# Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
+# step 6 with the keypoint program, owner 2026-10-24).
+Simulation:
+  # The phase label is refreshed every this many steps. It changes no output of the reference plan
+  # (FEATURES.md F3.5). Source: legacy/test_cell_cycle.py (git tag legacy-planner-reference). [-] REQUIRED.
+  Phase_Steps: 20
+  # A cup counts as touching the PCB below this contact distance. A 0.1 mm threshold changes no output of
+  # the reference plan (F3.5). Source: as above. [m] REQUIRED.
+  Cup_Touch: 0.0005

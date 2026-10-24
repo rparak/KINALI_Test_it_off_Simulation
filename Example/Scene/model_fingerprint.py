@@ -45,7 +45,7 @@ import numpy as np
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model
 
@@ -258,7 +258,7 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('model_fingerprint')
     # The same types as a file read back.
-    fp = json.loads(json.dumps(Model_Fingerprint(Build_Cell_Model())))
+    fp = json.loads(json.dumps(Model_Fingerprint(Build_Cell_Model(Load_Cell_Configuration()))))
     if args.out is not None:
         os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
         with open(args.out, 'w', encoding='utf-8') as handle:

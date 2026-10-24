@@ -146,8 +146,9 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 ### 4.4 Key numbers
 
 - Loader: home y −0.1000 / z 0; place y +0.19666 / z +0.06722; travel height z +0.07922; park
-  y −0.1995 / z +0.020; jaws open 0.035, grip 0.01775 (clamp command 0.00575). Source:
-  `Data/PCB/pcb_meta.json`, `legacy/plan_cell.py` (git tag `legacy-planner-reference`).
+  y −0.1995 / z +0.020; jaws open 0.035, grip 0.01775 (clamp command 0.00575). Source: now
+  `Configuration/Keypoints.yaml` (`Loader`, `Gripper`; formerly `pcb_meta.json`), `legacy/plan_cell.py` (git
+  tag `legacy-planner-reference`).
 - PCB in the loader jaws (loader home): position (0.0057, −0.30829, 0.14961), quaternion
   (0.99696, 0.07794, 0, 0) (8.94° tilt); placed in MG06: (0.0057, −0.011636, 0.216826), same quaternion.
 - PCB in a crate: flat, board centre at the crate centre, z = 0.004 + 0.0009. Input crate centre
@@ -260,7 +261,9 @@ Kinematics and Collision code; F3.4).
 
 ### 4.8 Initial keypoints (extracted from the verified plan; brief §6, verbatim)
 
-Seeded into the keypoint file in step 3. Their source, the planner, is `legacy/plan_cell.py` at git tag
+In `Configuration/Keypoints.yaml` at full precision: each keypoint's joints are the reference plan's stationary
+segment end (joint speed 0; `q_home` for home), rounded to 1e-6 deg; within 9.3e-5 rad of this table, FK
+within 0.081 mm of its positions (measured 2026-10-24; `test/Configuration/test_configuration_files.py`). Their source, the planner, is `legacy/plan_cell.py` at git tag
 `legacy-planner-reference` (`SEED`, the `solve` calls of its `main`).
 
 Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP = `aubo/tool/suction_tcp` in m.
@@ -432,7 +435,8 @@ models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by 
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
 models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Mujoco
 models/robot_tool/        VGC10 + fork MJCF and meshes
-Data/PCB/pcb_meta.json    PCB poses and loader axis positions
+Configuration/Cell.yaml, Configuration/Keypoints.yaml   the cell configuration and the keypoints (§8)
+Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
@@ -457,8 +461,8 @@ logger/                   run logs and MuJoCo's log (git-ignored, created at run
 
 `Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`; later
 `Keypoints`, `Program`, `Media`). `Data/` is ordered by purpose. The step 3 configuration (cell, keypoints,
-program YAML) goes into a root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
-in the template's `Configuration/Cell_SF1.yaml`), created with its first file in step 3.
+program YAML) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
+in the template's `Configuration/Cell_SF1.yaml`).
 
 `src/` layering: `Configuration`, `Render` import nothing of the project; `Scene` → `Configuration`;
 `Kinematics`, `Collision` → `Scene`; `Simulation` → `Configuration`, `Scene`, `Collision`. Scripts reach
@@ -503,12 +507,32 @@ labels); runs it with physics (servo set-point with velocity feed-forward, min-j
 vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured
 values; formats the report of §4.6; checks §10.1.
 
-## 8. Configuration
+## 8. Configuration — `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml`
 
-Not applicable yet: no configuration file exists. Step 3 adds the root folder `Configuration/` (§6) with
-the cell, keypoint and program YAML, read only by `src/Configuration/Core.py`, every field REQUIRED with unit and source
-(project-style-rpx references/yaml.md). Until then the cell's values are code constants with their
-sources in `src/Scene/Core.py`.
+Both files are read only by `src/Configuration/Core.py` (`Load_Cell_Configuration`, `Load_Keypoints`): every
+field REQUIRED (no optional fields; `Relative_To` may be `null`, `Allow_Contact` an empty list), every problem
+collected and reported at once with its file and key path, unknown keys returned as WARNING notes that the
+scripts print, angles in degrees converted to radians once. Tested in `test/Configuration/`.
+
+| `Cell.yaml` field | Unit | Source | Read by |
+|---|---|---|---|
+| `Robot.Base_Position`, `Robot.Base_Yaw` | m, deg | CAD, §4.2 | `Scene` |
+| `Vacuum.Pressure`, `Vacuum.Cup_Diameter` (force derived) | Pa, m | VGC10 datasheet, §4.3 | `Scene` |
+| `MG06.Closed_Lid`, `MG06.Closed_Handle` | deg | §4.7 (`LID_CLOSED`, `H_CLOSED`) | posing, the keypoint check |
+| `Clearance.Robot` (planning margin = 2 x, derived), `Allowed_Depth.<group>`, `Check_Position`, `Stale_Position`, `Stale_Angle`, `Family_Margin` | m, deg | §2, the owner (0.5 mm), measured (F6) | `Collision`, the keypoint check |
+| `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
+| `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
+
+Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
+the vendored robot MJCF, `models/scene.xml`; read from the compiled model); joint speeds and accelerations
+(step 4, with the trajectory, owner 2026-10-24).
+
+`Keypoints.yaml`: `Robot.<name>` (`Joints` [deg] - the source of truth; `Family`; `Check` - a site and the
+position its FK must reach; `Relative_To` - null or a target `pcb_hold@<location>` / a keypoint with a frame
+and an offset [m]; `Fixture` - `Open`, `Closed` or the recorded `{Lid, Handle, Source}` of the fork path;
+`Context` - `Loader`, `Gripper`, `PCB` location; `Allow_Contact` - contact groups; `Note`), `Loader.<position>`
+(`Y`, `Z` [m]: home, travel_place, place, park - the only source of the loader positions, moved from
+`pcb_meta.json`), `Gripper.<state>` [m] (open, grip, clamp). The 22 keypoints are §4.8 at full precision.
 
 ## 9. Data formats and units
 
@@ -523,7 +547,8 @@ sources in `src/Scene/Core.py`.
 |---|---|
 | `models/scene.xml` and the vendored / tool MJCFs | `Scene` (MjSpec), never written |
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
-| `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand |
+| `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
+| `Configuration/Cell.yaml`, `Configuration/Keypoints.yaml` | `Configuration` (`Load_Cell_Configuration`, `Load_Keypoints`), written by hand (§8) |
 | `Data/Paths/fork_close_open_path.npz` | no reader now (the legacy planner, git tag `legacy-planner-reference`, read it); step 4 adds one in `src/` |
 | `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
 | the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |

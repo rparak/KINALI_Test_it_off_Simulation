@@ -349,7 +349,7 @@ physics or the model.
 - [x] Test-it-off: the logo is not used (owner, 2026-10-24); the PNG removed, the product named only.
 - [x] The name "Test-it-off Simulation" and the spelling Test-it-off everywhere (design-decisions).
 
-## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - design, waiting for approval
+## F6 - Step 3: cell configuration and keypoints (owner, 2026-10-24) - approved, in progress
 
 Requirements (restated): the cell configuration and the named keypoints in YAML in the root `Configuration/`
 (SPEC §6, §8); one loader with validation; IK resolution by family and seed; posing the whole cell at a
@@ -493,6 +493,31 @@ any FAIL.
 
 **8. KNOWN_ISSUES**: the model's joint zeros and directions against the real AUBO i5 controller are not
 verified (recorded now).
+
+### Approval (owner, 2026-10-24) and condition C1
+
+Answers: 1 joint limits and loader ranges from the model; 2 speeds and accelerations in step 4; 3 the loader
+positions move from `pcb_meta.json` to `Keypoints.yaml`, `machine_shift` removed (the loader shift is in SPEC
+§4.7); 4 Page Down / Page Up and `.`, `mjpython` documented; 5 Pascal_Snake_Case keys; 6 no optional fields:
+`Check` and `Fixture` required, `Allow_Contact` always present ([] when none), `Relative_To` always present
+(null when unused).
+
+C1 (the fork 6.0 mm into the bar at `fork_closed_end`): the probe posed MG06 at the settled closed state
+(lid −0.5°, handle 28.65°, press 0) while `fork_closed_end` is the deepest point of the closing path, where
+the recorded handle stands at 29.13° and the lid at 0.00° (row 286). Exact fork-bar distance
+(`mj_geomDistance`, the physics model; the planning model's margin and the coupled press change nothing):
+
+| Keypoint | MG06 state | Fork-bar |
+|---|---|---|
+| `fork_closed_end` | settled closed (the probe) | −5.95 mm |
+| `fork_closed_end` | recorded row 286 (CLOSE): lid 0.00°, handle 29.13° | **−0.33 mm** |
+| `fork_bar_centred` | settled closed (planned there; nearest recorded row 1.9 mm away) | **+3.93 mm** |
+| `fork_open_join` | recorded row 663 (OPEN, the join: handle 28.32° ≤ 28.45°) | **+0.08 mm** |
+
+Design change: `Fixture` (REQUIRED): `Open`, `Closed` (Cell.yaml `MG06`) or the recorded `{Lid, Handle,
+Source}`; the press plate follows the handle through the model's equality (`press = 0.0104554 · handle³`,
+read from the compiled model). `fork_start` row 23, `fork_closed_end` row 286, `fork_open_join` row 663;
+`fork_bar_centred`, `fork_out_of_bar`, `fork_retreat_up` Closed.
 
 ### Questions (Part A)
 

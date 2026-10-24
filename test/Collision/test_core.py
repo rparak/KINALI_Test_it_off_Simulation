@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Collision/Core
-from Collision.Core import Build_Planning_Model, Robot_Collision_Cls, CONST_PLANNING_CLEARANCE
+from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Kinematics/Core
 from Kinematics.Core import Robot_Kinematics_Cls
 
@@ -47,8 +47,8 @@ CONST_INTO_MG06 = [0.7896, 1.8, 1.8333, -0.4286, 1.5708, 0.0042]
 
 
 @pytest.fixture(scope='module')
-def planning():
-    model = Build_Planning_Model()
+def planning(cell_configuration):
+    model = Build_Planning_Model(cell_configuration)
     collision = Robot_Collision_Cls(model)
     Robot_Kinematics_Cls(model, collision.Data).Set_Scene()
     return model, collision
@@ -74,7 +74,7 @@ def test_home_has_no_contact_within_the_clearance(planning):
     """
 
     _, collision = planning
-    assert collision.Contacts(np.array(CONST_HOME), ignore_pcb=True, margin=-CONST_PLANNING_CLEARANCE) == []
+    assert collision.Contacts(np.array(CONST_HOME), ignore_pcb=True, margin=-0.003) == []
 
 
 def test_a_colliding_configuration_is_reported_with_its_pair(planning):

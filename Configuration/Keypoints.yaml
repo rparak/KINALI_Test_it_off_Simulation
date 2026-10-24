@@ -1,0 +1,262 @@
+## =========================================================================== ##
+#   Description:
+#     The named keypoints of Test-it-off Simulation: robot poses, loader positions and gripper states
+#     (SPEC §2 item 3, §4.8). Read only by src/Configuration/Core.py (Load_Keypoints); written by hand.
+#     A corrected Joints line comes from Example/Keypoints/resolve_keypoint.py, which prints it; nothing
+#     writes this file.
+#
+#   REQUIRED: every field is required; a missing or invalid field fails the load, naming it.
+#   Units: angles [deg] (converted once by the loader), lengths [m].
+#   Joints: the six robot joints in the model's order and directions - shoulder_pan, shoulder_lift, elbow,
+#     wrist_1, wrist_2, wrist_3 (the vendored MJCF's aubo/<name>_joint; their agreement with the AUBO
+#     controller's convention is not verified, KNOWN_ISSUES.md). Joints are the source of truth: posing and
+#     playback read them only, never an IK result.
+#   Frames: positions in the MG06 fixture frame (SPEC §4.2); Check and Relative_To name their site:
+#     suction_tcp (the cup face, 260.6 mm from the flange, tool +Z towards the cups) or tool_flange.
+#   Full precision: every Joints value is the reference plan's (Data/Reference/cell_plan.npz) stationary
+#     segment end of that keypoint (q_home for home), rounded to 1e-6 deg; within 1e-4 rad of the SPEC §4.8
+#     table (SPEC §4.8, FEATURES.md F6).
+#
+#   Per robot keypoint:
+#     Joints        the joint angles [deg].
+#     Family        wrist_up (wrist_2 > 0, PCB handling) or wrist_down (wrist_2 < 0, the MG06 fork path).
+#     Check         a site position the joints must reach within Cell.yaml Clearance.Check_Position.
+#     Relative_To   null, or a target the joints must reach within the stale tolerance: Target is
+#                   pcb_hold@<location> (the TCP holding the PCB there) or another keypoint; Offset [m] is
+#                   in the Frame's axes (suction_tcp: +Z along the tool towards the cups).
+#     Fixture       the MG06 state: Open, Closed (Cell.yaml MG06), or {Lid, Handle [deg], Source} from
+#                   the recorded fork path; the press plate follows the handle through the model's coupling.
+#     Context       the scene: Loader (a Loader position), Gripper (a Gripper state), PCB (input_crate,
+#                   cups, jaws, mg06, output_crate).
+#     Allow_Contact the contact groups allowed within the clearance (cups_pcb, handle_bar, pcb_jaws,
+#                   pcb_crate), each up to Cell.yaml Clearance.Allowed_Depth; [] when none.
+#     Note          what the keypoint is for (shown by the viewer and the check).
+## =========================================================================== ##
+
+# Robot keypoints (SPEC §4.8), in the order of the cycle.
+Robot:
+  home:
+    Joints: [45.242793, 39.593430, 105.038309, -24.555084, 89.999924, 0.242831]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.30000, -0.52000, 0.40000]}
+    Relative_To: null
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: input_crate}
+    Allow_Contact: []
+    Note: "Start and end of the cycle, tool down."
+  above_input_pcb:
+    Joints: [26.638997, -7.651760, 114.718665, 32.370425, 90.000000, -18.361003]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.15590, -0.74700, 0.13240]}
+    Relative_To: {Target: pcb_hold@input_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.1200]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: input_crate}
+    Allow_Contact: []
+    Note: "120 mm above the PCB in the input crate."
+  input_pcb_approach:
+    Joints: [26.638999, -18.681976, 121.413334, 50.095310, 90.000000, -18.361001]
+    Family: wrist_up
+    # x, y: the PCB hold TCP of the crate (SPEC §4.4); z: SPEC §4.8.
+    Check: {Frame: suction_tcp, Position: [0.15595, -0.74700, 0.02740]}
+    Relative_To: {Target: pcb_hold@input_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.0150]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: input_crate}
+    Allow_Contact: []
+    Note: "15 mm above the PCB, the start of the slow approach."
+  input_pcb_press:
+    Joints: [26.638999, -20.811883, 122.063611, 52.875494, 90.000000, -18.361001]
+    Family: wrist_up
+    # x, y: the PCB hold TCP of the crate (SPEC §4.4); z: SPEC §4.8.
+    Check: {Frame: suction_tcp, Position: [0.15595, -0.74700, 0.01090]}
+    Relative_To: {Target: pcb_hold@input_crate, Frame: suction_tcp, Offset: [0.0, 0.0, 0.0015]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: input_crate}
+    Allow_Contact: [cups_pcb]
+    Note: "Cups pressed 1.5 mm onto the PCB, then vacuum on (SPEC §4.7)."
+  via_input_to_loader:
+    Joints: [2.661983, 3.238736, 83.863972, -11.182552, 85.909206, -42.208688]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.01640, -0.56080, 0.39580]}
+    Relative_To: null
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "Free-space via between the input crate and the loader."
+  above_loader:
+    Joints: [-21.315111, 10.864292, 102.705812, -1.774282, 81.818434, -66.056436]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.00450, -0.32980, 0.31580]}
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, -0.1600]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "160 mm along the plate normal above the hold pose in the jaws."
+  loader_approach:
+    Joints: [-24.302450, 6.056345, 121.429453, 22.190782, 81.641270, -69.069848]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.00450, -0.30720, 0.17260]}
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, -0.0150]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "15 mm along the plate normal above the hold pose."
+  loader_handover:
+    Joints: [-24.615662, 4.968975, 123.008998, 24.903697, 81.624008, -69.385948]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.00450, -0.30490, 0.15780]}
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, 0.0000]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb, pcb_jaws]
+    Note: "PCB at the hold pose, no press: 0.3 mm above the finger ledges (SPEC §4.7)."
+  loader_take_press:
+    Joints: [-24.646931, 4.853708, 123.162497, 25.177060, 81.622298, -69.417507]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.00450, -0.30470, 0.15630]}
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, 0.0015]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: clamp, PCB: jaws}
+    Allow_Contact: [cups_pcb, pcb_jaws]
+    Note: "Cups pressed 1.5 mm onto the PCB held in the jaws, then vacuum on."
+  loader_out_of_jaws:
+    Joints: [-23.990359, 7.020419, 119.780831, 19.532351, 81.658720, -68.754906]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.00440, -0.30960, 0.18730]}
+    Relative_To: {Target: pcb_hold@jaws, Frame: suction_tcp, Offset: [0.0, 0.0, -0.0300]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "30 mm along the plate normal out of the jaws."
+  via_mg06_high:
+    Joints: [-0.788522, 11.575078, 44.717233, -97.364679, -0.940915, 28.627733]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.12510, -0.32180, 0.93310]}
+    Relative_To: null
+    Fixture: Open
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "Free-space switch between the wrist-up and wrist-down families (SPEC §4.7)."
+  above_handle:
+    Joints: [-47.013661, 11.779830, 55.387120, -136.392660, -92.013789, 65.999979]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.15500, -0.20740, 0.85310]}
+    Relative_To: null
+    Fixture: Open
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "Above the MG06 handle, before the fork start."
+  fork_start:
+    Joints: [-64.906783, 0.782055, 64.972241, -115.809544, -109.906717, 66.000126]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.10740, 0.75310]}
+    Relative_To: null
+    Fixture: {Lid: -39.959764, Handle: -0.014017, Source: "Data/Paths/fork_close_open_path.npz row 23"}
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "Start and end of the recorded fork path (SPEC §4.9)."
+  fork_closed_end:
+    Joints: [-29.547477, 1.304953, 138.071309, -43.231989, -74.548206, 65.994483]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.28400, 0.31540]}
+    Relative_To: null
+    Fixture: {Lid: 0.002440, Handle: 29.125260, Source: "Data/Paths/fork_close_open_path.npz row 286"}
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: [handle_bar]
+    Note: "End of path fork_close: the bar on the slot bottom, the handle at 29.1 deg."
+  fork_bar_centred:
+    Joints: [-29.322855, 2.899541, 137.288607, -45.609282, -74.323561, 65.994536]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.28500, 0.32590]}
+    Relative_To: null
+    Fixture: Closed
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "The bar centred in the slot, 2 mm off its bottom, MG06 settled closed (SPEC §4.10)."
+  fork_out_of_bar:
+    Joints: [-47.226025, 3.337062, 130.325032, -53.010438, -92.226730, 65.995045]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.20280, 0.36250]}
+    Relative_To: null
+    Fixture: Closed
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "90 mm along the slot, out of the bar."
+  fork_retreat_up:
+    Joints: [-47.228767, 12.241795, 117.292067, -74.948137, -92.229473, 65.995045]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.20280, 0.48250]}
+    Relative_To: null
+    Fixture: Closed
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: []
+    Note: "120 mm up from fork_out_of_bar; the robot waits here while MG06 is closed."
+  fork_open_join:
+    Joints: [-28.842276, 3.103794, 137.267423, -45.838179, -73.840454, 66.003235]
+    Family: wrist_down
+    Check: {Frame: tool_flange, Position: [0.05500, -0.28720, 0.32690]}
+    Relative_To: null
+    Fixture: {Lid: -0.124588, Handle: 28.321591, Source: "Data/Paths/fork_close_open_path.npz row 663"}
+    Context: {Loader: park, Gripper: open, PCB: mg06}
+    Allow_Contact: [handle_bar]
+    Note: "Join of path fork_open: the recorded handle already below the real closed angle (SPEC §4.7)."
+  via_loader_to_output:
+    Joints: [40.641633, 40.288130, 105.134859, -28.325689, 86.846955, -4.206289]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.26800, -0.48310, 0.39580]}
+    Relative_To: null
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "Free-space via between the loader and the output crate."
+  above_output:
+    Joints: [59.946352, 3.501203, 126.209780, 32.708616, 90.000052, 14.946365]
+    Family: wrist_up
+    Check: {Frame: suction_tcp, Position: [0.40500, -0.74700, 0.13340]}
+    Relative_To: {Target: pcb_hold@output_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.1210]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "121 mm above the PCB rest pose in the output crate."
+  output_approach:
+    Joints: [59.945628, -9.725211, 133.984858, 53.710068, 90.000000, 14.945628]
+    Family: wrist_up
+    # x, y: the PCB hold TCP of the crate (SPEC §4.4); z: SPEC §4.8.
+    Check: {Frame: suction_tcp, Position: [0.40495, -0.74700, 0.02840]}
+    Relative_To: {Target: pcb_hold@output_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.0160]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb]
+    Note: "16 mm above the PCB rest pose, the start of the slow approach."
+  output_place:
+    Joints: [59.945628, -12.144714, 134.701735, 56.846449, 90.000000, 14.945628]
+    Family: wrist_up
+    # x, y: the PCB hold TCP of the crate (SPEC §4.4); z: SPEC §4.8.
+    Check: {Frame: suction_tcp, Position: [0.40495, -0.74700, 0.01340]}
+    Relative_To: {Target: pcb_hold@output_crate, Frame: suction_tcp, Offset: [0.0, 0.0, -0.0010]}
+    Fixture: Open
+    Context: {Loader: home, Gripper: open, PCB: cups}
+    Allow_Contact: [cups_pcb, pcb_crate]
+    Note: "PCB 1 mm above the output crate floor, then vacuum off."
+
+# Loader positions: the Y (towards MG06) and Z (up) axis set-points. Source: the loader's former
+# Data/PCB/pcb_meta.json fields y_home, y_place, z_place (moved here, owner 2026-10-24) and the legacy
+# planner (git tag legacy-planner-reference: Z_TRAVEL = place + 12 mm; park Y_PARK, Z_PARK); SPEC §4.4.
+Loader:
+  # The loader's home: the gripper where the CAD has it; the handover and take position. [m] REQUIRED.
+  home: {Y: -0.1, Z: 0.0}
+  # Above the MG06 holder, at the travel height (place + 12 mm). [m] REQUIRED.
+  travel_place: {Y: 0.19665834418149383, Z: 0.07921731047501317}
+  # The PCB placed in the MG06 holder. [m] REQUIRED.
+  place: {Y: 0.19665834418149383, Z: 0.06721731047501317}
+  # Parked while the robot closes and opens MG06. [m] REQUIRED.
+  park: {Y: -0.1995, Z: 0.02}
+
+# Gripper (SCHUNK EGI 040-EI) jaw set-points, per jaw. Source: the former pcb_meta.json jaw_open and
+# jaw_grip; clamp = grip - 12 mm, the force-limited clamp command (SPEC §4.3, §4.4).
+Gripper:
+  # Fully open. [m] REQUIRED.
+  open: 0.035
+  # The jaws on the PCB's edges. [m] REQUIRED.
+  grip: 0.017750000000000002
+  # The clamp command: 12 mm behind the part, the 40 N force limit holds it. [m] REQUIRED.
+  clamp: 0.005750000000000002

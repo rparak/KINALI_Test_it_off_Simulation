@@ -76,16 +76,10 @@ def test_every_named_file_resolves_from_any_working_directory(root, tmp_path, na
 def test_the_pcb_meta_has_the_spec_values():
     """
     Description:
-        Read_PCB_Meta returns the loader positions, jaw values and PCB poses of SPEC §4.4 (to their 5
-        printed decimals) in metres.
+        Read_PCB_Meta returns the PCB poses of SPEC §4.4 (to their printed decimals) in metres.
     """
 
     meta = Read_PCB_Meta()
-    assert meta.Y_Home == pytest.approx(-0.1000, abs=5e-6)
-    assert meta.Y_Place == pytest.approx(0.19666, abs=5e-6)
-    assert meta.Z_Place == pytest.approx(0.06722, abs=5e-6)
-    assert meta.Jaw_Open == pytest.approx(0.035, abs=5e-6)
-    assert meta.Jaw_Grip == pytest.approx(0.01775, abs=5e-6)
     assert meta.Hold_Pos == pytest.approx([0.0057, -0.30829, 0.14961], abs=5e-6)
     assert meta.Place_Pos == pytest.approx([0.0057, -0.011636, 0.216826], abs=5e-7)
     assert meta.Quat == pytest.approx([0.99696, 0.07794, 0.0, 0.0], abs=5e-6)
@@ -115,13 +109,13 @@ def test_every_problem_of_a_malformed_file_is_named_at_once(tmp_path):
         Read_PCB_Meta(str(broken))
     with open(CONST_PCB_META, encoding='utf-8') as handle:
         raw = json.load(handle)
-    del raw['y_home']
+    del raw['cad_pos']
     raw['quat'] = [1.0, 0.0, 0.0]
     mutated = tmp_path / 'mutated.json'
     mutated.write_text(json.dumps(raw), encoding='utf-8')
     with pytest.raises(Configuration_Error_Cls) as error:
         Read_PCB_Meta(str(mutated))
-    assert 'y_home is missing' in str(error.value) and 'quat must be a list of 4 numbers' in str(error.value)
+    assert 'cad_pos is missing' in str(error.value) and 'quat must be a list of 4 numbers' in str(error.value)
 
 
 def test_mujoco_logs_into_the_configured_file_never_the_working_directory(root, tmp_path):
@@ -135,7 +129,8 @@ def test_mujoco_logs_into_the_configured_file_never_the_working_directory(root, 
     work = tmp_path / 'work'
     work.mkdir()
     code = ('from Configuration.Core import Configure_MuJoCo_Log\nConfigure_MuJoCo_Log(%r)\n'
-            'from Scene.Core import Build_Cell_Model\nBuild_Cell_Model()\n' % str(log))
+            'from Configuration.Core import Load_Cell_Configuration\nfrom Scene.Core import Build_Cell_Model\n'
+            'Build_Cell_Model(Load_Cell_Configuration())\n' % str(log))
     result = _Run_Python(root, code, work)
     assert result.returncode == 0, result.stderr
     assert 'Attach conflict' in log.read_text()

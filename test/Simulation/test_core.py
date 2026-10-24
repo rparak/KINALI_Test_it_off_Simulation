@@ -38,7 +38,7 @@ import pytest
 from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report,
                              Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
 #   ../Configuration/Core
-from Configuration.Core import Read_PCB_Meta
+from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints
 #   ../Scene/Core
 from Scene.Core import Build_Cell_Model
 
@@ -66,13 +66,14 @@ def _Good_Result():
                             Placed_T=16.4, Placed_Error=np.array([0.00004, -0.00029, 0.00006]), Placed_Tilt=np.radians(0.02),
                             Closed=(np.radians(-0.5), np.radians(28.7), 31.6),
                             Final_PCB=np.array([0.4063, -0.7524, 0.0049, 1.0, 0.0, 0.0, 0.0]), Crate_Centre=np.array([0.4062, -0.7516]),
+                            Lid_Open=-0.6974,
                             Final_Tilt=0.0, Track_Error=0.0126, Slip=0.00132, Loader_Lag=0.0226, Fork_Force=294.0,
                             Penetration={'MG06 holder': (-0.0002, 16.14), 'crate': (-0.00014, 62.46), 'loader jaws': (-0.00011, 9.13)},
                             Contacts={}, Lid_End=np.radians(-40.0), Handle_End=0.0)
 
 
 def _Failed(result):
-    return [c.Name for c in Check_Acceptance(result) if not c.Passed]
+    return [c.Name for c in Check_Acceptance(result, Load_Cell_Configuration()) if not c.Passed]
 
 
 def test_the_reference_values_pass_every_criterion():
@@ -82,7 +83,7 @@ def test_the_reference_values_pass_every_criterion():
         crate, MG06 open, penetration).
     """
 
-    checks = Check_Acceptance(_Good_Result())
+    checks = Check_Acceptance(_Good_Result(), Load_Cell_Configuration())
     assert len(checks) == 10 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
 
 
@@ -176,17 +177,18 @@ def test_an_unstable_simulation_fails_instead_of_continuing(root):
 
     code = """import sys
 sys.path.insert(0, %r)
-from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta
+from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints
 Configure_MuJoCo_Log()
 from Scene.Core import Build_Cell_Model
 from Simulation.Core import Legacy_Plan_Str, Read_Legacy_Plan, Run_Cycle, Simulation_Error_Cls
-model = Build_Cell_Model()
+cell = Load_Cell_Configuration()
+model = Build_Cell_Model(cell)
 model.opt.timestep = 0.05
 real = Read_Legacy_Plan()
 plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:500], T_End=2.0, Loader={'y': [], 'z': [], 'jaw': []}, Events=[],
                        Phases=[[0.0, 'loader: up, to park']], Jaw_Open=real.Jaw_Open)
 try:
-    Run_Cycle(model, plan, Read_PCB_Meta())
+    Run_Cycle(model, plan, Read_PCB_Meta(), cell, Load_Keypoints().Loader['home'])
     print('NO ERROR')
 except Simulation_Error_Cls as error:
     print('ERROR', error)
@@ -200,8 +202,8 @@ except Simulation_Error_Cls as error:
 
 
 @pytest.fixture(scope='module')
-def reference_run():
-    return Run_Cycle(Build_Cell_Model(), Read_Legacy_Plan(), Read_PCB_Meta())
+def reference_run(cell_configuration, keypoints):
+    return Run_Cycle(Build_Cell_Model(cell_configuration), Read_Legacy_Plan(), Read_PCB_Meta(), cell_configuration, keypoints.Loader['home'])
 
 
 @pytest.mark.slow

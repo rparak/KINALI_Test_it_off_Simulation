@@ -56,14 +56,36 @@ def root():
 
 
 @pytest.fixture(scope='session')
-def cell_model():
+def cell_configuration():
+    """
+    Description:
+        The shipped cell configuration (Configuration/Cell.yaml).
+    """
+
+    from Configuration.Core import Load_Cell_Configuration
+    return Load_Cell_Configuration()
+
+
+@pytest.fixture(scope='session')
+def keypoints():
+    """
+    Description:
+        The shipped keypoints (Configuration/Keypoints.yaml).
+    """
+
+    from Configuration.Core import Load_Keypoints
+    return Load_Keypoints()
+
+
+@pytest.fixture(scope='session')
+def cell_model(cell_configuration):
     """
     Description:
         The compiled cell (built once per session).
     """
 
     from Scene.Core import Build_Cell_Model
-    return Build_Cell_Model()
+    return Build_Cell_Model(cell_configuration)
 
 
 def _Run_Script(script, arguments, cwd, timeout=600):

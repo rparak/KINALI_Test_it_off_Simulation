@@ -33,7 +33,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the files, the cell, the contact categories
 #   ../Configuration/Core
-from Configuration.Core import CONST_REFERENCE_PLAN, PCB_Meta_Str
+from Configuration.Core import CONST_REFERENCE_PLAN, PCB_Meta_Str, Cell_Configuration_Str, Loader_Position_Str
 #   ../Scene/Core
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, CONST_CRATE_FLOOR, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
@@ -48,29 +48,17 @@ Description:
     acceptance checks of SPEC §10.1. Ported from legacy/test_cell_cycle.py (git tag legacy-planner-reference;
     design-decisions): the report and every measured value were identical to that run's. It prints nothing.
 """
-# The MG06 lid at its open stop (SPEC §4.3), where every run starts.
-#   Unit [float] (rad)
-CONST_LID_OPEN = -0.6974
 # The PCB starts 0.3 mm above the input crate's floor, so it settles onto it.
 #   Unit [float] (m)
 CONST_PCB_DROP = 0.0003
 # The robot servos are actuators 3..8 (SPEC §4.3).
 #   Unit [slice]
 CONST_ROBOT_ACTUATORS = slice(3, 9)
-# The phase label is refreshed every this many steps (it only names the report's phases).
-#   Unit [int]
-CONST_PHASE_STEPS = 20
 # The progress callback is called every this many steps (2 s of simulated time).
 #   Unit [int]
 CONST_PROGRESS_STEPS = 4000
-# SPEC §10.1 acceptance limits: PCB in MG06 (position error, tilt), in the output crate (horizontal
-# distance from the centre), MG06 open (lid and handle within this of the open stop and of 0), the
-# deepest PCB penetration, the picks and the cups that must touch at each.
-#   Unit [float] (m), [float] (rad), [float] (m), [float] (rad), [float] (m), [int], [int]
-CONST_PLACE_ERROR, CONST_PLACE_TILT = 0.0005, np.radians(0.2)
-CONST_CRATE_DISTANCE = 0.002
-CONST_OPEN_TOLERANCE = np.radians(2.0)
-CONST_PENETRATION = 0.0005
+# SPEC §10.1: the picks and the cups that must touch at each (the limits are in Configuration/Cell.yaml).
+#   Unit [int], [int]
 CONST_PICKS, CONST_CUPS = 2, 4
 
 
@@ -171,6 +159,9 @@ class Cycle_Result_Str:
     # Deepest contact per category of CONST_COLLISION_CHECKS: (distance, geom 1, geom 2, time), or absent.
     #   Unit [Dict<string, Tuple>] (m, -, -, s)
     Contacts: tp.Dict[str, tp.Tuple[float, str, str, float]] = field(default_factory=dict)
+    # The MG06 lid's open stop (the model's lid_hinge lower limit), where the run starts.
+    #   Unit [float] (rad)
+    Lid_Open: float = 0.0
     # MG06 lid and handle at the end.
     #   Unit [float] (rad)
     Lid_End: float = 0.0
@@ -299,8 +290,8 @@ def Phase_At(plan: Legacy_Plan_Str, t: float) -> str:
     return ph[-1] if ph else ''
 
 
-def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_Str,
-              progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> Cycle_Result_Str:
+def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
+              loader_home: Loader_Position_Str, progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> Cycle_Result_Str:
     """
     Description:
         The physics run of a plan from the PCB in the input crate to the end of the cycle, with the
@@ -310,8 +301,10 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
     Args:
         (1) model [mujoco.MjModel]: The compiled cell (Scene.Core.Build_Cell_Model).
         (2) plan [Legacy_Plan_Str(object)]: The plan.
-        (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses and loader positions.
-        (4) progress [function]: Called with (time [s], phase) every CONST_PROGRESS_STEPS steps, or None.
+        (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
+        (4) cell [Cell_Configuration_Str(object)]: The cell configuration (the phase period, the cup touch).
+        (5) loader_home [Loader_Position_Str(object)]: The loader's home (Keypoints.yaml Loader.home), where it starts.
+        (6) progress [function]: Called with (time [s], phase) every CONST_PROGRESS_STEPS steps, or None.
 
     Returns:
         (1) parameter [Cycle_Result_Str(object)]: The measured values.
@@ -329,11 +322,12 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
     classifier = Contact_Classifier_Cls(m)
     kv_kp = m.actuator_biasprm[A_ROBOT, 2] / m.actuator_biasprm[A_ROBOT, 1]
     v_plan = np.gradient(plan.Q, plan.Dt, axis=0)
-    start = {'y': pcb_meta.Y_Home, 'z': 0.0, 'jaw': plan.Jaw_Open}
+    start = {'y': loader_home.Y, 'z': 0.0, 'jaw': plan.Jaw_Open}
     # 1\ Initial state: MG06 open, loader home with open jaws, the PCB just above the input crate floor,
     #    the robot at the plan's first sample; the filtered loader drives start at home.
     mujoco.mj_resetData(m, d)
-    d.qpos[qa] = CONST_LID_OPEN
+    lid_open = m.jnt_range[m.joint('lid_hinge').id][0]
+    d.qpos[qa] = lid_open
     d.qpos[qy] = start['y']
     d.qpos[qjl] = d.qpos[qjr] = start['jaw']
     pp, pq = PCB_In_Crate('crate_pick')
@@ -358,7 +352,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
             on = name == 'suction_on'
             d.ctrl[A_VAC] = 1.0 if on else 0.0
             rel0 = None
-            vacuum.append(Vacuum_Event_Str(T=t, On=on, Cups=Cup_Contacts(m, d, PCB, CUPS) if on else None))
+            vacuum.append(Vacuum_Event_Str(T=t, On=on, Cups=Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch) if on else None))
         d.ctrl[:3] = [Loader_Target(plan, start, 'y', t), Loader_Target(plan, start, 'z', t), Loader_Target(plan, start, 'jaw', t)]
         d.ctrl[A_ROBOT], q_ref = Robot_Target(plan, v_plan, kv_kp, t)
         mujoco.mj_step(m, d)
@@ -371,7 +365,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
         track_err = max(track_err, np.max(np.abs(d.qpos[QR] - q_ref)))
         loader_lag = max(loader_lag, abs(d.qpos[qy] - d.ctrl[0]), abs(d.qpos[qz] - d.ctrl[1]))
         # PCB slip in the cups while the vacuum holds it.
-        if d.ctrl[A_VAC[0]] > 0.5 and Cup_Contacts(m, d, PCB, CUPS):
+        if d.ctrl[A_VAC[0]] > 0.5 and Cup_Contacts(m, d, PCB, CUPS, cell.Cup_Touch):
             R = d.xmat[TOOL].reshape(3, 3)
             rel = R.T @ (d.xpos[PCB] - d.xpos[TOOL])
             rel0 = rel if rel0 is None else rel0
@@ -391,7 +385,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
                 mujoco.mj_contactForce(m, d, i, fc)
                 ff += fc[0]
         fork_force = max(fork_force, ff)
-        if step % CONST_PHASE_STEPS == 0:
+        if step % cell.Phase_Steps == 0:
             ph = Phase_At(plan, d.time)
         if ph.startswith('loader: up, to park') and 'placed' not in marks:
             marks['placed'] = (d.qpos[qpcb:qpcb + 7].copy(), d.time)
@@ -410,7 +404,7 @@ def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_S
                             Crate_Centre=Crate_Center('crate_place'),
                             Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=track_err, Slip=slip,
                             Loader_Lag=loader_lag, Fork_Force=fork_force, Penetration=pen, Contacts=worst,
-                            Lid_End=d.qpos[qa], Handle_End=d.qpos[qh])
+                            Lid_Open=lid_open, Lid_End=d.qpos[qa], Handle_End=d.qpos[qh])
 
 
 def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
@@ -449,7 +443,7 @@ def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
     return lines
 
 
-def Check_Acceptance(result: Cycle_Result_Str) -> tp.List[Acceptance_Check_Str]:
+def Check_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> tp.List[Acceptance_Check_Str]:
     """
     Description:
         The acceptance criteria of SPEC §10.1 (items 1-5 and 7; item 6, no instability, is Run_Cycle
@@ -457,6 +451,7 @@ def Check_Acceptance(result: Cycle_Result_Str) -> tp.List[Acceptance_Check_Str]:
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A run's values.
+        (2) cell [Cell_Configuration_Str(object)]: The limits (Cell.yaml Acceptance).
 
     Returns:
         (1) parameter [List<Acceptance_Check_Str>]: One verdict per criterion, in SPEC order.
@@ -472,16 +467,16 @@ def Check_Acceptance(result: Cycle_Result_Str) -> tp.List[Acceptance_Check_Str]:
                                     len(picks) == CONST_PICKS and all(v.Cups == CONST_CUPS for v in picks),
                                     ', '.join('t=%.2fs %s/%d' % (v.T, v.Cups, CONST_CUPS) for v in picks)))
     error = float(np.linalg.norm(r.Placed_Error))
-    out.append(Acceptance_Check_Str('PCB in MG06 error < %.1f mm, tilt < %.1f deg' % (1000 * CONST_PLACE_ERROR, np.degrees(CONST_PLACE_TILT)),
-                                    error < CONST_PLACE_ERROR and r.Placed_Tilt < CONST_PLACE_TILT,
+    out.append(Acceptance_Check_Str('PCB in MG06 error < %.1f mm, tilt < %.1f deg' % (1000 * cell.Place_Error, np.degrees(cell.Place_Tilt)),
+                                    error < cell.Place_Error and r.Placed_Tilt < cell.Place_Tilt,
                                     '%.2f mm, %.2f deg' % (1000 * error, np.degrees(r.Placed_Tilt))))
     distance = float(np.linalg.norm(r.Final_PCB[:2] - r.Crate_Centre))
-    out.append(Acceptance_Check_Str('PCB in the output crate < %.1f mm from the centre' % (1000 * CONST_CRATE_DISTANCE),
-                                    distance < CONST_CRATE_DISTANCE, '%.2f mm' % (1000 * distance)))
-    out.append(Acceptance_Check_Str('MG06 ends open', abs(r.Lid_End - CONST_LID_OPEN) < CONST_OPEN_TOLERANCE
-                                    and abs(r.Handle_End) < CONST_OPEN_TOLERANCE,
+    out.append(Acceptance_Check_Str('PCB in the output crate < %.1f mm from the centre' % (1000 * cell.Crate_Distance),
+                                    distance < cell.Crate_Distance, '%.2f mm' % (1000 * distance)))
+    out.append(Acceptance_Check_Str('MG06 ends open', abs(r.Lid_End - r.Lid_Open) < cell.Open_Tolerance
+                                    and abs(r.Handle_End) < cell.Open_Tolerance,
                                     'lid %.1f deg, handle %.1f deg' % (np.degrees(r.Lid_End), np.degrees(r.Handle_End))))
     deepest = max([-v[0] for v in r.Penetration.values()] + [0.0])
-    out.append(Acceptance_Check_Str('PCB penetration <= %.1f mm' % (1000 * CONST_PENETRATION), deepest <= CONST_PENETRATION,
+    out.append(Acceptance_Check_Str('PCB penetration <= %.1f mm' % (1000 * cell.Penetration), deepest <= cell.Penetration,
                                     ', '.join('%s %.2f mm' % (k, -1000 * v[0]) for k, v in sorted(r.Penetration.items()))))
     return out

@@ -35,7 +35,8 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Custom Lib.:
 #   ../Configuration/Core - paths, the PCB data, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_REFERENCE_PLAN,
+from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Load_Keypoints, Script_Log_Cls,
+                                Configuration_Error_Cls, CONST_REFERENCE_PLAN,
                                 CONST_REPORTS, CONST_REPORT_NAME, CONST_ROOT)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
@@ -74,7 +75,11 @@ def main():
     note = lambda line: print(log.Line(line), file=sys.stderr, flush=True)
     progress = (lambda t, phase: note('[INFO] t = %5.1f s  %s' % (t, phase))) if args.progress else None
     try:
-        result = Run_Cycle(Build_Cell_Model(), Read_Legacy_Plan(os.path.abspath(args.plan)), Read_PCB_Meta(), progress)
+        cell, keypoints = Load_Cell_Configuration(), Load_Keypoints()
+        for level, message in cell.Notes + keypoints.Notes:
+            note('[%s] %s' % (level, message))
+        result = Run_Cycle(Build_Cell_Model(cell), Read_Legacy_Plan(os.path.abspath(args.plan)), Read_PCB_Meta(), cell,
+                           keypoints.Loader['home'], progress)
     except (Configuration_Error_Cls, Scene_Error_Cls, Simulation_Error_Cls) as error:
         note('[ERROR] %s' % error)
         log.Close()
@@ -86,7 +91,7 @@ def main():
     report = os.path.join(os.path.abspath(args.out), CONST_REPORT_NAME)
     with open(report, 'w', encoding='utf-8') as handle:
         handle.write('\n'.join(lines) + '\n')
-    checks = Check_Acceptance(result)
+    checks = Check_Acceptance(result, cell)
     for check in checks:
         note('[%s] %s %-55s %s' % ('INFO' if check.Passed else 'ERROR', 'PASS' if check.Passed else 'FAIL', check.Name, check.Detail))
     failed = [c for c in checks if not c.Passed]

@@ -37,7 +37,7 @@ import argparse
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Configuration_Error_Cls, Script_Log_Cls
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Render/Core - the viewer
@@ -61,8 +61,8 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('show_cell')
     try:
-        model = Build_Cell_Model()
-    except Scene_Error_Cls as error:
+        model = Build_Cell_Model(Load_Cell_Configuration())
+    except (Configuration_Error_Cls, Scene_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1

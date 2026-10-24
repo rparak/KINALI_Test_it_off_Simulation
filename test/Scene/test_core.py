@@ -143,14 +143,14 @@ def test_the_committed_cell_scene_loads_from_any_working_directory(root, tmp_pat
     assert result.stdout.split() == ['24', '13', '438']
 
 
-def test_an_export_elsewhere_loads_and_equals_the_committed_one(tmp_path):
+def test_an_export_elsewhere_loads_and_equals_the_committed_one(tmp_path, cell_configuration):
     """
     Description:
         Export_Cell_Scene into another folder writes mesh paths relative to that folder, so it loads; apart
         from meshdir it is the committed file.
     """
 
-    path = Export_Cell_Scene(str(tmp_path / 'cell_scene.xml'))
+    path = Export_Cell_Scene(cell_configuration, str(tmp_path / 'cell_scene.xml'))
     assert mujoco.MjModel.from_xml_path(path).nq == 24
     with open(path, encoding='utf-8') as handle:
         exported = ET.fromstring(handle.read())

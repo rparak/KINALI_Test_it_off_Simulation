@@ -35,7 +35,7 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Custom Lib.:
 #   ../Configuration/Core - paths, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_CELL_SCENE_XML
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Configuration_Error_Cls, Script_Log_Cls, CONST_CELL_SCENE_XML
 #   ../Scene/Core - the cell and its export
 from Scene.Core import Export_Cell_Scene, Scene_Error_Cls
 
@@ -58,8 +58,8 @@ def main():
     path = CONST_CELL_SCENE_XML if args.out is None else os.path.join(args.out, os.path.basename(CONST_CELL_SCENE_XML))
     try:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        written = Export_Cell_Scene(path)
-    except Scene_Error_Cls as error:
+        written = Export_Cell_Scene(Load_Cell_Configuration(), path)
+    except (Configuration_Error_Cls, Scene_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1

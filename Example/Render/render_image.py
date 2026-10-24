@@ -37,7 +37,7 @@ import argparse
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - paths, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_IMAGES, CONST_ROOT
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Configuration_Error_Cls, Script_Log_Cls, CONST_IMAGES, CONST_ROOT
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Render/Core - the image
@@ -70,11 +70,11 @@ def main():
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('render_image')
     try:
-        model = Build_Cell_Model()
+        model = Build_Cell_Model(Load_Cell_Configuration())
         data = mujoco.MjData(model)
         mujoco.mj_forward(model, data)
         path = Save_Image(Render_Image(model, data, args.camera), os.path.join(args.out, args.name))
-    except (Scene_Error_Cls, Render_Error_Cls) as error:
+    except (Configuration_Error_Cls, Scene_Error_Cls, Render_Error_Cls) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1

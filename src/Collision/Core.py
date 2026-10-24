@@ -30,6 +30,8 @@ import mujoco
 # Custom Lib.: the cell and the robot's joint names
 #   ../Scene/Core
 from Scene.Core import Build_Cell_Model, CONST_ROBOT_JOINTS
+#   ../Configuration/Core
+from Configuration.Core import Cell_Configuration_Str
 
 """
 Description:
@@ -39,30 +41,32 @@ Description:
     below a margin) and its clearance to everything else. The planning model carries a 6 mm geom margin
     on the robot and PCB geoms, so contacts are generated within the 3 mm planning clearance.
 """
-# Planning clearance: a robot closer than 3 mm to anything counts as a collision (SPEC §2 items 3-4).
-#   Unit [float] (m)
-CONST_PLANNING_CLEARANCE = 0.003
-# Geom margin on the robot and PCB geoms of the planning model, so that MuJoCo generates contacts
-# within the clearance (twice the clearance).
-#   Unit [float] (m)
-CONST_PLANNING_MARGIN = 0.006
+# The planning model's geom margin on the robot and PCB geoms, as a multiple of the configured clearance
+# (Configuration/Cell.yaml Clearance.Robot), so that MuJoCo generates contacts within the clearance.
+#   Unit [float] (-)
+CONST_MARGIN_FACTOR = 2.0
 
 
-def Build_Planning_Model() -> mujoco.MjModel:
+def Build_Planning_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
     """
     Description:
-        The cell for collision queries: the compiled cell with CONST_PLANNING_MARGIN on every robot and
-        PCB geom. Not for physics (the verified physics uses no margin on the PCB, SPEC §4.7).
+        The cell for collision queries: the compiled cell with CONST_MARGIN_FACTOR x the clearance as geom
+        margin on every robot and PCB geom (6 mm for the 3 mm clearance). Not for physics (the verified
+        physics uses no margin on the PCB, SPEC §4.7).
+
+    Args:
+        (1) cell [Cell_Configuration_Str(object)]: The cell configuration.
 
     Returns:
         (1) parameter [mujoco.MjModel]: The planning model.
     """
 
-    m = Build_Cell_Model()
+    m = Build_Cell_Model(cell)
+    margin = CONST_MARGIN_FACTOR * cell.Clearance
     robot_bodies = {i for i in range(m.nbody) if m.body(i).name.startswith('aubo/')}
     for g in range(m.ngeom):
         if m.geom_bodyid[g] in robot_bodies or m.body(m.geom_bodyid[g]).name == 'pcb':
-            m.geom_margin[g] = CONST_PLANNING_MARGIN
+            m.geom_margin[g] = margin
     return m
 
 
@@ -73,17 +77,17 @@ class Robot_Collision_Cls(object):
 
     Initialization of the Class:
         Args:
-            (1) model [mujoco.MjModel]: The model (usually Build_Planning_Model()).
+            (1) model [mujoco.MjModel]: The model (usually Build_Planning_Model(cell)).
             (2) data [mujoco.MjData]: Its data (default: a new one).
 
         Example:
             Initialization:
                 # Initialization of the class.
-                Cls = Robot_Collision_Cls(Build_Planning_Model())
+                Cls = Robot_Collision_Cls(Build_Planning_Model(cell))
 
             Features:
                 # Contacts deeper than the clearance, and the closest distance.
-                contacts = Cls.Contacts(q, margin=-CONST_PLANNING_CLEARANCE)
+                contacts = Cls.Contacts(q, margin=-cell.Clearance)
                 distance, pair = Cls.Clearance(q)
     """
 
@@ -208,9 +212,6 @@ CONST_MG06_UPPER_BODIES = {'mg06_lid', 'mg06_press', 'mg06_handle'}
 # The fork touches the handle bar on purpose only in these phases of a run.
 #   Unit [Tuple<string>]
 CONST_FORK_PHASES = ('robot: close MG06', 'robot: open MG06')
-# A cup counts as touching the PCB below this contact distance.
-#   Unit [float] (m)
-CONST_CUP_TOUCH = 0.0005
 
 
 class Contact_Classifier_Cls(object):
@@ -324,16 +325,17 @@ def Penetration_Group(other_body: str) -> str:
     return 'MG06 holder' if other_body == 'mg06_base' else other_body
 
 
-def Cup_Contacts(model: mujoco.MjModel, data: mujoco.MjData, pcb_body: int, cup_bodies: tp.Set[int]) -> int:
+def Cup_Contacts(model: mujoco.MjModel, data: mujoco.MjData, pcb_body: int, cup_bodies: tp.Set[int], touch: float) -> int:
     """
     Description:
-        How many suction cups touch the PCB (contact distance below CONST_CUP_TOUCH).
+        How many suction cups touch the PCB (contact distance below touch, Cell.yaml Simulation.Cup_Touch).
 
     Args:
         (1) model [mujoco.MjModel]: The model.
         (2) data [mujoco.MjData]: The data after a step.
         (3) pcb_body [int]: The PCB's body id.
         (4) cup_bodies [Set<int>]: The cups' body ids.
+        (5) touch [float]: The contact distance below which a cup touches (m).
 
     Returns:
         (1) parameter [int]: The number of cups touching.
@@ -342,6 +344,6 @@ def Cup_Contacts(model: mujoco.MjModel, data: mujoco.MjData, pcb_body: int, cup_
     touching = set()
     for c in data.contact[:data.ncon]:
         b = {model.geom_bodyid[c.geom1], model.geom_bodyid[c.geom2]}
-        if pcb_body in b and b & cup_bodies and c.dist < CONST_CUP_TOUCH:
+        if pcb_body in b and b & cup_bodies and c.dist < touch:
             touching.add(c.geom1 if model.geom_bodyid[c.geom1] in cup_bodies else c.geom2)
     return len(touching)

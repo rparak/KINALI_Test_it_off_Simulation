@@ -33,7 +33,7 @@ import numpy as np
 import mujoco
 # Custom Lib.: the repository's files
 #   ../Configuration/Core
-from Configuration.Core import CONST_MODELS, CONST_SCENE_XML, CONST_CELL_SCENE_XML, CONST_ROBOT_XML, CONST_TOOL_XML
+from Configuration.Core import CONST_MODELS, CONST_SCENE_XML, CONST_CELL_SCENE_XML, CONST_ROBOT_XML, CONST_TOOL_XML, Cell_Configuration_Str
 
 """
 Description:
@@ -46,13 +46,6 @@ Description:
     origin of the cell. The values below are the verified physics (SPEC §3): never changed in a style
     or structure change; the compiled model is pinned by its fingerprint (SPEC §10.2).
 """
-# Top of deska_robot (= CAD origin of the cell .blend).
-#   Unit [Vector<float> 1x3] (m)
-CONST_ROBOT_BASE = np.array([0.42072, -0.33497, 0.16200])
-# Robot base yaw: all tasks lie within about +-65 deg of the pan-joint zero (the reference plan uses
-# -64.7 .. +60.2 deg, SPEC §4.10).
-#   Unit [float] (rad)
-CONST_ROBOT_YAW = np.radians(-135.0)
 # The robot joints, base to wrist 3 (prefixed 'aubo/' in the cell).
 #   Unit [List<string>]
 CONST_ROBOT_JOINTS = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
@@ -66,15 +59,10 @@ CONST_FMAX = [180, 180, 150, 60, 60, 60]
 # Reflected motor + gear inertia (estimate, ratio ~100).
 #   Unit [List<float>] (kg m^2)
 CONST_ARMATURE = [0.2, 0.2, 0.15, 0.04, 0.04, 0.04]
-# AUBO i5 datasheet: joint speed 220 deg/s (J1-J4), 230 deg/s (J5-J6), payload 5 kg, reach 886.5 mm.
-#   Unit [Vector<float> 1x6] (rad/s)
-CONST_VMAX_DATASHEET = np.radians([220, 220, 220, 220, 230, 230])
-# OnRobot VGC10 with 4 silicone cups D15 mm at 40 kPa (datasheet: 20-60 % vacuum recommended):
-# theoretical holding force = 4 * pi * 0.0075^2 * 40e3 = 28 N.
-#   Unit [float] (m), [int], [float] (Pa)
-CONST_CUP_R, CONST_CUP_N, CONST_VACUUM_PA = 0.0075, 4, 40e3
-#   Unit [float] (N)
-CONST_VACUUM_FORCE = CONST_CUP_N * np.pi * CONST_CUP_R**2 * CONST_VACUUM_PA
+# The number of suction cups of the OnRobot VGC10 (the hardware); the vacuum and the cup diameter are in
+# Configuration/Cell.yaml, the adhesion force is derived from them.
+#   Unit [int]
+CONST_CUP_N = 4
 # The cup centres in the tool frame.
 #   Unit [List<Tuple<float>>] (m)
 CONST_CUP_XY = [(0.035, 0.018), (-0.035, 0.018), (0.035, -0.018), (-0.035, -0.018)]
@@ -160,12 +148,15 @@ def _Load_Spec(path: str) -> mujoco.MjSpec:
         raise Scene_Error_Cls('The model file %s does not load (%s). Restore it from git.' % (path, error)) from error
 
 
-def Build_Cell_Spec() -> mujoco.MjSpec:
+def Build_Cell_Spec(cell: Cell_Configuration_Str) -> mujoco.MjSpec:
     """
     Description:
         The cell as an MjSpec (SPEC §7.2): the scene, the crates' collision as floor + 4 walls, the AUBO
         i5 at its base pose with the VGC10/fork tool rigidly on the flange, one body and one adhesion
         actuator per suction cup, the robot servos, the loader drive lag and the look.
+
+    Args:
+        (1) cell [Cell_Configuration_Str(object)]: The cell configuration (the base pose, the vacuum).
 
     Returns:
         (1) parameter [mujoco.MjSpec]: The uncompiled cell.
@@ -190,6 +181,9 @@ def Build_Cell_Spec() -> mujoco.MjSpec:
             # Contact bits: the loader, the robot and the PCB touch the crates.
             ws.add_geom(name=f'{n}_{i}', type=mujoco.mjtGeom.mjGEOM_BOX, pos=(lo + hi) / 2, size=(hi - lo) / 2,
                         contype=2, conaffinity=1, group=3, rgba=[.3, .5, .9, .3])
+    # The cup radius and the adhesion force per cup, derived from the configured vacuum (SPEC §4.3).
+    cup_r = cell.Cup_Diameter / 2
+    vacuum_force = CONST_CUP_N * np.pi * cup_r**2 * cell.Vacuum_Pressure
     # 2\ Robot + tool; the tool is rigidly mounted on the flange.
     rb = _Load_Spec(CONST_ROBOT_XML)
     tl = _Load_Spec(CONST_TOOL_XML)
@@ -214,13 +208,14 @@ def Build_Cell_Spec() -> mujoco.MjSpec:
                     contype=0, conaffinity=0, group=4)
         # Collision as a square pad of the same area (flat face contact: clean normals for the adhesion
         # force); silicone cup contact parameters (SPEC §4.7).
-        a = np.sqrt(np.pi) * CONST_CUP_R / 2
+        a = np.sqrt(np.pi) * cup_r / 2
         cb.add_geom(name=f'cup{i}', type=mujoco.mjtGeom.mjGEOM_BOX, size=[a, a, 0.00155], pos=[x, y, 0.2606 - 0.00155],
                     rgba=[0.15, 0.15, 0.15, 1], friction=[2.0, 0.02, 0.001], condim=4, group=1,
                     solref=[0.002, 1], solimp=[0.99, 0.999, 0.0005, 0.5, 2], solmix=100,
                     contype=1, conaffinity=1)
     rb.site('attachment_site').attach_body(tool, 'tool/', '')
-    fr = sc.worldbody.add_frame(pos=CONST_ROBOT_BASE, quat=[np.cos(CONST_ROBOT_YAW / 2), 0, 0, np.sin(CONST_ROBOT_YAW / 2)])
+    base, yaw = np.array(cell.Base_Position), cell.Base_Yaw
+    fr = sc.worldbody.add_frame(pos=base, quat=[np.cos(yaw / 2), 0, 0, np.sin(yaw / 2)])
     fr.attach_body(rb.body('base_link'), 'aubo/', '')
     # 4\ Robot + tool touch MG06, the loader, the PCB, the workstation (bit 2) and the crates.
     for b in sc.bodies:
@@ -247,7 +242,7 @@ def Build_Cell_Spec() -> mujoco.MjSpec:
     #    off..on).
     for i in range(CONST_CUP_N):
         va = sc.add_actuator(name=f'vacuum{i}', target=f'aubo/tool/vgc10_cup{i}', trntype=mujoco.mjtTrn.mjTRN_BODY)
-        va.set_to_adhesion(gain=CONST_VACUUM_FORCE / CONST_CUP_N)
+        va.set_to_adhesion(gain=vacuum_force / CONST_CUP_N)
         va.ctrlrange = [0, 1]
         va.ctrllimited = True
     # 7\ Loader axis drives: first-order lag between command and servo set-point.
@@ -306,33 +301,37 @@ def _Apply_Look(sc: mujoco.MjSpec) -> None:
                             targetbody='aubo/tool/ee_tool', fovy=45)
 
 
-def Build_Cell_Model() -> mujoco.MjModel:
+def Build_Cell_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
     """
     Description:
         The compiled cell (SPEC §4.3).
+
+    Args:
+        (1) cell [Cell_Configuration_Str(object)]: The cell configuration.
 
     Returns:
         (1) parameter [mujoco.MjModel]: The model.
     """
 
-    return Build_Cell_Spec().compile()
+    return Build_Cell_Spec(cell).compile()
 
 
-def Export_Cell_Scene(path: str = CONST_CELL_SCENE_XML) -> str:
+def Export_Cell_Scene(cell: Cell_Configuration_Str, path: str = CONST_CELL_SCENE_XML) -> str:
     """
     Description:
         Write the assembled cell as one MJCF for MuJoCo's viewer, with the mesh paths relative to the
         file's folder, so it loads from any working directory.
 
     Args:
-        (1) path [string]: The file (default models/cell_scene.xml).
+        (1) cell [Cell_Configuration_Str(object)]: The cell configuration.
+        (2) path [string]: The file (default models/cell_scene.xml).
 
     Returns:
         (1) parameter [string]: The absolute path written.
     """
 
     path = os.path.abspath(path)
-    sc = Build_Cell_Spec()
+    sc = Build_Cell_Spec(cell)
     sc.compile()
     r = ET.fromstring(sc.to_xml())
     for c in r.iter('compiler'):
