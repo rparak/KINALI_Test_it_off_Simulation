@@ -934,3 +934,22 @@ the wait above MG06.
 
 Pinned by `test/Optimizer/test_core.py::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`, `::test_the_interlocks_hold`,
 `test/Configuration/test_program_parser.py::test_an_optimizer_point_is_used_only_by_the_optimized_program`.
+
+## Step 5 plays a trajectory through the cycle run's loop (design, F11)
+
+**Decision (proposed, awaiting approval).** The physics playback of a program reuses `Simulation.Run_Cycle`'s loop unchanged
+(servo set-points with velocity feed-forward, the filtered loader drives, vacuum adhesion, the instability guard, every
+measurement), fed through a drive object: `Legacy_Drive_Cls` reproduces today's run from `cell_plan.npz` (its report
+byte-identical, the old baseline), `Trajectory_Drive_Cls` reads a trajectory file (the taught or the optimized program's).
+What the legacy run took from its phase labels comes from the program instead: the fork's allowed contact from the steps'
+`Allow_Contact`, the "placed" and "closed" marks from `J_PARK` and the `Test` step.
+
+**Why.** One loop keeps one physics: the programs are measured exactly as the reference plan was, and the legacy report proves
+the refactor.
+
+**Alternatives.** A second physics loop for trajectories: two loops to keep equal. Converting a trajectory into the legacy plan
+format: loses the analytic speeds and the steps.
+
+**Revisit if** the owner's answers to F11's questions change the marks or the fork rule.
+
+Pinned by nothing yet (designed, not built).

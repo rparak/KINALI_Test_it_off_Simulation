@@ -1245,7 +1245,7 @@ practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimize
    and the PCB slip (recommended), or add a jerk-limited smoothing first?
 14. The test command as `Test: {}` (its duration from `Cell.yaml`) - or `Wait` with a named duration?
 
-## F10 - The cell program in three files: Constants, Simulation, Program (owner, 2026-10-24) - built, awaiting acceptance
+## F10 - The cell program in three files: Constants, Simulation, Program (owner, 2026-10-24) - accepted
 
 Requirements (restated): split the program into `Configuration/Constants.yaml` (every named value the controllers use:
 tools `T_`, points `P_` with `Joints` authoritative and `Pose` [x, y, z, R, P, Y] checked against FK, loader positions `L_`,
@@ -1293,6 +1293,109 @@ frames).
       the README checker's exception for the header logos (`readme-writer/references/check_readme.json`, exit 0); MuJoCo's
       known attach warning shown as one INFO line (`Scene.Compile_Spec`), any other warning passed on. Golden, fingerprint
       and cycle report unchanged. 305 -> 311 collected; 6 mutations, each test passing first and failing mutated.
+
+## F11 - Step 5: physics playback of a program's trajectory (owner, 2026-10-24) - design (Part A), awaiting approval
+
+Requirements (restated): run any trajectory file (the taught or the optimized program's) with full physics in place of
+`Data/Reference/cell_plan.npz`, the legacy run staying as the regression of the old baseline until step 6: robot servos with
+velocity feed-forward `ctrl = q_ref + (kv/kp)·v_ref`, the loader's filtered actuators starting at their start position (30 ms
+lag), the gripper commands, the vacuum adhesion switched at the events, the PCB a free body starting in the input crate, the
+instability guard, the timestep (0.5 ms) and solver as now; the physics checks and report of SPEC §4.6 / §10.1 per program
+(plus tracking, slip per segment, robot-loader contacts in the parallel parts); a real-time physics viewer under the F10.4
+viewer rules; acceptance per program; exit codes as the cycle run; no change to the physics model. Outputs are simulation
+results, not validated for the real cell.
+
+### Measured for this design (2026-10-24, read-only)
+
+- `Simulation.Run_Cycle` reads a plan through four adapters only: `Robot_Target(t)` (linear interpolation of the plan's 4 ms
+  joints plus feed-forward from `np.gradient` of them), `Loader_Target(t)` (min-jerk per legacy move, channels y / z / jaw),
+  the vacuum events, and `Phase_At(t)` (the plan's phase labels). The labels decide three things: the fork-on-handle contacts
+  allowed (`Collision.CONST_FORK_PHASES`: the phases 'robot: close MG06' 22.264-29.340 s and 'robot: open MG06' 34.956-40.380
+  s), the "PCB placed" mark (the phase 'loader: up, to park', 16.416 s) and the "MG06 closed with the robot away" mark
+  ('robot: away, MG06 closed', 31.648 s).
+- The compiled cell: timestep 0.0005 s, Euler; actuators `y_servo`, `z_servo` (filter dynamics, 30 ms), `gripper`, the six
+  robot servos, four vacuum adhesion actuators.
+- A trajectory file holds everything a run needs at 4 ms: `robot_q`, `robot_qd` (analytic in MoveJ and MoveSpline), the loader
+  and gripper commands, `vacuum`, the steps, the segments and their texts.
+
+### Proposal
+
+**Drives (src/Simulation/Core.py, no physics-model change).** `Run_Cycle` becomes `Run_Physics(model, drive, pcb_meta, cell,
+progress)` over a drive object with the four answers - robot set-point and `q_ref` at t, loader and gripper commands at t,
+vacuum events, label at t - plus the two marks and the fork rule:
+
+| | `Legacy_Drive_Cls` (cell_plan.npz) | `Trajectory_Drive_Cls` (a trajectory file) |
+|---|---|---|
+| robot set-point | as now: `q` linear between plan rows, `v` = `np.gradient` | `q` linear between samples, `v` = the file's `robot_qd` (analytic where it is) |
+| loader / gripper | as now (min-jerk moves) | the file's `loader_y`, `loader_z`, `gripper` commands, linear between samples |
+| vacuum | the plan's events | the transitions of the `vacuum` column (their sample times) |
+| label | the phase labels | the step (segment) name and the command line |
+| fork on the handle allowed | the two fork phases | the steps whose `Allow_Contact` has `handle_bar` (Close_MG06, Open_MG06) |
+| "placed" mark | phase 'loader: up, to park' | the first sample of `J_PARK` (the loader leaves MG06) |
+| "closed" mark | phase 'robot: away, MG06 closed' | the first sample of the `Test` step |
+
+`Run_Cycle(model, plan, ...)` stays as a thin wrapper of `Run_Physics(..., Legacy_Drive_Cls(plan))`: the legacy report must
+stay byte-identical (`test/Simulation/data/baseline_report.txt`, the existing slow tests) - that is the refactor's proof.
+The start state comes from the drive: robot `q` at sample 0, loader y / z and jaws from sample 0 (the filtered actuators'
+`act` set to them), MG06 open, the PCB 0.3 mm above the input crate's floor (as now).
+
+**Measurements (added to `Cycle_Result_Str`, legacy values unchanged).** Per step: the largest robot tracking error, the PCB's
+slip in the cups (max displacement of the PCB in the tool frame since vacuum on), the deepest contact per category; the slip
+per FREE transfer of the optimized program (for the tilt decision, F9.7); the robot-loader contacts are a category already
+(`robot <-> loader`), so the parallel parts are covered; the loader lag; the fork force; the penetrations; MG06 at the
+"closed" mark and at the end; the PCB in MG06 (error, tilt) at the "placed" mark; the PCB in the output crate.
+
+**Report and acceptance.** `Format_Report` unchanged for the legacy run; `Format_Program_Report` adds the program name, the
+per-step table (tracking, slip, deepest contact) and the FREE transfers' slip. `Check_Acceptance` as is: SPEC §10.1 (no robot /
+loader collision - the five categories -, 4/4 cups at both picks, PCB in MG06 < 0.5 mm and < 0.2 deg, PCB in the output crate
+< 2 mm from the centre, MG06 ends open, no instability, penetration <= 0.5 mm). Slip and tracking are reported, not bounded
+(no source for a bound yet; question 3).
+
+**Scripts.** `Example/Simulation/run_program.py --program taught|optimized [--trajectory FILE] [--out DIR]`: reads the
+trajectory (refused when stale, as `show_program.py`), runs the physics, prints the report and the acceptance, writes
+`DIR/<program>_physics.txt`; exit 0 pass, 1 an acceptance criterion fails, 2 it cannot run (instability, a stale or missing
+file). `Example/Simulation/run_cycle.py` stays (the legacy regression). `Example/Simulation/show_physics.py --program ...
+[--watchdog S]` (mjpython): the physics in real time - a private `MjData` stepped to the wall clock between frames, only the
+state copied into the viewer's data under `viewer.lock()`, the overlay (step, command line, time, tracking error, slip) outside
+it and rate-limited, keys Home pause / '.' step one frame / Page Down next step; `Render.Run_Viewer_Loop`'s rules and
+watchdog (the posing function becomes "step to t, copy").
+
+**Expected differences from the legacy report** (stated before running, so the run can confirm or refute them):
+
+| | Legacy | Taught | Optimized | Why |
+|---|---|---|---|---|
+| cycle time | 65.8 s | 68.9 s | 57.1 s | the taught program's loader axes in turn, 2 s test, the lift to 170 mm; the optimized program's planned transfers and parallel loader |
+| first vacuum on | 3.28 s | 3.28 s | 3.07 s | the optimized approach is 0.20 s shorter |
+| test wait | 1.0 s | 2.0 s | 2.0 s | `Process.Test_Duration` |
+| tracking error | 0.0126 rad (baseline report) | about the legacy value | likely larger in the FREE splines | TOPP without a jerk limit: acceleration steps (answer 13) |
+| PCB slip | 1.32 mm (baseline report) | about the legacy value | possibly larger in To_Loader / To_Output | the carried PCB at up to 28.98 deg with bang-bang accelerations |
+| fork force | 294 N (baseline report) | about the legacy value | the same | the recorded paths are LOCKED; the `PATH_FORK_OPEN` velocity step stays |
+| robot <-> loader | none | none | must be none | the parallel parts were checked kinematically (I8: 4.28 mm closest) |
+| take | - | - | the robot waits at `P_LOADER_WAIT`, starts down when `J_RETURN` ends | F9.8 |
+
+**Tests.** The legacy report byte-identical through the new drive (the existing slow tests); `Trajectory_Drive_Cls` against
+the file (set-points at sample times equal `robot_q`, the feed-forward uses `robot_qd`, vacuum events at the transitions, the
+labels and marks); a short physics run (the first 2 s of the taught program) deterministic and stable; both programs' full
+runs pass the acceptance (slow, about 15 s each); the instability guard raises on a corrupted state; the physics viewer's loop
+under the F10.4 fake viewer (the lock only for the state copy).
+
+**Step 6 (baselines).** `run_program.py` writes each program's report in the pinned environment; step 6 commits them as
+`test/Simulation/data/baseline_report_taught.txt` and `baseline_report_optimized.txt` (the legacy `baseline_report.txt` stays
+as the old baseline), with tests that diff each run's report against its baseline; a change to a program re-captures its
+baseline in its own commit with the reason (as the golden data).
+
+### Questions (Part A)
+
+1. The fork's allowed contact with the handle: by the steps' `Allow_Contact` (`handle_bar` in Close_MG06 and Open_MG06) in
+   place of the legacy phase names - agreed?
+2. The marks: "placed" at `J_PARK`'s first sample, "closed" at the `Test` step's first sample - agreed?
+3. PCB slip and tracking error: report only (recommended until a real-cell value exists), or a bound now (e.g. the legacy run's
+   1.32 mm slip and 0.0126 rad tracking plus a margin)?
+4. The physics viewer: real time with frames skipped by the wall clock (recommended); or a fixed slow-motion factor?
+5. The trajectory's gripper column is the command (`G_CLAMP` 5.75 mm): driven as is, the jaws stop on the PCB in physics (as
+   the legacy run) - agreed?
+6. The FREE transfers' slip (for the tilt decision): per transfer the maximum and the time - enough, or also the PCB's tilt
+   and acceleration at that time?
 
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
