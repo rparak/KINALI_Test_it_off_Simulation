@@ -79,10 +79,25 @@ def test_the_program_meets_its_bounds_and_stays_within_its_drift_tolerances(tool
     now = tool.Capture(program, built)
     rows = [line.split() for line in now['report'] if re.fullmatch(r'S\d+_(Handover|Take_From_Loader)', (line.split() or [''])[0])]
     assert len(rows) == 2 and all(row[3] == 'LOCKED' and float(row[6]) > 0.0 for row in rows), rows
-    failures, diff = tool.Compare(now, tool.Read_Baseline(program))
+    failures, warnings, diff = tool.Compare(now, tool.Read_Baseline(program))
     if diff:
         print('\n'.join(['report diff (information):'] + diff))
-    assert failures == [], failures
+    assert failures == [] and warnings == [], (failures, warnings)
+
+
+@pytest.mark.slow
+def test_the_fork_s_other_mode_passes_with_a_warning_naming_it(tool, built):
+    """
+    Description:
+        Answer 1 (owner, 2026-10-25): the taught program started with the PCB 1 um along x (CONST_FORK_TRIGGERS[0]) runs in the
+        fork's 6-point mode, not its baseline's 4-point one; within the 6-point mode's own baseline and with SPEC §10.1 met it
+        passes, with one warning naming the mode.
+    """
+
+    now = tool.Capture('taught', built, tool.CONST_FORK_TRIGGERS[0])
+    failures, warnings, _ = tool.Compare(now, tool.Read_Baseline('taught'))
+    assert now['metrics']['fork_points'] == 6 and failures == [], failures
+    assert len(warnings) == 1 and warnings[0].startswith('the fork is in its 6-point mode'), warnings
 
 
 def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
@@ -96,9 +111,9 @@ def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
     baseline = tool.Read_Baseline('taught')
     now = {'report': list(baseline['report']), 'metrics': copy.deepcopy(baseline['metrics']),
            'acceptance': [('a criterion', True, '')]}
-    assert tool.Compare(now, baseline) == ([], [])
+    assert tool.Compare(now, baseline) == ([], [], [])
     now['report'][0] += ' (changed)'
-    failures, diff = tool.Compare(now, baseline)
+    failures, _, diff = tool.Compare(now, baseline)
     assert failures == [] and any(line.startswith('+') and '(changed)' in line for line in diff)
     m, b = now['metrics'], baseline['metrics']
     m['vacuum_times'][0] += 0.004
@@ -110,5 +125,31 @@ def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
     m['fork_net_force'] = b['fork_net_force'] * 1.11
     m['hold_min_cups'] = m['hold_min_cups'][:1]
     assert [line.split(':')[0] for line in tool.Drift(m, b)] == ['cycle_time', 'vacuum_times', 'hold_min_cups', 'fork_net_force']
+    now['acceptance'] = [('PCB slip <= 1.98 mm', False, '2.10 mm')]
+    assert tool.Compare(now, baseline)[0][0] == 'acceptance: PCB slip <= 1.98 mm (2.10 mm)'
+
+
+@pytest.mark.parametrize('points, values, failed, warned', [
+    ('4', '4', [], False),
+    ('6', '6', [], True),
+    ('6', '4', ['handle_load', 'joint_torque'], True),
+    ('5', '4', ['fork_points'], False),
+])
+def test_a_fork_mode_matches_its_own_baseline_and_a_third_mode_fails(tool, points, values, failed, warned):
+    """
+    Description:
+        Answer 1 (owner, 2026-10-25), on the taught baseline (4-point mode) with synthetic metrics: its own mode passes silently;
+        the 6-point mode with the 6-point values passes with one warning naming it; the 6-point mode with the 4-point values
+        drifts from the 6-point baseline (the hinge load 18 %, J2 / J3 10-11 %; the net force 7 % is within 10 %); 5 contact
+        points is a third mode and fails. A failed SPEC §10.1 criterion fails in any mode.
+    """
+
+    baseline = tool.Read_Baseline('taught')
+    m = copy.deepcopy(baseline['metrics'])
+    m.update({k: copy.deepcopy(baseline['metrics']['fork_modes'][values][k]) for k in tool.CONST_FORK_KEYS}, fork_points=int(points))
+    now = {'report': list(baseline['report']), 'metrics': m, 'acceptance': [('a criterion', True, '')]}
+    failures, warnings, _ = tool.Compare(now, baseline)
+    assert [f.split(':')[1].strip() for f in failures] == failed, failures
+    assert len(warnings) == int(warned) and all('6-point mode' in w for w in warnings), warnings
     now['acceptance'] = [('PCB slip <= 1.98 mm', False, '2.10 mm')]
     assert tool.Compare(now, baseline)[0][0] == 'acceptance: PCB slip <= 1.98 mm (2.10 mm)'

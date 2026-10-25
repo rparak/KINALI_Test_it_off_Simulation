@@ -1109,12 +1109,21 @@ in the PCB's start (F11), the legacy take held the board on 2 cups or lost it wi
 any platform, solver or compiler difference that changes nothing physical, and train people to re-capture blindly.
 
 **Alternatives.** The exact diff of the legacy baseline: right for a refactor proof, wrong as a regression of contact physics.
-Tolerances wide enough for both fork modes: the hinge load differs by 22 % between them, so a mode flip fails the regression
-and is investigated (it is documented, KNOWN_ISSUES.md).
+Tolerances wide enough for both fork modes: the hinge load differs by 22 % between them, which would hide a real change of
+either mode.
+
+**The fork's mode flip** (owner, 2026-10-25, superseding "a mode flip fails the regression"): a run that matches either
+documented mode within that mode's own baseline (+-10 %) and meets §10.1 passes, with a warning naming the mode; a third mode
+fails. The mode is named by the fork's contact points at the summed-force peak (4 or 6), and each baseline captures both modes
+(the second from a 1 µm PCB start offset), so the comparison never mixes one mode's values with the other's. Measured
+2026-10-25: the 6-point mode raises the net force 8 %, the hinge load 22 %, the J2 / J3 torques 12 % / 10 %; every other
+metric stays within its tolerance, and both programs give the same per-mode values to 1e-6. Alternative: one mode pinned by a
+start offset in the regression - it hides the flip, which can happen on the real cell's equivalent too.
 
 **Revisit if** a platform change makes a tolerance trip with no physical change, or a metric needs a tighter tolerance.
 
-Pinned by `test/Simulation/test_baselines.py` and `test/Example/Simulation/test_physics_baseline.py`.
+Pinned by `test/Simulation/test_baselines.py` (the modes: both, synthetic, a third; a real flip of the taught run) and
+`test/Example/Simulation/test_physics_baseline.py`.
 
 ## The golden data is captured in the current names by one tool (F11)
 

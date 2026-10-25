@@ -182,7 +182,8 @@ stops the handle at 25.5 deg, short of the toggle's dead point (design-decisions
 force limit is not known.
 
 - **Impact:** the fork force is one of two values; the bounds cover the higher one; the real handle could be overloaded by a
-  force the simulation accepts.
+  force the simulation accepts. The physics regression accepts either mode against that mode's own baseline, with a warning
+  naming it, and fails a third (SPEC §10.2); the report names the mode (`(4 contact points)`).
 - **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar.
 
 ## The simulated fork-handle contact is stiff; the real robot is not

@@ -47,6 +47,8 @@ import subprocess
 import time
 # Typing (Support for type hints)
 import typing as tp
+# MuJoCo (Physics engine) [pip3 install mujoco]
+import mujoco
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
 # Custom Lib.:
@@ -55,7 +57,7 @@ from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
 #   ../Optimizer/Core - the platform record
 from Optimizer.Core import Platform_Record
 #   ../Simulation/Core - the physics run, its report and acceptance
-from Simulation.Core import (Trajectory_Drive_Cls, Run_Physics, Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance,
+from Simulation.Core import (Trajectory_Drive_Cls, Physics_Run_Cls, Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance,
                              Simulation_Error_Cls)
 
 """
@@ -82,6 +84,16 @@ CONST_TOLERANCES = {'cycle_time': ('exact', 0.0), 'fault': ('exact', 0.0), 'vacu
                     'closed_deg': ('absolute', 0.1), 'end_deg': ('absolute', 0.1), 'penetration': ('absolute', 0.00005), 'slip': ('absolute', 0.0002),
                     'tracking': ('relative', 0.10), 'loader_lag': ('relative', 0.10), 'fork_net_force': ('relative', 0.10),
                     'handle_load': ('relative', 0.10), 'joint_torque': ('relative', 0.10), 'free_loader_distance': ('absolute', 0.0005)}
+# The fork's force has two modes, 4 or 6 contact points on the handle bar at its peak, flipped by sub-micrometre differences
+# (KNOWN_ISSUES.md). A run in either documented mode passes when these metrics are within their tolerances of that mode's own
+# baseline (baseline_metrics_<program>.json 'fork_modes'); the other documented mode is a warning naming it, any other number
+# of contact points a failure (owner, 2026-10-25). Measured 2026-10-25: the 6-point mode raises the net force 8 %, the hinge
+# load 22 %, the J2 / J3 torques 12 % / 10 %; nothing else beyond its tolerance.
+#   Unit [Tuple<string>]
+CONST_FORK_KEYS = ('fork_net_force', 'handle_load', 'joint_torque')
+# The PCB's start offsets along x tried, in this order, to capture the other mode's baseline (1 um flips both programs).
+#   Unit [Tuple<float>] (m)
+CONST_FORK_TRIGGERS = (1e-6, -1e-6, 5e-6, -5e-6)
 
 
 @functools.lru_cache(maxsize=None)
@@ -128,11 +140,11 @@ def Metrics(result: tp.Any) -> tp.Dict[str, tp.Any]:
             'end_deg': [float(np.degrees(r.Lid_End)), float(np.degrees(r.Handle_End))], 'penetration_groups': groups,
             'penetration': [float(r.Penetration[g][0]) for g in groups], 'slip': float(r.Slip), 'tracking': float(r.Track_Error),
             'loader_lag': float(r.Loader_Lag), 'fork_net_force': float(r.Fork_Net_Force), 'fork_summed_force': float(r.Fork_Force),
-            'handle_load': float(r.Handle_Load), 'joint_torque': [float(x) for x in r.Joint_Torque],
+            'fork_points': int(r.Fork_Points), 'handle_load': float(r.Handle_Load), 'joint_torque': [float(x) for x in r.Joint_Torque],
             'free_loader_distance': float(closest[0]) if closest else -1.0}
 
 
-def Capture(program: str, trajectories: tp.Optional[str] = None) -> tp.Dict[str, tp.Any]:
+def Capture(program: str, trajectories: tp.Optional[str] = None, pcb_offset: float = 0.0) -> tp.Dict[str, tp.Any]:
     """
     Description:
         A program's physics run now (its trajectory must be current, as run_program.py's): the report, the metrics, the
@@ -141,16 +153,24 @@ def Capture(program: str, trajectories: tp.Optional[str] = None) -> tp.Dict[str,
     Args:
         (1) program [string]: 'taught' or 'optimized'.
         (2) trajectories [string]: The folder of the trajectory files (default Data/Generated/Trajectories), or None.
+        (3) pcb_offset [float]: The PCB's start moved along x (m): 0, or one of CONST_FORK_TRIGGERS for the fork's other mode.
 
     Returns:
-        (1) parameter [Dict<string, Any>]: 'report' (List<string>), 'metrics' (Dict), 'acceptance' (List<Tuple<string, bool, string>>).
+        (1) parameter [Dict<string, Any>]: 'report' (List<string>), 'metrics' (Dict), 'pcb_offset' (m), 'acceptance'
+            (List<Tuple<string, bool, string>>).
     """
 
     run_program = _Script('Simulation/run_program.py')
     name = os.path.basename(run_program.CONST_VERSIONS[program]).replace('.yaml', '.npz')
     cell, meta, prog, trajectory, free, model, _ = run_program.Load_Run(program, os.path.join(trajectories, name) if trajectories else None)
-    result = Run_Physics(model, Trajectory_Drive_Cls(trajectory, prog, free), meta, cell)
-    return {'report': Format_Program_Report(result, cell, prog.Name), 'metrics': Metrics(result),
+    run = Physics_Run_Cls(model, Trajectory_Drive_Cls(trajectory, prog, free), meta, cell)
+    if pcb_offset:
+        run.Data.qpos[run.qpcb] += pcb_offset
+        mujoco.mj_forward(model, run.Data)
+    while not run.Done:
+        run.Step()
+    result = run.Result()
+    return {'report': Format_Program_Report(result, cell, prog.Name), 'metrics': Metrics(result), 'pcb_offset': pcb_offset,
             'acceptance': [(c.Name, c.Passed, c.Detail) for c in Check_Program_Acceptance(result, cell)]}
 
 
@@ -189,41 +209,93 @@ def Read_Baseline(program: str, folder: str = CONST_BASELINES) -> tp.Dict[str, t
         return {'report': report, 'metrics': json.load(handle)}
 
 
-def Write_Baseline(program: str, captured: tp.Dict[str, tp.Any], folder: str) -> None:
+def Write_Baseline(program: str, captures: tp.List[tp.Dict[str, tp.Any]], folder: str) -> None:
     """
     Description:
-        Write a program's baseline (the report and the metrics) and the environment record into a folder.
+        Write a program's baseline (the report and the metrics of its run, with the documented fork modes) and the environment
+        record into a folder.
 
     Args:
         (1) program [string]: 'taught' or 'optimized'.
-        (2) captured [Dict<string, Any>]: As Capture.
+        (2) captures [List<Dict<string, Any>>]: As Capture: the run first, then one in the fork's other mode (Fork_Modes).
         (3) folder [string]: The folder.
     """
+
+    captured = captures[0]
 
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(folder, 'baseline_report_%s.txt' % program), 'w', encoding='utf-8') as handle:
         handle.write('\n'.join(captured['report']) + '\n')
     with open(os.path.join(folder, 'baseline_metrics_%s.json' % program), 'w', encoding='utf-8') as handle:
-        handle.write(json.dumps(captured['metrics'], indent=1) + '\n')
+        handle.write(json.dumps(dict(captured['metrics'], fork_modes=Fork_Modes(captures)), indent=1) + '\n')
     with open(os.path.join(folder, 'baseline_environment.json'), 'w', encoding='utf-8') as handle:
         handle.write(json.dumps(Environment(), indent=1, sort_keys=True) + '\n')
+
+
+def Fork_Modes(captures: tp.List[tp.Dict[str, tp.Any]]) -> tp.Dict[str, tp.Dict[str, tp.Any]]:
+    """
+    Description:
+        The documented fork modes of a baseline: per number of contact points, CONST_FORK_KEYS and the summed force of the
+        capture in it (Capture's metrics, the first capture of each mode).
+
+    Args:
+        (1) captures [List<Dict<string, Any>>]: Captures of one program (Capture), the baseline run first.
+
+    Returns:
+        (1) parameter [Dict<string, Dict<string, Any>>]: '<points>' -> the metrics, with 'pcb_offset' (m), the start it was run from.
+    """
+
+    modes = {}
+    for c in captures:
+        m = c['metrics']
+        modes.setdefault(str(m['fork_points']), dict({k: m[k] for k in CONST_FORK_KEYS + ('fork_summed_force',)}, pcb_offset=c['pcb_offset']))
+    return modes
+
+
+def Fork_Mode(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.Tuple[tp.Dict[str, tp.Any], tp.List[str], tp.List[str]]:
+    """
+    Description:
+        The fork mode of a run against its baseline's documented modes (CONST_FORK_KEYS): the baseline's own mode passes; the
+        other documented mode passes with a warning naming it, its metrics then compared with that mode's baseline; any other
+        number of contact points is a third mode and fails (owner, 2026-10-25).
+
+    Args:
+        (1 - 2) now, baseline [Dict<string, Any>]: Metrics (Metrics; the baseline's with 'fork_modes').
+
+    Returns:
+        (1) parameter [Dict<string, Any>]: The reference of CONST_FORK_KEYS (the matched mode's, or the baseline's own).
+        (2) parameter [List<string>]: The failures (a third mode).
+        (3) parameter [List<string>]: The warnings (the other documented mode).
+    """
+
+    points, own, modes = now['fork_points'], baseline['fork_points'], baseline['fork_modes']
+    if str(points) not in modes:
+        return baseline, ['fork_points: %d contact points on the handle bar, a third mode of the fork (documented: %s points)'
+                          % (points, ' and '.join(sorted(modes)))], []
+    if points == own:
+        return modes[str(points)], [], []
+    mode = modes[str(points)]
+    return mode, [], ['the fork is in its %d-point mode (net force %.1f N, hinge load %.2f N m), the baseline run in its %d-point mode: '
+                      'compared with the %d-point mode\'s baseline (%.1f N, %.2f N m)' % (points, now['fork_net_force'], now['handle_load'],
+                                                                                         own, points, mode['fork_net_force'], mode['handle_load'])]
 
 
 def Drift(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.List[str]:
     """
     Description:
-        The metrics that drift from the baseline beyond CONST_TOLERANCES, one line each (a changed length counts as a drift).
+        The metrics that drift from the baseline beyond CONST_TOLERANCES, one line each (a changed length counts as a drift);
+        CONST_FORK_KEYS against the baseline of the fork's mode in the run (Fork_Mode, whose failures are included).
 
     Args:
-        (1 - 2) now, baseline [Dict<string, Any>]: Metrics (Metrics).
+        (1 - 2) now, baseline [Dict<string, Any>]: Metrics (Metrics; the baseline's with 'fork_modes').
 
     Returns:
         (1) parameter [List<string>]: The drifts; empty when every metric is within its tolerance.
     """
 
-    out = []
+    mode, out, _ = Fork_Mode(now, baseline)
     for key, (kind, value) in CONST_TOLERANCES.items():
-        a, b = now[key], baseline[key]
+        a, b = now[key], (mode if key in CONST_FORK_KEYS else baseline)[key]
         if kind == 'exact' or isinstance(a, str):
             if a != b:
                 out.append('%s: %s -> %s (exact)' % (key, b, a))
@@ -239,11 +311,11 @@ def Drift(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.List[
     return out
 
 
-def Compare(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.Tuple[tp.List[str], tp.List[str]]:
+def Compare(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.Tuple[tp.List[str], tp.List[str], tp.List[str]]:
     """
     Description:
-        A capture against its baseline: the failures (every failed SPEC §10.1 criterion, every drift) and, for information, the
-        report's unified diff.
+        A capture against its baseline: the failures (every failed SPEC §10.1 criterion, every drift, a third fork mode), the
+        warnings (the fork's other documented mode) and, for information, the report's unified diff.
 
     Args:
         (1) now [Dict<string, Any>]: As Capture.
@@ -251,13 +323,14 @@ def Compare(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.Tup
 
     Returns:
         (1) parameter [List<string>]: The failures; empty when the run passes.
-        (2) parameter [List<string>]: The report diff (informational).
+        (2) parameter [List<string>]: The warnings.
+        (3) parameter [List<string>]: The report diff (informational).
     """
 
     failures = ['acceptance: %s (%s)' % (name, detail) for name, ok, detail in now['acceptance'] if not ok]
     failures += ['drift: ' + line for line in Drift(now['metrics'], baseline['metrics'])]
     diff = list(difflib.unified_diff(baseline['report'], now['report'], 'baseline', 'now', lineterm='', n=0))
-    return failures, diff
+    return failures, Fork_Mode(now['metrics'], baseline['metrics'])[2], diff
 
 
 def main():
@@ -289,16 +362,26 @@ def main():
             log.Close()
             return 2
         if args.out is not None:
-            Write_Baseline(program, now, args.out)
-            print(log.Line('[INFO] %s: wrote its baseline into %s (cycle %.3f s; %d of %d criteria pass).' % (
-                program, args.out, now['metrics']['cycle_time'], sum(ok for _, ok, _ in now['acceptance']), len(now['acceptance']))))
+            other = next((c for c in (Capture(program, args.trajectories, x) for x in CONST_FORK_TRIGGERS)
+                          if c['metrics']['fork_points'] != now['metrics']['fork_points']), None)
+            if other is None or not all(ok for _, ok, _ in other['acceptance']):
+                print(log.Line('[ERROR] %s: the fork\'s other mode %s; no baseline written.' % (
+                    program, 'not reached from the PCB start offsets %s m' % (CONST_FORK_TRIGGERS,) if other is None else 'fails SPEC §10.1')))
+                log.Close()
+                return 2
+            Write_Baseline(program, [now, other], args.out)
+            print(log.Line('[INFO] %s: wrote its baseline into %s (cycle %.3f s; %d of %d criteria pass; fork modes %s points).' % (
+                program, args.out, now['metrics']['cycle_time'], sum(ok for _, ok, _ in now['acceptance']), len(now['acceptance']),
+                ' and '.join(sorted(Fork_Modes([now, other]))))))
             continue
-        failures, diff = Compare(now, Read_Baseline(program, args.compare))
+        failures, warnings, diff = Compare(now, Read_Baseline(program, args.compare))
         failed = failed or bool(failures)
         print(log.Line('[%s] %s: %d failure(s) (bounds and drift), %d report line(s) differ (information)' % (
             'ERROR' if failures else 'INFO', program, len(failures), sum(1 for line in diff if line[:1] in '+-' and line[:3] not in ('---', '+++')))))
         for line in failures:
             print(log.Line('  FAIL ' + line))
+        for line in warnings:
+            print(log.Line('[WARNING] %s: %s' % (program, line)))
         for line in diff:
             print(log.Line('  diff ' + line))
     print(log.Line('[INFO] Simulation results only: not validated for the real cell.'))

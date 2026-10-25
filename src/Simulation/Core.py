@@ -157,9 +157,11 @@ class Cycle_Result_Str:
     Track_Error: float = 0.0
     Slip: float = 0.0
     Loader_Lag: float = 0.0
-    # Largest total contact force of the fork on the handle bar (the sum of the contact points' normal forces).
-    #   Unit [float] (N)
+    # Largest total contact force of the fork on the handle bar (the sum of the contact points' normal forces) and the number
+    # of its contact points then: the force's mode (4 or 6, KNOWN_ISSUES.md; step 6 follow-up).
+    #   Unit [float] (N), [int] (-)
     Fork_Force: float = 0.0
+    Fork_Points: int = 0
     # The fork on the handle bar (F11): the largest net contact force on the bar (the vector sum's magnitude), its direction in
     # the fork's frame then (ee_tool: the bar's axis is its z), its time; the largest squeeze ((the summed normal force - the
     # vector sum of the normal forces) / 2: what opposing slot walls cancel); the largest handle hinge load (its constraint
@@ -565,7 +567,7 @@ class Physics_Run_Cls(object):
         mujoco.mj_forward(m, d)
         self.ev = list(drive.Events)
         self.worst, self.vacuum, self.pen, self.marks = {}, [], {}, {}
-        self.track_err, self.slip, self.fork_force, self.loader_lag = 0.0, 0.0, 0.0, 0.0
+        self.track_err, self.slip, self.fork_force, self.loader_lag, self.fork_points = 0.0, 0.0, 0.0, 0.0, 0
         self.rel0, self.ph = None, ''
         # The lost PCB (F11): since when no cup touches it with the vacuum on; the last moment cups held it (time, cups, slip,
         # tilt, acceleration); the PCB's last position (the evidence of an instability, after which MuJoCo resets the state).
@@ -657,7 +659,7 @@ class Physics_Run_Cls(object):
                 self.rel0 = rel if self.rel0 is None else self.rel0
                 slip_now = np.linalg.norm(rel - self.rel0)
                 self.slip = max(self.slip, slip_now)
-        ff, net, normals = 0.0, np.zeros(3), np.zeros(3)
+        ff, net, normals, points = 0.0, np.zeros(3), np.zeros(3), 0
         record = self.steps.setdefault(ph, Step_Physics_Str(Name=ph, Start=t, Free=drive.Free(ph), Parallel=drive.Parallel(ph)))
         for i, c in enumerate(d.contact[:d.ncon]):
             k = self.classifier.Classify(c.geom1, c.geom2, drive.Fork_Allowed(ph))
@@ -673,13 +675,14 @@ class Physics_Run_Cls(object):
                     self.pen[grp] = (c.dist, round(d.time, 2))
             if {b1, b2} == {'aubo/tool/ee_tool', 'mg06_handle'}:
                 mujoco.mj_contactForce(m, d, i, self.fc)
-                ff += self.fc[0]
+                ff, points = ff + self.fc[0], points + 1
                 # The contact frame's normal runs from geom 1 to geom 2, and its force acts on geom 2: the force on the bar.
                 side = 1.0 if m.geom_bodyid[c.geom2] == self.handle_body else -1.0
                 frame = c.frame.reshape(3, 3)
                 net += side * frame.T @ self.fc[:3]
                 normals += side * self.fc[0] * frame[0]
-        self.fork_force = max(self.fork_force, ff)
+        if ff > self.fork_force:
+            self.fork_force, self.fork_points = ff, points
         # The fork on the bar (F11): its net force, the squeeze between the slot's walls, the handle hinge's load.
         if float(np.linalg.norm(net)) > self.fork_net:
             self.fork_net, self.fork_net_t = float(np.linalg.norm(net)), d.time
@@ -811,7 +814,8 @@ class Physics_Run_Cls(object):
                                 Placed_Tilt=2 * np.arccos(min(1, abs(qd[0]))), Closed=self.marks.get('closed'), Final_PCB=pf,
                                 Crate_Centre=Crate_Center('crate_place'),
                                 Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
-                                Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Fork_Net_Force=self.fork_net,
+                                Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Fork_Points=self.fork_points,
+                                Fork_Net_Force=self.fork_net,
                                 Fork_Net_Direction=self.fork_net_direction, Fork_Net_T=self.fork_net_t, Fork_Squeeze=self.fork_squeeze,
                                 Handle_Load=self.handle_load, Joint_Torque=self.joint_torque, Torque_Limit=self.torque_limit, Penetration=self.pen,
                                 Contacts=self.worst, Lid_Open=self.Lid_Open,
@@ -869,7 +873,7 @@ def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
                  f'{1000*cc[1]:.1f}, floor {1000*CONST_CRATE_FLOOR:.1f}); tilt {np.degrees(r.Final_Tilt):.2f} deg')
     lines.append('robot joint tracking error max %.4f rad, PCB slip in the cups max %.2f mm, loader axis lag max %.1f mm'
                  % (r.Track_Error, 1000 * r.Slip, 1000 * r.Loader_Lag))
-    lines.append('summed normal force fork -> handle bar: %.0f N' % r.Fork_Force)
+    lines.append('summed normal force fork -> handle bar: %.0f N (%d contact points)' % (r.Fork_Force, r.Fork_Points))
     lines.append('deepest PCB penetration: ' + ', '.join(f'{k} {1000*v[0]:.2f} mm (t={v[1]})' for k, v in sorted(r.Penetration.items())))
     for k in CONST_COLLISION_CHECKS:
         v = r.Contacts.get(k)

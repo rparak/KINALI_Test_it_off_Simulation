@@ -23,6 +23,8 @@
 
 # System (Default)
 import os
+# JSON (JSON encoder and decoder)
+import json
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
 
@@ -33,7 +35,8 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
     Description:
         Step 6: from an unrelated directory, on a trajectory built into a temporary folder, the optimized program's physics run
         compares with its baseline without a failure (exit 0); --out writes its report and metrics (the report identical to the
-        committed one on this machine) and the environment record; nothing in the working directory.
+        committed one on this machine; the metrics with both fork modes, the run's 6-point one from the start as it is) and the
+        environment record; nothing in the working directory.
     """
 
     built, work = tmp_path / 'built', tmp_path / 'work'
@@ -48,3 +51,5 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
                                                                   'baseline_report_optimized.txt'], result.stdout
     committed = open(os.path.join(root, 'test', 'Simulation', 'data', 'baseline_report_optimized.txt'), encoding='utf-8').read()
     assert (out / 'baseline_report_optimized.txt').read_text() == committed and os.listdir(work) == []
+    modes = json.loads((out / 'baseline_metrics_optimized.json').read_text())['fork_modes']
+    assert sorted(modes) == ['4', '6'] and modes['6']['pcb_offset'] == 0.0 and modes['4']['pcb_offset'] != 0.0

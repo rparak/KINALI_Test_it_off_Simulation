@@ -989,6 +989,13 @@ commands, editing keypoints and program, the file formats.
   closed and end angles +-0.1 deg; the slip +-0.2 mm; the tracking error, the loader lag, the fork's net force, the handle hinge
   load and the joint torques +-10 %; the free transfers' closest loader distance +-0.5 mm. The report's diff is printed for
   information and never fails (contact physics changes with sub-micrometre differences, design-decisions).
+- **The fork's two modes** (owner, 2026-10-25): the metrics hold `fork_points` (the fork's contact points on the handle bar
+  at its summed-force peak) and `fork_modes`, per documented mode (4 and 6 points) its net force, hinge load, joint torques and
+  summed force, and the PCB start offset along x it was captured from (`--out` captures the run, then the first of
+  `CONST_FORK_TRIGGERS` = +1, -1, +5, -5 µm that reaches the other mode, and refuses to write when none does or that run fails
+  §10.1). A run in the baseline's own mode is compared as above; in the other documented mode its fork metrics are compared
+  with that mode's baseline (+-10 %) and it passes with a `[WARNING]` naming the mode; any other number of contact points is a
+  third mode and FAILS. §10.1 applies in every mode.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment;
   the legacy run's baseline was retired with it in step 6 (git tag `legacy-cycle-reference`).
 - **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one
