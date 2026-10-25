@@ -1,5 +1,5 @@
 {
- "source": "af9eadc: the handover re-taught 0.4 mm along the jaw axis (item 2)",
+ "source": "the L_PLACE raise +0.37 mm (item 2)",
  "cycle_time": 69.396,
  "samples": 17350,
  "arrays": {
@@ -34,7 +34,7 @@
    ]
   },
   "loader_z": {
-   "sha256": "ff023c6e2a287e37e1b98b1bf0f85c9c0c3a01a5e63653bbc5f4d9a509934118",
+   "sha256": "10fe3adeaf98be786450c8ac6319205df4ab47f583661aa1159665c1f172d121",
    "dtype": "float64",
    "shape": [
     17350
@@ -62,7 +62,7 @@
    ]
   },
   "pcb_pose": {
-   "sha256": "f6d125567b63da288dc6083defde45c3e927f4776024a8aec8f812c35642913d",
+   "sha256": "87db1e83c51963ea36f71948a0d8a306075105694fb5d5e5ed4c9058d516074d",
    "dtype": "float64",
    "shape": [
     17350,
@@ -551,7 +551,7 @@
    "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "Z",
-   "position": "0x1.1352756371b44p-4",
+   "position": "0x1.14d66e81d6235p-4",
    "jaw": "0x0.0p+0"
   },
   {
@@ -960,7 +960,7 @@
    "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "Z",
-   "position": "0x1.1352756371b44p-4",
+   "position": "0x1.14d66e81d6235p-4",
    "jaw": "0x0.0p+0"
   },
   {

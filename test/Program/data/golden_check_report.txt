@@ -1,4 +1,4 @@
-program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10718 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
+program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10714 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
 free transfers to the loader (every sample, the loader at its actuator model's position): at least Loader_Free 10.0 mm + Tracking_Margin 4.0 mm, pairs up to 50 mm
 step                  start s   dur s    peak v / a (recorded path) verdict
 S1_Approach_Input       0.000   1.264  0.642 / 1.000                 PASS
@@ -22,7 +22,7 @@ S5_Home_After_Handover   11.616   1.496  0.632 / 0.999                 PASS
 S6_Loader_Insert       13.112   3.948  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 3300 (13.200 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S7_Loader_Park         17.060   3.252  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 4293 (17.172 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+    not allowed  10.00 mm at 4294 (17.176 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 S8_To_MG06             20.312   3.448  0.991 / 0.999                 PASS
     not allowed  10.00 mm at 5087 (20.348 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
