@@ -493,9 +493,9 @@ class Step_Physics_Str:
     # The deepest contact per CONST_COLLISION_CHECKS category: (distance, geom 1, geom 2, time).
     #   Unit [Dict<string, Tuple>] (m, -, -, s)
     Contacts: tp.Dict[str, tp.Tuple[float, str, str, float]] = field(default_factory=dict)
-    # The closest robot - loader distance (the carriages and jaws, and the PCB where the program has it in the jaws) and the
-    # closest carried PCB - loader distance (exact, every 4 ms, up to CONST_LOADER_CUT): (distance, time, pair), or None when
-    # never measured (F11).
+    # The closest robot - loader distance (the carriages and jaws, and in a free transfer the PCB where the program has it in the
+    # jaws) and the closest carried PCB - loader distance (exact, every 4 ms, up to CONST_LOADER_CUT): (distance, time, pair), or
+    # None when never measured (F11).
     #   Unit [Tuple<float, float, string>] (m, s, -)
     Robot_Loader: tp.Optional[tp.Tuple[float, float, str]] = None
     PCB_Loader: tp.Optional[tp.Tuple[float, float, str]] = None
@@ -716,14 +716,17 @@ class Physics_Run_Cls(object):
         """
         Description:
             The step's closest robot - loader and carried PCB - loader distances now (F11): the loader's carriages and jaws, with
-            the PCB where the program has it in the jaws; the PCB carried where the program has it on the cups.
+            the PCB where the program has it in the jaws in a free transfer; the PCB carried where the program has it on the cups.
 
         Args:
             (1) record [Step_Physics_Str(object)]: The step's record.
         """
 
         d, location = self.Data, self.Drive.PCB_Location(self.Data.time)
-        for field_name, mine, others in (('Robot_Loader', self.robot_bodies, self.not_loader_pcb if location == 'jaws' else self.not_loader),
+        # A free transfer keeps its distance to the PCB in the jaws too (Clearance.Loader_Free); in a LOCKED step at the loader the
+        # cups touch the PCB in the jaws by design (the cups_pcb group), so the robot's distance is to the carriages and jaws only.
+        jaws = location == 'jaws' and record.Free
+        for field_name, mine, others in (('Robot_Loader', self.robot_bodies, self.not_loader_pcb if jaws else self.not_loader),
                                          ('PCB_Loader', {self.PCB} if location == 'cups' else None, self.not_loader)):
             if mine is None:
                 continue
@@ -1042,6 +1045,8 @@ def Format_Program_Report(result: Cycle_Result_Str, cell: Cell_Configuration_Str
         lines.append('%-24s %7.3f-%7.3f %-6s %-3s %11.4f %9.2f %13s %13s %s' % (
             s.Name or '(start)', s.Start, s.End, 'FREE' if s.Free else 'LOCKED', 'yes' if s.Parallel else '', s.Track_Error, 1000 * s.Slip,
             mm(s.Robot_Loader), mm(s.PCB_Loader), contact))
+    lines.append('robot-loader: to the carriages and jaws (in a FREE step also the PCB in the jaws); PCB-loader: the carried PCB to them, '
+                 'which touches the jaws at the handover and the take by design (pcb_jaws)')
     lines.append('carrying free transfers (slip max and when; tool tilt from vertical and TCP acceleration then; their maxima while carried):')
     for s in r.Steps:
         if s.Free and s.Slip > 0:

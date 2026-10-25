@@ -659,10 +659,12 @@ slip, tool tilt, TCP acceleration` (an acceptance failure, exit 1). An instabili
 `Simulation_Error_Cls` with the time, the phase, the line and the PCB's last position (exit 2); neither hangs.
 
 **A program's physics run** (F11; `Example/Simulation/run_program.py`): `Trajectory_Drive_Cls(trajectory, program, free_steps)`,
-every 4 ms per step the closest robot - loader distance (the carriages and jaws, and the PCB where the program has it in the jaws)
-and carried PCB - loader distance; `Format_Program_Report` (SPEC §4.6's lines, the vacuum holds, a row per step - FREE or LOCKED,
-parallel, tracking, slip, the loader distances, the deepest contact -, each carrying free transfer's slip with the tool's tilt
-and the TCP's acceleration then and their maxima, the warnings, the 14 checks of §10.1). The legacy run's report is unchanged.
+every 4 ms per step the closest robot - loader distance (the carriages and jaws, and in a FREE step the PCB where the program has
+it in the jaws: in the LOCKED handover and take the cups touch it by design, the cups_pcb group) and carried PCB - loader
+distance (at the handover and the take it touches the jaws by design, pcb_jaws; a line under the table says both);
+`Format_Program_Report` (SPEC §4.6's lines, the vacuum holds, a row per step - FREE or LOCKED, parallel, tracking, slip, the
+loader distances, the deepest contact -, each carrying free transfer's slip with the tool's tilt and the TCP's acceleration
+then and their maxima, the warnings, the 20 checks of §10.1).
 
 ### 7.7 Keypoints
 

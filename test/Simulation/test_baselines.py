@@ -23,6 +23,7 @@
 
 # System (Default)
 import os
+import re
 import copy
 import subprocess
 import sys
@@ -70,10 +71,15 @@ def test_the_program_meets_its_bounds_and_stays_within_its_drift_tolerances(tool
     Description:
         The program's physics run meets every SPEC §10.1 criterion (20) and no metric drifts from
         test/Simulation/data/baseline_metrics_<program>.json beyond physics_baseline.CONST_TOLERANCES; the report diff against
-        baseline_report_<program>.txt is shown when it is not empty, never failing.
+        baseline_report_<program>.txt is shown when it is not empty, never failing. The LOCKED handover and take report the
+        robot's distance to the loader's carriages and jaws, a positive one: the cups touching the PCB in the jaws there is the
+        allowed cups_pcb contact, not a robot - loader one (step 6 follow-up A4).
     """
 
-    failures, diff = tool.Compare(tool.Capture(program, built), tool.Read_Baseline(program))
+    now = tool.Capture(program, built)
+    rows = [line.split() for line in now['report'] if re.fullmatch(r'S\d+_(Handover|Take_From_Loader)', (line.split() or [''])[0])]
+    assert len(rows) == 2 and all(row[3] == 'LOCKED' and float(row[6]) > 0.0 for row in rows), rows
+    failures, diff = tool.Compare(now, tool.Read_Baseline(program))
     if diff:
         print('\n'.join(['report diff (information):'] + diff))
     assert failures == [], failures
