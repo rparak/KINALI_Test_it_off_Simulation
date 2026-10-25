@@ -286,6 +286,9 @@ keeps a report, an image and a trajectory from overwriting or hiding each other.
 **Alternatives.** Reports and images in `logger/`: rejected, they are results a reader opens, not run logs.
 Keeping an output folder at the root: rejected by the owner.
 
+The programs' trajectories are never committed: they are regenerated deterministically from the committed program files
+(`build_program.py`; owner, 2026-10-25).
+
 **Revisit if** a generated file becomes a delivered input (the optimized program is committed in `Data/Optimized/`, its
 own decision below).
 
@@ -1237,3 +1240,25 @@ module uses.
 This departs from project-style-rpx where it says each `*_Str` lives in its domain's `Core.py`: a topic module's own
 structures live with it (`Program_Check_Str` in `Program/Check.py`). Pinned by `test/Docs/test_layout.py`
 (`test_each_domain_holds_its_declared_modules`, `test_a_constant_lives_with_its_only_reader_or_in_the_domains_const`).
+
+## The physics run's phase sampling and cup-touch threshold stay at 20 steps and 0.5 mm
+
+**Decision.** `Cell.yaml Simulation.Phase_Steps` stays 20 (the step label sampled every 10 ms) and `Cup_Touch` 0.5 mm (a cup
+counts as touching below that contact distance), the legacy run's values (owner, 2026-10-25).
+
+**Why.** Measured on both programs (2026-10-25, the committed baselines' trajectories, the values changed in memory only):
+
+| Variant | Taught | Optimized |
+|---|---|---|
+| `Cup_Touch` 0.1 mm | report and every metric byte-identical | byte-identical |
+| `Phase_Steps` 10 | no metric, mark or acceptance item moves (28/28, 0 regression failures); the per-step table's boundaries move by 5 ms (20 rows) | the same (14 rows); three per-step tracking values by 0.0001 rad (start 0.0001 -> 0.0000, S2_Pick_Input 0.0012 -> 0.0013, S14_Place_Output 0.0009 -> 0.0010 rad), the run's maximum unchanged (0.0126 rad) |
+| both | the same as `Phase_Steps` 10 | the same as `Phase_Steps` 10 |
+
+The cups either touch the PCB (contact distance about 0) or stand well clear of it, so the threshold between 0.1 and 0.5 mm
+decides nothing; the phase sampling only quantizes the per-step table's boundaries.
+
+**Alternatives.** `Phase_Steps` 10: 5 ms boundaries in the per-step table, twice the label lookups, no other effect.
+
+**Revisit if** a run's cup count or a mark ever depends on these values (a vacuum with a holding range, a shorter step).
+
+Pinned by the physics baselines (`test/Simulation/test_baselines.py`), which hold the current values.

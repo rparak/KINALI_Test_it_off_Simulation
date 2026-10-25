@@ -177,8 +177,8 @@ Acceptance:
   Seat_Speed: 0.001
   Seat_Tilt: 0.1
 
-# Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
-# step 6 with the keypoint program, owner 2026-10-24).
+# Two settings of the physics run, kept from the legacy run (SPEC §10.1). Their sensitivity, checked on both programs
+# 2026-10-25 (design-decisions): 10 phase steps or a 0.1 mm cup touch move no metric and no verdict.
 Simulation:
   # The phase label is refreshed every this many steps. Source: legacy/test_cell_cycle.py (commit
   # f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [-] REQUIRED.
