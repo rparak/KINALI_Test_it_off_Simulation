@@ -1000,7 +1000,7 @@ Pinned by `test/Simulation/test_core.py::test_the_vacuum_switch_fails_a_waitdi_w
 
 **Decision.** In every free transfer of both programs (the taught program's `Free_Segments`, the optimized program's splines)
 the robot and the carried PCB keep `Cell.yaml Clearance.Loader_Free` (10 mm, owner) plus `Tracking_Margin` (4 mm) from the
-loader's carriages and jaws and the PCB in them, at every sample, with the loader posed by `Program.Core.Loader_Actual` (the
+loader's carriages and jaws and the PCB in them, at every sample, with the loader posed by `Program.Check.Loader_Actual` (the
 model's actuator: filter, servo, axis mass, damping and gravity load) instead of its command. The planner's validity has the
 same rule against the static scene, `Delay` and I8 against the moving loader. `P_LOADER_WAIT` moved from 25 to 50 mm above
 `P_LOADER_ABOVE` along the tool axis. The taught vias stay: the taught transfers already keep 20.6 mm (S3_To_Loader) and more
@@ -1277,3 +1277,28 @@ from the loader over the whole step (item 5).
 **Revisit if** the real place is measured.
 
 Pinned by `test/Simulation/test_core.py::test_a_program_run_fails_exactly_its_new_criterion` and the physics baselines.
+
+## The module layout: Core.py, a topic module per second concern, Const.py only for shared constants
+
+**Decision.** Each `src/` domain has `Core.py`, its primary module. A domain with a second concern puts it in a topic
+module named for it, which imports `Core.py`, never the other way round: `Configuration/Program_Parser.py`,
+`Program/Check.py`, `Simulation/Report.py`, `Optimizer/Measure.py`. A constant one module uses is defined in that
+module; a constant more than one module of the domain uses is defined in the domain's `Const.py` (today Configuration,
+Program, Simulation), which holds only constants. Tests mirror the modules (`test/<Domain>/test_<module>.py`; a
+`Const.py` is tested through its readers). The owner's rule, 2026-10-25.
+
+**Why.** The four largest modules (Program 1695, Program_Parser 1690, Simulation 1312, Optimizer 1103 lines) each held
+two concerns; split by topic, a module reads as one concern and the import shows which one a caller needs. A constant
+next to its only reader keeps the value and its why-comment beside the code they explain.
+
+**Alternatives.** Core.py / Utilities.py / Const.py in every domain, by kind: rejected - whether a function is a
+"helper" is not a property of the code (all of Collision's functions would qualify, none of Simulation's), constants
+would leave their only readers, and the large files would stay large. One Core.py per domain (the skill's default):
+kept for the seven domains with one concern.
+
+**Revisit if** a topic module grows a second concern of its own, or a domain's Const.py would hold a constant only one
+module uses.
+
+This departs from project-style-rpx where it says each `*_Str` lives in its domain's `Core.py`: a topic module's own
+structures live with it (`Program_Check_Str` in `Program/Check.py`). Pinned by `test/Docs/test_layout.py`
+(`test_each_domain_holds_its_declared_modules`, `test_a_constant_lives_with_its_only_reader_or_in_the_domains_const`).

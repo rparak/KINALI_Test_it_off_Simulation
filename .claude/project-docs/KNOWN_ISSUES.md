@@ -246,7 +246,7 @@ speed below its threshold) before the next operation; the program does not (owne
 
 ## The loader's actuator model is one load case
 
-`Program.Core.Loader_Actual` (the kinematic checks' loader, F11) takes each axis' mass and gravity load at the trajectory's
+`Program.Check.Loader_Actual` (the kinematic checks' loader, F11) takes each axis' mass and gravity load at the trajectory's
 start; in physics the z load changes with the PCB in the jaws and the jaws' contacts, which leaves up to 1.04 mm (y 0.17 mm),
 measured on the optimized program 2026-10-25. `Clearance.Tracking_Margin` covers it.
 

@@ -551,18 +551,26 @@ Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens M
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
 Media/Original/           the owner's logo originals, kept untouched for regeneration
+src/<Domain>/Core.py      each domain's primary module; a second concern in a topic module, shared constants in Const.py
+                          (the module layout: style project reference > Layout, design-decisions)
 src/Configuration/Core.py the repository paths, the YAML reader, Cell.yaml's loader, the PCB meta reader, the MuJoCo log route
 src/Configuration/Program_Parser.py   the cell program's loader: Constants, Simulation, Program -> the typed IR (§8)
+src/Configuration/Const.py   the root, Configuration/ and Data/, the contact groups, the Process keys (shared by both)
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
 src/Render/Core.py        offscreen image, viewer start
 src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
-src/Simulation/Core.py    the reference plan reader, the physics run with the instability guard, the report, the acceptance checks
+src/Simulation/Core.py    the physics run with the instability guard and its measured values (§7.6)
+src/Simulation/Report.py  a run's acceptance checks (§10.1), warnings and report
+src/Simulation/Const.py   the constants the run and its report share
 src/Trajectory/Core.py    the trajectory file format: the only writer and reader (npz + CSV export, §9)
-src/Program/Core.py       the constants' model checks, the program build (motion laws, world state, the loader's lane), the program check, posing at a sample (§7.9)
+src/Program/Core.py       the constants' model checks, the program build (motion laws, world state, the loader's lane) (§7.9)
+src/Program/Check.py      the program check and its report, posing at a sample, the loader's actuator model (§7.9)
+src/Program/Const.py      the constant the build and the check share
 src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
-src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written, its interlocks and LOCKED parts verified (§7.11)
+src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
+src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt, the comparison's metrics (§7.11)
 Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
 Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time, --image
 Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
@@ -582,7 +590,7 @@ Example/Program/compare_programs.py    taught vs optimized: a table and a figure
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
-test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
+test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
@@ -592,20 +600,20 @@ logger/                   run logs and MuJoCo's log (git-ignored, created at run
 program's three files) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
 
-`src/` layering: `Configuration`, `Render` import nothing of the project (`Configuration.Program_Parser` imports only
-`Configuration.Core`); `Scene` → `Configuration`;
-`Kinematics`, `Collision` → `Scene` (and `Configuration`); `Simulation` → `Configuration`, `Scene`, `Collision`;
-`Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Trajectory` → `Configuration` (no MuJoCo);
-`Planner` → nothing of the project (numpy, scipy); `Program` → `Configuration`, `Scene`, `Kinematics`, `Collision`, `Keypoints`,
-`Trajectory`, `Planner`; `Optimizer` → `Configuration`, `Kinematics`, `Collision`, `Keypoints`, `Planner`, `Program`, `Trajectory`. Scripts reach
+`src/` layering, by domain (within a domain: `Const` ← `Core` ← the topic modules): `Configuration`, `Render`, `Planner`
+import nothing of the project (`Planner`: numpy, scipy); `Scene` → `Configuration`; `Kinematics` → `Scene`; `Collision` →
+`Configuration`, `Scene`; `Trajectory` → `Configuration` (no MuJoCo); `Simulation` → `Configuration`, `Scene`, `Collision`,
+`Trajectory`; `Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Program` → `Configuration`, `Scene`,
+`Kinematics`, `Collision`, `Keypoints`, `Trajectory`, `Planner`; `Optimizer` → `Configuration`, `Kinematics`, `Collision`,
+`Keypoints`, `Planner`, `Program`, `Trajectory`. No import cycle (checked 2026-10-25). Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
 
 ### 7.1 Configuration
 
-The repository's folders and files as constants built from the module's location, never from the
-working directory; the reader of `Data/PCB/pcb_meta.json`; the route of MuJoCo's log file into `logger/`.
+The repository's folders and files as constants built from the repository root (`Const.py`, from its own location),
+never from the working directory; the reader of `Data/PCB/pcb_meta.json`; the route of MuJoCo's log file into `logger/`.
 The only reader of the YAML configuration (§8): `Core` reads `Cell.yaml` and holds the strict YAML reader (`Read_YAML`);
 `Program_Parser` reads the cell program's three files into the typed intermediate representation (`Program_Str`) that
 the other domains read.
@@ -702,7 +710,7 @@ MuJoCo; the program build fills it, the viewer and step 5's physics run read it.
 
 ### 7.9 Program
 
-The program at work (`src/Program/Core.py`, `FEATURES.md` F8, F10). `Validate_Constants` checks `Constants.yaml` against the
+The program at work (`src/Program/Core.py`; the check and posing: `src/Program/Check.py`; `FEATURES.md` F8, F10). `Validate_Constants` checks `Constants.yaml` against the
 model (every tool's `Flange_Offset` against its site, every `Pose` against FK, every derived point against its target, the
 loader positions and gripper commands within the model's ranges). `Build_Program` runs it first, then turns the IR into a
 trajectory: sample 0 is the start state (`Simulation.yaml Start`), then each executed command's samples (4 ms) - the robot's
@@ -780,7 +788,7 @@ refitted by polyline midpoints), every random choice from the caller's seeded ge
 
 ### 7.11 Optimizer
 
-The optimized program (`src/Optimizer/Core.py`, F9). `Free_Transfers`: the FREE segments of `Optimization.yaml`, consecutive
+The optimized program (`src/Optimizer/Core.py`; what it is measured by: `src/Optimizer/Measure.py`; F9). `Free_Transfers`: the FREE segments of `Optimization.yaml`, consecutive
 ones merged across segments that only run loader jobs (those jobs then run in parallel). `Free_Space_Cls`: a configuration's
 validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
 carried PCB (hung at the cup face) at least the clearance plus a margin from everything and `Loader_Free` + `Tracking_Margin`

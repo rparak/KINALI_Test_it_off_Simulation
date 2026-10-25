@@ -28,46 +28,54 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 ## Layout and layers (SPEC §6)
 
 ```
-src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program, Planner,
-                       Optimizer;
-                       plus src/Configuration/Program_Parser.py (the cell program's reader, F10)
-Example/<Domain>/<script>.py   Simulation/run_program.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
-                       Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
-                       Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
-                       Keypoints/step_keypoints.py, Program/build_program.py, Program/show_program.py,
-                       Program/optimize_program.py, Program/compare_programs.py
-test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
-                       test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
+src/<Domain>/Core.py   the domain's primary module: Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints,
+                       Trajectory, Program, Planner, Optimizer
+src/<Domain>/<Topic>.py  a second concern of a domain: Configuration/Program_Parser.py (the cell program's reader),
+                       Program/Check.py (the trajectory check), Simulation/Report.py (a run's acceptance and report),
+                       Optimizer/Measure.py (what the optimized program is measured by)
+src/<Domain>/Const.py  only where more than one module of the domain uses a constant: Configuration, Program, Simulation
+Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Media, Keypoints, Program, Simulation
+test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is tested through its readers);
+                       test/Example/<Domain>/test_<script>.py; test/Install/test_install.py; test/Docs/test_layout.py;
+                       reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml,
                        Experiments/<name>/ (a not-adopted experiment: its .patch, script, README.md)
-Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10); Optimization.yaml (F9)
-Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
+Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
+Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by
+                       Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
-The scripts folder is `Example/`, one subfolder per `src/` domain a script belongs to (`Keypoints`, `Media`,
-`Program`); a script builds the repository root from `__file__` two folders up. Scripts may import
-other scripts as modules (none does yet). `Data/` subfolders are named by purpose, Pascal case like the
-domains.
+**The module layout ✅** (owner, 2026-10-25; design-decisions: the module layout). `Core.py` is each domain's primary
+module. A second concern gets its own topic module, named for it, that imports the domain's `Core.py` and never the
+other way round. A constant one module uses is defined in that module; a constant more than one module of the domain
+uses is defined in the domain's `Const.py`, which holds nothing else. Another domain imports a name from the module
+that defines it. A `Const.py` that imports nothing carries its description as a `#` comment block (a docstring would
+be its first statement and read as its header). Pinned by `test/Docs/test_layout.py`: the declared modules per domain,
+each module's test file, each constant with its readers. The checker's configuration has no layout key.
 
-Layer order 📄:
+The scripts folder is `Example/`; a script builds the repository root from `__file__` two folders up. A script may
+import another as a module through `importlib` (`physics_baseline.py` uses `run_program.py`'s `Load_Run`;
+`show_physics.py` too). `Data/` subfolders are named by purpose, Pascal case like the domains.
+
+Layer order 📄 (by domain; within a domain: `Const` ← `Core` ← the topic modules):
 
 ```
-Configuration, Render     import nothing of the project
+Configuration, Render, Planner   import nothing of the project (Planner: numpy, scipy)
 Scene                     → Configuration
-Kinematics, Collision     → Scene
-Simulation                → Configuration, Scene, Collision
-Keypoints                 → Configuration, Scene, Kinematics, Collision
+Kinematics                → Scene
+Collision                 → Configuration, Scene
 Trajectory                → Configuration (the file format only, no MuJoCo)
-Planner                   imports nothing of the project (numpy, scipy)
+Simulation                → Configuration, Scene, Collision, Trajectory
+Keypoints                 → Configuration, Scene, Kinematics, Collision
 Program                   → Configuration, Scene, Kinematics, Collision, Keypoints, Trajectory, Planner
 Optimizer                 → Configuration, Kinematics, Collision, Keypoints, Planner, Program, Trajectory
 Example/                  → any of src/
 ```
 
 `Render` takes an `MjModel` / `MjData` and knows nothing of the cell; `Planner` takes a validity function and knows nothing
-of the cell either. Trajectory (F8.3) and Program (F8.4) are the step 4a domains, Planner and Optimizer step 4b's (F9).
+of the cell either.
 
 ## Root ✅
 
@@ -89,7 +97,7 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer.Core.Optimized_Text` (only through `Example/Program/optimize_program.py`); read by `Configuration.Program_Parser.Load_Program` |
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
-| a program's physics report | `Simulation.Core.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
+| a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
@@ -117,7 +125,7 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 
 ## Units
 
-SI in code: [m], [rad], [s], [N], [kg]. The report prints mm and deg (`Simulation.Core.Format_Report`).
+SI in code: [m], [rad], [s], [N], [kg]. The report prints mm and deg (`Simulation.Report.Format_Report`).
 
 ## Errors
 
@@ -156,6 +164,9 @@ returned list, printed by the script, exit code 1.
 - The verified physics values are never changed in a style or structure change (SPEC §3, mjcf.md).
 
 ## Departures from the generic skill
+
+- A topic module's own `*_Str` structures live in that module (`Program_Check_Str` in `Program/Check.py`), not in the
+  domain's `Core.py`; a domain's shared constants live in its `Const.py` (design-decisions: the module layout).
 
 - The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
   says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure

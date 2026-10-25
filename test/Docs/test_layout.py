@@ -21,6 +21,10 @@
 # File Name: ../test/Docs/test_layout.py
 ## =========================================================================== ##
 
+# System (Default)
+import os
+# AST (Abstract syntax trees)
+import ast
 # Subprocess (Subprocess management)
 import subprocess
 
@@ -28,8 +32,9 @@ import subprocess
 Description:
     Initialization of constants.
 
-    The root holds only the declared entries (style project reference > Root, SPEC §6); written out here,
-    never read from the README or the filesystem.
+    The root holds only the declared entries (style project reference > Root, SPEC §6), and each src/ domain only its
+    declared modules, its constants with their readers (style project reference > Layout; design-decisions: the module
+    layout); written out here, never read from the README or the filesystem.
 """
 # The entries git tracks at the root. Exception with its reason: pytest.ini (the runner reads it at the root).
 #   Unit [Set<string>]
@@ -44,6 +49,14 @@ CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/
                      'project-style-rpx/references/project.md', 'project-style-rpx/references/check_style.json',
                      'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
                      'readme-writer/references/check_readme.json'}
+# The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
+# has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py); Const.py only where more than one of its
+# modules uses a constant.
+#   Unit [Dict<string, Set<string>>]
+CONST_DOMAIN_MODULES = {'Configuration': {'Core.py', 'Const.py', 'Program_Parser.py'}, 'Scene': {'Core.py'}, 'Kinematics': {'Core.py'},
+                        'Collision': {'Core.py'}, 'Render': {'Core.py'}, 'Simulation': {'Core.py', 'Const.py', 'Report.py'},
+                        'Keypoints': {'Core.py'}, 'Trajectory': {'Core.py'}, 'Program': {'Core.py', 'Const.py', 'Check.py'},
+                        'Planner': {'Core.py'}, 'Optimizer': {'Core.py', 'Measure.py'}}
 
 
 def _Tracked(root):
@@ -82,6 +95,71 @@ def test_the_skill_folders_track_only_the_project_references(root):
 
     prefix = '.claude/skills/'
     assert {p[len(prefix):] for p in _Tracked(root) if p.startswith(prefix)} == CONST_SKILL_FILES
+
+
+def _Constants(tree):
+    """
+    Description:
+        The CONST_ names a module defines at its top level.
+    """
+
+    return {n.id for s in tree.body if isinstance(s, ast.Assign) for t in s.targets for n in ast.walk(t)
+            if isinstance(n, ast.Name) and n.id.startswith('CONST_')}
+
+
+def _Domain_Trees(root, domain):
+    """
+    Description:
+        The parsed modules of a src/ domain that git tracks, by file name.
+    """
+
+    prefix = 'src/%s/' % domain
+    files = [p for p in _Tracked(root) if p.startswith(prefix) and p.endswith('.py')]
+    return {p[len(prefix):]: ast.parse(open(os.path.join(root, p), encoding='utf-8').read()) for p in files}
+
+
+def test_each_domain_holds_its_declared_modules(root):
+    """
+    Description:
+        The Python files git tracks under src/ are the declared modules of the declared domains and nothing else, and each
+        module but a Const.py has its test file test/<Domain>/test_<module>.py (a Const.py is tested through its readers).
+    """
+
+    tracked = _Tracked(root)
+    found = {}
+    for path in tracked:
+        if path.startswith('src/') and path.endswith('.py'):
+            domain, name = path.split('/')[1:3]
+            found.setdefault(domain, set()).add(name)
+    assert found == CONST_DOMAIN_MODULES
+    missing = ['test/%s/test_%s' % (d, m.lower()) for d, names in CONST_DOMAIN_MODULES.items() for m in names
+               if m != 'Const.py' and 'test/%s/test_%s' % (d, m.lower()) not in tracked]
+    assert missing == []
+
+
+def test_a_constant_lives_with_its_only_reader_or_in_the_domains_const(root):
+    """
+    Description:
+        Within a domain, a constant that more than one module uses is defined in its Const.py, and a constant one module
+        uses is defined in that module: no module uses a constant another non-Const module of its domain defines, every
+        constant of a Const.py is used by at least two other modules of its domain, and a Const.py holds only its imports,
+        its description and CONST_ assignments.
+    """
+
+    wrong = []
+    for domain in CONST_DOMAIN_MODULES:
+        trees = _Domain_Trees(root, domain)
+        defined = {name: _Constants(tree) for name, tree in trees.items()}
+        used = {name: {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)} for name, tree in trees.items()}
+        for name, constants in defined.items():
+            readers = {c: sorted(m for m in trees if m != name and c in used[m]) for c in constants}
+            if name == 'Const.py':
+                wrong += ['%s/Const.py %s: used by %s' % (domain, c, r) for c, r in readers.items() if len(r) < 2]
+                wrong += ['%s/Const.py holds a %s' % (domain, type(s).__name__) for s in trees[name].body
+                          if not isinstance(s, (ast.Import, ast.ImportFrom, ast.Assign, ast.Expr))]
+            else:
+                wrong += ['%s/%s %s: used by %s' % (domain, name, c, r) for c, r in readers.items() if r]
+    assert wrong == []
 
 
 def test_no_path_differs_from_another_only_in_case(root):
