@@ -138,11 +138,17 @@ Acceptance:
   # A program's physics run: the robot and the carried PCB at least this far from the loader in every free
   # transfer (closer than Clearance.Loader_Free is a WARNING). Source: the owner, 2026-10-24 (F11). [m] REQUIRED.
   Loader_Distance: 0.001
-  # A program's physics run warns (never fails) above these: the PCB's slip in the cups and the robot's joint
-  # tracking error, 1.5 x the legacy run's 1.32 mm and 0.0126 rad (baseline_report.txt). The bounds come in step 6.
-  # Source: the owner, 2026-10-24 (F11). [m], [rad] REQUIRED.
-  Slip_Warning: 0.00198
-  Tracking_Warning: 0.0189
+  # A program's physics run fails (and warns) above these: the PCB's slip in the cups and the robot's joint
+  # tracking error, 1.5 x the legacy run's 1.32 mm and 0.0126 rad (git tag legacy-cycle-reference). Source: the
+  # owner, 2026-10-24 (F11: warnings), 2026-10-25 (step 6: bounds). [m], [rad] REQUIRED.
+  Slip_Max: 0.00198
+  Tracking_Max: 0.0189
+  # The fork on the MG06 handle bar while it closes and opens MG06: the net contact force on the bar and the
+  # handle hinge load (its constraint torque), the worst of the force's two modes x 1.15, rounded up (247.3 N,
+  # 11.45 N m; F11, design-decisions). The real handle's limit is not known (KNOWN_ISSUES.md). Source: the owner,
+  # 2026-10-25 (step 6). [N], [N m] REQUIRED.
+  Fork_Net_Force_Max: 290.0
+  Handle_Load_Max: 13.5
 
 # Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
 # step 6 with the keypoint program, owner 2026-10-24).

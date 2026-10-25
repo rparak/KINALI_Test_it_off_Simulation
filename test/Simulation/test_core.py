@@ -387,6 +387,8 @@ def _Program_Result():
                                      Robot_Loader=(0.03514, 5.6, 'aubo/tool/ee_tool / z_carriage'), PCB_Loader=(0.02002, 5.6, 'pcb / z_carriage')),
                     Step_Physics_Str(Name='S4_Handover', Start=7.03, End=11.62, Track_Error=0.0011, Slip=0.0013,
                                      Robot_Loader=(-0.00001, 9.5, 'a / jaw_L'))]
+    result.Fork_Force, result.Fork_Net_Force, result.Handle_Load = 291.0, 229.0, 9.38
+    result.Joint_Torque, result.Torque_Limit = np.array([25.1, 52.3, 40.9, 18.2, 7.0, 20.5]), np.array([180.0, 180.0, 150.0, 60.0, 60.0, 60.0])
     return result
 
 
@@ -395,21 +397,32 @@ def _Program_Result():
     (lambda r: r.Holds.pop(1), 'every vacuum hold keeps 4/4 cups'),
     (lambda r: (setattr(r, 'Fault', 'PCB lost at ...'), setattr(r, 'Fault_Kind', 'lost')), 'the PCB is never lost'),
     (lambda r: (setattr(r, 'Fault', 'vacuum not OK at ...'), setattr(r, 'Fault_Kind', 'input')), 'every WaitDI gets DI_VACUUM_OK in time'),
-    (lambda r: setattr(r.Steps[0], 'PCB_Loader', (0.0009, 5.6, 'pcb / z_carriage')), 'free transfers >= 1.0 mm from the loader'),
+    (lambda r: setattr(r.Steps[0], 'PCB_Loader', (0.0009, 5.6, 'pcb / z_carriage')), ['free transfers >= 1.0 mm from the loader',
+                                                                                       'free transfers >= Loader_Free 10.0 mm']),
+    (lambda r: setattr(r.Steps[0], 'PCB_Loader', (0.0099, 5.6, 'pcb / z_carriage')), 'free transfers >= Loader_Free 10.0 mm'),
+    (lambda r: setattr(r, 'Slip', 0.00199), 'PCB slip <= 1.98 mm'),
+    (lambda r: setattr(r, 'Track_Error', 0.0190), 'tracking error <= 0.0189 rad'),
+    (lambda r: setattr(r, 'Fork_Net_Force', 290.1), 'fork net force on the bar <= 290 N'),
+    (lambda r: setattr(r, 'Handle_Load', 13.51), 'handle hinge load <= 13.5 N m'),
+    (lambda r: r.Joint_Torque.__setitem__(5, 60.0), 'no robot actuator saturated (model limits)'),
 ])
 def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
     """
     Description:
-        F11: a program's run has SPEC §10.1's ten checks and four more - every vacuum hold keeps 4 of 4 cups (both holds), the PCB
-        is never lost, every WaitDI gets the vacuum switch's input, the free transfers keep 1 mm from the loader (a LOCKED step
-        at the loader may touch it); each violation fails that one.
+        F11 and step 6: a program's run has SPEC §10.1's ten checks and ten more - every vacuum hold keeps 4 of 4 cups (both
+        holds), the PCB is never lost, every WaitDI gets the vacuum switch's input, the free transfers keep 1 mm from the loader (a
+        LOCKED step at the loader may touch it), the slip <= 1.98 mm, the tracking error <= 0.0189 rad, the fork's net force <=
+        290 N, the handle hinge load <= 13.5 N m, the free transfers >= Loader_Free (10 mm), no robot actuator saturated (a wrist
+        3 torque at its 60 N m limit); each violation (just beyond its bound) fails that one (the 1 mm floor also fails
+        Loader_Free).
     """
 
     result = _Program_Result()
     checks = Check_Program_Acceptance(result, Load_Cell_Configuration())
-    assert len(checks) == 14 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
+    assert len(checks) == 20 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
     change(result)
-    assert [c.Name for c in Check_Program_Acceptance(result, Load_Cell_Configuration()) if not c.Passed] == [criterion]
+    expected = criterion if isinstance(criterion, list) else [criterion]
+    assert [c.Name for c in Check_Program_Acceptance(result, Load_Cell_Configuration()) if not c.Passed] == expected
 
 
 def _Build(program, cell_configuration):
@@ -485,7 +498,8 @@ def test_a_program_run_warns_above_the_owners_thresholds():
     Description:
         F11: no warning at the measured values; a slip above 1.98 mm, a tracking error above 0.0189 rad (1.5 x the legacy run's)
         and a free transfer within Loader_Free (10 mm) of the loader each warn once, naming the step; a LOCKED step at the
-        loader does not warn; none of them fails the acceptance.
+        loader does not warn; the free transfer within Loader_Free also fails the acceptance (step 6; the slip and the tracking
+        bounds are on the run's maxima, which this step's values do not change).
     """
 
     cell = Load_Cell_Configuration()
@@ -496,14 +510,14 @@ def test_a_program_run_warns_above_the_owners_thresholds():
     assert warnings == ['S3_To_Loader: PCB slip 1.99 mm at 6.864 s above 1.98 mm (1.5 x the legacy run)',
                         'S3_To_Loader: robot tracking error 0.0190 rad above 0.0189 rad (1.5 x the legacy run)',
                         'S3_To_Loader: carried PCB 9.90 mm from the loader at 5.600 s (pcb / z_carriage), within Clearance.Loader_Free 10.0 mm']
-    assert all(c.Passed for c in Check_Program_Acceptance(result, cell))
+    assert [c.Name for c in Check_Program_Acceptance(result, cell) if not c.Passed] == ['free transfers >= Loader_Free 10.0 mm']
 
 
 def test_the_program_report_has_its_sections():
     """
     Description:
         F11: Format_Program_Report: the program line, SPEC §4.6's lines, the holds, a row per step (FREE / LOCKED, tracking, slip,
-        the loader distances), the carrying free transfers' slip with tilt and acceleration, the warnings, the 14 checks, the
+        the loader distances), the carrying free transfers' slip with tilt and acceleration, the warnings, the 20 checks, the
         closing sentence.
     """
 
@@ -514,8 +528,8 @@ def test_the_program_report_has_its_sections():
     assert row.split()[1:7] == ['5.190-', '7.030', 'FREE', '0.0014', '1.28', '35.14'] and row.split()[7] == '20.02'
     assert ('  S3_To_Loader           slip 1.28 mm at 6.864 s: tilt 8.8 deg, acceleration 1.75 m/s^2; max tilt 8.9 deg, max acceleration '
             '2.23 m/s^2') in lines
-    assert 'warnings: none' in lines and sum(1 for line in lines if line.endswith(('PASS', 'FAIL')) or '  PASS  ' in line) == 14
-    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (14 of 14). Simulation results only: not validated for the real cell.'
+    assert 'warnings: none' in lines and sum(1 for line in lines if line.endswith(('PASS', 'FAIL')) or '  PASS  ' in line) == 20
+    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (20 of 20). Simulation results only: not validated for the real cell.'
 
 
 @pytest.mark.slow

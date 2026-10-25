@@ -806,7 +806,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `Motion.Speed_Fraction` (MoveJ's default `v=`), `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
 | `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
-| `Acceptance.Loader_Distance` (0.001), `Slip_Warning` (0.00198), `Tracking_Warning` (0.0189) | m, m, rad | the owner (F11, 2026-10-24: 1 mm; 1.5 x the legacy run's 1.32 mm and 0.0126 rad) | `Simulation.Check_Program_Acceptance`, `Program_Warnings` |
+| `Acceptance.Loader_Distance` (0.001), `Slip_Max` (0.00198), `Tracking_Max` (0.0189), `Fork_Net_Force_Max` (290), `Handle_Load_Max` (13.5) | m, m, rad, N, N m | the owner (F11: 1 mm; 1.5 x the legacy run's 1.32 mm and 0.0126 rad; step 6, 2026-10-25: the fork's worst mode 247.3 N / 11.45 N m x 1.15, rounded up) | `Simulation.Check_Program_Acceptance`, `Program_Warnings` |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
@@ -942,9 +942,17 @@ A program's run (F11, owner 2026-10-24; `Simulation.Check_Program_Acceptance`) a
 10. every `WaitDI(DI_VACUUM_OK)` gets its input in time: the simulated vacuum switch is true once `Vacuum_OK_Min_Cups` cups have
     touched the PCB for its `Signal_Response`; checked where the WaitDI ends on the trajectory's timeline (physics follows it),
     a false input stops the run (`vacuum not OK at t, step, line: ...`, exit 1);
-11. in every free transfer the robot and the carried PCB stay at least `Acceptance.Loader_Distance` (1 mm) from the loader
-    (closer than `Clearance.Loader_Free` is a warning, as a step's slip above `Slip_Warning` or tracking error above
-    `Tracking_Warning`: reported, never failing; the bounds come in step 6).
+11. in every free transfer the robot and the carried PCB stay at least `Acceptance.Loader_Distance` (1 mm) from the loader:
+    the hard floor;
+12. the PCB's slip in the cups at most `Acceptance.Slip_Max` (1.98 mm) and 13. the robot's joint tracking error at most
+    `Tracking_Max` (0.0189 rad) - 1.5 x the legacy run's (step 6, owner 2026-10-25; a step above them is also a warning);
+14. the fork's net contact force on the handle bar at most `Fork_Net_Force_Max` (290 N) and 15. the handle hinge load at most
+    `Handle_Load_Max` (13.5 N m) - the worst of the force's two modes x 1.15 (design-decisions); the summed normal force is
+    reported only (it adds the squeeze between the slot's walls);
+16. in every free transfer the robot and the carried PCB at least `Clearance.Loader_Free` (10 mm) from the loader (closer is
+    also a warning);
+17. no robot actuator saturated: each joint's largest torque below 99.9 % of the model's actuator limit (180 / 180 / 150 /
+    60 / 60 / 60 N m, the vendored model's estimates; the AUBO i5's official limits are not known, KNOWN_ISSUES.md).
 
 The legacy reference run keeps items 1-7: its take carried the board on 2 of 4 cups (KNOWN_ISSUES.md), and its baseline
 report stays the regression of the old run.

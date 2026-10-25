@@ -50,7 +50,7 @@ def test_the_taught_program_runs_and_meets_the_acceptance(tmp_path, run_script, 
     """
     Description:
         F11: the taught program's physics run exits 0; stdout and DIR/Program_physics.txt hold the report: the program line, the
-        holds of 4 of 4 cups, a row per step, the closing sentence with 14 of 14 checks; stderr the not-validated sentence;
+        holds of 4 of 4 cups, a row per step, the closing sentence with 20 of 20 checks; stderr the not-validated sentence;
         nothing is written to the working directory.
     """
 
@@ -62,7 +62,7 @@ def test_the_taught_program_runs_and_meets_the_acceptance(tmp_path, run_script, 
     lines = result.stdout.splitlines()
     assert lines[0] == 'program Program: physics run of its trajectory, cycle 69.396 s'
     assert 'vacuum holds: 3.276-9.912 s min 4/4 cups; 57.852-66.072 s min 4/4 cups' in lines
-    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (14 of 14). Simulation results only: not validated for the real cell.'
+    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (20 of 20). Simulation results only: not validated for the real cell.'
     assert (tmp_path / 'out' / 'Program_physics.txt').read_text().splitlines() == lines
     assert 'not validated for the real cell' in result.stderr and os.listdir(work) == []
 

@@ -67,6 +67,10 @@ CONST_PROGRESS_STEPS = 4000
 # SPEC §10.1: the picks and the cups that must touch at each (the limits are in Configuration/Cell.yaml).
 #   Unit [int], [int]
 CONST_PICKS, CONST_CUPS = 2, 4
+# A robot actuator counts as saturated (its torque at the model's force limit, the demand clipped) at this fraction of the
+# limit (step 6: FAIL; the limits are the vendored model's estimates, KNOWN_ISSUES.md).
+#   Unit [float] (-)
+CONST_TORQUE_SATURATION = 0.999
 # The per-step measurements' period (the TCP's acceleration by second differences, the tool's tilt, the robot-loader distance
 # in a parallel step), and the distance the robot-loader pairs are reported up to.
 #   Unit [float] (s), [float] (m)
@@ -199,6 +203,10 @@ class Cycle_Result_Str:
     Fork_Net_T: float = 0.0
     Fork_Squeeze: float = 0.0
     Handle_Load: float = 0.0
+    # Each robot joint's largest actuator torque and the model's limit (step 6).
+    #   Unit [Vector<float> 1x6] (N m), [Vector<float> 1x6] (N m)
+    Joint_Torque: np.ndarray = field(default_factory=lambda: np.zeros(6))
+    Torque_Limit: np.ndarray = field(default_factory=lambda: np.full(6, np.inf))
     # Deepest PCB penetration per group: (distance, time).
     #   Unit [Dict<string, Tuple<float>>] (m, s)
     Penetration: tp.Dict[str, tp.Tuple[float, float]] = field(default_factory=dict)
@@ -903,6 +911,9 @@ class Physics_Run_Cls(object):
         # The fork on the bar (F11): the largest net force (its direction in the fork's frame, its time), squeeze, hinge load.
         self.fork_net, self.fork_net_direction, self.fork_net_t, self.fork_squeeze, self.handle_load = 0.0, np.zeros(3), 0.0, 0.0, 0.0
         self.handle_dof, self.handle_body = m.jnt_dofadr[m.joint('handle_hinge').id], m.body('mg06_handle').id
+        # The robot's largest actuator torques and the model's limits (step 6).
+        self.joint_torque = np.zeros(6)
+        self.torque_limit = np.where(m.actuator_forcelimited[CONST_ROBOT_ACTUATORS] > 0, m.actuator_forcerange[CONST_ROBOT_ACTUATORS, 1], np.inf)
         # The vacuum switch (F11): its checks due; since when at least k cups (index k) have touched the PCB with the vacuum on;
         # the vacuum holds.
         self.Fault_Kind: tp.Optional[str] = None
@@ -1009,6 +1020,7 @@ class Physics_Run_Cls(object):
             self.fork_net_direction = d.xmat[TOOL].reshape(3, 3).T @ net / self.fork_net
         self.fork_squeeze = max(self.fork_squeeze, 0.5 * (ff - float(np.linalg.norm(normals))))
         self.handle_load = max(self.handle_load, abs(float(d.qfrc_constraint[self.handle_dof])))
+        self.joint_torque = np.maximum(self.joint_torque, np.abs(d.actuator_force[A_ROBOT]))
         # The step's measurements (F11): tracking; every 4 ms the TCP's acceleration (second differences) and the tool's tilt
         # from the vertical; the slip with the tilt and the acceleration then; a parallel step's robot-loader distance.
         record.End = d.time
@@ -1132,7 +1144,8 @@ class Physics_Run_Cls(object):
                                 Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
                                 Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Fork_Net_Force=self.fork_net,
                                 Fork_Net_Direction=self.fork_net_direction, Fork_Net_T=self.fork_net_t, Fork_Squeeze=self.fork_squeeze,
-                                Handle_Load=self.handle_load, Penetration=self.pen, Contacts=self.worst, Lid_Open=self.Lid_Open,
+                                Handle_Load=self.handle_load, Joint_Torque=self.joint_torque, Torque_Limit=self.torque_limit, Penetration=self.pen,
+                                Contacts=self.worst, Lid_Open=self.Lid_Open,
                                 Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
                                 Fault=self.Fault, Fault_Kind=self.Fault_Kind, Holds=self.holds)
 
@@ -1262,8 +1275,9 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
         The acceptance criteria of a program's run (SPEC §10.1, F11): Check_Acceptance's, then every vacuum hold keeps 4 of 4
         cups (from the vacuum on to off: the release at the take and every carry included), the PCB is never lost, every WaitDI
         on the vacuum switch gets its input in time, the robot and the carried PCB at least Acceptance.Loader_Distance from the
-        loader in every free transfer. The legacy reference run keeps Check_Acceptance's (its take holds the
-        board on 2 of 4 cups, KNOWN_ISSUES.md).
+        loader in every free transfer; step 6's bounds: the slip and the tracking error (Slip_Max, Tracking_Max), the fork's net
+        force on the handle bar and the handle hinge load (Fork_Net_Force_Max, Handle_Load_Max), the free transfers at least
+        Clearance.Loader_Free from the loader, no robot actuator saturated (CONST_TORQUE_SATURATION of the model's limits).
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A program run's values.
@@ -1286,6 +1300,18 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
                                     closest is None or closest[0] >= cell.Loader_Distance,
                                     'no free transfer' if closest is None else '%.2f mm at %.3f s, %s (%s)' % (1000 * closest[0], closest[1],
                                                                                                              closest[3], closest[2])))
+    out.append(Acceptance_Check_Str('PCB slip <= %.2f mm' % (1000 * cell.Slip_Max), r.Slip <= cell.Slip_Max, '%.2f mm' % (1000 * r.Slip)))
+    out.append(Acceptance_Check_Str('tracking error <= %.4f rad' % cell.Tracking_Max, r.Track_Error <= cell.Tracking_Max, '%.4f rad' % r.Track_Error))
+    out.append(Acceptance_Check_Str('fork net force on the bar <= %.0f N' % cell.Fork_Net_Force_Max, r.Fork_Net_Force <= cell.Fork_Net_Force_Max,
+                                    '%.1f N (summed normal %.0f N, for information)' % (r.Fork_Net_Force, r.Fork_Force)))
+    out.append(Acceptance_Check_Str('handle hinge load <= %.1f N m' % cell.Handle_Load_Max, r.Handle_Load <= cell.Handle_Load_Max,
+                                    '%.2f N m' % r.Handle_Load))
+    out.append(Acceptance_Check_Str('free transfers >= Loader_Free %.1f mm' % (1000 * cell.Loader_Free),
+                                    closest is None or closest[0] >= cell.Loader_Free,
+                                    'no free transfer' if closest is None else '%.2f mm' % (1000 * closest[0])))
+    share = r.Joint_Torque / r.Torque_Limit
+    out.append(Acceptance_Check_Str('no robot actuator saturated (model limits)', bool(np.all(share < CONST_TORQUE_SATURATION)),
+                                    ' '.join('%.0f%%' % (100 * x) for x in share) + ' of %s N m' % '/'.join('%g' % x for x in r.Torque_Limit)))
     return out
 
 
@@ -1309,7 +1335,7 @@ def Program_Warnings(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> 
     """
     Description:
         The warnings of a program's run, which never fail it (F11, owner): a step whose PCB slip or robot tracking error exceeds
-        Acceptance.Slip_Warning / Tracking_Warning (1.5 x the legacy run's), a free transfer closer to the loader than
+        Acceptance.Slip_Max / Tracking_Max (1.5 x the legacy run's; also an acceptance failure), a free transfer closer to the loader than
         Clearance.Loader_Free.
 
     Args:
@@ -1322,11 +1348,11 @@ def Program_Warnings(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> 
 
     out = []
     for s in result.Steps:
-        if s.Slip > cell.Slip_Warning:
+        if s.Slip > cell.Slip_Max:
             out.append('%s: PCB slip %.2f mm at %.3f s above %.2f mm (1.5 x the legacy run)'
-                       % (s.Name, 1000 * s.Slip, s.Slip_T, 1000 * cell.Slip_Warning))
-        if s.Track_Error > cell.Tracking_Warning:
-            out.append('%s: robot tracking error %.4f rad above %.4f rad (1.5 x the legacy run)' % (s.Name, s.Track_Error, cell.Tracking_Warning))
+                       % (s.Name, 1000 * s.Slip, s.Slip_T, 1000 * cell.Slip_Max))
+        if s.Track_Error > cell.Tracking_Max:
+            out.append('%s: robot tracking error %.4f rad above %.4f rad (1.5 x the legacy run)' % (s.Name, s.Track_Error, cell.Tracking_Max))
         for what, v in (('robot', s.Robot_Loader), ('carried PCB', s.PCB_Loader)):
             if s.Free and v is not None and v[0] < cell.Loader_Free:
                 out.append('%s: %s %.2f mm from the loader at %.3f s (%s), within Clearance.Loader_Free %.1f mm'
