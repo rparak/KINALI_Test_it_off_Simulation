@@ -30,10 +30,10 @@ from dataclasses import dataclass, field
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
 # Custom Lib.:
-#   ../Configuration/Core - the cell, the PCB poses and locations, the files
-from Configuration.Core import Cell_Configuration_Str, CONST_PCB_LOCATIONS
-#   ../Configuration/Program_Parser - the programs and the optimizer's settings
-from Configuration.Program_Parser import Program_Str
+#   ../Configuration/Core - the cell
+from Configuration.Core import Cell_Configuration_Str
+#   ../Configuration/Program_Parser - the program, the PCB locations
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS, Program_Str
 #   ../Kinematics/Core - FK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls
 #   ../Collision/Core - exact distances

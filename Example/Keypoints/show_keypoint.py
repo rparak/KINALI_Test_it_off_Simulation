@@ -39,10 +39,9 @@ import time
 import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_IMAGES,
-                                CONST_PCB_LOCATIONS, CONST_FIXTURE_STATES)
-#   ../Configuration/Program_Parser - the points and their scenes
-from Configuration.Program_Parser import Load_Constants, Load_Simulation
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_IMAGES
+#   ../Configuration/Program_Parser - the points and their scenes, the PCB locations, MG06's states
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS, CONST_FIXTURE_STATES, Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the TCP pose

@@ -40,11 +40,11 @@ import scipy
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
 # Custom Lib.:
-#   ../Configuration/Core - the cell, the PCB poses and locations, the files
-from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_CELL_YAML, CONST_FORK_PATH
-#   ../Configuration/Program_Parser - the programs and the optimizer's settings
-from Configuration.Program_Parser import (Program_Str, Optimization_Str, Load_Program, Free_Steps, CONST_PROGRAM_YAML, CONST_CONSTANTS_YAML,
-                                          CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML)
+#   ../Configuration/Core - the cell, the PCB poses, the files
+from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_CELL_YAML, CONST_FORK_PATH
+#   ../Configuration/Program_Parser - the programs and the optimizer's settings, the PCB locations
+from Configuration.Program_Parser import (CONST_PCB_LOCATIONS, Program_Str, Optimization_Str, Load_Program, Free_Steps, CONST_PROGRAM_YAML,
+                                          CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML)
 #   ../Kinematics/Core - FK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP
 #   ../Collision/Core - exact distances

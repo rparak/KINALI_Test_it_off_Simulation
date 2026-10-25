@@ -33,8 +33,9 @@ from Program.Core import Build_Program, Movej_Duration, Program_Error_Cls, Valid
 from Program.Check import Check_Trajectory
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core,
 #   ../Keypoints/Core
-from Configuration.Core import CONST_PCB_LOCATIONS, CONST_FORK_PATH
-from Configuration.Program_Parser import Program_Str, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps, CONST_CONSTANTS_YAML
+from Configuration.Core import CONST_FORK_PATH
+from Configuration.Program_Parser import (CONST_PCB_LOCATIONS, Program_Str, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps,
+                                          CONST_CONSTANTS_YAML)
 from Kinematics.Core import PCB_For_TCP
 from Trajectory.Core import Write_Trajectory
 

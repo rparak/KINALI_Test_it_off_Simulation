@@ -34,10 +34,10 @@ import typing as tp
 # Dataclasses (Data Classes)
 from dataclasses import dataclass, field
 # Custom Lib.:
-#   ../Configuration/Core - the YAML reader, the repository's files, the cell's closed sets and errors
-from Configuration.Core import (Read_YAML, Configuration_Error_Cls, Cell_Configuration_Str, CONST_ROOT, CONST_CONFIGURATION, CONST_DATA,
-                                CONST_PCB_LOCATIONS,
-                                CONST_CONTACT_GROUPS, CONST_FIXTURE_STATES, CONST_PROCESS_KEYS)
+#   ../Configuration/Core - the YAML reader, the cell and its errors
+from Configuration.Core import Read_YAML, Configuration_Error_Cls, Cell_Configuration_Str
+#   ../Configuration/Const - the repository root, Configuration/ and Data/, the contact groups, the Process keys
+from Configuration.Const import CONST_ROOT, CONST_CONFIGURATION, CONST_DATA, CONST_CONTACT_GROUPS, CONST_PROCESS_KEYS
 
 """
 Description:
@@ -60,6 +60,10 @@ CONST_PROGRAM_YAML = os.path.join(CONST_CONFIGURATION, 'Program.yaml')
 #   Unit [string]
 CONST_OPTIMIZATION_YAML = os.path.join(CONST_CONFIGURATION, 'Optimization.yaml')
 CONST_OPTIMIZED_PROGRAM_YAML = os.path.join(CONST_DATA, 'Optimized', 'Program_Optimized.yaml')
+# The closed sets the cell program's files use: the PCB's locations, MG06's states.
+#   Unit [Tuple<string>]
+CONST_PCB_LOCATIONS = ('input_crate', 'cups', 'jaws', 'mg06', 'output_crate')
+CONST_FIXTURE_STATES = ('Open', 'Closed')
 # The sections of Constants.yaml and the prefixes of their names.
 #   Unit [Dict<string, Tuple<string>>]
 CONST_SECTIONS = {'Tools': ('T_',), 'Points': ('P_',), 'Loader_Positions': ('L_',), 'Gripper_Commands': ('G_',), 'Paths': ('PATH_',),

@@ -35,9 +35,9 @@ import numpy as np
 import mujoco
 # Custom Lib.: the files, the cell, the contact categories
 #   ../Configuration/Core
-from Configuration.Core import CONST_PCB_LOCATIONS, PCB_Meta_Str, Cell_Configuration_Str
-#   ../Configuration/Program_Parser - a loader position
-from Configuration.Program_Parser import Program_Str
+from Configuration.Core import PCB_Meta_Str, Cell_Configuration_Str
+#   ../Configuration/Program_Parser - the program, the PCB locations
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS, Program_Str
 #   ../Scene/Core
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
@@ -449,7 +449,7 @@ class Trajectory_Drive_Cls(object):
     def PCB_Location(self, t: float) -> str:
         """
         Description:
-            Where the program has the PCB at t (one of Configuration.Core.CONST_PCB_LOCATIONS).
+            Where the program has the PCB at t (one of Configuration.Program_Parser.CONST_PCB_LOCATIONS).
 
         Args:
             (1) t [float]: The time (s).

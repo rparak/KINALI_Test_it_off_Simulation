@@ -33,10 +33,10 @@ import numpy as np
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
 # Custom Lib.:
-#   ../Configuration/Core - the cell, the PCB poses, the PCB locations
-from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS
-#   ../Configuration/Program_Parser - the program's intermediate representation
-from Configuration.Program_Parser import Program_Str
+#   ../Configuration/Core - the cell, the PCB poses
+from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str
+#   ../Configuration/Program_Parser - the program's intermediate representation, the PCB locations
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS, Program_Str
 #   ../Scene/Core - the crates, the robot's joints
 from Scene.Core import Crate_Holding, CONST_ROBOT_JOINTS
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups

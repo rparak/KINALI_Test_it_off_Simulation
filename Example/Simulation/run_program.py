@@ -38,9 +38,10 @@ import time
 # Typing (Support for type hints)
 import typing as tp
 # Custom Lib.:
-#   ../Configuration/Core, ../Configuration/Program_Parser - the cell, the programs, the logs, the folders
-from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls,
-                                CONST_REPORTS, CONST_TRAJECTORIES, CONST_ROOT)
+#   ../Configuration/Core, ../Configuration/Const, ../Configuration/Program_Parser - the cell, the programs, the logs, the folders
+from Configuration.Core import (Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_REPORTS,
+                                CONST_TRAJECTORIES)
+from Configuration.Const import CONST_ROOT
 from Configuration.Program_Parser import (Load_Constants, Load_Simulation, Load_Program, Load_Optimization, Free_Steps, CONST_PROGRAM_YAML,
                                           CONST_OPTIMIZED_PROGRAM_YAML)
 #   ../Scene/Core - the cell

@@ -40,9 +40,10 @@ import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
 from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_TRAJECTORIES,
-                                CONST_IMAGES, CONST_PCB_LOCATIONS)
-#   ../Configuration/Program_Parser - the program's three files
-from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program, CONST_PROGRAM_YAML, CONST_OPTIMIZED_PROGRAM_YAML
+                                CONST_IMAGES)
+#   ../Configuration/Program_Parser - the program's three files, the PCB locations
+from Configuration.Program_Parser import (CONST_PCB_LOCATIONS, Load_Constants, Load_Simulation, Load_Program, CONST_PROGRAM_YAML,
+                                          CONST_OPTIMIZED_PROGRAM_YAML)
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the model's robot joints

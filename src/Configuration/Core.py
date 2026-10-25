@@ -37,29 +37,25 @@ from dataclasses import dataclass, field
 import yaml
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
+# Custom Lib.:
+#   ../Configuration/Const - the repository root, Configuration/ and Data/, the contact groups, the Process keys
+from Configuration.Const import CONST_ROOT, CONST_CONFIGURATION, CONST_DATA, CONST_CONTACT_GROUPS, CONST_PROCESS_KEYS
 
 """
 Description:
     Initialization of constants.
 
-    The repository's folders and files, built from this module's location (src/Configuration/Core.py),
-    never from the working directory (SPEC §7.1); the project's YAML loader (Read_YAML) and the only reader of
+    The repository's folders and files, built from the repository root (Configuration/Const.py), never from the
+    working directory (SPEC §7.1); the project's YAML loader (Read_YAML) and the only reader of
     Configuration/Cell.yaml (the program's three files: Configuration/Program_Parser.py) and of Data/PCB/pcb_meta.json; the route of
     MuJoCo's log and of a script's lines into logger/. It prints nothing.
 """
-# The repository root: two folders above src/Configuration/.
+# The cell configuration (SPEC §8).
 #   Unit [string]
-CONST_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-# The hand-written configuration (SPEC §8).
-#   Unit [string]
-CONST_CONFIGURATION = os.path.join(CONST_ROOT, 'Configuration')
 CONST_CELL_YAML = os.path.join(CONST_CONFIGURATION, 'Cell.yaml')
 # The MJCF files and their meshes (style project page mjcf.md).
 #   Unit [string]
 CONST_MODELS = os.path.join(CONST_ROOT, 'models')
-# Input data by purpose: PCB/ (the PCB poses), Paths/ (recorded robot paths).
-#   Unit [string]
-CONST_DATA = os.path.join(CONST_ROOT, 'Data')
 # Generated artefacts, one subfolder per kind (git-ignored; design-decisions: logs in logger/, generated
 # artefacts in Data/Generated/): Reports/ (the cycle and program reports), Images/ (proof images), Trajectories/ (the
 # program trajectories, step 4).
@@ -93,14 +89,6 @@ CONST_MUJOCO_LOG = os.path.join(CONST_LOGGER, 'MUJOCO_LOG.TXT')
 # key is required. (The loader positions are constants of Configuration/Constants.yaml.)
 #   Unit [Dict<string, int>] (key -> number of values)
 CONST_PCB_META_KEYS = {'cad_pos': 3, 'place_pos': 3, 'hold_pos': 3, 'quat': 4}
-# The closed sets the configuration files share: the PCB's locations, the contact groups, MG06's states.
-#   Unit [Tuple<string>]
-CONST_PCB_LOCATIONS = ('input_crate', 'cups', 'jaws', 'mg06', 'output_crate')
-CONST_CONTACT_GROUPS = ('cups_pcb', 'handle_bar', 'pcb_crate', 'pcb_jaws')
-CONST_FIXTURE_STATES = ('Open', 'Closed')
-# The durations of Cell.yaml's Process section a program's Test command may name (Test: Process.<key>).
-#   Unit [Tuple<string>]
-CONST_PROCESS_KEYS = ('Test_Duration',)
 
 
 class Configuration_Error_Cls(ValueError):

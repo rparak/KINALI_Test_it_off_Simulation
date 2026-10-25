@@ -32,8 +32,8 @@ from dataclasses import dataclass, field
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
 # Custom Lib.: the PCB locations the world state names
-#   ../Configuration/Core
-from Configuration.Core import CONST_PCB_LOCATIONS
+#   ../Configuration/Program_Parser - the PCB locations
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS
 
 """
 Description:

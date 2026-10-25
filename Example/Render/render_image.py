@@ -37,7 +37,9 @@ import argparse
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - paths, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Configuration_Error_Cls, Script_Log_Cls, CONST_IMAGES, CONST_ROOT
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Configuration_Error_Cls, Script_Log_Cls, CONST_IMAGES
+#   ../Configuration/Const - the repository root
+from Configuration.Const import CONST_ROOT
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Render/Core - the image

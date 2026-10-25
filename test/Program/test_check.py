@@ -35,8 +35,8 @@ from Program.Check import (Check_Trajectory, Format_Check_Report, Jaw_Posing_Fau
                            Loader_Actual_Trajectory)
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core,
 #   ../Keypoints/Core
-from Configuration.Core import Read_PCB_Meta, CONST_PCB_LOCATIONS
-from Configuration.Program_Parser import Load_Optimization, Free_Steps
+from Configuration.Core import Read_PCB_Meta
+from Configuration.Program_Parser import CONST_PCB_LOCATIONS, Load_Optimization, Free_Steps
 from Keypoints.Core import Resolve_Keypoint
 
 """
