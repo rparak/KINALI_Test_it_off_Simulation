@@ -86,8 +86,8 @@ def test_an_unknown_camera_or_a_too_large_image_is_refused(state):
     model, data = state
     with pytest.raises(Render_Error_Cls, match="no camera 'cam_none'.*cam_pcb, cam_tool"):
         Render_Image(model, data, 'cam_none')
-    with pytest.raises(Render_Error_Cls, match='2000x720 px exceeds'):
-        Render_Image(model, data, 'cam_pcb', 2000, 720)
+    with pytest.raises(Render_Error_Cls, match='3000x720 px exceeds the model.s offscreen buffer 2560x1440 px'):
+        Render_Image(model, data, 'cam_pcb', 3000, 720)
 
 
 def test_a_free_camera_image_and_its_size_limit(state):

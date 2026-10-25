@@ -49,7 +49,7 @@ Description:
     interactive viewer. It knows nothing of the cell: it takes a model and its data. matplotlib (the PNG
     writer) and mujoco.viewer (a GUI) are imported only where they are used.
 """
-# Default offscreen image size; within the scene's offscreen buffer (offwidth 1280, offheight 960).
+# Default offscreen image size; within the cell's offscreen buffer (Scene.Core CONST_LOOK_OFFSCREEN, 2560 x 1440).
 #   Unit [int] (px)
 CONST_WIDTH, CONST_HEIGHT = 960, 720
 # The render flags of the studio look (F7) that are not model fields: fog (the floor fades into the horizon colour;

@@ -312,6 +312,27 @@ components with their own colours: an open follow-up (`KNOWN_ISSUES.md`).
 
 Pinned by `test/Scene/test_core.py::test_the_pcb_is_green_without_a_material` and `test/Render/test_core.py::test_the_pcb_camera_shows_a_green_pcb`.
 
+## The offscreen buffer is 2560 x 1440
+
+**Decision.** `Scene.Core._Apply_Look` sets the compiled cell's `visual/global` `offwidth` / `offheight` to 2560 x 1440
+(`CONST_LOOK_OFFSCREEN`; `models/scene.xml` keeps its 1280 x 960, the scene file is never edited for the look), so the
+comparison's videos render at 1920 x 1080 and 2560 x 1440 (owner, 2026-10-25).
+
+**Why.** MuJoCo refuses an offscreen frame larger than the model's buffer. The buffer is visual only. Proved 2026-10-25: the
+fingerprint has its one known difference (`pcb_vis` rgba; it records no visual field), the kinematic golden 0 differences,
+both physics baselines 0 failures and 0 report lines changed. The optimized program records the planning model's sha256 of
+its binary form (`mj_saveModel`, which includes the visual fields), so `Data/Optimized/Program_Optimized.yaml` was made
+again by `optimize_program.py` in the same commit: its one changed line is that hash, every program line byte-identical.
+
+**Alternatives.** The buffer raised on the compiled `MjModel` in the media code only: no stale record, but the model the
+viewer and the images use would differ from the one the media use. Rendering tiles and stitching them: needless.
+
+**Revisit if** a larger frame is needed (the GPU's maximum renderbuffer size bounds it), or the optimized program's hash
+should ignore visual fields.
+
+Pinned by `test/Scene/test_core.py::test_the_offscreen_buffer_holds_a_1440p_frame`, `test/Render/test_core.py` (a frame beyond the
+buffer refused) and the fingerprint test.
+
 ## The studio look: fog on, a 1 m grid, a statistic from the cell's bounding box
 
 **Decision.** The scene has the studio look (SPEC §4.10 Look), applied in code (`Scene.Core._Apply_Look`,

@@ -9,7 +9,7 @@
   <statistic extent="2.6" center="0.178 -0.353 0.208" />
 
   <visual>
-    <global offwidth="1280" offheight="960" />
+    <global offwidth="2560" offheight="1440" />
     <quality shadowsize="8192" offsamples="8" />
     <headlight ambient="0.35 0.36 0.38" diffuse="0.25 0.25 0.25" specular="0.05 0.05 0.05" />
     <map fogstart="1.5" fogend="6" haze="0.6" />

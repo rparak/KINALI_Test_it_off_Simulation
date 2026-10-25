@@ -213,6 +213,17 @@ def test_the_default_view_fits_the_whole_cell_with_a_margin(cell_model):
     assert camera.distance * np.sin(np.radians(m.vis.global_.fovy / 2)) >= 1.05 * radius
 
 
+def test_the_offscreen_buffer_holds_a_1440p_frame(cell_model):
+    """
+    Description:
+        The compiled cell's offscreen buffer is 2560 x 1440 (the comparison's 1080p and 1440p videos; models/scene.xml has
+        1280 x 960), with the look's 8 offscreen samples.
+    """
+
+    assert (cell_model.vis.global_.offwidth, cell_model.vis.global_.offheight) == (2560, 1440)
+    assert cell_model.vis.quality.offsamples == 8
+
+
 @pytest.mark.parametrize('name', sorted(CONST_CAMERAS))
 def test_the_pcb_and_tool_cameras_are_unchanged(cell_model, name):
     """

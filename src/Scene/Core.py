@@ -138,6 +138,10 @@ CONST_LOOK_FILL_LIGHT = dict(dir=[0.5, 0.4, -0.6], diffuse=[0.18, 0.19, 0.21])
 # Shadow map size and offscreen multisamples.
 #   Unit [int] (px, -)
 CONST_LOOK_SHADOW_SIZE, CONST_LOOK_OFFSAMPLES = 8192, 8
+# The offscreen buffer (models/scene.xml has 1280 x 960): 2560 x 1440 holds the comparison's 1440p video frames and its
+# 1080p ones (owner 2026-10-25). Visual only (design-decisions).
+#   Unit [int] (px)
+CONST_LOOK_OFFSCREEN = (2560, 1440)
 # The model statistic: the centre of the cell's bounding box at the default qpos, robot included (x -0.308..0.664,
 # y -1.001..0.295, z -0.873..1.290, half diagonal r = 1.351 m), and the extent that fits that sphere into the
 # default free camera with a 10 % margin: distance 1.5 x extent >= 1.1 r / sin(fovy 45 deg / 2) = 3.88 m. It also
@@ -345,6 +349,7 @@ def _Apply_Look(sc: mujoco.MjSpec) -> None:
 
     sc.visual.quality.shadowsize = CONST_LOOK_SHADOW_SIZE
     sc.visual.quality.offsamples = CONST_LOOK_OFFSAMPLES
+    sc.visual.global_.offwidth, sc.visual.global_.offheight = CONST_LOOK_OFFSCREEN
     for k, v in CONST_LOOK_HEADLIGHT.items():
         setattr(sc.visual.headlight, k, v)
     sc.visual.rgba.haze = sc.visual.rgba.fog = CONST_LOOK_HORIZON + [1.0]

@@ -296,7 +296,8 @@ in code by `Scene.Core._Apply_Look` (`CONST_LOOK_*`), visual only:
 - lights: headlight ambient 0.35 0.36 0.38, diffuse 0.25, specular 0.05; the key spot light `key_light` at
   (1.6, 1.2, 4.0) m, direction (−0.4, −0.3, −1), cutoff 75°, diffuse 0.65 0.64 0.62, casting shadows (hard:
   MuJoCo's shadow maps have no penumbra); the directional fill `fill_light`, direction (0.5, 0.4, −0.6),
-  diffuse 0.18 0.19 0.21, no shadows; `shadowsize` 8192, `offsamples` 8;
+  diffuse 0.18 0.19 0.21, no shadows; `shadowsize` 8192, `offsamples` 8; the offscreen buffer 2560 x 1440 (1080p and 1440p
+  video frames; `models/scene.xml` has 1280 x 960);
 - `statistic`: centre (0.178, −0.353, 0.208) m and extent 2.6 m, from the cell's bounding box at the default
   qpos, robot included (half diagonal 1.351 m): the default free camera (distance 1.5 × extent = 3.9 m, fovy
   45°) holds the whole cell with a 10 % margin;
