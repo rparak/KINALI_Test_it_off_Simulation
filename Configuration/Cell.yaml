@@ -161,9 +161,11 @@ Acceptance:
   # The loader's place into MG06 (B work, items 7 and 9; owner, 2026-10-25): while the jaws are closed at L_PLACE the
   # PCB - holder contact force at most Place_Holder_Force (no press); after the jaws release it the deepest PCB - holder
   # penetration at most Release_Penetration while it drops, and the settled one at most Rest_Penetration (measured at
-  # rest under its own weight, B.1: 0.0002 mm) + Settle_Margin. [N], [m] REQUIRED.
+  # rest under its own weight, B.1: 0.0002 mm) + Settle_Margin. Release_Penetration 0.1 mm (owner, 2026-10-25; was 0.05): the
+  # handover margin runs reach 0.068 mm with the PCB 0.5 mm off the cups' centre; it still catches the old pressed place
+  # (0.157 / 0.181 mm). [N], [m] REQUIRED.
   Place_Holder_Force: 1.0
-  Release_Penetration: 0.00005
+  Release_Penetration: 0.0001
   Rest_Penetration: 0.0000002
   Settle_Margin: 0.00001
   # Seated (item 9): Seat_Time after the jaws release the PCB it rests on at least Seat_Supports of the holder's four

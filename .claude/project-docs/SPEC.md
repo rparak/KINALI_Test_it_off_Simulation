@@ -823,7 +823,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
 | `Acceptance.Loader_Distance` (0.001), `Slip_Max` (0.00198), `Tracking_Max` (0.0189), `Fork_Net_Force_Max` (290), `Handle_Load_Max` (13.5) | m, m, rad, N, N m | the owner (F11: 1 mm; 1.5 x the legacy run's 1.32 mm and 0.0126 rad; step 6, 2026-10-25: the fork's worst mode 247.3 N / 11.45 N m x 1.15, rounded up) | `Simulation.Check_Program_Acceptance`, `Program_Warnings` |
-| `Acceptance.Place_Holder_Force` (1.0), `Release_Penetration` (0.00005), `Rest_Penetration` (0.0000002), `Settle_Margin` (0.00001), `Seat_Time` (0.2), `Seat_Supports` (3), `Seat_Height` (0.00005), `Seat_Speed` (0.001), `Seat_Tilt` (0.1) | N, m, m, m, s, -, m, m/s, deg | the owner, 2026-10-25 (B work, items 7 and 9); `Rest_Penetration` measured (B.1) | `Simulation.Place_Checks` (§10.1 items 18-25) |
+| `Acceptance.Place_Holder_Force` (1.0), `Release_Penetration` (0.0001), `Rest_Penetration` (0.0000002), `Settle_Margin` (0.00001), `Seat_Time` (0.2), `Seat_Supports` (3), `Seat_Height` (0.00005), `Seat_Speed` (0.001), `Seat_Tilt` (0.1) | N, m, m, m, s, -, m, m/s, deg | the owner, 2026-10-25 (B work, items 7 and 9); `Rest_Penetration` measured (B.1) | `Simulation.Place_Checks` (§10.1 items 18-25) |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
@@ -981,7 +981,7 @@ bounds in `Cell.yaml Acceptance`):
     measured 0.0000-0.0002 mm): the jaws only open;
 19. while the jaws are closed at `L_PLACE` the PCB - MG06 holder contact force at most `Place_Holder_Force` (1.0 N): no press;
 20. after the jaws release the PCB (their last contact with it) the deepest PCB - holder penetration at most
-    `Release_Penetration` (0.05 mm) while it drops, and 21. settled at most `Rest_Penetration` (0.0002 mm, measured at rest under
+    `Release_Penetration` (0.1 mm: the margin runs reach 0.068 mm, the old pressed place 0.157 / 0.181 mm) while it drops, and 21. settled at most `Rest_Penetration` (0.0002 mm, measured at rest under
     its own weight) + `Settle_Margin` (0.01 mm);
 22. from the travel height to the release the PCB touches none of the holder's side guides and pins (every holder geom but its
     four supports; the closest clearance is reported);

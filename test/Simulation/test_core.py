@@ -340,7 +340,7 @@ def _Program_Result():
     (lambda r: r.Joint_Torque.__setitem__(5, 60.0), 'no robot actuator saturated (model limits)'),
     (lambda r: setattr(r.Place, 'Jaw_Closing', 0.000011), 'place: no jaw closing at L_PLACE'),
     (lambda r: setattr(r.Place, 'Holder_Force', 1.01), 'place: holder force <= 1.0 N (jaws closed)'),
-    (lambda r: setattr(r.Place, 'Transient', -0.0000501), 'release: penetration <= 0.05 mm while dropping'),
+    (lambda r: setattr(r.Place, 'Transient', -0.00011), 'release: penetration <= 0.10 mm while dropping'),
     (lambda r: setattr(r.Place, 'Settled', -0.0000103), 'release: settled penetration <= 0.0102 mm'),
     (lambda r: setattr(r.Place, 'Guide_Min', -0.000001), 'place: no side guide touched on the way down'),
     (lambda r: setattr(r.Place, 'Supports', ['holder_03', 'holder_04']), 'PCB seated in MG06 within 0.2 s'),
@@ -353,7 +353,7 @@ def _Program_Result():
     (lambda r: setattr(r.Place, 'Regrip_Gap', 0.000199), 're-grip: ledge gap 0.3 +- 0.1 mm'),
     (lambda r: setattr(r.Place, 'Regrip_Gap', 0.000401), 're-grip: ledge gap 0.3 +- 0.1 mm'),
     (lambda r: setattr(r, 'Place', None), ['place: no jaw closing at L_PLACE', 'place: holder force <= 1.0 N (jaws closed)',
-                                           'release: penetration <= 0.05 mm while dropping', 'release: settled penetration <= 0.0102 mm',
+                                           'release: penetration <= 0.10 mm while dropping', 'release: settled penetration <= 0.0102 mm',
                                            'place: no side guide touched on the way down', 'PCB seated in MG06 within 0.2 s',
                                            'handover: centring <= 0.5 mm', 're-grip: ledge gap 0.3 +- 0.1 mm']),
 ])
@@ -365,7 +365,7 @@ def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
         LOCKED step at the loader may touch it), the slip <= 1.98 mm, the tracking error <= 0.0189 rad, the fork's net force <=
         290 N, the handle hinge load <= 13.5 N m, the free transfers >= Loader_Free (10 mm), no robot actuator saturated (a wrist
         3 torque at its 60 N m limit); B work (owner, 2026-10-25), the place into MG06: no jaw closing at L_PLACE, the holder
-        force <= 1.0 N, the release's penetration <= 0.05 mm and settled <= 0.0102 mm, no side guide touched, the PCB seated (too
+        force <= 1.0 N, the release's penetration <= 0.10 mm (0.09 mm passes) and settled <= 0.0102 mm, no side guide touched, the PCB seated (too
         few supports, a support too far, too fast, too tilted, touching a guide or a jaw), the handover's centring <= 0.5 mm,
         the re-grip's ledge gap 0.3 +- 0.1 mm (both sides), and no place measured fails all eight; each violation (just beyond
         its bound) fails that one (the 1 mm floor also fails Loader_Free).
@@ -377,6 +377,18 @@ def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
     change(result)
     expected = criterion if isinstance(criterion, list) else [criterion]
     assert [c.Name for c in Check_Program_Acceptance(result, Load_Cell_Configuration()) if not c.Passed] == expected
+
+
+def test_the_release_bound_passes_0_09_mm():
+    """
+    Description:
+        Item 2 (owner, 2026-10-25): the release's transient penetration bound is 0.10 mm - 0.09 mm passes (the margin runs' worst
+        was 0.068 mm), 0.11 mm fails (the old pressed place was 0.157 / 0.181 mm).
+    """
+
+    result = _Program_Result()
+    result.Place.Transient = -0.00009
+    assert all(c.Passed for c in Check_Program_Acceptance(result, Load_Cell_Configuration()))
 
 
 def _Build(program, cell_configuration):
