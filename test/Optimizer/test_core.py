@@ -59,6 +59,7 @@ def test_the_free_transfers_merge_across_the_loader_jobs(optimized_built, progra
         ('To_Output', 'P_LOADER_ABOVE', 'P_OUTPUT_ABOVE', [], True), ('Home_End', 'P_OUTPUT_ABOVE', 'P_HOME', [], False)]
     assert transfers[2].Keys == ['S5_Home_After_Handover', 'S8_To_MG06'] and transfers[2].Job_Keys == ['S6_Loader_Insert', 'S7_Loader_Park']
     assert [t.Wait for t in transfers] == [None, None, None, 'P_LOADER_WAIT', None, None]
+    assert [t.Exit for t in transfers] == [None, None, 'P_LOADER_WAIT', None, None, None]
 
 
 def test_the_shipped_optimized_program_is_current_and_matches_its_schedule(optimized_built):
@@ -84,7 +85,7 @@ def test_a_changed_input_or_schedule_is_named(optimized_built):
     stale.Optimized.Inputs['cell'] = '0' * 64
     assert Stale_Inputs(stale, optimized_built['model']) == ['cell']
     stale.Optimized.Schedule['S6_Close_MG06'] += 0.5
-    assert Schedule_Differences(stale, optimized_built['trajectory']) == ['S6_Close_MG06: recorded 18.952 s, built 18.452 s']
+    assert Schedule_Differences(stale, optimized_built['trajectory']) == ['S6_Close_MG06: recorded 19.384 s, built 18.884 s']
 
 
 @pytest.mark.slow
@@ -92,15 +93,15 @@ def test_the_optimized_program_passes_every_check_and_is_faster(optimized_built,
     """
     Description:
         The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
-        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (58.716 s against
-        70.404 s, measured 2026-10-25 after the gripper's 0.6 s ramps, B work item 3).
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (59.148 s against
+        70.404 s, measured 2026-10-25 after the insert's exit point, F16: 58.716 s before).
     """
 
     check = Check_Trajectory(optimized_built['trajectory'], optimized_built['optimized'], optimized_built['notes'], optimized_built['kinematics'],
                              optimized_built['collision'], cell_configuration, optimized_built['meta'])
     assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
     assert optimized_built['trajectory'].T[-1] < optimized_built['default'].T[-1]
-    assert round(float(optimized_built['trajectory'].T[-1]), 3) == 58.716
+    assert round(float(optimized_built['trajectory'].T[-1]), 3) == 59.148
 
 
 def test_the_loader_moves_while_the_robot_moves(optimized_built):
@@ -197,7 +198,8 @@ def test_a_spline_that_comes_into_a_running_job_s_volume_waits_for_the_job(timed
     from Optimizer.Core import Gate, Optimizer_Error_Cls
     from Program.Check import Gating_Faults
     tr = timed_take[0]
-    fault = next(f for f in Gating_Faults(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration) if f.Kind == 'enters')
+    fault, = Gating_Faults(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration)
+    assert fault.Kind == 'robot enters'
     take = next(t for t in Free_Transfers(program, optimized_built['optimization'], optimized_built['default']) if t.Name == 'To_Take')
     assert take.Jobs == ['J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z']
     step = fault.Step
@@ -205,3 +207,28 @@ def test_a_spline_that_comes_into_a_running_job_s_volume_waits_for_the_job(timed
     with pytest.raises(Optimizer_Error_Cls, match='split the job .* or gate it on an input from the loader'):
         Gate(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration, step, take, 3, fault)
 
+
+
+def test_the_insert_starts_after_the_robot_leaves_for_its_exit_point(optimized_built, prompt_insert, cell_configuration, program):
+    """
+    Description:
+        F16: To_MG06 runs its leg to the exit point P_LOADER_WAIT (Optimization.yaml Exit_Points) before Loader.Start(J_INSERT),
+        then its last leg while the job runs; the job's first loader move is the sample after the leg ends (the cycle 0.432 s
+        longer than with the job started at once, 58.716 s). The mirror fault - the job started first, coming where the robot
+        has been - cannot be gated by a later slot: Gate fails naming Exit_Points.
+    """
+
+    from Optimizer.Core import Gate, Optimizer_Error_Cls
+    from Optimizer.Measure import Job_Bounds
+    from Program.Check import Gating_Faults
+    tr = optimized_built['trajectory']
+    texts = tr.Segment_Command
+    leg = texts.index('Robot.MoveSpline(W_TO_MG06_EXIT, v=0.6)')
+    assert texts[leg + 1:leg + 4] == ['Loader.Start(J_INSERT)', 'Robot.MoveSpline(W_TO_MG06, v=0.6)', 'Loader.WaitDone(J_INSERT)']
+    moved = next(i for i in range(Job_Bounds(tr, 'J_INSERT')[0], len(tr.T)) if tr.Loader_Z[i] != tr.Loader_Z[i - 1])
+    assert moved == int(tr.Segment_End[leg]) and round(float(tr.T[moved]), 3) == 11.432
+    fault, = Gating_Faults(prompt_insert[0], optimized_built['kinematics'], optimized_built['collision'], cell_configuration)
+    to_mg06 = next(t for t in Free_Transfers(program, optimized_built['optimization'], optimized_built['default']) if t.Name == 'To_MG06')
+    with pytest.raises(Optimizer_Error_Cls, match='J_INSERT comes where the robot has been .* Declare an exit point for To_MG06 in '
+                                                  'Optimization.yaml Exit_Points'):
+        Gate(prompt_insert[0], optimized_built['kinematics'], optimized_built['collision'], cell_configuration, fault.Step, to_mg06, 1, fault)

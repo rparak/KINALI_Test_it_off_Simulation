@@ -410,69 +410,85 @@ def Job_Window(trajectory: Trajectory_Str, job: str) -> tp.Tuple[int, int, int]:
     return start, wait, Job_Bounds(tr, job)[1]
 
 
-def Stretch_Job(trajectory: Trajectory_Str, job: str, factor: float) -> tp.Tuple[Trajectory_Str, range]:
+def Stretch_Job(trajectory: Trajectory_Str, job: str, factor: float, lane: str = 'loader') -> tp.Tuple[Trajectory_Str, range]:
     """
     Description:
-        The trajectory up to the end of a parallel loader job with the job's loader lane slowed by a factor (every move and
-        hold of the job takes factor times as long; the robot's lines run as programmed, and the robot holds at its
-        WaitDone until the job ends - the program's own rule). The PCB in the jaws moves with the loader. Nothing after
-        the job is kept. At factor 1 the samples are the trajectory's own (test/Report/test_core.py).
+        The trajectory up to the end of a parallel loader job's window with one lane slowed by a factor, the other as
+        programmed: 'loader' - every move and hold of the job takes factor times as long, the robot's lines run as programmed and
+        the robot holds at its WaitDone until the job ends (the program's own rule); 'robot' - the robot's lines from the job's
+        Loader.Start to its WaitDone take factor times as long (a speed override of 1 / factor), the job runs as programmed and
+        the loader holds at its end. The PCB moves with the lane that holds it. Nothing after the window is kept. At factor 1
+        the samples are the trajectory's own (test/Report/test_core.py).
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
         (2) job [string]: The job (started with Loader.Start).
         (3) factor [float]: The slow-down (1 = as programmed; 1.25 = 25 % slower).
+        (4) lane [string]: 'loader' or 'robot'.
 
     Returns:
-        (1) parameter [Trajectory_Str(object)]: The trajectory from sample 0 to the slowed job's end.
+        (1) parameter [Trajectory_Str(object)]: The trajectory from sample 0 to the slowed window's end.
         (2) parameter [range]: The samples of the job's window in it.
     """
 
     tr = trajectory
     a, w, last = Job_Window(tr, job)
-    n = max(w - a, int(math.ceil(factor * (last - a) - 1e-9))) + 1
+    slowed, kept = (last - a, w - a) if lane == 'loader' else (w - a, last - a)
+    n = max(kept, int(math.ceil(factor * slowed - 1e-9))) + 1
     k = np.arange(n)
-    u = a + np.minimum(k / factor, last - a)
+    u = a + np.minimum(k / factor, slowed)
     lo = np.floor(u).astype(int)
     hi = np.minimum(lo + 1, len(tr.T) - 1)
     f = u - lo
-    r = a + np.minimum(k, w - a)
+    r = a + np.minimum(k, kept)
+    near = np.where(f < 0.5, lo, hi)
 
-    def Lane(x: np.ndarray) -> np.ndarray:
+    def Slowed(x: np.ndarray) -> np.ndarray:
         """
         Description:
-            A loader channel at the slowed times (linear between samples).
+            A channel of the slowed lane at the slowed times (linear between samples).
 
         Args:
-            (1) x [Vector<float> N]: The channel.
+            (1) x [Matrix<float> N or NxM]: The channel.
 
         Returns:
-            (1) parameter [Vector<float> n]: Its window.
+            (1) parameter [Matrix<float> n or nxM]: Its window.
         """
 
-        return x[lo] + (x[hi] - x[lo]) * f
+        weight = f if x.ndim == 1 else f[:, None]
+        return x[lo] + (x[hi] - x[lo]) * weight
 
-    location = tr.PCB_Location[np.where(f < 0.5, lo, hi)]
+    # Inside a window only the loader changes where the PCB is (the jaws close or open): its location and, unless the cups
+    # carry it, its pose follow the loader's clock.
+    location = tr.PCB_Location[near] if lane == 'loader' else tr.PCB_Location[r]
+    cups = location == CONST_PCB_LOCATIONS.index('cups')
+    mine = ~cups if lane == 'loader' else cups
     pose = tr.PCB_Pose[r].copy()
-    jaws = location == CONST_PCB_LOCATIONS.index('jaws')
-    pose[jaws] = tr.PCB_Pose[lo][jaws] + (tr.PCB_Pose[hi][jaws] - tr.PCB_Pose[lo][jaws]) * f[jaws][:, None]
-    pose[jaws, 3:] = tr.PCB_Pose[lo][jaws, 3:]
+    pose[mine] = Slowed(tr.PCB_Pose)[mine]
+    pose[mine, 3:] = tr.PCB_Pose[lo][mine, 3:]
     times = tr.T[np.minimum(a + k, len(tr.T) - 1)] + np.maximum(0, a + k - (len(tr.T) - 1)) * CONST_DT
-    window = {'T': times, 'Robot_Q': tr.Robot_Q[r], 'Robot_QD': tr.Robot_QD[r] * (k <= w - a)[:, None],
-              'Loader_Y': Lane(tr.Loader_Y), 'Loader_Z': Lane(tr.Loader_Z), 'Gripper': Lane(tr.Gripper), 'Jaw': Lane(tr.Jaw),
-              'Vacuum': tr.Vacuum[r], 'Step_Index': tr.Step_Index[r], 'Segment_Id': tr.Segment_Id[r], 'PCB_Location': location,
-              'PCB_Pose': pose, 'MG06_Lid': tr.MG06_Lid[r], 'MG06_Handle': tr.MG06_Handle[r]}
+    loader = ['Loader_Y', 'Loader_Z', 'Gripper', 'Jaw']
+    if lane == 'loader':
+        window = {name: Slowed(getattr(tr, name)) for name in loader}
+        window.update({'Robot_Q': tr.Robot_Q[r], 'Robot_QD': tr.Robot_QD[r] * (k <= kept)[:, None], 'Vacuum': tr.Vacuum[r],
+                       'Step_Index': tr.Step_Index[r], 'Segment_Id': tr.Segment_Id[r], 'MG06_Lid': tr.MG06_Lid[r], 'MG06_Handle': tr.MG06_Handle[r]})
+    else:
+        window = {name: getattr(tr, name)[r] for name in loader}
+        window.update({'Robot_Q': Slowed(tr.Robot_Q), 'Robot_QD': Slowed(tr.Robot_QD) / factor * (k / factor <= slowed)[:, None],
+                       'Vacuum': tr.Vacuum[near], 'Step_Index': tr.Step_Index[near], 'Segment_Id': tr.Segment_Id[near],
+                       'MG06_Lid': tr.MG06_Lid[near], 'MG06_Handle': tr.MG06_Handle[near]})
+    window.update({'T': times, 'PCB_Location': location, 'PCB_Pose': pose})
     joined = {name: np.concatenate([getattr(tr, name)[:a], value]) for name, value in window.items()}
     return dataclasses.replace(tr, **joined), range(a, a + n)
 
 
 def Stretched_Distance(trajectory: Trajectory_Str, job: str, factor: float, kinematics: Robot_Kinematics_Cls,
-                       collision: Robot_Collision_Cls) -> tp.Tuple[float, float, str]:
+                       collision: Robot_Collision_Cls, lane: str = 'loader') -> tp.Tuple[float, float, str]:
     """
     Description:
-        The interlock I8's distance with a parallel loader job slowed (Stretch_Job): the closest robot (with a carried PCB) -
-        loader (with the PCB in its jaws) distance over the job's window, the loader posed where its actuators put it
-        (Loader_Actual_Trajectory), exact (Robot_Loader_Distance), every 4 ms.
+        The interlock I8's distance with a parallel loader job's window slowed (Stretch_Job: the loader, or the robot - a speed
+        override): the closest robot (with a carried PCB) - loader (with the PCB in its jaws) distance over the window, the
+        loader posed where its actuators put it (Loader_Actual_Trajectory), exact (Robot_Loader_Distance), every 4 ms.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -480,6 +496,7 @@ def Stretched_Distance(trajectory: Trajectory_Str, job: str, factor: float, kine
         (3) factor [float]: The slow-down.
         (4) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
         (5) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (6) lane [string]: The slowed lane, 'loader' or 'robot'.
 
     Returns:
         (1) parameter [float]: The distance (m; Program.Check's cut when nothing is closer).
@@ -487,7 +504,7 @@ def Stretched_Distance(trajectory: Trajectory_Str, job: str, factor: float, kine
         (3) parameter [string]: The pair.
     """
 
-    stretched, window = Stretch_Job(trajectory, job, factor)
+    stretched, window = Stretch_Job(trajectory, job, factor, lane)
     actual = Loader_Actual_Trajectory(stretched, kinematics.Model)
     distance, sample, pair = Robot_Loader_Distance(actual, kinematics, collision, window)
     return distance, (sample - window.start) * CONST_DT if sample >= 0 else math.nan, pair
@@ -913,16 +930,17 @@ class Swept_Zone_Str:
 
 
 def Swept_Zone(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, jobs: tp.Sequence[str],
-               margin: float, at_y: tp.Optional[float] = None, stride: int = CONST_STRIDE) -> Swept_Zone_Str:
+               margin: float, at_y: tp.Optional[float] = None, stride: int = CONST_STRIDE,
+               bodies: tp.Optional[tp.Set[str]] = None) -> Swept_Zone_Str:
     """
     Description:
-        A shared zone as the volume the loader (its Z carriage, jaws and the PCB in them) sweeps in jobs, where its actuators put
-        it (Loader_Actual_Trajectory), grown by a margin (owner, 2026-10-25: the MG06 shared zone, J_INSERT and J_FETCH); and who
-        is in it, every stride samples: the robot when an exact distance to one of the loader's poses is below the margin (the
-        poses with the smallest box gap first; a pose whose box gap, a lower bound, is not below the margin is skipped), the
-        loader when its Y and Z are within the margin of a swept pose's (its shape depends on its axes only). The poses are the
-        jobs' samples one per cell of a grid of half the margin in (Y, Z, jaw): a pose between two kept ones is at most a quarter
-        of the margin from one of them along each axis.
+        A shared zone as the volume the loader (its bodies, Collision.Core CONST_LOADER_BODIES, or some of them, and the PCB in
+        its jaws) sweeps in jobs, where its actuators put it (Loader_Actual_Trajectory), grown by a margin (owner, 2026-10-25:
+        the shared zones, F16: the jaws' volume at one Y); and who is in it, every stride samples: the robot when an exact
+        distance to one of the loader's poses is below the margin (the poses with the smallest box gap first; a pose whose box
+        gap, a lower bound, is not below the margin is skipped), the loader when its Y and Z are within the margin of a swept
+        pose's (its shape depends on its axes only). The poses are the jobs' samples one per cell of a grid of half the margin
+        in (Y, Z, jaw): a pose between two kept ones is at most a quarter of the margin from one of them along each axis.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -932,6 +950,7 @@ def Swept_Zone(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
         (5) margin [float]: The growth (Cell.yaml Clearance.Loader_Free, m).
         (6) at_y [float]: Only the poses with the loader's Y at this command (its part at MG06), or None for all (m).
         (7) stride [int]: The samples tested (every stride-th and the last).
+        (8) bodies [Set<string>]: The loader's bodies that make the zone (default: all of CONST_LOADER_BODIES).
 
     Returns:
         (1) parameter [Swept_Zone_Str(object)]: The zone.
@@ -941,9 +960,9 @@ def Swept_Zone(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
     model, data = kinematics.Model, kinematics.Data
     address = kinematics.Scene_Address
     pcb = model.body('pcb').id
-    robot, loader = collision.Robot_Bodies, {model.body(name).id for name in CONST_LOADER_BODIES}
+    robot, loader = collision.Robot_Bodies, {model.body(name).id for name in (bodies or CONST_LOADER_BODIES)}
     collidable = (model.geom_contype > 0) | (model.geom_conaffinity > 0)
-    geoms = lambda bodies: np.flatnonzero(collidable & np.isin(model.geom_bodyid, list(bodies)))
+    geoms = lambda ids: np.flatnonzero(collidable & np.isin(model.geom_bodyid, list(ids)))
     jaws, cups = CONST_PCB_LOCATIONS.index('jaws'), CONST_PCB_LOCATIONS.index('cups')
     samples = sorted({i for job in jobs for i in range(Job_Bounds(tr, job)[0], Job_Bounds(tr, job)[1] + 1)
                       if at_y is None or trajectory.Loader_Y[i] == at_y})

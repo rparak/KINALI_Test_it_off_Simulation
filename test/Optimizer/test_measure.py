@@ -42,13 +42,14 @@ Description:
 def test_the_interlocks_hold(optimized_built, cell_configuration):
     """
     Description:
-        I1-I9 hold on the optimized trajectory, each with its times (I8: the robot at least the clearance from the loader
-        wherever both may move; I9: the take's spline after J_RETURN_Y is done).
+        I1-I10 hold on the optimized trajectory, each with its times (I8: the robot at least the clearance from the loader
+        wherever both may move; I9: the take's spline after J_RETURN_Y is done; I10: J_INSERT after the robot's motion out of
+        the handover).
     """
 
     found = Interlocks(optimized_built['trajectory'], optimized_built['kinematics'], optimized_built['collision'], cell_configuration,
                        optimized_built['optimized'])
-    assert [name for name, _, _ in found] == ['I%d' % k for k in range(1, 10)]
+    assert [name for name, _, _ in found] == ['I%d' % k for k in range(1, 11)]
     assert all(ok for _, ok, _ in found), [text for _, ok, text in found if not ok]
 
 
@@ -68,6 +69,24 @@ def test_i9_fails_for_a_take_gated_by_a_timer(timed_take, optimized_built, cell_
     taught = {name: ok for name, ok, _ in Interlocks(optimized_built['default'], optimized_built['kinematics'], optimized_built['collision'],
                                                      cell_configuration, program)}
     assert taught['I9']
+
+
+def test_i10_fails_for_an_insert_started_before_the_robot_leaves(prompt_insert, optimized_built, cell_configuration, program):
+    """
+    Description:
+        The forced failure of F16: with Loader.Start(J_INSERT) before the robot's leg to its exit point, I10 fails - the job
+        starts before the robot's motion out of the handover and moves before that motion ends - while I8 still holds at the
+        nominal timing: only I10 and the gating rule see that it rests on the robot's timing. The taught program keeps I10 by
+        its order (the robot home, then Loader.Run(J_INSERT)).
+    """
+
+    found = {name: (ok, text) for name, ok, text in Interlocks(prompt_insert[0], optimized_built['kinematics'], optimized_built['collision'],
+                                                               cell_configuration, prompt_insert[1])}
+    assert not found['I10'][0] and '`Robot.MoveSpline(W_TO_MG06_EXIT, v=0.6)`' in found['I10'][1]
+    assert found['I8'][0]
+    taught = {name: (ok, text) for name, ok, text in Interlocks(optimized_built['default'], optimized_built['kinematics'],
+                                                                optimized_built['collision'], cell_configuration, program)}
+    assert taught['I10'][0] and '`Loader.Run(J_INSERT)' in taught['I10'][1]
 
 
 def _Locked(optimized_built, program):

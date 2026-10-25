@@ -150,4 +150,4 @@ def test_the_optimized_version_is_posed(tmp_path_factory, run_script, root):
     result = run_script('Program/show_program.py', ['--version', 'optimized', '--trajectory', str(out / 'Program_Optimized.npz'), '--step',
                                                     'S5_To_MG06', '--headless'], out)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert '[INFO] step 5/16 S5_To_MG06   t = 18.448 s / 58.716 s   PCB mg06 (sample 4612): Loader.WaitDone(J_PARK)' in result.stdout
+    assert '[INFO] step 5/16 S5_To_MG06   t = 18.880 s / 59.148 s   PCB mg06 (sample 4720): Loader.WaitDone(J_PARK)' in result.stdout

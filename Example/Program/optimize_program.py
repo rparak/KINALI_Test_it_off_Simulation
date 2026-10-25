@@ -65,9 +65,9 @@ def main():
         Optimization.yaml) planned, the loader's jobs between them run in parallel, every LOCKED segment copied; the program
         written to Data/Optimized/Program_Optimized.yaml and checked like the taught one. The report (stdout and
         Data/Generated/Reports/optimize_program.txt): per transfer the planner's effort, durations, peaks and the carried PCB's
-        largest tilt; the schedule; the interlocks I1-I8 with their times; each LOCKED part against the taught program; the
-        check. Exit 0 when the check passes, every interlock holds and every LOCKED part is byte-identical, 1 otherwise or when it
-        cannot be made.
+        largest tilt; the schedule; the interlocks I1-I10 with their times; the gating rule; each LOCKED part against the taught
+        program; the check. Exit 0 when the check passes, every interlock and the gating rule hold and every LOCKED part is
+        byte-identical, 1 otherwise or when it cannot be made.
 
             .venv/bin/python Example/Program/optimize_program.py [--out DIR]
     """
@@ -115,9 +115,10 @@ def main():
         lines.append('  %-20s %s -> %s: margin %.1f mm; %d / %d; %d -> %d -> %d, %d refits; %d checks; %.3f / %.3f s; %.3f / %.3f; tilt %s'
                      % (p.Set, p.Start, p.End, 1000 * p.Margin, p.Iterations, p.Nodes, p.Rrt_Points, p.Short_Points, len(p.Waypoints), p.Refits,
                         p.Checks, p.Optimal_Time, p.Duration, p.Peak_Speed, p.Peak_Acceleration, tilt))
-        if t.Jobs and p.End == t.End:
+        if t.Jobs and p.Role == 'end':
             later = ' (after Loader.WaitDone(%s))' % t.Jobs[slot - 2] if slot > 1 else ''
             waits = '; the robot waits at %s' % t.Wait if t.Wait else ''
+            waits += '; the robot goes to %s before %s starts' % (t.Exit, t.Jobs[0]) if t.Exit else ''
             lines.append('  %-20s %s replaces %s; parallel jobs %s%s; the last spline after the start of %s%s'
                          % ('', t.Name, ', '.join(t.Keys + t.Job_Keys), ', '.join(t.Jobs), waits, t.Jobs[slot - 1], later))
     lines += ['  attempt: %s' % a for a in result.Attempts]
@@ -125,11 +126,10 @@ def main():
     interlocks = Interlocks(tr, kinematics, collision, cell, result.Program)
     lines += ['interlock %s %s: %s' % (name, 'holds' if ok else 'FAILS', text) for name, ok, text in interlocks]
     gating = Gating_Faults(tr, kinematics, collision, cell)
-    lines += ['gating rule: %s %s %s\'s volume (%.2f mm, %s)%s' % (f.Motion, 'COMES INTO' if f.Kind == 'enters' else 'leaves', f.Job,
-                                                                 1000 * f.Distance, f.Pair, ', %.2f s ahead of the loader' % f.Lead
-                                                                 if f.Kind == 'leaves' else '') for f in gating]
-    lines.append('gating rule: %s' % ('no robot motion comes into the volume of a loader job it does not wait for' if not
-                                       [f for f in gating if f.Kind == 'enters'] else 'FAILS'))
+    lines += ['gating rule: %s: the %s (%s, the robot there %.3f-%.3f s; %.2f mm, %s; %.2f s apart): FAILS'
+              % (f.Job, f.Kind, f.Motion, f.Robot_Span[0], f.Robot_Span[1], 1000 * f.Distance, f.Pair, f.Lead) for f in gating]
+    lines.append('gating rule: %s' % ('no parallel part rests on timing (neither the robot nor a job comes where the other has been while '
+                                       'the job may run)' if not gating else 'FAILS'))
     transfers = Free_Transfers(taught, optimization, default)
     compared = Compare_Locked(default, tr, taught, transfers)
     lines.append('LOCKED parts against the taught program, from each part\'s start (byte-identical: the same bytes on the compared channels):')
@@ -138,8 +138,7 @@ def main():
     if not all(c.Identical for c in compared):
         lines.append('[ERROR] LOCKED parts that are not byte-identical: %s' % ', '.join(c.Name for c in compared if not c.Identical))
     lines += Format_Check_Report(result.Check, tr, cell)
-    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks) and all(c.Identical for c in compared) and \
-        not [f for f in gating if f.Kind == 'enters']
+    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks) and all(c.Identical for c in compared) and not gating
     report = os.path.join(args.out or CONST_REPORTS, 'optimize_program.txt')
     os.makedirs(os.path.dirname(report), exist_ok=True)
     with open(report, 'w', encoding='utf-8') as handle:

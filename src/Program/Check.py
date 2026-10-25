@@ -290,27 +290,26 @@ def _Boxes(model: mujoco.MjModel, data: mujoco.MjData, geoms: np.ndarray) -> np.
     return np.stack([centre - half, centre + half], axis=1)
 
 
-def Swept_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, robot_samples: tp.Sequence[int],
-                   loader_samples: tp.Sequence[int], cut: float) -> tp.Tuple[np.ndarray, np.ndarray, tp.List[str]]:
+def Swept_Pairs(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, robot_samples: tp.Sequence[int],
+                loader_samples: tp.Sequence[int], cut: float) -> tp.Tuple[np.ndarray, tp.Dict[tp.Tuple[int, int], str]]:
     """
     Description:
-        For each robot sample, the smallest exact distance between the robot (with the PCB its cups carry) there and the loader
-        (with the PCB in its jaws) at any of loader_samples - the robot against the volume the loader sweeps, whatever the
-        timing between them (the gating rule, F15) - and the first loader sample that comes within cut. A pair of samples is
-        measured only where a robot geom's box comes within cut of a loader geom's box.
+        The smallest exact distance between the robot (with the PCB its cups carry) at each robot sample and the loader (with the
+        PCB in its jaws) at each loader sample - the robot against the volume the loader sweeps and the loader against the
+        volume the robot sweeps, whatever the timing between them (the gating rule, F15, F16). A pair of samples is measured
+        only where a robot geom's box comes within cut of a loader geom's box.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory (Loader_Actual_Trajectory for the loader's real position).
         (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
         (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
         (4) robot_samples [List<int>]: The robot's samples.
-        (5) loader_samples [List<int>]: The loader's samples, ascending.
+        (5) loader_samples [List<int>]: The loader's samples.
         (6) cut [float]: The distance up to which pairs are measured (m).
 
     Returns:
-        (1) parameter [Vector<float> R]: Per robot sample the distance (m; cut when nothing is closer).
-        (2) parameter [Vector<int> R]: Per robot sample the first loader sample within cut (-1 when none).
-        (3) parameter [List<string>]: Per robot sample the closest pair ('' when none).
+        (1) parameter [Matrix<float> RxL]: The distances (m; cut where nothing is closer).
+        (2) parameter [Dict<Tuple<int, int>, string>]: The closest pair of bodies by (robot, loader) index, where measured.
     """
 
     tr, model, data = trajectory, kinematics.Model, kinematics.Data
@@ -324,12 +323,12 @@ def Swept_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls,
     for j in loader_samples:
         Pose_Sample(kinematics, tr, int(j))
         loader_boxes.append(_Boxes(model, data, geoms(loader | ({pcb} if tr.PCB_Location[j] == jaws else set()))))
-    distances, firsts, pairs = np.full(len(robot_samples), cut), np.full(len(robot_samples), -1), [''] * len(robot_samples)
+    distances, pairs = np.full((len(robot_samples), len(loader_samples)), cut), {}
     for r, i in enumerate(robot_samples):
         Pose_Sample(kinematics, tr, int(i))
         mine = robot | ({pcb} if tr.PCB_Location[i] == cups else set())
         boxes = _Boxes(model, data, geoms(mine))
-        for j, theirs_boxes in zip(loader_samples, loader_boxes):
+        for l, (j, theirs_boxes) in enumerate(zip(loader_samples, loader_boxes)):
             near = np.all((boxes[:, None, 0] - cut <= theirs_boxes[None, :, 1]) & (boxes[:, None, 1] + cut >= theirs_boxes[None, :, 0]), axis=2)
             if not near.any():
                 continue
@@ -341,48 +340,51 @@ def Swept_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls,
             mujoco.mj_kinematics(model, data)
             theirs = loader | ({pcb} if tr.PCB_Location[j] == jaws else set())
             for distance, body_1, body_2, _, _ in collision.Close_Pairs(mine, cut, data, exclude=set(range(model.nbody)) - theirs)[:1]:
-                firsts[r] = int(j) if firsts[r] < 0 else firsts[r]
-                if distance < distances[r]:
-                    distances[r], pairs[r] = distance, '%s / %s' % (body_1, body_2)
-    return distances, firsts, pairs
+                distances[r, l], pairs[(r, l)] = distance, '%s / %s' % (body_1, body_2)
+    return distances, pairs
 
 
 @dataclass
 class Gating_Fault_Str:
     """
     Description:
-        A robot motion inside the volume a loader job sweeps while the job may run (the gating rule, F15): after the job's
-        Loader.Start, before its Loader.WaitDone, closer than Clearance.Loader_Free to a pose the job sweeps. It 'enters' the
-        volume (a fault: its separation from the loader rests on timing) or only 'leaves' it from where it starts (reported
-        with the time it leaves ahead of the loader).
+        A parallel part whose separation rests on timing (the gating rule, F15, F16): while a loader job may run (from its
+        Loader.Start to the end of its Loader.WaitDone) the robot - moving or holding - comes closer than
+        Clearance.Loader_Free to a pose the job sweeps at another time. 'robot enters' where the loader has been (a slower
+        loader would meet it), or 'loader enters' where the robot has been (a slower robot - a speed override - would meet
+        it). Either is a fault.
     """
 
-    # The step, the motion's line, the job, 'enters' or 'leaves'.
+    # The step, the robot's line where it first is at such a pair (a motion, or the line it holds at), the job, 'robot enters'
+    # or 'loader enters'.
     #   Unit [string]
     Step: str = ''
     Motion: str = ''
     Job: str = ''
     Kind: str = ''
-    # The closest distance, the robot's and the loader's times then, the pair; for 'leaves' the smallest lead of the robot's
-    # sample in the volume over the loader's first sample near it.
-    #   Unit [float] (m), [float] (s), [float] (s), [string], [float] (s)
+    # The closest distance, the robot's and the loader's times then, the pair; the smallest time between the two objects at a
+    # pair closer than Loader_Free (the later one's lead); the robot's first and last time at such a pair.
+    #   Unit [float] (m), [float] (s), [float] (s), [string], [float] (s), [Tuple<float>] (s)
     Distance: float = 0.0
     Robot_T: float = 0.0
     Loader_T: float = 0.0
     Pair: str = ''
     Lead: float = math.nan
+    Robot_Span: tp.Tuple[float, float] = (math.nan, math.nan)
 
 
 def Gating_Faults(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls,
                   cell: Cell_Configuration_Str) -> tp.List[Gating_Fault_Str]:
     """
     Description:
-        The gating rule (owner 2026-10-25, F15): a robot motion that runs while a parallel loader job may run (after its
-        Loader.Start, before its Loader.WaitDone) must not come into the volume the job sweeps - within Clearance.Loader_Free of
-        any of its poses, the loader where its actuators put it, every CONST_GATING_STRIDE samples and its last
-        (Swept_Distance) - or its separation from the loader rests on timing (a Wait, the loader's speed): it must be gated by the
-        job's Loader.WaitDone (or an input from the loader) instead. A motion that starts inside the volume and only leaves
-        it is reported as 'leaves', with its lead over the loader; one that comes in is 'enters', a fault.
+        The gating rule (owner 2026-10-25, F15; symmetric, F16): while a parallel loader job may run (from its Loader.Start to
+        the end of its Loader.WaitDone) neither object may come where the other has been or will be - the robot (moving or
+        holding, with a carried PCB) at least Clearance.Loader_Free from every pose the job sweeps (the loader where its
+        actuators put it), every CONST_GATING_STRIDE samples and the last (Swept_Pairs, the robot's repeated poses measured
+        once). A pair closer than that rests on timing: on the loader's speed when the robot comes later ('robot enters'), on
+        the robot's when the loader comes later ('loader enters'). The order must come from the program: the robot's motion
+        out of the way before the job's Loader.Start, or the job's Loader.WaitDone (or an input from the loader) before the
+        robot's motion in.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -391,7 +393,7 @@ def Gating_Faults(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, 
         (4) cell [Cell_Configuration_Str(object)]: Clearance.Loader_Free.
 
     Returns:
-        (1) parameter [List<Gating_Fault_Str(object)>]: The motions inside a job's volume ('enters' are the faults).
+        (1) parameter [List<Gating_Fault_Str(object)>]: The faults, per job and kind.
     """
 
     tr = trajectory
@@ -400,27 +402,30 @@ def Gating_Faults(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, 
     if not starts:
         return []
     actual = Loader_Actual_Trajectory(tr, kinematics.Model)
+    cups = CONST_PCB_LOCATIONS.index('cups')
     out = []
     for k, job in starts:
         done = texts.index('Loader.WaitDone(%s)' % job, k)
         first, last = int(tr.Segment_Start[k]), int(tr.Segment_End[done]) - 1
-        loader_samples = sorted(set(range(first, last + 1, CONST_GATING_STRIDE)) | {last})
-        for m in range(k + 1, done):
-            if not texts[m].startswith('Robot.Move'):
+        samples = np.array(sorted(set(range(first, last + 1, CONST_GATING_STRIDE)) | {last}))
+        poses: tp.Dict[tp.Tuple[bytes, bool], int] = {}
+        rows = np.array([poses.setdefault((tr.Robot_Q[i].tobytes(), bool(tr.PCB_Location[i] == cups)), len(poses)) for i in samples])
+        unique = [int(samples[np.flatnonzero(rows == u)[0]]) for u in range(len(poses))]
+        distances, pairs = Swept_Pairs(actual, kinematics, collision, unique, samples, cell.Loader_Free)
+        D = distances[rows]
+        T = tr.T[samples]
+        for kind, side in (('robot enters', T[None, :] <= T[:, None]), ('loader enters', T[None, :] > T[:, None])):
+            close = (D < cell.Loader_Free) & side
+            if not close.any():
                 continue
-            a, b = int(tr.Segment_Start[m]), int(tr.Segment_End[m]) - 1
-            robot_samples = sorted(set(range(a, b + 1, CONST_GATING_STRIDE)) | {b})
-            distances, firsts, pairs = Swept_Distance(actual, kinematics, collision, robot_samples, loader_samples, cell.Loader_Free)
-            inside = distances < cell.Loader_Free
-            if not inside.any():
-                continue
-            r = int(np.argmin(distances))
-            runs = np.flatnonzero(np.diff(np.r_[0, inside.astype(np.int8)]) == 1)
-            leaving = bool(inside[0]) and len(runs) == 1
-            lead = min(float(tr.T[firsts[q]] - tr.T[robot_samples[q]]) for q in np.flatnonzero(inside)) if leaving else math.nan
-            out.append(Gating_Fault_Str(Step=tr.Step_Names[tr.Segment_Step[m]], Motion=texts[m], Job=job, Kind='leaves' if leaving else 'enters',
-                                        Distance=float(distances[r]), Robot_T=float(tr.T[robot_samples[r]]), Loader_T=float(tr.T[firsts[r]]),
-                                        Pair=pairs[r], Lead=lead))
+            r, l = np.unravel_index(int(np.argmin(np.where(close, D, np.inf))), D.shape)
+            inside = np.flatnonzero(close.any(axis=1))
+            segment = min(int(np.searchsorted(tr.Segment_End, int(samples[inside[0]]), side='right')), len(texts) - 1)
+            robot_times = T[inside]
+            out.append(Gating_Fault_Str(Step=tr.Step_Names[tr.Segment_Step[segment]], Motion=texts[segment], Job=job, Kind=kind,
+                                        Distance=float(D[r, l]), Robot_T=float(T[r]), Loader_T=float(T[l]), Pair=pairs[(int(rows[r]), int(l))],
+                                        Lead=float(np.min(np.abs(T[None, :] - T[:, None])[close])),
+                                        Robot_Span=(float(robot_times[0]), float(robot_times[-1]))))
     return out
 
 

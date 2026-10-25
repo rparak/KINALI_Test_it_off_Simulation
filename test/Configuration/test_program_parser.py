@@ -414,10 +414,11 @@ def test_the_optimized_program_loads_with_its_record(constants, simulation, cell
     assert len(program.Segments) == 15 and program.Optimized.Topp_Grid_Points == 1000
     assert set(program.Optimized.Schedule) == {s.Key for s in program.Segments}
     spline = next(c for s in program.Segments for c in s.Commands if c.Kind == 'MoveSpline' and c.Target == 'W_TO_MG06')
-    assert (spline.Path_Start, spline.Path_End, spline.Speed) == ('P_LOADER_ABOVE', 'P_MG06_FORK_START', 0.6)
-    assert spline.Waypoints[0] == constants.Points['P_LOADER_ABOVE'].Joints and spline.Waypoints[-1] == constants.Points['P_MG06_FORK_START'].Joints
+    assert (spline.Path_Start, spline.Path_End, spline.Speed) == ('P_LOADER_WAIT', 'P_MG06_FORK_START', 0.6)
+    assert spline.Waypoints[0] == constants.Points['P_LOADER_WAIT'].Joints and spline.Waypoints[-1] == constants.Points['P_MG06_FORK_START'].Joints
     kinds = [(c.Kind, c.Target) for c in program.Segments[4].Commands]
-    assert kinds == [('Start', 'J_INSERT'), ('MoveSpline', 'W_TO_MG06'), ('WaitDone', 'J_INSERT'), ('Start', 'J_PARK'), ('WaitDone', 'J_PARK')]
+    assert kinds == [('MoveSpline', 'W_TO_MG06_EXIT'), ('Start', 'J_INSERT'), ('MoveSpline', 'W_TO_MG06'), ('WaitDone', 'J_INSERT'),
+                     ('Start', 'J_PARK'), ('WaitDone', 'J_PARK')]
 
 
 CONST_OPTIMIZED_ERRORS = [
@@ -481,6 +482,10 @@ CONST_OPTIMIZATION_ERRORS = [
     ('  To_Take: P_LOADER_WAIT', '  To_Bed: P_LOADER_WAIT', 'Waiting_Points.To_Bed: is not a FREE transfer'),
     ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_NAP', "Waiting_Points.To_Take: 'P_LOADER_NAP' is not a point of Constants.yaml"),
     ('  To_Take: P_LOADER_WAIT', '  To_Take: P_LOADER_ABOVE', 'Waiting_Points.To_Take: P_LOADER_ABOVE is used by the taught program'),
+    ('  To_MG06: P_LOADER_WAIT', '  To_Bed: P_LOADER_WAIT', 'Exit_Points.To_Bed: is not a FREE transfer'),
+    ('  To_MG06: P_LOADER_WAIT', '  To_MG06: P_LOADER_ABOVE', "Exit_Points.To_MG06: P_LOADER_ABOVE is used by the taught program: an exit "
+                                                              "point is the optimized program's only"),
+    ('Exit_Points:\n  To_MG06: P_LOADER_WAIT\n', '', 'Exit_Points: missing (REQUIRED)'),
 ]
 
 
@@ -510,21 +515,26 @@ def test_the_shipped_optimization_settings_load(program):
 def test_an_optimizer_point_is_used_only_by_the_optimized_program(tmp_path, monkeypatch, constants, simulation, cell_configuration):
     """
     Description:
-        P_LOADER_WAIT, declared in Optimization.yaml Waiting_Points, counts as used for Constants.yaml's completeness without
-        being in Program.yaml; the taught program may not use it; the optimized program must (a copy without it is refused,
-        naming the optimizer's command). Without the declaration, Program.yaml's check names the unused point.
+        P_LOADER_WAIT, declared in Optimization.yaml Waiting_Points and Exit_Points (both named), counts as used for
+        Constants.yaml's completeness without being in Program.yaml; the taught program may not use it; the optimized program
+        must (a copy without it is refused, naming the optimizer's command). Without the declaration, Program.yaml's check names
+        the unused point.
     """
 
     path = _Edited(tmp_path, CONST_PROGRAM_YAML, 'Robot.MoveJ(P_INPUT_ABOVE)', 'Robot.MoveJ(P_LOADER_WAIT)')
-    assert 'P_LOADER_WAIT is declared for the optimized program only (Optimization.yaml Waiting_Points); the taught program may not use it' \
+    assert 'P_LOADER_WAIT is declared for the optimized program only (Optimization.yaml Waiting_Points, Exit_Points); the taught program ' \
+           'may not use it' \
         in _Error(lambda: Load_Program(constants, simulation, cell_configuration, path))
     text = open(CONST_OPTIMIZED_PROGRAM_YAML, encoding='utf-8').read()
     assert 'P_LOADER_WAIT' in text
     path = tmp_path / 'Unused.yaml'
-    text = text.replace('    - Robot.MoveSpline(W_TO_TAKE_WAIT, v=0.6)\n', '').replace('    From: P_LOADER_WAIT', '    From: P_MG06_FORK_START')
+    for leg in ('W_TO_TAKE_WAIT', 'W_TO_MG06_EXIT'):
+        text = text.replace('    - Robot.MoveSpline(%s, v=0.6)\n' % leg, '')
+    text = text.replace('    From: P_LOADER_WAIT', '    From: P_MG06_FORK_START')
     path.write_text(text.replace('    To: P_LOADER_WAIT', '    To: P_MG06_FORK_START'), encoding='utf-8')
     message = _Error(lambda: Load_Program(constants, simulation, cell_configuration, str(path)))
-    assert 'P_LOADER_WAIT is declared for the optimized program (Optimization.yaml Waiting_Points) but this program does not use it' in message
+    assert 'P_LOADER_WAIT is declared for the optimized program (Optimization.yaml Waiting_Points, Exit_Points) but this program does not ' \
+           'use it' in message
     monkeypatch.setattr(Program_Parser, 'Optimizer_Points', lambda path=None: {})
     assert 'Points.P_LOADER_WAIT: declared but used by neither Program.yaml nor Simulation.yaml' \
         in _Error(lambda: Load_Program(constants, simulation, cell_configuration))

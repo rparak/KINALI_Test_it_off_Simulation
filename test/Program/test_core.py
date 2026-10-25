@@ -375,7 +375,7 @@ def test_the_optimized_splines_run_within_the_limits(constants, simulation, cell
     v_max = cell_configuration.Speed_Fraction * np.array(cell_configuration.Datasheet_Speeds)
     a_max = np.array(cell_configuration.Acceleration_Limits)
     splines = [k for k, text in enumerate(trajectory.Segment_Command) if text.startswith('Robot.MoveSpline')]
-    assert len(splines) == 7
+    assert len(splines) == 8
     for k in splines:
         # Sample 0 is the start state (the first segment's first sample), so a segment's motion begins at sample 1 at the earliest.
         first, end = max(int(trajectory.Segment_Start[k]), 1), int(trajectory.Segment_End[k])

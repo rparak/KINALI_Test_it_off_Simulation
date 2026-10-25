@@ -75,9 +75,10 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_INPUTS = {'program': CONST_PROGRAM_YAML, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
                 'optimization': CONST_OPTIMIZATION_YAML, 'fork_path': CONST_FORK_PATH}
-# A transfer whose spline meets the loader (I8) or comes into the volume a parallel job sweeps (the gating rule, F15) runs its
-# spline after the next job's start - after the WaitDone of the job it met, never after a Wait (owner, 2026-10-25); any
-# other failure takes the next planner margin.
+# A transfer whose spline meets the loader (I8) or comes where a parallel job has been (the gating rule, F15) runs its spline
+# after the next job's start - after the WaitDone of the job it met, never after a Wait (owner, 2026-10-25); a job that comes
+# where the robot has been needs the robot out of its way before its start (an exit point, F16); any other failure takes
+# the next planner margin.
 
 
 class Optimizer_Error_Cls(ValueError):
@@ -179,9 +180,11 @@ class Free_Transfer_Str:
     #   Unit [bool], [int]
     Carrying: bool = False
     First_Sample: int = 0
-    # Where the robot waits while the parallel jobs run (Optimization.yaml Waiting_Points), or None.
-    #   Unit [string]
+    # Where the robot waits while the parallel jobs run (Optimization.yaml Waiting_Points), and where it goes before the first
+    # of them starts (Exit_Points, F16), or None.
+    #   Unit [string], [string]
     Wait: tp.Optional[str] = None
+    Exit: tp.Optional[str] = None
 
 
 def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default: Trajectory_Str) -> tp.List[Free_Transfer_Str]:
@@ -190,7 +193,7 @@ def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default
         The FREE transfers of the taught program: its FREE segments (Optimization.yaml), consecutive ones merged across
         segments that only run loader jobs (Loader.Run lines), each from the point the robot stands at before its first
         segment to its last segment's last point; whether the cups carry the PCB (the default trajectory at its start); its
-        waiting point (Optimization.yaml Waiting_Points).
+        waiting point and its exit point (Optimization.yaml Waiting_Points, Exit_Points).
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
@@ -227,6 +230,7 @@ def Free_Transfers(program: Program_Str, optimization: Optimization_Str, default
                     here = command.Path_End
     for transfer in transfers:
         transfer.Wait = optimization.Waiting_Points.get(transfer.Name)
+        transfer.Exit = optimization.Exit_Points.get(transfer.Name)
     return transfers
 
 
@@ -356,20 +360,23 @@ class Free_Space_Cls(object):
 class Planned_Transfer_Str:
     """
     Description:
-        A planned leg of a FREE transfer (the whole transfer, or with a waiting point its leg to it and its leg from it): its
-        spline's waypoints and how they were found.
+        A planned leg of a FREE transfer (the whole transfer, or its legs to an exit point, to a waiting point and on to its
+        end): its spline's waypoints and how they were found.
     """
 
     # The transfer and the planner margin it was planned with.
     #   Unit [Free_Transfer_Str(object)], [float] (m)
     Transfer: Free_Transfer_Str = field(default_factory=Free_Transfer_Str)
     Margin: float = 0.0
-    # The leg (from 0), its end points and its waypoint set's name (W_<TRANSFER>, the leg to a waiting point W_<TRANSFER>_WAIT).
-    #   Unit [int], [string], [string], [string]
+    # The leg (from 0), its end points, its waypoint set's name (W_<TRANSFER>; the leg to an exit point W_<TRANSFER>_EXIT, to a
+    # waiting point W_<TRANSFER>_WAIT) and its role: 'exit' (before the first parallel job starts), 'wait' (right after it
+    # starts) or 'end' (in its slot).
+    #   Unit [int], [string], [string], [string], [string]
     Leg: int = 0
     Start: str = ''
     End: str = ''
     Set: str = ''
+    Role: str = 'end'
     # RRT-Connect's iterations and nodes; the path's vertices after RRT, after the shortcut and the prune; the refits.
     #   Unit [int]
     Iterations: int = 0
@@ -391,7 +398,7 @@ class Planned_Transfer_Str:
 
 def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, optimization: Optimization_Str, cell: Cell_Configuration_Str,
                   margin: float, lower: np.ndarray, upper: np.ndarray, leg: int = 0, names: tp.Optional[tp.Tuple[str, str]] = None,
-                  set_name: str = '') -> Planned_Transfer_Str:
+                  set_name: str = '', role: str = 'end') -> Planned_Transfer_Str:
     """
     Description:
         One FREE transfer's leg planned: RRT-Connect (seed Optimization.Seed + the transfer's index + 1000 x leg) and the
@@ -410,6 +417,7 @@ def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, opt
         (9) leg [int]: The leg (0: the whole transfer or its leg to the waiting point).
         (10) names [Tuple<string, string>]: The leg's end points (default: the transfer's).
         (11) set_name [string]: Its waypoint set's name (default W_<TRANSFER>).
+        (12) role [string]: 'exit', 'wait' or 'end' (Planned_Transfer_Str.Role).
 
     Returns:
         (1) parameter [Planned_Transfer_Str(object)]: The planned leg.
@@ -458,7 +466,8 @@ def Plan_Transfer(space: Free_Space_Cls, start: np.ndarray, end: np.ndarray, opt
     timed = Time_Path(smooth.Path, o.Speed_Fraction * np.array(cell.Datasheet_Speeds), np.array(cell.Acceleration_Limits), o.Topp_Grid_Points,
                       CONST_DT)
     return Planned_Transfer_Str(Transfer=transfer, Margin=margin, Leg=leg, Start=names[0], End=names[1],
-                                Set=set_name or 'W_%s' % transfer.Name.upper(), Iterations=rrt.Iterations, Nodes=rrt.Nodes, Rrt_Points=len(rrt.Path),
+                                Set=set_name or 'W_%s' % transfer.Name.upper(), Role=role, Iterations=rrt.Iterations, Nodes=rrt.Nodes,
+                                Rrt_Points=len(rrt.Path),
                                 Short_Points=len(short), Refits=smooth.Refits, Waypoints=smooth.Waypoints, Optimal_Time=timed.Optimal_Time,
                                 Duration=timed.Duration, Peak_Speed=timed.Peak_Speed, Peak_Acceleration=timed.Peak_Acceleration,
                                 Checks=space.Calls)
@@ -520,15 +529,16 @@ def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transf
     Description:
         The optimized program as text (Data/Optimized/Program_Optimized.yaml, the Program.yaml format): every segment of
         the taught program in order, renumbered - a LOCKED segment copied verbatim, a FREE transfer as one segment named
-        after its last FREE segment: its parallel jobs in order, each started when the one before is done (Loader.WaitDone,
-        Loader.Start), a leg to its waiting point (W_<NAME>_WAIT) right after the first job's start, its last leg
+        after its last FREE segment: a leg to its exit point (W_<NAME>_EXIT) first (F16), then its parallel jobs in order, each
+        started when the one before is done (Loader.WaitDone, Loader.Start), a leg to its waiting point (W_<NAME>_WAIT) right
+        after the first job's start, its last leg
         Robot.MoveSpline(W_<NAME>, v=...) right after the start of its slot's job - so after the WaitDone of the job before it,
         never after a Wait (F15) - the last job waited for at the end (the interlocks I1-I7, I9 as program order);
         the jobs copied verbatim; the Waypoints; the Optimized record (inputs, platform, schedule, TOPP grid).
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
-        (2) planned [List<List<Planned_Transfer_Str>>]: The planned transfers, each its legs (a leg to its waiting point first).
+        (2) planned [List<List<Planned_Transfer_Str>>]: The planned transfers, each its legs in order.
         (3) optimization [Optimization_Str(object)]: The settings.
         (4) slots [Dict<string, int>]: A transfer's spline slot (it runs after Loader.Start of its slot-th parallel job, from 1),
             by name.
@@ -574,13 +584,14 @@ def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transf
         order = [s.Key for s in program.Segments if s.Key in t.Keys + t.Job_Keys]
         parallel = ' The loader runs %s in parallel.' % ', '.join(t.Jobs) if t.Jobs else ''
         parallel += ' The robot waits at %s meanwhile.' % t.Wait if t.Wait else ''
+        parallel += ' The robot goes to %s before %s starts.' % (t.Exit, t.Jobs[0]) if t.Exit and t.Jobs else ''
         comment = 'FREE (planned, F9): %s to %s, replacing the taught %s.%s' % (t.Start, t.End, ', '.join(order), parallel)
         out += textwrap.wrap(comment, width=118, initial_indent='  # ', subsequent_indent='  # ')
         out.append('  %s:' % key)
         slot = slots.get(t.Name, 1)
-        early = ['Robot.MoveSpline(%s, v=%g)' % (leg.Set, optimization.Speed_Fraction) for leg in legs[:-1]]
-        spline = ['Robot.MoveSpline(%s, v=%g)' % (legs[-1].Set, optimization.Speed_Fraction)]
-        lines = [] if t.Jobs else early + spline
+        move = lambda role: ['Robot.MoveSpline(%s, v=%g)' % (leg.Set, optimization.Speed_Fraction) for leg in legs if leg.Role == role]
+        exits, early, spline = move('exit'), move('wait'), move('end')
+        lines = exits + ([] if t.Jobs else early + spline)
         for i, job in enumerate(t.Jobs, start=1):
             lines += (['Loader.WaitDone(%s)' % t.Jobs[i - 2]] if i > 1 else []) + ['Loader.Start(%s)' % job] + (early if i == 1 else []) \
                 + (spline if i == slot else [])
@@ -656,10 +667,10 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     Description:
         The optimized program of a taught one: each FREE transfer planned at the first planner margin it can be planned with
         (Plan_Transfer); the program written to path (Optimized_Text), loaded, built and checked (the F8 check, every sample
-        on the planning model, the loader moving in parallel) and its gating rule (Gating_Faults: no robot motion comes into
-        the volume a job it does not wait for sweeps); a transfer whose check fails on a pair with the loader (I8), or whose
-        spline comes into a running job's volume, runs its spline after the next job's start (Gate: after the WaitDone of
-        the job it met), any other failing transfer is planned again with the next margin; then the schedule is written and
+        on the planning model, the loader moving in parallel) and its gating rule (Gating_Faults: neither the robot nor a job
+        comes where the other has been while the job may run); a transfer whose check fails on a pair with the loader (I8), or
+        whose spline comes where a running job has been, runs its spline after the next job's start (Gate: after the WaitDone
+        of the job it met), any other failing transfer is planned again with the next margin; then the schedule is written and
         the file loaded and built once more. Fails, naming the transfer, when the margins or the slots run out.
 
     Args:
@@ -698,15 +709,16 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
 
         space = Free_Space_Cls(kinematics, collision, default, transfer, cell.Clearance, optimization.Carry_Max_Tilt,
                                cell.Loader_Free + cell.Tracking_Margin)
-        points = [transfer.Start] + ([transfer.Wait] if transfer.Wait else []) + [transfer.End]
-        sets = ['W_%s_WAIT' % transfer.Name.upper(), 'W_%s' % transfer.Name.upper()][-(len(points) - 1):]
+        points = [transfer.Start] + ([transfer.Exit] if transfer.Exit else []) + ([transfer.Wait] if transfer.Wait else []) + [transfer.End]
+        roles = (['exit'] if transfer.Exit else []) + (['wait'] if transfer.Wait else []) + ['end']
+        sets = ['W_%s' % transfer.Name.upper() + {'exit': '_EXIT', 'wait': '_WAIT', 'end': ''}[role] for role in roles]
         while level[transfer.Name] < len(optimization.Margins):
             margin = optimization.Margins[level[transfer.Name]]
             try:
                 legs = []
                 for leg, (a, b) in enumerate(zip(points[:-1], points[1:])):
                     legs.append(Plan_Transfer(space, np.array(program.Constants.Points[a].Joints), np.array(program.Constants.Points[b].Joints),
-                                              optimization, cell, margin, lower, upper, leg, (a, b), sets[leg]))
+                                              optimization, cell, margin, lower, upper, leg, (a, b), sets[leg], roles[leg]))
                     progress('planned %s (%s to %s) at margin %.1f mm: %d RRT iterations, %d waypoints, %.3f s'
                              % (sets[leg], a, b, 1000 * margin, legs[-1].Iterations, len(legs[-1].Waypoints), legs[-1].Duration))
                 return legs
@@ -730,11 +742,11 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
         failing = [s for s in check.Steps if s.Failures and s.Name.split('_', 1)[1] in planned]
         progress('built and checked: cycle %.3f s, %s; %s' % (trajectory.T[-1], check.Verdict, '; '.join('%s: %s' % (s.Name, f) for s in check.Steps
                                                                                                       for f in s.Failures) or 'no failure'))
-        gated = {} if failing else {f.Step: f for f in Gating_Faults(trajectory, kinematics, collision, cell) if f.Kind == 'enters'}
+        gated = {} if failing else {f.Step: f for f in Gating_Faults(trajectory, kinematics, collision, cell)}
         for name_key, fault in gated.items():
             name = name_key.split('_', 1)[1]
             result.Slots[name] = Gate(trajectory, kinematics, collision, cell, name_key, planned[name][0].Transfer, result.Slots[name], fault)
-            result.Attempts.append('%s: %s comes into the volume %s sweeps (%.2f mm, %s; the gating rule): the spline after the start of %s'
+            result.Attempts.append('%s: %s comes where %s has been (%.2f mm, %s; the gating rule): the spline after the start of %s'
                                    % (name, fault.Motion, fault.Job, 1000 * fault.Distance, fault.Pair,
                                       planned[name][0].Transfer.Jobs[result.Slots[name] - 1]))
         if not failing and not gated:
@@ -776,11 +788,12 @@ def Gate(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision
     """
     Description:
         The spline's next slot when it meets the loader (I8: every sample of the step measured, Robot_Loader_Distance, the loader
-        where its actuators put it) or comes into the volume of a job it does not wait for (fault, the gating rule): the
-        spline runs after the next job's start, so after the WaitDone of the job it met - never after a Wait, whose
+        where its actuators put it) or comes where a job it does not wait for has been (fault 'robot enters', the gating rule):
+        the spline runs after the next job's start, so after the WaitDone of the job it met - never after a Wait, whose
         separation rests on the loader's timing (F15). A meeting before the spline starts - the robot waiting at its start
-        point - cannot be solved by gating, and a spline already after the last job's start has no later slot: an
-        Optimizer_Error_Cls names either.
+        point - and a job that comes where the robot has been (fault 'loader enters': the robot must leave before the job
+        starts, F16) cannot be solved by a later slot, and a spline already after the last job's start has none: an
+        Optimizer_Error_Cls names each with its remedy.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The optimized program's trajectory.
@@ -796,12 +809,21 @@ def Gate(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision
         (1) parameter [int]: The new slot.
     """
 
+    index = trajectory.Step_Names.index(step)
+    # The transfer's last spline (the legs to an exit point and to a waiting point come before it).
+    spline = [k for k, text in enumerate(trajectory.Segment_Command)
+              if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
+    if fault is not None and fault.Kind == 'loader enters':
+        raise Optimizer_Error_Cls('In %s %s comes where the robot has been (%s, %.2f mm; the robot there %.3f-%.3f s, %.2f s ahead): the robot '
+                                  'leaves its way only by timing. Declare an exit point for %s in Optimization.yaml Exit_Points (a point out '
+                                  'of the job\'s volume the robot goes to before the job starts).'
+                                  % (step, fault.Job, fault.Pair, 1000 * fault.Distance, fault.Robot_Span[0], fault.Robot_Span[1], fault.Lead,
+                                     transfer.Name))
+    if fault is not None and fault.Robot_Span[0] < trajectory.T[int(trajectory.Segment_Start[spline])]:
+        raise Optimizer_Error_Cls('In %s the robot comes where %s has been at %.3f s, before its last spline starts (%s): a later slot cannot help; '
+                                  'the transfer needs another waiting or exit point.' % (step, fault.Job, fault.Robot_Span[0], fault.Motion))
     if fault is None:
-        index = trajectory.Step_Names.index(step)
         samples = np.flatnonzero(trajectory.Step_Index == index)
-        # The transfer's last spline (a leg to a waiting point comes before it).
-        spline = [k for k, text in enumerate(trajectory.Segment_Command)
-                  if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
         actual, need = Loader_Actual_Trajectory(trajectory, kinematics.Model), cell.Loader_Free + cell.Tracking_Margin
         meeting = [int(i) for i in samples if Robot_Loader_Distance(actual, kinematics, collision, [int(i)])[0] < need]
         if not meeting:

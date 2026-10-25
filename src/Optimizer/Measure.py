@@ -209,12 +209,13 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
                program: Program_Str) -> tp.List[tp.Tuple[str, bool, str]]:
     """
     Description:
-        The interlocks I1-I9 of SPEC §7.11 verified on a built trajectory, each with the times that prove it: I1 the
+        The interlocks I1-I10 of SPEC §7.11 verified on a built trajectory, each with the times that prove it: I1 the
         handover starts with the loader home and the gripper open; I2 the loader's first move after the handover ends; I3
         MG06 is closed only after the park; I4-I5 the test between the leave and the return; I6 the fetch after MG06 is
         open; I7 the take only after the return; I8 the robot (with a carried PCB) at least Clearance.Loader_Free +
         Tracking_Margin from the loader (with the PCB in its jaws, posed where its actuators put it; F11) at every sample of the
-        parts where both may move; I9 the robot's motion to the take only after J_RETURN_Y is done (F15).
+        parts where both may move; I9 the robot's motion to the take only after J_RETURN_Y is done (F15); I10 J_INSERT only
+        after the robot's motion out of the handover is done (F16).
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -276,6 +277,17 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
     m0 = int(tr.Segment_Start[motion])
     out.append(('I9', bool(motion > gate and m0 > y_last), 'J_RETURN_Y done at %.3f s (its last loader move; `%s`); the robot\'s motion to the '
                 'take `%s` starts %.3f s' % (T[y_last], texts[gate], texts[motion], T[m0])))
+    # I10 (F16, I9's mirror): J_INSERT starts only after the robot's motion out of the handover (its first one after Handover) is
+    # done - in program order (the job's Loader.Start or Run after that motion) and in time (the job's first loader move after
+    # its last sample).
+    leave = int(np.flatnonzero(tr.Segment_Start > h1)[0])
+    leave = min(k for k in range(leave, len(texts)) if texts[k].startswith('Robot.Move'))
+    start = min(k for k, text in enumerate(texts) if text == 'Loader.Start(J_INSERT)' or text.startswith('Loader.Run(J_INSERT) >'))
+    e1 = int(tr.Segment_End[leave]) - 1
+    y, z = tr.Loader_Y, tr.Loader_Z
+    moved = next(i for i in range(insert[0], len(T)) if y[i] != y[i - 1] or z[i] != z[i - 1])
+    out.append(('I10', bool(start > leave and moved > e1), 'the robot\'s motion out of the handover `%s` done at %.3f s; `%s`; J_INSERT\'s first '
+                'loader move %.3f s' % (texts[leave], T[e1], texts[start], T[moved])))
     return out
 
 

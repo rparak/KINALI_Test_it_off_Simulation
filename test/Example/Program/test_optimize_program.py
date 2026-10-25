@@ -32,8 +32,8 @@ def test_the_optimizer_reproduces_the_committed_program_byte_for_byte(tmp_path_f
     """
     Description:
         B5: the optimizer run again (a fresh interpreter, from an unrelated directory, --out) writes exactly the committed
-        Data/Optimized/Program_Optimized.yaml - the same seed, inputs, platform - and its report: every interlock holds, the
-        check passes, the LOCKED comparison, exit 0; nothing in the working directory.
+        Data/Optimized/Program_Optimized.yaml - the same seed, inputs, platform - and its report: every interlock (I1-I10) and
+        the gating rule hold, the check passes, the LOCKED comparison, exit 0; nothing in the working directory.
     """
 
     out, cwd = tmp_path_factory.mktemp('optimized'), tmp_path_factory.mktemp('cwd')
@@ -43,6 +43,7 @@ def test_the_optimizer_reproduces_the_committed_program_byte_for_byte(tmp_path_f
     written = open(os.path.join(out, 'Program_Optimized.yaml'), 'rb').read()
     assert written == open(os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml'), 'rb').read()
     report = open(os.path.join(out, 'optimize_program.txt'), encoding='utf-8').read()
-    assert report.count(' holds: ') == 9 and 'FAILS' not in report.split('LOCKED parts')[0]
-    assert 'cycle 58.716 s (taught 70.404 s, -11.688 s)' in report and 'Program_Optimized: the program check passed.' in report
+    assert report.count(' holds: ') == 10 and 'FAILS' not in report.split('LOCKED parts')[0]
+    assert 'gating rule: no parallel part rests on timing' in report and 'the robot goes to P_LOADER_WAIT before J_INSERT starts' in report
+    assert 'cycle 59.148 s (taught 70.404 s, -11.256 s)' in report and 'Program_Optimized: the program check passed.' in report
     assert '[INFO] The optimized program passes its check.' in result.stdout

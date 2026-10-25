@@ -114,10 +114,10 @@ def test_the_critical_path_adds_up_to_each_cycle(optimized_built):
     """
     Description:
         The robot's timeline covers the cycle: the kinds sum to the last sample's time in both programs (taught 70.404 s,
-        optimized 58.716 s); neither has a timed wait since F15 (the timer program, the forced failure, has 1.648 s).
+        optimized 59.148 s, F16); neither has a timed wait since F15 (the timer program, the forced failure, has 1.648 s).
     """
 
-    for trajectory, cycle in ((_Taught(optimized_built), 70.404), (_Optimized(optimized_built), 58.716)):
+    for trajectory, cycle in ((_Taught(optimized_built), 70.404), (_Optimized(optimized_built), 59.148)):
         path = Critical_Path(trajectory)
         assert sum(path.values()) == pytest.approx(trajectory.T[-1], abs=1e-9) and trajectory.T[-1] == pytest.approx(cycle, abs=1e-9)
         assert 'loader (timed wait)' not in path
@@ -126,14 +126,14 @@ def test_the_critical_path_adds_up_to_each_cycle(optimized_built):
 def test_the_waits_and_the_handshake_of_the_optimized_program(optimized_built, timed_take):
     """
     Description:
-        F15: Robot_Waits lists the robot waiting for J_RETURN_Y (from 41.864 s, 2.600 s) and no Wait inside the take; the
+        F15: Robot_Waits lists the robot waiting for J_RETURN_Y (from 42.296 s, 2.600 s) and no Wait inside the take; the
         handshake starts J_RETURN_Z only after J_RETURN_Y is done. The timer program (the forced failure) waits Wait(1.648) for
         the loader by its time.
     """
 
     tr = _Optimized(optimized_built)
     waits = {text: (t, d, kind) for t, d, kind, text in Robot_Waits(tr)}
-    assert waits['Loader.WaitDone(J_RETURN_Y)'][2] == 'loader' and waits['Loader.WaitDone(J_RETURN_Y)'][0] == pytest.approx(41.864)
+    assert waits['Loader.WaitDone(J_RETURN_Y)'][2] == 'loader' and waits['Loader.WaitDone(J_RETURN_Y)'][0] == pytest.approx(42.296)
     assert waits['Loader.WaitDone(J_RETURN_Y)'][1] == pytest.approx(2.6) and 'Wait(1.648)' not in waits
     lines = [text for _, text in Signal_Order(tr)]
     assert lines.index('Loader.Start(J_RETURN_Y)') < lines.index('Loader.WaitDone(J_RETURN_Y)') < lines.index('Loader.Start(J_RETURN_Z)')
@@ -156,16 +156,20 @@ def test_the_wrist_singularity_is_met_only_in_the_family_switch(optimized_built)
     assert taught['Cartesian moves'][0] == optimized['Cartesian moves'][0]
 
 
-def test_a_job_slowed_by_one_is_the_trajectory_itself(optimized_built):
+@pytest.mark.parametrize('lane', ['loader', 'robot'])
+@pytest.mark.parametrize('job', ['J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z'])
+def test_a_job_slowed_by_one_is_the_trajectory_itself(optimized_built, job, lane):
     """
     Description:
-        Stretch_Job at factor 1: every channel from sample 0 to the job's window end is the trajectory's own, sample by sample.
+        Stretch_Job at factor 1, either lane slowed: every channel from sample 0 to the job's window end is the trajectory's
+        own, sample by sample (the PCB resting in MG06 after the insert's jaws open included).
     """
 
     tr = _Optimized(optimized_built)
-    stretched, window = Stretch_Job(tr, 'J_RETURN_Y', 1.0)
+    stretched, window = Stretch_Job(tr, job, 1.0, lane)
     n = window.stop
-    for name in ('T', 'Robot_Q', 'Loader_Y', 'Loader_Z', 'Gripper', 'Jaw', 'PCB_Location', 'PCB_Pose', 'MG06_Lid', 'MG06_Handle'):
+    for name in ('T', 'Robot_Q', 'Robot_QD', 'Loader_Y', 'Loader_Z', 'Gripper', 'Jaw', 'Vacuum', 'Step_Index', 'Segment_Id', 'PCB_Location',
+                 'PCB_Pose', 'MG06_Lid', 'MG06_Handle'):
         assert np.array_equal(getattr(stretched, name), getattr(tr, name)[:n]), name
 
 
@@ -187,6 +191,45 @@ def test_a_slowed_job_holds_the_robot_at_its_waitdone(optimized_built):
     assert stretched.Loader_Z[a + 1] == pytest.approx(z[a] + (z[a + 1] - z[a]) / 1.5, abs=1e-15) and z[a + 1] != z[a]
     home = np.flatnonzero(stretched.Loader_Y[a:] == tr.Loader_Y[last])[0]
     assert home == pytest.approx(1.5 * (np.flatnonzero(tr.Loader_Y[a:] == tr.Loader_Y[last])[0]), abs=2)
+
+
+def test_a_speed_override_slows_the_robot_s_lines_and_holds_the_loader(optimized_built):
+    """
+    Description:
+        J_FETCH with the robot at a 50 % override (factor 2): the window is twice the robot's part (its leg to P_LOADER_WAIT) or
+        the job's, whichever is longer; the robot's joints are its own at half the time since the job's start (linear between
+        samples), its speeds halved, then held at its WaitDone's joints; the loader's channels are the job's as programmed, held
+        at its end.
+    """
+
+    tr = _Optimized(optimized_built)
+    a, w, last = Job_Window(tr, 'J_FETCH')
+    stretched, window = Stretch_Job(tr, 'J_FETCH', 2.0, 'robot')
+    assert len(window) == max(last - a, int(math.ceil(2.0 * (w - a)))) + 1
+    assert np.allclose(stretched.Robot_Q[a + 2 * (w - a) // 2], tr.Robot_Q[a + (w - a) // 2], atol=1e-12)
+    assert np.allclose(stretched.Robot_Q[a + 7], 0.5 * (tr.Robot_Q[a + 3] + tr.Robot_Q[a + 4]), atol=1e-12)
+    assert np.allclose(stretched.Robot_QD[a + 8], 0.5 * tr.Robot_QD[a + 4], atol=1e-12)
+    assert np.all(stretched.Robot_Q[a + 2 * (w - a):] == tr.Robot_Q[w])
+    end = a + len(window)
+    assert np.array_equal(stretched.Loader_Z[a:last + 1], tr.Loader_Z[a:last + 1]) and np.all(stretched.Loader_Z[last:end] == tr.Loader_Z[last])
+
+
+def test_a_speed_override_breaks_only_an_ungated_insert(optimized_built, prompt_insert, cell_configuration):
+    """
+    Description:
+        F16: the robot at a 10 % override in J_INSERT's window keeps 47.85 mm from the loader (Loader_Free + Tracking_Margin:
+        14 mm) with the insert started after the robot reached its exit point; with J_INSERT started at once (the forced
+        failure) the tool meets the Z carriage - more than 50 mm as programmed, 15.92 mm at 15 %, -1.63 mm at 10 % (measured
+        2026-10-25).
+    """
+
+    kinematics, collision = optimized_built['kinematics'], optimized_built['collision']
+    gated = Stretched_Distance(_Optimized(optimized_built), 'J_INSERT', 10.0, kinematics, collision, 'robot')[0]
+    assert gated >= cell_configuration.Loader_Free + cell_configuration.Tracking_Margin and gated == pytest.approx(0.04785, abs=1e-4)
+    assert Stretched_Distance(prompt_insert[0], 'J_INSERT', 1.0, kinematics, collision, 'robot')[0] >= 0.05
+    assert Stretched_Distance(prompt_insert[0], 'J_INSERT', 1 / 0.15, kinematics, collision, 'robot')[0] == pytest.approx(0.01592, abs=1e-4)
+    distance, _, pair = Stretched_Distance(prompt_insert[0], 'J_INSERT', 10.0, kinematics, collision, 'robot')
+    assert distance == pytest.approx(-0.00163, abs=1e-4) and pair == 'aubo/tool/ee_tool / z_carriage'
 
 
 def test_a_slower_loader_only_delays_the_take(optimized_built, cell_configuration):

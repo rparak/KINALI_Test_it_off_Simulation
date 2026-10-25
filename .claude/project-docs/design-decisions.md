@@ -292,11 +292,14 @@ run's report proves it (byte-identical to `run_program.py`'s for both programs, 
 **Choices inside.** Exact distances every 20 ms, refined to 4 ms around each pair's minimum, cut at 100 mm (a third of the
 distance calls of a 200 mm cut: 71 s for the whole report on the Apple M2 Pro, five processes); zone occupancy from the
 collision geoms' points (a mesh's vertices), not their bounding boxes, which make a robot link occupy a zone it only passes
-near; the jaw zone is a box; the MG06 shared zone is the loader's swept volume in J_INSERT and J_FETCH (owner, 2026-10-25,
-replacing F14's box of MG06 over its states, which reached into the loader's home and held the robot most of the cycle). The swept
-volume holds the jobs' start poses (home, park), so the report adds its part at MG06 (the loader at the MG06 Y): there the robot
-and the loader are never in it together in either program (2026-10-25). The poses are one per 5 mm cell of (Y, Z, jaw), so a
-pose between kept ones is at most 2.5 mm from one along each axis; the occupancy takes 64-75 s per program.
+near; the shared zones are the volume the loader's jaws (and the PCB in them) sweep in all its jobs, split by the loader's Y
+into the jaw zone (the handover and take position) and the MG06 corridor (travel height to the holder) (owner, 2026-10-25, F16;
+replacing F14's box of MG06 over its states, which reached into the loader's home and held the robot most of the cycle, and then
+the volume of the whole loader in J_INSERT and J_FETCH, whose part at MG06 held the robot at the handover: the Z carriage reaches
+z -0.49..0.25 m, so at the MG06 Y it covers the space above the jaws' home). The carriages against the robot are the gating
+rule's and I8's. The robot and the loader are in the corridor together in neither program; in the jaw zone only at the
+handover and the take, by design (2026-10-25). The jaws' box at home is kept as the physics cross-check. The poses are one per
+5 mm cell of (Y, Z, jaw), so a pose between kept ones is at most 2.5 mm from one along each axis.
 
 **Alternatives.** A hand-written report around generated tables: rejected (drift). A per-step recorder hook in `src/Simulation`:
 rejected (it changes the verified run's code for an analysis).
@@ -943,7 +946,9 @@ next job - so after the WaitDone of the job it met; a meeting while the robot wa
 start, fails, naming the remedies. No spline is ever gated by a Wait (F15; until F15 the spline could also wait longer by the
 meeting window, which put `Wait(1.648)` into the take). Shipped (`Data/Optimized/Program_Optimized.yaml`): To_MG06 runs its
 spline during `J_INSERT`; To_Take goes to its waiting point `P_LOADER_WAIT` during `J_FETCH` and on to `P_LOADER_ABOVE` after
-`Loader.WaitDone(J_RETURN_Y)`, during `J_RETURN_Z`.
+`Loader.WaitDone(J_RETURN_Y)`, during `J_RETURN_Z`. A job that comes where the robot has been cannot be gated by a later slot
+(the robot would wait in its way): the transfer needs an exit point it reaches before the job starts (F16); To_MG06 goes to
+`P_LOADER_WAIT` before `J_INSERT`.
 
 **Why.** In the taught program the robot is at home while the loader fetches and returns; `P_LOADER_ABOVE` is in the
 loader's travel height path. A later slot keeps the robot out of the loader's way whatever the loader's speed; a wait only
@@ -972,9 +977,8 @@ of the golden changed); the forced failure - the old timer schedule on the split
 still holds at the nominal timing (19.39 mm), which is why a distance check alone could not catch it.
 
 **Choice inside.** The gating rule measures the robot against every pose the job sweeps (its swept volume), not the pose at the
-same time; a motion that starts inside the volume and leaves it (To_MG06 from `P_LOADER_ABOVE` during `J_INSERT`) is reported
-with its lead over the loader (1.52 s), not refused: owner's rule is about entering; leaving rests on the robot starting
-promptly after `Loader.Start` (open question to the owner).
+same time. Until F16 a motion that started inside the volume and left it (To_MG06 from `P_LOADER_ABOVE` during `J_INSERT`, 1.52 s
+ahead of the loader) was only reported; F16 made the rule symmetric (next entry).
 
 **Alternatives.** A loader input "Y at home" (`DI_LOADER_Y_HOME`, a WaitDI): the same timing, but a new signal and a PLC change;
 the split job uses the existing handshake. Keeping the wait with a margin (a longer Wait): still timing; it only moves the
@@ -988,6 +992,41 @@ Pinned by `test/Program/test_check.py::test_the_optimized_program_keeps_the_gati
 `test/Optimizer/test_core.py::test_a_spline_that_comes_into_a_running_job_s_volume_waits_for_the_job`,
 `test/Report/test_core.py::test_a_slower_loader_only_delays_the_take`, the golden (`test/Program/test_golden.py`) and the physics
 baselines.
+
+## The robot leaves the loader's way before the job starts: an exit point, and a symmetric gating rule (F16)
+
+**Decision.** The gating rule is symmetric (owner, 2026-10-25): while a parallel job may run, neither the robot (moving or
+holding) nor the loader comes within `Loader_Free` of where the other is at any other time of the window ('robot enters',
+'loader enters'); either is a fault. The robot is the master: To_MG06 runs `Robot.MoveSpline(W_TO_MG06_EXIT)` from
+`P_LOADER_ABOVE` to `P_LOADER_WAIT` (`Optimization.yaml Exit_Points`), then `Loader.Start(J_INSERT)`, then
+`Robot.MoveSpline(W_TO_MG06)` on to `P_MG06_FORK_START`; interlock I10 (I9's mirror) checks the order. The optimizer fails a
+'loader enters' fault naming `Exit_Points` (a later slot would leave the robot in the job's way).
+
+**Why.** `P_LOADER_ABOVE` lies 18.47 mm inside the volume J_INSERT's Z carriage sweeps at the travel height; with the job started at
+once the robot left it only by starting at once (1.52 s ahead). Measured 2026-10-25 on that schedule (05556c4): a robot speed
+override below 14.6 % broke I8, below 11.2 % the tool met the carriage (10 %: -3.92 mm) - and a first run on a real cell often
+uses 10 %. With the split, `P_LOADER_WAIT` is 29.68 mm from all J_INSERT sweeps; no job breaks I8 at any loader slow-down up to
+2 x or robot override down to 10 % (closest 29.68 mm); the gating rule finds no fault.
+
+**Cost.** The cycle 58.716 -> 59.148 s (+0.432 s, +0.7 %; throughput 61.3 -> 60.9 PCB/h): the exit leg takes 0.432 s from stop to
+stop and J_INSERT starts that much later, and the loader is on the critical path in S5. A trigger on the path's position
+(J_INSERT started as the unsplit spline passes the volume's edge at 11.244 s, without a stop) would cost +0.244 s; the 0.188 s
+between them is the stop at the split.
+
+**Alternatives.** A path-position trigger in the spline (+0.244 s): a format change (a trigger on `Robot.MoveSpline`), the build
+and the check of a mid-spline event, and a controller feature not verified on the AUBO. A split at the planned path's exit point:
+an unnamed configuration (the format names its ends by taught points), not re-teachable. Starting J_INSERT with its Y move only
+(splitting the job): the lift at home is in the robot's way too. Keeping the robot's prompt start: rests on timing.
+
+**Revisit if** a trigger on a motion's progress becomes available and verified on the controller (then the 0.188 s can be
+taken back), or the handover's exit is re-taught.
+
+Pinned by `test/Program/test_check.py::test_the_optimized_program_keeps_the_gating_rule`,
+`::test_an_insert_started_before_the_robot_leaves_breaks_the_gating_rule`,
+`::test_a_robot_holding_in_a_running_job_s_way_breaks_the_gating_rule`,
+`test/Optimizer/test_measure.py::test_i10_fails_for_an_insert_started_before_the_robot_leaves`,
+`test/Optimizer/test_core.py::test_the_insert_starts_after_the_robot_leaves_for_its_exit_point`,
+`test/Report/test_core.py::test_a_speed_override_breaks_only_an_ungated_insert` and the optimized physics baseline.
 
 ## The optimized program is generated data, committed and reproducible
 

@@ -643,16 +643,19 @@ The optimized program (`src/Optimizer/Core.py`; what it is measured by: `src/Opt
 ones merged across segments that only run loader jobs (those jobs then run in parallel). `Free_Space_Cls`: a configuration's
 validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
 carried PCB (hung at the cup face) at least the clearance plus a margin from everything and `Loader_Free` + `Tracking_Margin`
-plus the margin from the loader and the PCB in its jaws (F11), the carried PCB's tilt at most `Carry_Max_Tilt` (B4). A transfer with a waiting point (`Optimization.yaml Waiting_Points`) has two legs: to the waiting point
-at once (after its first job's start), and on to its end at the slot the search finds (after a job's start, so after the
-WaitDone of the job before it; never after a Wait, F15). `Plan_Transfer`: RRT-Connect
+plus the margin from the loader and the PCB in its jaws (F11), the carried PCB's tilt at most `Carry_Max_Tilt` (B4). A transfer with an exit point (`Optimization.yaml Exit_Points`, F16) runs a leg to it before its first job starts
+(`Loader.Start` after that leg: the robot out of the job's way by program order). A transfer with a waiting point
+(`Waiting_Points`) has a leg to it at once (after its first job's start). The last leg runs on to the transfer's end at the slot
+the search finds (after a job's start, so after the WaitDone of the job before it; never after a Wait, F15). `Plan_Transfer`: RRT-Connect
 (seed `Seed` + the transfer's index + 1000 x the leg) and the shortcut at the planner
 margin, the prune, the spline at `Spline.Margin`. `Optimize_Program`: plans every transfer at the first margin it can be
 planned with, writes the program (`Optimized_Text`: LOCKED segments verbatim from `Program.yaml`, renumbered; a transfer as
 `Loader.Start` / `Robot.MoveSpline` / `Loader.WaitDone` lines), loads, builds and checks it; a transfer that meets the loader
 (I8: closer than `Loader_Free` + `Tracking_Margin` to the loader at its actuator model's position, F11) or that breaks the gating
-rule (below) moves its spline after the next job's start (`Gate`; past the last job's start it fails, naming the remedies: split
-the job or gate on a loader input), any other failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I9
+rule by coming where a job has been ('robot enters', below) moves its spline after the next job's start (`Gate`; past the last
+job's start it fails, naming the remedies: split the job or gate on a loader input); a job that comes where the robot has been
+('loader enters') cannot be helped by a later slot and fails naming `Exit_Points`; any other failure takes the next margin;
+finally writes the schedule. `Interlocks` (I1-I10
 with their times), `Compare_Locked` (each
 LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
 planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
@@ -668,7 +671,7 @@ of the previous LOCKED robot segment to the start of the next; their intermediat
 | LOCKED | the crate pick: approach, press 1.5 mm, vacuum, lift | `S2_Pick_Input` | from vacuum on | up |
 | FREE | `P_INPUT_ABOVE` → `P_LOADER_ABOVE` | `S3_To_Loader` | yes | up |
 | LOCKED | the handover: no press, clamp, vacuum off, up | `S4_Handover` | until vacuum off | up |
-| FREE | `P_LOADER_ABOVE` → `P_MG06_FORK_START` (`P_HOME` dropped) | `S5_Home_After_Handover`, `S8_To_MG06` | no | up → down (the switch in free space) |
+| FREE | `P_LOADER_ABOVE` → `P_MG06_FORK_START` (`P_HOME` dropped; via the exit point `P_LOADER_WAIT` before `J_INSERT` starts, F16) | `S5_Home_After_Handover`, `S8_To_MG06` | no | up → down (the switch in free space) |
 | LOCKED | `PATH_FORK_CLOSE` and the bar centred, the leave, the test, the return, the open join and `PATH_FORK_OPEN` | `S9_Close_MG06` … `S13_Open_MG06` | no | down |
 | FREE | `P_MG06_FORK_START` → `P_LOADER_ABOVE` (`P_HOME` dropped; via the waiting point `P_LOADER_WAIT`) | `S14_Home_After_MG06`, `S17_To_Take` | no | down → up |
 | LOCKED | the take: approach, press 1.5 mm, vacuum, gripper open, out of the jaws, up | `S18_Take_From_Loader` | from vacuum on | up |
@@ -694,17 +697,20 @@ MoveL is FREE, so no MoveL crosses the family switch.
 | I7 | `S18_Take_From_Loader` starts after `J_RETURN_Z`'s last loader move (the loader at `L_HOME`, the PCB clamped) | the robot enters the jaw zone only when the loader is home |
 | I8 | the robot (with a carried PCB) at least `Clearance.Loader_Free` + `Tracking_Margin` from the loader (with the PCB in its jaws, posed where its actuators put it) at every sample of the parts where both may move | parallel motion is safe only where checked |
 | I9 | the robot's motion to the take (its last before `S18_Take_From_Loader`) starts after `J_RETURN_Y` is done: after its `Loader.WaitDone` (or `Loader.Run`) and after its last loader move (F15, owner 2026-10-25) | the robot enters the loader's way home only when the loader's Y is home, whatever the loader's speed |
+| I10 | `J_INSERT` starts after the robot's motion out of the handover (its first after `S4_Handover`) is done: its `Loader.Start` (or `Loader.Run`) after that motion and its first loader move after the motion's last sample (F16, owner 2026-10-25; I9's mirror) | the loader lifts into the robot's way only when the robot has left it, whatever the robot's speed |
 
-I1-I7 and I9 hold by program order (`Loader.Start` / `Loader.WaitDone` lines); I8 is the exact robot-loader check, whose failure
+I1-I7, I9 and I10 hold by program order (`Loader.Start` / `Loader.WaitDone` lines); I8 is the exact robot-loader check, whose failure
 moves a spline's slot (`Gate`).
 
-**The gating rule** (F15, owner 2026-10-25; `Program.Check.Gating_Faults`): a robot motion that runs while a parallel loader job
-may run (after its `Loader.Start`, before its `Loader.WaitDone`) must not come within `Clearance.Loader_Free` of any pose the job
-sweeps (the loader where its actuators put it, every 20 ms; `Swept_Distance`, exact) - otherwise its separation rests on timing
-and it must be gated by the job's `Loader.WaitDone` (or an input from the loader), never by a `Wait`. The optimizer moves such a
-spline to the next slot and refuses a program that still breaks it; `optimize_program.py` reports it. A motion that starts
-inside a job's volume and only leaves it (To_MG06's spline from `P_LOADER_ABOVE` during `J_INSERT`: 1.52 s ahead of the loader)
-is reported with its lead, not refused. `J_RETURN` is two jobs for it: `J_RETURN_Y` (up to the travel height and home along Y)
+**The gating rule** (F15; symmetric, F16; owner 2026-10-25; `Program.Check.Gating_Faults`): while a parallel loader job may run
+(from its `Loader.Start` to the end of its `Loader.WaitDone`) the robot - moving or holding, with a carried PCB - stays at least
+`Clearance.Loader_Free` from every pose the job sweeps (the loader where its actuators put it, every 20 ms; `Swept_Pairs`, exact,
+every pair of robot and loader samples). A pair closer than that rests on timing: on the loader's speed when the robot comes
+later ('robot enters'), on the robot's - a speed override - when the loader does ('loader enters'). Either is a fault: the order
+must come from the program - the robot's motion out of the way before the job's `Loader.Start` (an exit point), or the job's
+`Loader.WaitDone` (or an input from the loader) before the robot's motion in - never a `Wait` or a prompt start. The optimizer
+moves a 'robot enters' spline to the next slot and fails a 'loader enters' naming `Exit_Points`; `optimize_program.py` reports
+every fault and fails on one. `J_RETURN` is two jobs for it: `J_RETURN_Y` (up to the travel height and home along Y)
 and `J_RETURN_Z` (down home, the hold), the same motion and timing; the taught program runs both with `Loader.Run` (its
 trajectory byte-identical, the golden's labels re-captured).
 
@@ -725,19 +731,22 @@ changes no program, point, model or limit; it measures.
   out (`By_Design`: a step's `Allow_Contact` group, the PCB resting in a crate or MG06, the PCB between the jaws and the holder
   while the loader is down at MG06). The objects' extents and the zones' occupancy from their collision geoms' points (a
   mesh's vertices, a primitive's box corners).
-- **The shared zones** (owner 2026-10-25): the jaw zone, the box of the loader's jaws at `L_HOME` (open and clamped), grown by
-  `Loader_Free`; the **MG06 shared zone**, the volume the loader (its carriages, jaws and the PCB in them) sweeps in `J_INSERT` and
-  `J_FETCH` where its actuators put it, grown by `Loader_Free` (`Swept_Zone`: one pose per 5 mm cell of (Y, Z, jaw); the robot is in
-  it when an exact distance to a pose is below `Loader_Free`, the poses nearest by box gap first; the loader when its Y and Z lie
-  within `Loader_Free` of a pose's), reported whole and in its part at MG06 (the poses at `L_TRAVEL`'s Y). The coarse box of
-  F14 is gone.
+- **The shared zones** (owner 2026-10-25, split F16): the volume the loader's jaws and the PCB in them sweep in all its jobs where
+  its actuators put it, grown by `Loader_Free` (`Swept_Zone`: one pose per 5 mm cell of (Y, Z, jaw); the robot is in it when an
+  exact distance to a pose is below `Loader_Free`, the poses nearest by box gap first; the loader when its Y and Z lie within
+  `Loader_Free` of a pose's), split by the loader's Y: the **jaw zone** (`L_HOME`'s Y: the handover and the take, home to the
+  travel height) and the **MG06 corridor** (`L_TRAVEL`'s Y: the travel height down to the holder). The carriages are left out:
+  the Z carriage reaches far above the jaws, so its volume at the MG06 Y would cover the handover; the robot against them is the
+  gating rule's and I8's. The jaws' box at `L_HOME` (open and clamped, grown by `Loader_Free`) is the physics cross-check.
 - **The PCB** (`Handovers`, `Custody_Gaps`, `Overhang`, `Tilt`, `Location_Spans`): each location change of the trajectory checked
   in physics (pose error, both holders, none), the spans without a holder, the board beyond the cups and the jaws.
 - **The timeline** (`Critical_Path`, `Robot_Waits`, `Signal_Order`, `Wrist_Approach`): the robot's program is the cell's
   timeline; each segment is spent on its motion or on what it waits for (a `Wait` in a step with a parallel loader job: the
   loader by its time).
-- **The loader slowed** (`Stretch_Job`, `Stretched_Distance`, `Clear_Height`): a parallel job's loader lane slowed by a factor, the
-  robot's lines as programmed and holding at its WaitDone, I8's distance on it (the actuator model, exact, every 4 ms).
+- **The loader or the robot slowed** (`Stretch_Job`, `Stretched_Distance`, `Clear_Height`): in a parallel job's window one lane
+  slowed by a factor, the other as programmed - the loader's job (0.5 to 2 x; the robot holding at its WaitDone), or the robot's
+  lines (a speed override of 10 to 100 %, F16; the loader holding at its end) - I8's distance on it (the actuator model, exact,
+  every 4 ms).
 - **The media** (`Media.py`): frames from named free-camera views (`CONST_VIEWS`: lookat, distance, azimuth, elevation,
   field of view; Overview_Right, Overview_Left, Top, Input_Crate, Output_Crate, Loader_Handover, MG06_Insert, MG06_Fork) on a
   render-only copy of the model (`Render_Model`: the view's field of view, the aluminium tone-down `CONST_TONE`; the model and
@@ -840,7 +849,7 @@ with `ast` and never evaluated; the only literal values are speeds, durations, w
 
 Reserved: `a=` and `r=` take only 0 or nothing (no blending yet); `Tester.Start` / `Tester.WaitDone` are refused (the
 tester's job runs whole). Checked at load besides the grammar: every constant and job declared and used (a point declared in
-`Optimization.yaml Waiting_Points` counts as used, the taught program may not use it, the optimized program must); the IK family changes
+`Optimization.yaml Waiting_Points` or `Exit_Points` counts as used, the taught program may not use it, the optimized program must); the IK family changes
 only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot stands; the segment names of
 `Simulation.yaml` exist.
 
@@ -867,6 +876,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Margins` | m (increasing) | measured 2026-10-24 | `Plan_Transfer` |
 | `Carry_Max_Tilt` | deg | the owner: 20 deg (no time cost), ASSUMED; held in simulation only (`KNOWN_ISSUES.md`) | `Free_Space_Cls` (B4) |
 | `Waiting_Points` | transfer -> point | the robot-loader analysis (F9.8) | the transfer's legs; Constants.yaml's completeness (the point is the optimized program's only) |
+| `Exit_Points` | transfer -> point | the owner, 2026-10-25 (F16): `P_LOADER_WAIT` for To_MG06, 29.68 mm from all `J_INSERT` sweeps (measured) | the transfer's leg before its first job starts; Constants.yaml's completeness, as above |
 
 ## 9. Data formats and units
 

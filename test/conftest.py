@@ -237,6 +237,32 @@ def timed_take(optimized_built, cell_configuration, constants, simulation, tmp_p
     return trajectory, program
 
 
+CONST_EXIT_INSERT = """    - Robot.MoveSpline(W_TO_MG06_EXIT, v=0.6)
+    - Loader.Start(J_INSERT)
+"""
+
+
+@pytest.fixture(scope='session')
+def prompt_insert(optimized_built, cell_configuration, constants, simulation, tmp_path_factory):
+    """
+    Description:
+        The forced failure of F16: the optimized program with J_INSERT started before the robot leaves the handover - its
+        Loader.Start before the leg to the exit point, as F15's program started it with W_TO_MG06 - built in process: (trajectory,
+        program).
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_OPTIMIZED_PROGRAM_YAML
+    from Program.Core import Build_Program
+    text = open(CONST_OPTIMIZED_PROGRAM_YAML, encoding='utf-8').read()
+    assert text.count(CONST_EXIT_INSERT) == 1
+    lines = CONST_EXIT_INSERT.split('\n')
+    path = tmp_path_factory.mktemp('prompt_insert') / 'Program_Optimized.yaml'
+    path.write_text(text.replace(CONST_EXIT_INSERT, '\n'.join([lines[1], lines[0], ''])), encoding='utf-8')
+    program = Load_Program(constants, simulation, cell_configuration, str(path))
+    trajectory, _ = Build_Program(program, cell_configuration, optimized_built['meta'], optimized_built['kinematics'], {})
+    return trajectory, program
+
+
 def _Failed_Criteria(result):
     """
     Description:

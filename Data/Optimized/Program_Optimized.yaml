@@ -43,8 +43,10 @@ Program:
     - Robot.MoveL(P_LOADER_ABOVE, v=0.20)                 # legacy: linear_move(..., 'robot up from the loader', speed=0.20)
 
   # FREE (planned, F9): P_LOADER_ABOVE to P_MG06_FORK_START, replacing the taught S5_Home_After_Handover,
-  # S6_Loader_Insert, S7_Loader_Park, S8_To_MG06. The loader runs J_INSERT, J_PARK in parallel.
+  # S6_Loader_Insert, S7_Loader_Park, S8_To_MG06. The loader runs J_INSERT, J_PARK in parallel. The robot goes to
+  # P_LOADER_WAIT before J_INSERT starts.
   S5_To_MG06:
+    - Robot.MoveSpline(W_TO_MG06_EXIT, v=0.6)
     - Loader.Start(J_INSERT)
     - Robot.MoveSpline(W_TO_MG06, v=0.6)
     - Loader.WaitDone(J_INSERT)
@@ -186,12 +188,16 @@ Waypoints:
     Points:
       - [15.981179831, -1.658959434, 101.959306847, 17.928913812, 81.845696095, -31.981075193]
       - [12.873544571, 0.384671785, 100.903304924, 15.302467898, 80.857026616, -36.536287762]
-  W_TO_MG06:
+  W_TO_MG06_EXIT:
     From: P_LOADER_ABOVE
+    To: P_LOADER_WAIT
+    Points: []
+  W_TO_MG06:
+    From: P_LOADER_WAIT
     To: P_MG06_FORK_START
     Points:
-      - [-8.984237643, 3.681833384, 74.889566215, -17.149027014, 39.211579376, -43.275039049]
-      - [-11.884747247, 3.635957164, 74.038775283, -24.936551167, 26.238579007, -36.169093493]
+      - [-15.290596587, 8.110695527, 79.661607452, -8.604658645, 59.422343114, -44.632520078]
+      - [-15.320126555, 6.360409776, 72.061001162, -12.442878093, 44.536086554, -32.533460104]
   W_TO_TAKE_WAIT:
     From: P_MG06_FORK_START
     To: P_LOADER_WAIT
@@ -225,7 +231,7 @@ Optimized:
     constants: "942ed70a3da3bc92c477c55759547ec31d6b06ab1c30a011838d11709d23b804"
     simulation: "b951462c85ea1c5b12be1233ded01acd37c2ef1983ac5e92daa6350cd09d8540"
     cell: "c94fd92cfd4a36be74f5b0f8374523d423e5b0b34423feadb6b29e90804dd514"
-    optimization: "258efa1c19dbafc188fa3b310e45b1c849ef851b5b2f5775e0c1d6f6bac32393"
+    optimization: "f2ca912693deffaa28b2aa6d1db3458ca87c93fd28cd74d09bf2f69fa9bc2f83"
     fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
     planning_model: "09d64c23d18f902eaa5cfc21802e8f1b1b690677d08720c9bea62ffb70642f69"
   Platform:
@@ -241,14 +247,14 @@ Optimized:
     S3_To_Loader: 4.984
     S4_Handover: 6.156
     S5_To_MG06: 11.000
-    S6_Close_MG06: 18.452
-    S7_Leave_MG06: 25.524
-    S8_Test: 27.832
-    S9_Return_MG06: 29.832
-    S10_Open_MG06: 32.140
-    S11_To_Take: 37.564
-    S12_Take_From_Loader: 45.464
-    S13_To_Output: 51.852
-    S14_Place_Output: 53.652
-    S15_Home_End: 56.996
+    S6_Close_MG06: 18.884
+    S7_Leave_MG06: 25.956
+    S8_Test: 28.264
+    S9_Return_MG06: 30.264
+    S10_Open_MG06: 32.572
+    S11_To_Take: 37.996
+    S12_Take_From_Loader: 45.896
+    S13_To_Output: 52.284
+    S14_Place_Output: 54.084
+    S15_Home_End: 57.428
   Topp_Grid_Points: 1000

@@ -202,19 +202,6 @@ The acceptance bounds on the fork are regression bounds derived from the simulat
   low level) active, or measured with a force sensor or the controller's force estimate; OnRobot's force and moment ratings
   of the VGC10 interface and AUBO's of the i5's flange and joints, the bounds then replaced by them or by a margin under them.
 
-## The optimized To_MG06 spline leaves the loader's way only by starting promptly
-
-`S5_To_MG06` starts `Loader.Start(J_INSERT)` and at once `Robot.MoveSpline(W_TO_MG06)` from `P_LOADER_ABOVE`, a pose inside the
-volume `J_INSERT` sweeps (the Z carriage at the travel height passes there). Measured 2026-10-25 (`Program.Check.Gating_Faults`):
-the robot leaves that volume 1.52 s before the loader reaches it. A slower loader only adds to the lead; a robot that starts
-its spline 1.5 s late (a controller latency, a stop) would meet the loader. The gating rule reports it as 'leaves', not as a
-fault (F15: the rule is about entering).
-
-- **Impact:** on the real cell the robot's spline must start promptly after the loader's start, or the loader must wait for it.
-- **What would close it:** split `J_INSERT` so its Y move starts after the robot's spline has left (`Loader.Start` of the Y part
-  after the spline: a cost of up to the spline's time in the cycle), or an input from the robot to the loader; the owner's
-  decision.
-
 ## Real-cell transfer: a controller waits for "in position" before a LOCKED operation
 
 The optimized program's splines end where a LOCKED operation begins (the crate pick, the handover, the place) with up to

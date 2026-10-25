@@ -60,7 +60,7 @@ from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Keypoints/Core - the IK family
 from Keypoints.Core import Family
 #   ../Program/Check - the loader where its actuators put it
-from Program.Check import Gating_Faults
+from Program.Check import Gating_Faults, Swept_Pairs, Loader_Actual_Trajectory, CONST_GATING_STRIDE
 #   ../Simulation/Core, ../Simulation/Report - the drive, the report and its acceptance
 from Simulation.Core import Trajectory_Drive_Cls, Simulation_Error_Cls
 from Simulation.Report import Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance
@@ -78,7 +78,7 @@ from Report.Core import (CONST_CUT, Joint_Arc, CONST_MG06_LOADER, Swept_Zone, Re
                          Custody_Gaps, Location_Spans, Overhang,
                          Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach, Stretched_Distance, Clear_Height, Job_Window, Moving, Spans,
                          Object_Channels, Travel, Channel_Peaks, Tilt, Holder_Matrix, CONST_PAIRS, CONST_HOLDERS, CONST_LOCATION_HOLDER,
-                         CONST_ROBOT_LINKS)
+                         CONST_ROBOT_LINKS, CONST_ZONE_BODIES)
 
 """
 Description:
@@ -90,11 +90,15 @@ CONST_VERSIONS = ('taught', 'optimized')
 # The trajectory files of the programs in a --trajectories folder (build_program.py's names).
 #   Unit [Dict<string, string>]
 CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimized.npz'}
-# The MG06 shared zone (owner, 2026-10-25): the volume the loader sweeps in these jobs; its parts: all of it, and its part at
-# MG06 (the loader's Y at L_TRAVEL's), each with its title.
-#   Unit [List<string>], [Dict<string, string>]
-CONST_SWEPT_JOBS = ['J_INSERT', 'J_FETCH']
-CONST_SWEPT_PARTS = {'swept': 'MG06 shared zone (J_INSERT and J_FETCH swept)', 'mg06': 'its part at MG06 (the loader at the MG06 Y)'}
+# The shared zones (owner, 2026-10-25): the volume the loader's jaws (and the PCB in them, Report.Core CONST_ZONE_BODIES) sweep
+# in its jobs, split by its Y (owner, F16): the jaw zone at the handover and take position (L_HOME's Y: from home to the travel
+# height, the jaws open and closed) and the MG06 corridor (L_TRAVEL's Y: from the travel height down to the holder); each with
+# its title and the loader position whose Y it keeps. The carriages are left out: they reach far above and below the jaws (the
+# Z carriage over z -0.49..0.25 m), so their volume at the MG06 Y covers the handover too; the robot against them is the
+# gating rule's and I8's.
+#   Unit [List<string>], [Dict<string, Tuple<string, string>>]
+CONST_SWEPT_JOBS = ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z', 'J_RELEASE']
+CONST_SWEPT_PARTS = {'jaw': ('jaw zone', 'L_HOME'), 'corridor': ('MG06 corridor', CONST_MG06_LOADER)}
 # The summary chart's name in --media (the README's).
 #   Unit [string]
 CONST_MEDIA_SUMMARY = 'Default_vs_Optimized'
@@ -106,6 +110,10 @@ CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
 #   Unit [List<float>] (-), [float] (-)
 CONST_FACTORS = [0.5, 0.75, 0.9, 1.0, 1.02, 1.05, 1.1, 1.25, 1.5, 2.0]
 CONST_FACTOR_RESOLUTION = 0.001
+# The robot's speed overrides tried against I8, the loader as programmed (owner, F16: 0.5 / 0.75 / 0.9; 0.25 and 0.1 too, the
+# overrides a first run on a real cell uses).
+#   Unit [List<float>] (-)
+CONST_OVERRIDES = [0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
 # The PCB's acceleration is also given smoothed over this window (contact transients are single samples).
 #   Unit [int] (samples)
 CONST_SMOOTH = 5
@@ -174,8 +182,8 @@ def Zones(cell: tp.Any, trajectories: tp.List[tp.Any]) -> tp.Dict[str, tp.Tuple[
     """
     Description:
         The jaw zone (Report.Core CONST_ZONE_BODIES, owner 2026-10-25) over every sample of both trajectories with the loader at
-        its start position (home, the jaws open and clamped), grown by Loader_Free. The MG06 shared zone is a swept volume
-        (Swept_Analysis).
+        its start position (home, the jaws open and clamped), grown by Loader_Free: the jaws' box, a cross-check in physics. The
+        shared zones are swept volumes (Swept_Analysis).
 
     Args:
         (1) cell [Cell_Configuration_Str(object)]: The cell.
@@ -264,10 +272,13 @@ def Analyse_Planned(job: tp.Tuple[str, tp.Dict[str, tp.Tuple[np.ndarray, np.ndar
 def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.Any]:
     """
     Description:
-        The interlock I8 with the loader slowed (a pool job): for every parallel loader job of the program (Loader.Start) and
-        every factor of CONST_FACTORS the closest robot - loader distance (Report.Core.Stretched_Distance); for the job that
-        comes closest, the first factor at which it falls below each bound (Loader_Free + Tracking_Margin, Loader_Free, the
-        acceptance's hard floor, contact), bisected to CONST_FACTOR_RESOLUTION; and the take's gate (F15): the loader heights
+        The interlock I8 with the loader slowed and with the robot slowed (a pool job): for every parallel loader job of the
+        program (Loader.Start) the closest robot - loader distance (Report.Core.Stretched_Distance) at every factor of
+        CONST_FACTORS (the job slowed) and every speed override of CONST_OVERRIDES (the robot's lines in the job's window slowed,
+        F16); for the job that comes closest in each, the first slow-down at which it falls below each bound (Loader_Free +
+        Tracking_Margin, Loader_Free, the acceptance's hard floor, contact), bisected to CONST_FACTOR_RESOLUTION; the insert's gate
+        (F16): the exit leg before J_INSERT starts, the job's first move, the exit point's distance to all J_INSERT sweeps
+        (Program.Check.Swept_Pairs); and the take's gate (F15): the loader heights
         at home Y that keep the take's spline clear (Report.Core.Clear_Height), the spline's start against J_RETURN_Y's end.
 
     Args:
@@ -281,26 +292,39 @@ def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.An
     cell, _, program, tr, _, _, _ = Load(version, trajectories)
     model, kinematics, collision = Planning_Tools(cell)
     jobs = [text[len('Loader.Start('):-1] for text in tr.Segment_Command if text.startswith('Loader.Start(')]
-    out: tp.Dict[str, tp.Any] = {'jobs': jobs, 'rows': {}, 'first': {}, 'bounds': {}}
+    out: tp.Dict[str, tp.Any] = {'jobs': jobs, 'rows': {}, 'first': {}, 'bounds': {}, 'robot': {'rows': {}, 'first': {}}}
     if not jobs:
         return out
-    for job in jobs:
-        out['rows'][job] = [(f,) + Stretched_Distance(tr, job, f, kinematics, collision) for f in CONST_FACTORS]
-    worst = min(jobs, key=lambda j: min(r[1] for r in out['rows'][j]))
-    out['worst'] = worst
     out['bounds'] = {'Loader_Free + Tracking_Margin (I8)': cell.Loader_Free + cell.Tracking_Margin, 'Loader_Free (item 16)': cell.Loader_Free,
                      'Acceptance.Loader_Distance (item 11)': cell.Loader_Distance, 'contact': 0.0}
-    for name, bound in out['bounds'].items():
-        rows = [r for r in out['rows'][worst] if r[0] >= 1.0]
-        fail = next((r[0] for r in rows if r[1] < bound), None)
-        if fail is None:
-            out['first'][name] = None
-            continue
-        lo, hi = max([r[0] for r in rows if r[0] < fail] + [1.0]), fail
-        while hi - lo > CONST_FACTOR_RESOLUTION:
-            mid = 0.5 * (lo + hi)
-            lo, hi = (mid, hi) if Stretched_Distance(tr, worst, mid, kinematics, collision)[0] >= bound else (lo, mid)
-        out['first'][name] = (hi, Stretched_Distance(tr, worst, hi, kinematics, collision))
+    for lane, factors, into in (('loader', CONST_FACTORS, out), ('robot', [1.0 / o for o in CONST_OVERRIDES], out['robot'])):
+        for job in jobs:
+            into['rows'][job] = [(f,) + Stretched_Distance(tr, job, f, kinematics, collision, lane) for f in factors]
+        worst = min(jobs, key=lambda j: min(r[1] for r in into['rows'][j]))
+        into['worst'] = worst
+        for name, bound in out['bounds'].items():
+            rows = sorted(r for r in into['rows'][worst] if r[0] >= 1.0)
+            fail = next((r[0] for r in rows if r[1] < bound), None)
+            if fail is None:
+                into['first'][name] = None
+                continue
+            lo, hi = max([r[0] for r in rows if r[0] < fail] + [1.0]), fail
+            while hi - lo > CONST_FACTOR_RESOLUTION * hi:
+                mid = 0.5 * (lo + hi)
+                lo, hi = (mid, hi) if Stretched_Distance(tr, worst, mid, kinematics, collision, lane)[0] >= bound else (lo, mid)
+            into['first'][name] = (hi, Stretched_Distance(tr, worst, hi, kinematics, collision, lane))
+    texts = tr.Segment_Command
+    if 'Loader.Start(J_INSERT)' in texts:
+        k = texts.index('Loader.Start(J_INSERT)')
+        leg = max(m for m in range(k) if texts[m].startswith('Robot.Move'))
+        command = next(c for segment in program.Segments for c in segment.Commands if c.Text == texts[leg])
+        a, _, last = Job_Window(tr, 'J_INSERT')
+        moved = next(i for i in range(a, len(tr.T)) if tr.Loader_Y[i] != tr.Loader_Y[i - 1] or tr.Loader_Z[i] != tr.Loader_Z[i - 1])
+        loader = sorted(set(range(a, last + 1, CONST_GATING_STRIDE)) | {last})
+        distances, _ = Swept_Pairs(Loader_Actual_Trajectory(tr, model), kinematics, collision, [a], loader, 0.05)
+        out['insert'] = {'set': command.Target if command.Kind == 'MoveSpline' else command.Text, 'point': command.Path_End or command.Target,
+                         'duration': float(tr.Segment_End[leg] - tr.Segment_Start[leg]) * CONST_DT, 'arrived': float(tr.T[tr.Segment_End[leg] - 1]),
+                         'moved': float(tr.T[moved]), 'distance': float(distances.min())}
     take = next((t for t in tr.Segment_Command if t.startswith('Robot.MoveSpline(W_TO_TAKE,')), None)
     if take is not None:
         k = tr.Segment_Command.index(take)
@@ -315,12 +339,13 @@ def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.An
 def Swept_Analysis(job: tp.Tuple[str, str, tp.Optional[str]]) -> tp.Tuple[str, str, tp.Any]:
     """
     Description:
-        The MG06 shared zone of a program (a pool job; owner 2026-10-25): the volume the loader sweeps in J_INSERT and J_FETCH
-        where its actuators put it, grown by Loader_Free (Report.Core.Swept_Zone) - all of it ('swept'), or its part at MG06,
-        the poses with the loader's Y at L_TRAVEL's ('mg06') - and who is in it when (the trajectory, every 20 ms).
+        A shared zone of a program (a pool job; owner 2026-10-25, F16): the volume the loader sweeps in its jobs
+        (CONST_SWEPT_JOBS) where its actuators put it, grown by Loader_Free (Report.Core.Swept_Zone), at one Y of
+        CONST_SWEPT_PARTS - the jaw zone at L_HOME's, the MG06 corridor at L_TRAVEL's - and who is in it when (the trajectory,
+        every 20 ms).
 
     Args:
-        (1) job [Tuple<string>]: (the program, 'swept' or 'mg06', the trajectories' folder or None).
+        (1) job [Tuple<string>]: (the program, 'jaw' or 'corridor', the trajectories' folder or None).
 
     Returns:
         (1) parameter [Tuple]: (the program, the part, the Swept_Zone_Str).
@@ -329,8 +354,8 @@ def Swept_Analysis(job: tp.Tuple[str, str, tp.Optional[str]]) -> tp.Tuple[str, s
     version, part, trajectories = job
     cell, _, program, tr, _, _, _ = Load(version, trajectories)
     _, kinematics, collision = Planning_Tools(cell)
-    at_y = program.Constants.Loader[CONST_MG06_LOADER].Y if part == 'mg06' else None
-    return version, part, Swept_Zone(tr, kinematics, collision, CONST_SWEPT_JOBS, cell.Loader_Free, at_y)
+    at_y = program.Constants.Loader[CONST_SWEPT_PARTS[part][1]].Y
+    return version, part, Swept_Zone(tr, kinematics, collision, CONST_SWEPT_JOBS, cell.Loader_Free, at_y, bodies=CONST_ZONE_BODIES['jaw zone'])
 
 
 def _Job(job: tp.Tuple[str, tp.Any]) -> tp.Any:
@@ -600,13 +625,14 @@ def Section_Conditions(c: Context_Cls) -> tp.List[str]:
     rows.append(['loader handshake [C]', kinds['taught']['loader'], kinds['optimized']['loader']])
     rows.append(['robot Wait lines [C]', kinds['taught']['waits'], kinds['optimized']['waits']])
     lines += _Table(['condition', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']], rows)
-    lines += ['', 'The interlocks I1-I8 (SPEC §7.11), verified on each built trajectory (`Optimizer.Measure.Interlocks`) [K]:', '']
+    lines += ['', 'The interlocks I1-I10 (SPEC §7.11), verified on each built trajectory (`Optimizer.Measure.Interlocks`) [K]:', '']
     rows = []
     for (name, ok_a, text_a), (_, ok_b, text_b) in zip(c.Analyses['taught']['interlocks'], c.Analyses['optimized']['interlocks']):
         rows.append([name, ('holds' if ok_a else 'FAILS') + ': ' + text_a, ('holds' if ok_b else 'FAILS') + ': ' + text_b])
     lines += _Table(['interlock', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']], rows)
     lines += ['', 'What differs: the timing method of the FREE transfers (MoveJ through taught vias against planned splines), the loader '
-              'handshake (sequential Run against parallel Start / WaitDone, every robot motion gated by a WaitDone, F15). The model, '
+              'handshake (sequential Run against parallel Start / WaitDone; every parallel part gated by the program\'s order, F15, F16). '
+              'The model, '
               'the limits, the tools, the '
               'payload, the LOCKED motions and the signals are the same.']
     return lines
@@ -759,44 +785,45 @@ def Section_Interactions(c: Context_Cls) -> tp.List[str]:
     lines += ['', 'Planning clearance `Clearance.Robot` %.0f mm, free transfers `Loader_Free` %.0f mm + `Tracking_Margin` %.0f mm [C]. A '
               'pair always in contact by design reads "always by design"; the robot\'s mount is not measured.' % (1000 * c.Cell.Clearance,
               1000 * c.Cell.Loader_Free, 1000 * c.Cell.Tracking_Margin), '', '### Shared zones', '']
-    lo, hi = c.Zones['jaw zone']
-    lines.append('- **jaw zone**: x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m: the box of the loader\'s jaws at home, open and clamped, grown by '
-                 'Loader_Free %.0f mm (Report.Core CONST_ZONE_BODIES) [K, M].' % (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2],
-                                                                                  1000 * c.Cell.Loader_Free))
     zone = c.Analyses['optimized']['swept']
-    lines.append('- **MG06 shared zone** (owner, 2026-10-25): the volume the loader (its carriages, jaws and the PCB in them) sweeps in '
-                 '%s, where its actuators put it, grown by Loader_Free %.0f mm (`Report.Core.Swept_Zone`: %d poses, one per %.0f mm cell '
-                 'of (Y, Z, jaw); the robot is in it when an exact distance to one pose is below Loader_Free) [K, M]. It includes the '
-                 'jobs\' start poses - the loader at home and parked - so the robot\'s handover and take are in it too; **its part at '
-                 'MG06** keeps only the poses with the loader at the MG06 Y (%d poses; bounding box x %.3f..%.3f, y %.3f..%.3f, z '
-                 '%.3f..%.3f m).' % (', '.join(CONST_SWEPT_JOBS), 1000 * c.Cell.Loader_Free, len(zone['swept'].Poses), 500 * c.Cell.Loader_Free,
-                                     len(zone['mg06'].Poses), *zone['mg06'].Box[:, 0], *zone['mg06'].Box[:, 1], *zone['mg06'].Box[:, 2]))
-    lines += ['', 'Who is in a zone when [K for the swept zones, every 20 ms; P for the jaw zone: a point of an object\'s collision geoms '
+    lines.append('The shared zones are the volume the loader\'s jaws and the PCB in them sweep in its jobs (%s), where its '
+                 'actuators put it, grown by Loader_Free %.0f mm (`Report.Core.Swept_Zone`: one pose per %.0f mm cell of (Y, Z, jaw); the '
+                 'robot is in a zone when an exact distance to one of its poses is below Loader_Free) [K, M], split by the loader\'s Y '
+                 '(owner, 2026-10-25; the carriages, which reach far above and below the jaws, are the gating rule\'s and I8\'s):'
+                 % (', '.join(CONST_SWEPT_JOBS), 1000 * c.Cell.Loader_Free, 500 * c.Cell.Loader_Free))
+    lines += ['- **%s** (the loader at %s\'s Y): %d poses, bounding box x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m.'
+              % (title, at, len(zone[part].Poses), *zone[part].Box[:, 0], *zone[part].Box[:, 1], *zone[part].Box[:, 2])
+              for part, (title, at) in CONST_SWEPT_PARTS.items()]
+    lo, hi = c.Zones['jaw zone']
+    lines.append('- the **jaws\' box** (a cross-check in physics): x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m, the box of the loader\'s jaws '
+                 'at home, open and clamped, grown by Loader_Free (Report.Core CONST_ZONE_BODIES) [K, M].' % (lo[0], hi[0], lo[1], hi[1],
+                                                                                                             lo[2], hi[2]))
+    lines += ['', 'Who is in a zone when [K for the swept zones, every 20 ms; P for the jaws\' box: a point of an object\'s collision geoms '
               'inside the box]. An overlap is the robot and the loader in the zone together; a moving overlap, either of them moving then:', '']
     rows = []
     for v in CONST_VERSIONS:
         series, tr = c.Analyses[v]['physics'], c.Trajectories[v]
         robot_moving, loader_moving = Moving(tr.Robot_Q), Moving(np.c_[tr.Loader_Y, tr.Loader_Z, tr.Jaw])
         robot, loader = series.Occupied['robot in jaw zone'], series.Occupied['loader in jaw zone']
-        moving = robot_moving[series.Samples] | loader_moving[series.Samples]
-        rows.append([CONST_PROGRAM_NAMES[v], 'jaw zone [P]', _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)),
-                     _Spans_Text(Spans(robot & loader, series.T)), _Spans_Text(Spans(robot & loader & moving, series.T))])
-        for part, title in CONST_SWEPT_PARTS.items():
+        for part, (title, _) in CONST_SWEPT_PARTS.items():
             z = c.Analyses[v]['swept'][part]
             t = tr.T[z.Samples]
             moving = robot_moving[z.Samples] | loader_moving[z.Samples]
             rows.append([CONST_PROGRAM_NAMES[v], title + ' [K]', _Spans_Text(Spans(z.Robot, t)), _Spans_Text(Spans(z.Loader, t)),
                          _Spans_Text(Spans(z.Robot & z.Loader, t)), _Spans_Text(Spans(z.Robot & z.Loader & moving, t))])
+        moving = robot_moving[series.Samples] | loader_moving[series.Samples]
+        rows.append([CONST_PROGRAM_NAMES[v], 'jaws\' box [P]', _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)),
+                     _Spans_Text(Spans(robot & loader, series.T)), _Spans_Text(Spans(robot & loader & moving, series.T))])
     lines += _Table(['program', 'zone', 'robot', 'loader', 'robot and loader', 'moving overlap'], rows)
     lines += ['', 'The interlocks that keep the overlaps safe (SPEC §7.11): in the jaw zone I1 (the handover starts with the loader home and '
-              'open), I2 (the loader moves only after the handover ends), I7 (the take starts only after the loader is home) and I9 (the '
-              'robot moves to the take only after J_RETURN_Y); in the MG06 shared zone I3 (the fork closes MG06 only after the park), I6 '
-              '(the loader fetches only after MG06 is open and the fork gone), I4 and I5 (nothing moves at MG06 during the test), and the '
-              'gating rule (no robot motion comes into a running job\'s volume, below). Their times on each trajectory: section 2. A moving '
-              'overlap at home is the handover or the take, by design: the loader\'s jaws close on the PCB the robot holds, or open under it, '
-              'and its Z moves at home while the robot is at the jaws only in those LOCKED steps. In the swept zone the loader is always '
-              'on its corridor (home, park and MG06 are all on it), so "robot and loader" there is the robot\'s own time in the zone.', '',
-              '### Synchronization', '']
+              'open), I2 (the loader moves only after the handover ends), I10 (J_INSERT starts only after the robot\'s motion out of the '
+              'handover), I7 (the take starts only after the loader is home) and I9 (the robot moves to the take only after J_RETURN_Y); in '
+              'the MG06 corridor I3 (the fork closes MG06 only after the park), I6 (the loader fetches only after MG06 is open and the fork '
+              'gone), I4 and I5 (nothing moves at MG06 during the test); everywhere the gating rule (in a parallel part neither object comes '
+              'where the other has been, below). Their times on each trajectory: section 2. A moving overlap in the jaw zone is the handover '
+              'or the take, by design: the loader\'s jaws close on the PCB the robot holds, or open under it, while the robot is at the jaws '
+              'only in those LOCKED steps. The loader is in a zone whenever its Y and Z are on one of the zone\'s poses, so "robot and loader" '
+              'is the robot\'s own time in the zone while the loader is there.', '', '### Synchronization', '']
     for v in CONST_VERSIONS:
         tr = c.Trajectories[v]
         lines += ['**%s** - the robot\'s waits (its segments that are not motions) and the handshake in order [K]:' % CONST_PROGRAM_NAMES[v], '']
@@ -831,7 +858,8 @@ def _Spans_Text(spans: tp.List[tp.Tuple[float, float]]) -> str:
 def Section_Stretch(c: Context_Cls) -> tp.List[str]:
     """
     Description:
-        The loader slowed against I8 (Stretch_Analysis) and the gate of the take (F15: the gating rule, I9, the clear height).
+        The loader slowed and the robot slowed against I8 (Stretch_Analysis) and the gates (the gating rule; F15: the take, I9, the
+        clear height; F16: the insert, I10).
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -841,38 +869,52 @@ def Section_Stretch(c: Context_Cls) -> tp.List[str]:
     """
 
     s = c.Stretch
-    lines = ['### A slower (or faster) loader', '', 'The Default program runs every loader job with Loader.Run: the robot does not move while '
-             'the loader does, so the loader\'s speed changes only the cycle time. In the Optimized program the robot moves while the '
-             'jobs %s run. Each job slowed by a factor (every move and hold of the job takes factor times as long; the robot\'s lines run '
+    cell = lambda r: _Distance_Text((r[1], r[2], r[3]), 0.05) if r[1] < 0.05 else '> 50 mm'
+    lines = ['### A slower (or faster) loader, a slower robot', '', 'The Default program runs every loader job with Loader.Run: the robot does '
+             'not move while the loader does, so either\'s speed changes only the cycle time. In the Optimized program the robot moves while '
+             'the jobs %s run. Each job slowed by a factor (every move and hold of the job takes factor times as long; the robot\'s lines run '
              'as programmed and the robot holds at its WaitDone until the job ends); the closest robot - loader distance over the '
              'job, the loader posed where its actuators put it, exact every 4 ms (`Report.Core.Stretched_Distance`) [K]:'
              % ', '.join(s['jobs']), '']
-    header = ['factor'] + s['jobs']
     rows = []
     for k, f in enumerate(CONST_FACTORS):
-        rows.append(['%.2f (%+.0f %%)' % (f, 100 * (f - 1))] + [_Distance_Text((r[1], r[2], r[3]), 0.05) if r[1] < 0.05 else '> 50 mm'
-                                                               for r in (s['rows'][j][k] for j in s['jobs'])])
-    lines += _Table(header, rows)
-    lines += ['', 'The first slow-down of %s (the job that comes closest) at which the distance falls below each bound, up to %.0f x '
-              '(bisected to %.1f %%) [K, C]:' % (s['worst'], CONST_FACTORS[-1], 100 * CONST_FACTOR_RESOLUTION), '']
+        rows.append(['%.2f (%+.0f %%)' % (f, 100 * (f - 1))] + [cell(s['rows'][j][k]) for j in s['jobs']])
+    lines += _Table(['factor'] + s['jobs'], rows)
+    lines += ['', 'The robot slowed by a speed override (owner, F16): its lines from each job\'s Loader.Start to its WaitDone take 1 / '
+              'override as long, the job runs as programmed and the loader holds at its end; the same distance [K]:', '']
+    rows = []
+    for k, o in enumerate(CONST_OVERRIDES):
+        rows.append(['%.0f %%' % (100 * o)] + [cell(s['robot']['rows'][j][k]) for j in s['jobs']])
+    lines += _Table(['override'] + s['jobs'], rows)
+    lines += ['', 'The first slow-down at which the job that comes closest falls below each bound (the loader up to %.0f x, the robot down to '
+              'a %.0f %% override; bisected to %.1f %%) [K, C]:' % (CONST_FACTORS[-1], 100 * CONST_OVERRIDES[0], 100 * CONST_FACTOR_RESOLUTION), '']
     rows = []
     for name, bound in s['bounds'].items():
-        first = s['first'].get(name)
-        rows.append([name, '%.1f mm' % (1000 * bound), 'none' if first is None else '%+.1f %%: %.2f mm (%s)' % (
-            100 * (first[0] - 1), 1000 * first[1][0], first[1][2])])
-    lines += _Table(['bound', 'value', 'first failing slow-down'], rows)
-    lines += ['', '### The gate of the take (F15)', '', 'The gating rule (`Program.Check.Gating_Faults`): a robot motion that runs while a '
-              'parallel loader job may run (after its Loader.Start, before its Loader.WaitDone) must not come within Loader_Free of a '
-              'pose the job sweeps (the loader where its actuators put it); a motion that starts inside such a volume and only leaves '
-              'it is listed with its lead over the loader [K]:', '']
-    rows = [[CONST_PROGRAM_NAMES[v], '`%s`' % f.Motion, f.Job, f.Kind, '%.2f mm (%s)' % (1000 * f.Distance, f.Pair),
-             '%.2f s' % f.Lead if f.Kind == 'leaves'
-             else 'FAULT'] for v in CONST_VERSIONS for f in c.Analyses[v]['gating']]
-    lines += _Table(['program', 'motion', 'job', 'kind', 'closest to the volume', 'lead / verdict'], rows) if rows else ['none']
+        first, robot = s['first'].get(name), s['robot']['first'].get(name)
+        rows.append([name, '%.1f mm' % (1000 * bound), 'none' if first is None else '%s %+.1f %%: %.2f mm (%s)' % (
+            s['worst'], 100 * (first[0] - 1), 1000 * first[1][0], first[1][2]), 'none' if robot is None else '%s below %.1f %%: %.2f mm (%s)' % (
+            s['robot']['worst'], 100 / robot[0], 1000 * robot[1][0], robot[1][2])])
+    lines += _Table(['bound', 'value', 'loader slowed: first failure', 'robot override: first failure'], rows)
+    lines += ['', '### The gates (F15, F16)', '', 'The gating rule (`Program.Check.Gating_Faults`, symmetric): while a parallel loader job may run '
+              '(from its Loader.Start to the end of its Loader.WaitDone) the robot, moving or holding, stays at least Loader_Free from every '
+              'pose the job sweeps (the loader where its actuators put it) - otherwise one object comes where the other has been and their '
+              'separation rests on timing: on the loader\'s speed when the robot comes later ("robot enters"), on the robot\'s when the '
+              'loader does ("loader enters"). The order must come from the program: the robot out of the way before the job\'s start, or '
+              'the job\'s WaitDone before the robot\'s motion in [K]:', '']
+    rows = [[CONST_PROGRAM_NAMES[v], f.Job, f.Kind, '`%s`' % f.Motion, '%.2f-%.2f s' % f.Robot_Span, '%.2f mm (%s)' % (1000 * f.Distance, f.Pair),
+             '%.2f s' % f.Lead] for v in CONST_VERSIONS for f in c.Analyses[v]['gating']]
+    lines += _Table(['program', 'job', 'kind', 'the robot\'s line', 'the robot there', 'closest', 'apart by'], rows) if rows else \
+        ['No fault in either program: no parallel part rests on timing.']
+    insert = s.get('insert')
+    if insert is not None:
+        lines += ['', 'The insert (F16): `Robot.MoveSpline(%s)` to %s (%.3f s), then `Loader.Start(J_INSERT)`: the job\'s first loader move at '
+                  '%.3f s follows the robot\'s arrival at %.3f s (I10, section 2); %s lies %s from everything J_INSERT sweeps [K].' % (
+                      insert['set'], insert['point'], insert['duration'], insert['moved'], insert['arrived'], insert['point'],
+                      '%.2f mm' % (1000 * insert['distance']) if insert['distance'] < 0.05 else 'more than 50 mm')]
     t = s.get('take')
     if t is not None:
         best, found = s['clear']
-        lines += ['', 'The take: `Loader.Start(J_RETURN_Y)`, `Loader.WaitDone(J_RETURN_Y)`, `Loader.Start(J_RETURN_Z)`, '
+        lines += ['', 'The take (F15): `Loader.Start(J_RETURN_Y)`, `Loader.WaitDone(J_RETURN_Y)`, `Loader.Start(J_RETURN_Z)`, '
                   '`Robot.MoveSpline(W_TO_TAKE)` (%.3f s), `Loader.WaitDone(J_RETURN_Z)`: the spline starts at %.3f s, after J_RETURN_Y\'s '
                   'last loader move at %.3f s (I9, section 2), and ends before J_RETURN_Z\'s at %.3f s [K]. With the loader at its home Y '
                   'the whole spline keeps %s from it at every Z from home to the travel height (`Report.Core.Clear_Height`, a static '
@@ -1023,7 +1065,7 @@ def Section_Figures(c: Context_Cls, figures: tp.Dict[str, tp.List[str]]) -> tp.L
               'the six joints\' change (`Report.Core.Joint_Arc`; section 3 gives the per-joint travel sum of |dq|).', '']
     titles = {'summary': 'Default vs Optimized', 'timeline': 'the timeline of every moving object, waits and shared zones',
               'joints': 'the joint angles', 'paths': 'the TCP and PCB paths, top and side', 'clearance': 'the clearance per pair over time',
-              'critical_path': 'the cycle by its critical path', 'stretch': 'I8 against the loader\'s speed'}
+              'critical_path': 'the cycle by its critical path', 'stretch': 'I8 against the loader\'s and the robot\'s speed'}
     for name in figures:
         lines += ['![%s](%s_light.png)' % (titles.get(name, name), name), '']
     return lines
@@ -1093,9 +1135,9 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
         tilt[v] = math.degrees(float(np.max(Tilt(rec.Qpos[:, q0 + 3:q0 + 7])[cups])))
     i8 = s['first'].get('Loader_Free + Tracking_Margin (I8)')
     hit = s['first'].get('contact')
-    gone = [f for f in c.Analyses['optimized']['gating'] if f.Kind == 'leaves']
-    leaves = '; '.join('`%s` starts in %s\'s way and leaves it %.2f s ahead of the loader [K]: it rests on the robot starting promptly '
-                       'after Loader.Start (a controller latency of that size would meet the loader)' % (f.Motion, f.Job, f.Lead) for f in gone)
+    faults = c.Analyses['optimized']['gating']
+    timed = '; '.join('%s: the %s at `%s`, %.2f s apart [K]: it rests on timing' % (f.Job, f.Kind, f.Motion, f.Lead) for f in faults)
+    r8, rhit = s['robot']['first'].get('Loader_Free + Tracking_Margin (I8)'), s['robot']['first'].get('contact')
     rows = [['cycle time [K]', '%.3f s' % ta.T[-1], '%.3f s' % tb.T[-1], 'Optimized, %.3f s (%.1f %%) shorter' % (ta.T[-1] - tb.T[-1],
                                                                                                              100 * (1 - tb.T[-1] / ta.T[-1]))],
             ['throughput = 3600 s / cycle [K]', '%.1f PCB/h' % (3600 / ta.T[-1]), '%.1f PCB/h' % (3600 / tb.T[-1]), 'Optimized, %+.1f %%' % (
@@ -1111,16 +1153,21 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
             ['tolerance to a slower loader [K]', 'any (sequential)', ('any up to %.0f x (gated, F15)' % CONST_FACTORS[-1]) if i8 is None else
              '%+.1f %% before I8, %s before contact' % (100 * (i8[0] - 1), '-' if hit is None else '%+.1f %%' % (100 * (hit[0] - 1))),
              'equal' if i8 is None else 'Default'],
+            ['tolerance to a slower robot (speed override) [K]', 'any (sequential)', ('any down to %.0f %% (gated, F15, F16)' % (
+                100 * CONST_OVERRIDES[0])) if r8 is None else 'below %.1f %% breaks I8, below %s a contact' % (
+                100 / r8[0], '-' if rhit is None else '%.1f %%' % (100 / rhit[0])), 'equal' if r8 is None else 'Default'],
             ['acceptance checks (SPEC §10.1) [P]', '%d/%d pass' % (sum(1 for x in c.Analyses['taught']['acceptance'] if x[1]),
                                                                             len(c.Analyses['taught']['acceptance'])),
              '%d/%d pass' % (sum(1 for x in c.Analyses['optimized']['acceptance'] if x[1]), len(c.Analyses['optimized']['acceptance'])), 'equal'],
-            ['re-teaching on a real cell [C]', 'the taught points only', '+ P_LOADER_WAIT, spline via points, MoveSpline on the AUBO', 'Default']]
+            ['re-teaching on a real cell [C]', 'the taught points only', '+ P_LOADER_WAIT (waiting and exit point), spline via points, '
+             'MoveSpline on the AUBO', 'Default']]
     lines = ['## 9. Verdict', '']
     lines += _Table(['metric', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized'], 'better'], rows)
     lines += ['', '**Gain.** The optimized program is %.1f s (%.1f %%) shorter per cycle; the whole gain is in the FREE transfers and the '
               'parallel loader (section 6); the LOCKED process parts are identical.' % (ta.T[-1] - tb.T[-1], 100 * (1 - tb.T[-1] / ta.T[-1])), '',
               '**Risks, highest first.**', '',
-              '1. **%s**' % (leaves if leaves else 'No robot motion relies on the loader\'s timing (the gating rule holds, section 4).'),
+              '1. **%s**' % (timed if timed else 'No parallel part rests on timing (the gating rule holds both ways, section 4): a slower '
+                             'loader or a speed override only lengthens the cycle.'),
               '2. **A smaller margin to the loader in the free transfers**: %s against %s in the Default program [P]; a model error or a '
               'tracking lag on the real cell eats it first.' % (free(fb), free(fa)),
               '3. **A larger carried tilt**: the PCB on the cups tilts up to %.1f deg in the optimized program against %.1f deg [P] (the '
@@ -1253,8 +1300,8 @@ def Figure_Timeline(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
         The timeline of every moving object in both programs, a panel each on one time axis: a bar where it moves, the robot's
-        waits hatched by kind, the PCB's holder, the robot in the jaw zone [P] and in the MG06 shared zone's part at MG06 [K], the
-        loader there [K]; the cycle time annotated.
+        waits hatched by kind, the PCB's holder, the robot in the jaw zone and in the MG06 corridor, the loader there [K]; the
+        cycle time annotated.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -1268,11 +1315,11 @@ def Figure_Timeline(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     figure, axes = _Figure(theme, (CONST_DOUBLE, 5.6), 2, 1, sharex=True)
     end = max(c.Trajectories[v].T[-1] for v in CONST_VERSIONS)
     for p, (axis, v) in enumerate(zip(axes, CONST_VERSIONS)):
-        tr, series, zone = c.Trajectories[v], c.Analyses[v]['physics'], c.Analyses[v]['swept']['mg06']
+        tr, zone, jaw = c.Trajectories[v], c.Analyses[v]['swept']['corridor'], c.Analyses[v]['swept']['jaw']
         lanes = []
-        lanes.append(('loader in MG06 part', Spans(zone.Loader, tr.T[zone.Samples]), theme.Object['loader Y'], 0.45))
-        lanes.append(('robot in MG06 part', Spans(zone.Robot, tr.T[zone.Samples]), theme.Object['robot'], 0.45))
-        lanes.append(('robot in jaw zone', Spans(series.Occupied['robot in jaw zone'], series.T), theme.Object['robot'], 0.45))
+        lanes.append(('loader in MG06 corridor', Spans(zone.Loader, tr.T[zone.Samples]), theme.Object['loader Y'], 0.45))
+        lanes.append(('robot in MG06 corridor', Spans(zone.Robot, tr.T[zone.Samples]), theme.Object['robot'], 0.45))
+        lanes.append(('robot in jaw zone', Spans(jaw.Robot, tr.T[jaw.Samples]), theme.Object['robot'], 0.45))
         for name, values in reversed(list(Object_Channels(tr).items())):
             lanes.append((name, Spans(Moving(values), tr.T), theme.Object[name], 1.0))
         for y, (name, spans, colour, alpha) in enumerate(lanes):
@@ -1342,7 +1389,7 @@ def Figure_Paths(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
         The robot TCP's and the PCB's paths from the top (x-y) and from the side (x-z) in physics [P], both programs; the jaw
-        zone and the MG06 shared zone's part at MG06 (its bounding box) dashed.
+        zone and the MG06 corridor (their bounding boxes) dashed.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -1355,8 +1402,7 @@ def Figure_Paths(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     from matplotlib.patches import Rectangle
     figure, axes = _Figure(theme, (CONST_DOUBLE, 6.4), 2, 2)
     q0 = c.Address['pcb_free'][0]
-    part = c.Analyses['optimized']['swept']['mg06'].Box
-    boxes = {'jaw zone': c.Zones['jaw zone'], 'MG06 part (its box)': (part[0], part[1])}
+    boxes = {title: tuple(c.Analyses['optimized']['swept'][part].Box) for part, (title, _) in CONST_SWEPT_PARTS.items()}
     for row, (name, get) in enumerate((('TCP', lambda r: r.Tcp), ('PCB', lambda r: r.Qpos[:, q0:q0 + 3]))):
         for col, (a, b) in enumerate(((0, 1), (0, 2))):
             axis = axes[row, col]
@@ -1377,7 +1423,7 @@ def Figure_Paths(c: Context_Cls, theme: Theme_Str) -> tp.Any:
             Panel_Letter(axis, 2 * row + col, theme)
     from matplotlib.lines import Line2D
     handles = axes[0, 0].get_legend_handles_labels()[0] + [Line2D([], [], color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (3, 2)))]
-    axes[0, 0].legend(handles, [CONST_PROGRAM_NAMES[v] for v in CONST_VERSIONS] + ['zones: jaw zone, MG06 part (boxes)'], loc='lower left',
+    axes[0, 0].legend(handles, [CONST_PROGRAM_NAMES[v] for v in CONST_VERSIONS] + ['zones: jaw zone, MG06 corridor (boxes)'], loc='lower left',
                       fontsize=6.5)
     return figure
 
@@ -1467,8 +1513,9 @@ def Figure_Critical_Path(c: Context_Cls, theme: Theme_Str) -> tp.Any:
 def Figure_Stretch(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
-        The I8 check against a slower or faster loader [K]: per parallel job of the Optimized program the closest robot - loader
-        distance against the job's slow-down (Report.Core.Stretched_Distance), the bounds as lines.
+        The I8 check against a slower or faster loader and a slower robot [K]: per parallel job of the Optimized program the
+        closest robot - loader distance (Report.Core.Stretched_Distance) against the job's slow-down (a) and the robot's speed
+        override (b), the bounds as lines.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -1479,25 +1526,30 @@ def Figure_Stretch(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
 
     s = c.Stretch
-    figure, axis = _Figure(theme, (CONST_DOUBLE * 0.8, 2.8))
+    figure, axes = _Figure(theme, (CONST_DOUBLE, 2.8), 1, 2, sharey=True)
     colours = [theme.Object[k] for k in ('robot', 'loader Y', 'loader jaws', 'MG06 lid/handle', 'PCB')]
     markers = ['o', 's', '^', 'D', 'v', 'P']
-    for k, job in enumerate(s['jobs']):
-        f = 100 * (np.array([r[0] for r in s['rows'][job]]) - 1)
-        far = np.array([r[1] for r in s['rows'][job]]) >= 0.05
-        d = np.minimum([1000 * r[1] for r in s['rows'][job]], 50.0) + 0.6 * (k - len(s['jobs']) / 2) * far
-        axis.plot(f, d, marker=markers[k % len(markers)], markersize=3, linewidth=1.2, color=colours[k % len(colours)], label=Label(job))
-    for k, ((name, bound), style) in enumerate(zip(s['bounds'].items(), [(0, (5, 3)), (0, (3, 2)), (0, (1, 2)), '-'])):
-        axis.axhline(1000 * bound, color=theme.Bound, linewidth=CONST_BOUND, linestyle=style)
-        axis.annotate(Label(name), (100, 1000 * bound), xytext=(0, 1.5 if k < 2 else (-7 if k == 3 else 1.5)), textcoords='offset points',
-                      ha='right', fontsize=5.5, color=theme.Ink_2)
-    axis.set_xlabel('job slowed by [%]')
-    axis.set_ylabel(r'closest robot$-$loader $d$ [mm]')
-
-    axis.set_ylim(-3, 53)
-    axis.set_title('%s: I8 against the loader\'s speed' % CONST_PROGRAM_NAMES['optimized'], loc='left')
+    panels = [(s['rows'], lambda f: 100 * (f - 1), 'job slowed by [%]', 'the loader\'s speed', (-55, 105)),
+              (s['robot']['rows'], lambda f: 100 / f, 'robot speed override [%]', 'the robot\'s speed', (105, 5))]
+    for p, (axis, (table, x, xlabel, title, limits)) in enumerate(zip(axes, panels)):
+        for k, job in enumerate(s['jobs']):
+            f = x(np.array([r[0] for r in table[job]]))
+            far = np.array([r[1] for r in table[job]]) >= 0.05
+            d = np.minimum([1000 * r[1] for r in table[job]], 50.0) + 0.6 * (k - len(s['jobs']) / 2) * far
+            axis.plot(f, d, marker=markers[k % len(markers)], markersize=3, linewidth=1.2, color=colours[k % len(colours)],
+                      label=Label(job) if p == 0 else None)
+        for k, ((name, bound), style) in enumerate(zip(s['bounds'].items(), [(0, (5, 3)), (0, (3, 2)), (0, (1, 2)), '-'])):
+            axis.axhline(1000 * bound, color=theme.Bound, linewidth=CONST_BOUND, linestyle=style)
+            if p == 0:
+                axis.annotate(Label(name), (100, 1000 * bound), xytext=(0, 1.5 if k < 2 else (-7 if k == 3 else 1.5)),
+                              textcoords='offset points', ha='right', fontsize=5.5, color=theme.Ink_2)
+        axis.set_xlabel(xlabel)
+        axis.set_xlim(*limits)
+        axis.set_title('%s: I8 against %s' % (CONST_PROGRAM_NAMES['optimized'], title), loc='left')
+        Panel_Letter(axis, p, theme)
+    axes[0].set_ylabel(r'closest robot$-$loader $d$ [mm]')
+    axes[0].set_ylim(-3, 53)
     figure.legend(loc='outside right center', fontsize=6, title='at 50 mm: farther\n(the cut; spread\napart to be seen)', title_fontsize=5.5)
-    axis.set_xlim(-55, 105)
     return figure
 
 
@@ -1577,6 +1629,10 @@ def main():
                                                    '`%s` %.1f %% slower breaks I8, %s slower is a contact' % (
                                                        context.Stretch.get('worst', '-'), 100 * (first[0] - 1),
                                                        '-' if hit is None else '%.1f %%' % (100 * (hit[0] - 1)))))
+    robot = context.Stretch['robot']['first'].get('Loader_Free + Tracking_Margin (I8)')
+    summary.append('- A slower robot: %s [K].' % ('no failure of I8 for any job down to a %.0f %% speed override (the insert started after '
+                                                  'the robot leaves, F16)' % (100 * CONST_OVERRIDES[0]) if robot is None else
+                                                  'below a %.1f %% override `%s` breaks I8' % (100 / robot[0], context.Stretch['robot']['worst'])))
     summary.append('')
     body = (sources + summary + Section_Same_Task(context) + [''] + Section_Conditions(context) + [''] + Section_Objects(context) +
             Section_Interactions(context) + [''] + Section_PCB(context) + [''] + Section_Cycle(context) + [''] +

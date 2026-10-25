@@ -59,11 +59,19 @@ Margins: [0.002, 0.003, 0.005]
 # Where the robot waits in a FREE transfer while its parallel jobs run, by transfer (named after its last FREE segment):
 # a point declared in Constants.yaml for the optimized program only (the taught program may not use it; it counts as used
 # for Constants.yaml's completeness through this list). The transfer runs to it at once, waits, and goes on to its end in
-# the first moment the loader allows (F9.8). P_LOADER_WAIT: 25 mm above P_LOADER_ABOVE along the plate normal, the nearest
-# with 3 mm plus the first margin to the loader over the whole fetch and return (measured 2026-10-24: 4.92 mm; 23 mm gave
-# 3.26 mm, 20 mm 0.85 mm).
+# the first moment the loader allows (F9.8). P_LOADER_WAIT: 50 mm above P_LOADER_ABOVE along the plate normal (F11; first
+# 25 mm, measured 2026-10-24 as the nearest with 3 mm plus the first margin to the loader then), 29.68 mm from the volumes
+# J_FETCH and J_RETURN_Y sweep (measured 2026-10-25).
 Waiting_Points:
   To_Take: P_LOADER_WAIT
+
+# Where the robot goes before a FREE transfer's first parallel job starts, by transfer: a point declared in Constants.yaml
+# for the optimized program only, as above. The transfer runs to it, the job starts only then (the robot program's order,
+# never timing: the gating rule, F16), and the transfer goes on to its end while the job runs. Source: the owner,
+# 2026-10-25 - P_LOADER_ABOVE lies 18.47 mm inside the volume J_INSERT's Z carriage sweeps at the travel height (the
+# robot left it only by starting at once); P_LOADER_WAIT is 29.68 mm from all of it (measured 2026-10-25).
+Exit_Points:
+  To_MG06: P_LOADER_WAIT
 
 # The largest tilt of the carried PCB from horizontal in a FREE transfer (B4) [deg]. Source: the owner, 2026-10-24 - 20 deg
 # costs no time (the cycle 57.108 s against 57.132 s at the first, assumed 30 deg; To_Output then tilts 17.73 deg instead of
