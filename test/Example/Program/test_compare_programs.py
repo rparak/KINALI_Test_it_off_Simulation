@@ -34,7 +34,7 @@ def test_the_programs_are_compared_in_a_table_and_a_figure(tmp_path_factory, run
     """
     Description:
         From an unrelated directory the script writes the table and the figure into --out: the cycle times (taught 70.404 s,
-        optimized 58.716 s; the legacy column retired in step 6), the per-joint travel, the paths, the loader's travel, the stops, a row per part
+        optimized 58.716 s), the per-joint travel, the paths, the loader's travel, the stops, a row per part
         of the process; exit 0, nothing in the working directory.
     """
 

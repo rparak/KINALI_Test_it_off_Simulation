@@ -208,10 +208,10 @@ class Script_Log_Cls(object):
         Example:
             Initialization:
                 # Initialization of the class.
-                Cls = Script_Log_Cls('run_cycle')
+                Cls = Script_Log_Cls('run_program')
 
             Features:
-                # The line goes to logger/run_cycle.log and to the screen.
+                # The line goes to logger/run_program.log and to the screen.
                 print(Cls.Line('[INFO] Done.'))
                 Cls.Close()
     """

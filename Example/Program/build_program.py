@@ -116,8 +116,7 @@ def main():
     Description:
         Build a program into its trajectory (Data/Generated/Trajectories/<program>.npz and .csv) and check it (the report:
         stdout and Data/Generated/Reports/<program>_check.txt); exit 0 when the check passes, 1 when it fails or the
-        program cannot be built. (The diagnostic against the legacy plan, --compare-legacy, was retired in step 6: commit
-        7a8560c8c16806739a02da8e989c2a2f65d1e41d.)
+        program cannot be built.
 
             .venv/bin/python Example/Program/build_program.py [--program FILE] [--out DIR]
     """

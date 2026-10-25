@@ -61,7 +61,7 @@ from Simulation.Report import Format_Program_Report, Check_Program_Acceptance
 Description:
     Initialization of constants.
 """
-# The programs by version; the exit codes (as Example/Simulation/run_cycle.py).
+# The programs by version; the exit codes (0 pass, 1 an acceptance failure, 2 the run cannot run).
 #   Unit [Dict<string, string>], [int]
 CONST_VERSIONS = {'taught': CONST_PROGRAM_YAML, 'optimized': CONST_OPTIMIZED_PROGRAM_YAML}
 CONST_EXIT_PASSED, CONST_EXIT_FAILED, CONST_EXIT_ERROR = 0, 1, 2

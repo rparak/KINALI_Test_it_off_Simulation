@@ -190,8 +190,6 @@ def test_the_points_are_the_spec_table(constants):
         own point, P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11);
         the handover's points, re-taught 0.4 mm along the jaw axis (B work, item 2: the PCB on the jaw centreline), within 2e-3
         rad of it (measured at most 1.05e-3 rad, P_LOADER_ABOVE's shoulder_lift).
-        (They were also rows of the legacy plan Data/Reference/cell_plan.npz to 1e-6 deg, checked until step 6 retired it:
-        commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d.)
     """
 
     retaught = {'P_LOADER_ABOVE', 'P_LOADER_APPROACH', 'P_LOADER_PLACE', 'P_LOADER_PICK', 'P_LOADER_EXIT'}
