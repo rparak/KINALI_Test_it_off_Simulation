@@ -39,8 +39,6 @@ import time
 import typing as tp
 # Importlib (Import machinery)
 import importlib.util
-# Numpy (Array computing) [pip3 install numpy]
-import numpy as np
 # MuJoCo (Multi-Joint dynamics with Contact) [pip3 install mujoco]
 import mujoco
 # Custom Lib.:

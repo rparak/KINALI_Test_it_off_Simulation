@@ -35,8 +35,6 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
 import argparse
 # Time (Time access)
 import time
-# Typing (Support for type hints)
-import typing as tp
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
 from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls
