@@ -158,6 +158,22 @@ Acceptance:
   # 2026-10-25 (step 6). [N], [N m] REQUIRED.
   Fork_Net_Force_Max: 290.0
   Handle_Load_Max: 13.5
+  # The loader's place into MG06 (B work, items 7 and 9; owner, 2026-10-25): while the jaws are closed at L_PLACE the
+  # PCB - holder contact force at most Place_Holder_Force (no press); after the jaws release it the deepest PCB - holder
+  # penetration at most Release_Penetration while it drops, and the settled one at most Rest_Penetration (measured at
+  # rest under its own weight, B.1: 0.0002 mm) + Settle_Margin. [N], [m] REQUIRED.
+  Place_Holder_Force: 1.0
+  Release_Penetration: 0.00005
+  Rest_Penetration: 0.0000002
+  Settle_Margin: 0.00001
+  # Seated (item 9): Seat_Time after the jaws release the PCB it rests on at least Seat_Supports of the holder's four
+  # supports, each within Seat_Height, slower than Seat_Speed, tilted less than Seat_Tilt from its place pose, touching no
+  # side guide and no jaw. Source: the owner, 2026-10-25. [s], [-], [m], [m/s], [deg] REQUIRED.
+  Seat_Time: 0.2
+  Seat_Supports: 3
+  Seat_Height: 0.00005
+  Seat_Speed: 0.001
+  Seat_Tilt: 0.1
 
 # Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
 # step 6 with the keypoint program, owner 2026-10-24).

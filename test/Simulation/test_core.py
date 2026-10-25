@@ -38,6 +38,7 @@ import pytest
 # Custom Lib.: the module under test
 #   ../Simulation/Core
 from Simulation.Core import (Cycle_Result_Str, Vacuum_Event_Str, Format_Report, Trajectory_Drive_Cls, Physics_Run_Cls, Hold_Str,
+                             Place_Physics_Str,
                              Check_Program_Acceptance, Step_Physics_Str, Program_Warnings, Format_Program_Report, Check_Acceptance)
 #   ../Configuration/Core
 from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
@@ -315,6 +316,12 @@ def _Program_Result():
                                      Robot_Loader=(-0.00001, 9.5, 'a / jaw_L'))]
     result.Fork_Force, result.Fork_Net_Force, result.Handle_Load = 291.0, 229.0, 9.38
     result.Joint_Torque, result.Torque_Limit = np.array([25.1, 52.3, 40.9, 18.2, 7.0, 20.5]), np.array([180.0, 180.0, 150.0, 60.0, 60.0, 60.0])
+    # The place into MG06 as measured 2026-10-25 (the taught program, B work).
+    result.Place = Place_Physics_Str(Release=17.130, Release_Z=0.217041, Seated_Z=0.216889, Drop=0.000152, Guide_Min=0.000177,
+                                     Guide_Pair='holder_14 at 17.128 s', Jaw_Closing=0.0, Holder_Force=0.0, Transient=-0.0000400, Settled=-0.0000002,
+                                     Supports=['holder_03', 'holder_04', 'holder_10'],
+                                     Support_Gaps={'holder_03': 0.0, 'holder_04': 0.0, 'holder_06': 0.000013, 'holder_10': 0.0}, Speed=0.0,
+                                     Tilt=np.radians(0.0117), Other_Contacts=[], Settle_Time=0.014, Centring=-0.000026, Regrip_Gap=0.000359)
     return result
 
 
@@ -331,6 +338,24 @@ def _Program_Result():
     (lambda r: setattr(r, 'Fork_Net_Force', 290.1), 'fork net force <= 290 N (sim. regression bound)'),
     (lambda r: setattr(r, 'Handle_Load', 13.51), 'hinge load <= 13.5 N m (sim. regression bound)'),
     (lambda r: r.Joint_Torque.__setitem__(5, 60.0), 'no robot actuator saturated (model limits)'),
+    (lambda r: setattr(r.Place, 'Jaw_Closing', 0.000011), 'place: no jaw closing at L_PLACE'),
+    (lambda r: setattr(r.Place, 'Holder_Force', 1.01), 'place: holder force <= 1.0 N (jaws closed)'),
+    (lambda r: setattr(r.Place, 'Transient', -0.0000501), 'release: penetration <= 0.05 mm while dropping'),
+    (lambda r: setattr(r.Place, 'Settled', -0.0000103), 'release: settled penetration <= 0.0102 mm'),
+    (lambda r: setattr(r.Place, 'Guide_Min', -0.000001), 'place: no side guide touched on the way down'),
+    (lambda r: setattr(r.Place, 'Supports', ['holder_03', 'holder_04']), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: r.Place.Support_Gaps.update(holder_06=0.0000501, holder_10=0.0000501), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: setattr(r.Place, 'Speed', 0.001), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: setattr(r.Place, 'Tilt', np.radians(0.1)), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: setattr(r.Place, 'Other_Contacts', ['holder_17']), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: setattr(r.Place, 'Other_Contacts', ['jaw_R']), 'PCB seated in MG06 within 0.2 s'),
+    (lambda r: setattr(r.Place, 'Centring', -0.000501), 'handover: centring <= 0.5 mm'),
+    (lambda r: setattr(r.Place, 'Regrip_Gap', 0.000199), 're-grip: ledge gap 0.3 +- 0.1 mm'),
+    (lambda r: setattr(r.Place, 'Regrip_Gap', 0.000401), 're-grip: ledge gap 0.3 +- 0.1 mm'),
+    (lambda r: setattr(r, 'Place', None), ['place: no jaw closing at L_PLACE', 'place: holder force <= 1.0 N (jaws closed)',
+                                           'release: penetration <= 0.05 mm while dropping', 'release: settled penetration <= 0.0102 mm',
+                                           'place: no side guide touched on the way down', 'PCB seated in MG06 within 0.2 s',
+                                           'handover: centring <= 0.5 mm', 're-grip: ledge gap 0.3 +- 0.1 mm']),
 ])
 def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
     """
@@ -339,13 +364,16 @@ def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
         holds), the PCB is never lost, every WaitDI gets the vacuum switch's input, the free transfers keep 1 mm from the loader (a
         LOCKED step at the loader may touch it), the slip <= 1.98 mm, the tracking error <= 0.0189 rad, the fork's net force <=
         290 N, the handle hinge load <= 13.5 N m, the free transfers >= Loader_Free (10 mm), no robot actuator saturated (a wrist
-        3 torque at its 60 N m limit); each violation (just beyond its bound) fails that one (the 1 mm floor also fails
-        Loader_Free).
+        3 torque at its 60 N m limit); B work (owner, 2026-10-25), the place into MG06: no jaw closing at L_PLACE, the holder
+        force <= 1.0 N, the release's penetration <= 0.05 mm and settled <= 0.0102 mm, no side guide touched, the PCB seated (too
+        few supports, a support too far, too fast, too tilted, touching a guide or a jaw), the handover's centring <= 0.5 mm,
+        the re-grip's ledge gap 0.3 +- 0.1 mm (both sides), and no place measured fails all eight; each violation (just beyond
+        its bound) fails that one (the 1 mm floor also fails Loader_Free).
     """
 
     result = _Program_Result()
     checks = Check_Program_Acceptance(result, Load_Cell_Configuration())
-    assert len(checks) == 20 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
+    assert len(checks) == 28 and all(c.Passed for c in checks), [(c.Name, c.Detail) for c in checks if not c.Passed]
     change(result)
     expected = criterion if isinstance(criterion, list) else [criterion]
     assert [c.Name for c in Check_Program_Acceptance(result, Load_Cell_Configuration()) if not c.Passed] == expected
@@ -455,8 +483,8 @@ def test_the_program_report_has_its_sections():
     assert row.split()[1:7] == ['5.190-', '7.030', 'FREE', '0.0014', '1.28', '35.14'] and row.split()[7] == '20.02'
     assert ('  S3_To_Loader           slip 1.28 mm at 6.864 s: tilt 8.8 deg, acceleration 1.75 m/s^2; max tilt 8.9 deg, max acceleration '
             '2.23 m/s^2') in lines
-    assert 'warnings: none' in lines and sum(1 for line in lines if line.endswith(('PASS', 'FAIL')) or '  PASS  ' in line) == 20
-    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (20 of 20). Simulation results only: not validated for the real cell.'
+    assert 'warnings: none' in lines and sum(1 for line in lines if line.endswith(('PASS', 'FAIL')) or '  PASS  ' in line) == 28
+    assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (28 of 28). Simulation results only: not validated for the real cell.'
 
 
 @pytest.mark.slow

@@ -69,7 +69,7 @@ def built(tmp_path_factory):
 def test_the_program_meets_its_bounds_and_stays_within_its_drift_tolerances(tool, built, program):
     """
     Description:
-        The program's physics run meets every SPEC §10.1 criterion (20) and no metric drifts from
+        The program's physics run meets every SPEC §10.1 criterion (28) and no metric drifts from
         test/Simulation/data/baseline_metrics_<program>.json beyond physics_baseline.CONST_TOLERANCES; the report diff against
         baseline_report_<program>.txt is shown when it is not empty, never failing. The LOCKED handover and take report the
         robot's distance to the loader's carriages and jaws, a positive one: the cups touching the PCB in the jaws there is the
@@ -153,3 +153,17 @@ def test_a_fork_mode_matches_its_own_baseline_and_a_third_mode_fails(tool, point
     assert len(warnings) == int(warned) and all('6-point mode' in w for w in warnings), warnings
     now['acceptance'] = [('PCB slip <= 1.98 mm', False, '2.10 mm')]
     assert tool.Compare(now, baseline)[0][0] == 'acceptance: PCB slip <= 1.98 mm (2.10 mm)'
+
+
+def test_a_metric_missing_from_the_baseline_is_named(tool):
+    """
+    Description:
+        A metric the baseline does not have (one added since its capture, e.g. the place into MG06's, B work) is a drift naming
+        it and the re-capture, not a crash.
+    """
+
+    baseline = tool.Read_Baseline('taught')
+    now = copy.deepcopy(baseline['metrics'])
+    old = {k: v for k, v in copy.deepcopy(baseline['metrics']).items() if k != 'place_drop'}
+    old['fork_modes'] = baseline['metrics']['fork_modes']
+    assert 'place_drop: not in the baseline (re-capture it)' in tool.Drift(now, old)

@@ -312,6 +312,19 @@ class Cell_Configuration_Str:
     Tracking_Max: float = 0.0
     Fork_Net_Force_Max: float = 0.0
     Handle_Load_Max: float = 0.0
+    # The place into MG06 (items 7, 9): the holder force with the jaws closed, the release's and the settled penetration.
+    #   Unit [float] (N), [float] (m), [float] (m), [float] (m)
+    Place_Holder_Force: float = 0.0
+    Release_Penetration: float = 0.0
+    Rest_Penetration: float = 0.0
+    Settle_Margin: float = 0.0
+    # Seated (item 9): when, on how many supports, within what height, speed and tilt.
+    #   Unit [float] (s), [int] (-), [float] (m), [float] (m/s), [float] (rad)
+    Seat_Time: float = 0.0
+    Seat_Supports: int = 0
+    Seat_Height: float = 0.0
+    Seat_Speed: float = 0.0
+    Seat_Tilt: float = 0.0
     # The run's phase-label period and the cup-touch distance.
     #   Unit [int] (-), [float] (m)
     Phase_Steps: int = 20
@@ -665,10 +678,13 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
                                                'Jaw_Speed_Max'))
     process = r.Mapping(root, ('Process',), CONST_PROCESS_KEYS)
     acceptance = r.Mapping(root, ('Acceptance',), ('Place_Error', 'Place_Tilt', 'Crate_Distance', 'Open_Tolerance', 'Penetration', 'Loader_Distance',
-                                                   'Slip_Max', 'Tracking_Max', 'Fork_Net_Force_Max', 'Handle_Load_Max'))
+                                                   'Slip_Max', 'Tracking_Max', 'Fork_Net_Force_Max', 'Handle_Load_Max',
+                                                   'Place_Holder_Force', 'Release_Penetration', 'Rest_Penetration', 'Settle_Margin',
+                                                   'Seat_Time', 'Seat_Supports', 'Seat_Height', 'Seat_Speed', 'Seat_Tilt'))
     simulation = r.Mapping(root, ('Simulation',), ('Phase_Steps', 'Cup_Touch'))
     depth = r.Mapping(clearance, ('Clearance', 'Allowed_Depth'), CONST_CONTACT_GROUPS)
     allowed = {g: r.Number(depth, ('Clearance', 'Allowed_Depth', g), 0.0, 0.01) for g in CONST_CONTACT_GROUPS}
+    supports = r.Number(acceptance, ('Acceptance', 'Seat_Supports'), 1, 4)
     steps = r.Get(simulation, ('Simulation', 'Phase_Steps'))
     if steps is not None and (isinstance(steps, bool) or not isinstance(steps, int) or steps < 1):
         r.Fail(('Simulation', 'Phase_Steps'), 'must be a whole number >= 1, not %r' % (steps,))
@@ -693,6 +709,15 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Tracking_Max=r.Number(acceptance, ('Acceptance', 'Tracking_Max'), 1e-6, 1.0),
         Fork_Net_Force_Max=r.Number(acceptance, ('Acceptance', 'Fork_Net_Force_Max'), 1.0, 10000.0),
         Handle_Load_Max=r.Number(acceptance, ('Acceptance', 'Handle_Load_Max'), 0.01, 1000.0),
+        Place_Holder_Force=r.Number(acceptance, ('Acceptance', 'Place_Holder_Force'), 0.0, 100.0),
+        Release_Penetration=r.Number(acceptance, ('Acceptance', 'Release_Penetration'), 1e-7, 0.001),
+        Rest_Penetration=r.Number(acceptance, ('Acceptance', 'Rest_Penetration'), 0.0, 0.001),
+        Settle_Margin=r.Number(acceptance, ('Acceptance', 'Settle_Margin'), 0.0, 0.001),
+        Seat_Time=r.Number(acceptance, ('Acceptance', 'Seat_Time'), 0.01, 2.0),
+        Seat_Supports=int(supports) if supports == supports else 0,
+        Seat_Height=r.Number(acceptance, ('Acceptance', 'Seat_Height'), 1e-6, 0.001),
+        Seat_Speed=r.Number(acceptance, ('Acceptance', 'Seat_Speed'), 1e-5, 0.1),
+        Seat_Tilt=math.radians(r.Number(acceptance, ('Acceptance', 'Seat_Tilt'), 1e-3, 5.0)),
         Phase_Steps=steps if isinstance(steps, int) and not isinstance(steps, bool) else 0,
         Cup_Touch=r.Number(simulation, ('Simulation', 'Cup_Touch'), 1e-6, 0.01),
         Speed_Fraction=r.Number(motion, ('Motion', 'Speed_Fraction'), 0.01, 1.0),

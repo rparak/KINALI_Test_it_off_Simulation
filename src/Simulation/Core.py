@@ -23,6 +23,8 @@
 
 # Regular expressions (Default)
 import re
+# Math (Mathematical functions)
+import math
 # Typing (Support for type hints)
 import typing as tp
 # Dataclasses (Data Classes)
@@ -40,7 +42,7 @@ from Configuration.Program_Parser import Program_Str
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, CONST_CRATE_FLOOR, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
 from Collision.Core import (CONST_COLLISION_CHECKS, CONST_LOADER_BODIES, Contact_Classifier_Cls, Penetration_Group, Cup_Contacts,
-                            Robot_Collision_Cls)
+                            Robot_Collision_Cls, Ledge_Gap)
 #   ../Trajectory/Core - a program's trajectory (F11)
 from Trajectory.Core import Trajectory_Str, CONST_DT
 
@@ -76,6 +78,15 @@ CONST_SAMPLE_PERIOD, CONST_LOADER_CUT = 0.004, 0.05
 # The input of the simulated vacuum switch (F11; Simulation.yaml Vacuum_OK_Min_Cups).
 #   Unit [string]
 CONST_VACUUM_OK = 'DI_VACUUM_OK'
+# The place into MG06 (B work, items 7 and 9): the MG06 holder's four supports the PCB is seated on - the holder geoms within
+# 0.03 mm of the centred PCB at its static seat (holder_10, the rear-right one, lowered 0.8 mm: the CAD deviation); every
+# other holder geom is a side guide or a pin. The jaws close no further while the PCB is placed when their gap never shrinks
+# by more than CONST_JAW_STILL (their contact compliance under the clamp; measured 0.0002 mm). The settled penetration is the
+# deepest over CONST_SETTLED_WINDOW after the seating time (the PCB at rest, MG06 still open); the re-grip's ledge gap is
+# measured CONST_REGRIP_SETTLE after its clamp command ends.
+#   Unit [Tuple<string>], [float] (m), [float] (s), [float] (s)
+CONST_HOLDER_SUPPORTS = ('col_holder_03', 'col_holder_04', 'col_holder_06', 'col_holder_10')
+CONST_JAW_STILL, CONST_SETTLED_WINDOW, CONST_REGRIP_SETTLE = 1e-5, 0.5, 0.2
 # The PCB is lost (F11) when the vacuum is on and no cup has touched it for this long (a contact can blink for a step), or when it
 # is this far below the table top (z = 0; the physics model has no table and its floor does not collide, so a dropped PCB falls
 # through; the lowest PCB of a cycle lies on a crate floor, 4 mm).
@@ -200,6 +211,50 @@ class Cycle_Result_Str:
     # The vacuum holds (F11).
     #   Unit [List<Hold_Str>]
     Holds: tp.List[Hold_Str] = field(default_factory=list)
+    # The place into MG06 (B work), or None in a run without one.
+    #   Unit [Place_Physics_Str(object)]
+    Place: tp.Optional['Place_Physics_Str'] = None
+
+
+@dataclass
+class Place_Physics_Str:
+    """
+    Description:
+        The loader's place into MG06 and the gripper operations around it, measured in physics (B work, items 7 and 9).
+    """
+
+    # When the jaws release the PCB (their last contact with it after the open command), or inf; the PCB's height then and
+    # seated (Seat_Time later), and the drop between.
+    #   Unit [float] (s), [float] (m), [float] (m), [float] (m)
+    Release: float = math.inf
+    Release_Z: float = 0.0
+    Seated_Z: float = 0.0
+    Drop: float = 0.0
+    # The descent from the travel height to the release: the PCB's closest distance to a side guide and the guide.
+    #   Unit [float] (m), [string]
+    Guide_Min: float = math.inf
+    Guide_Pair: str = ''
+    # From reaching L_PLACE to the open command: the jaw gap's largest decrease, the largest PCB - holder force.
+    #   Unit [float] (m), [float] (N)
+    Jaw_Closing: float = 0.0
+    Holder_Force: float = 0.0
+    # The deepest PCB - holder penetration while it drops (to Seat_Time) and settled (CONST_SETTLED_WINDOW after).
+    #   Unit [float] (m), [float] (m)
+    Transient: float = 0.0
+    Settled: float = 0.0
+    # Seated: the supports it touches, the four supports' distances, its speed and its tilt from the place pose, its other
+    # contacts (side guides, jaws), the time from the release until it stays slower than Seat_Speed.
+    #   Unit [List<string>], [Dict<string, float>] (m), [float] (m/s), [float] (rad), [List<string>], [float] (s)
+    Supports: tp.List[str] = field(default_factory=list)
+    Support_Gaps: tp.Dict[str, float] = field(default_factory=dict)
+    Speed: float = math.inf
+    Tilt: float = math.inf
+    Other_Contacts: tp.List[str] = field(default_factory=list)
+    Settle_Time: float = math.inf
+    # The handover clamp's centring of the PCB along the jaw axis (signed), and the re-grip's PCB-ledge gap.
+    #   Unit [float] (m), [float] (m)
+    Centring: float = math.nan
+    Regrip_Gap: float = math.nan
 
 
 @dataclass
@@ -218,6 +273,47 @@ class Acceptance_Check_Str:
     # The measured value(s), for the report.
     #   Unit [string]
     Detail: str = ''
+
+
+def _Gripper_Times(trajectory: Trajectory_Str) -> tp.Tuple[tp.Optional[tp.Tuple[float, float, float]], tp.Optional[float],
+                                                        tp.Optional[tp.Tuple[float, float]]]:
+    """
+    Description:
+        The times of a trajectory's gripper operations the place measurements need (B work): the place into MG06 (the open with
+        the PCB going from the jaws to MG06) - the loader's descent to L_PLACE starting, L_PLACE reached, the open command; the
+        re-grip (the close on the PCB in MG06) - its command's end; the handover (the first close on the PCB on the cups) - its
+        start and the vacuum off after it.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+
+    Returns:
+        (1) parameter [Tuple<float>]: The place's (descent, reached, open) times (s), or None.
+        (2) parameter [float]: The re-grip's end (s), or None.
+        (3) parameter [Tuple<float>]: The handover's (clamp, vacuum off) times (s), or None.
+    """
+
+    tr = trajectory
+    command, location, y, z = np.asarray(tr.Gripper), np.asarray(tr.PCB_Location), np.asarray(tr.Loader_Y), np.asarray(tr.Loader_Z)
+    jaws, mg06, cups = (CONST_PCB_LOCATIONS.index(n) for n in ('jaws', 'mg06', 'cups'))
+    moving = np.flatnonzero(np.abs(np.diff(command)) > 0.0)
+    place, regrip, handover = None, None, None
+    for operation in np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1) if moving.size else []:
+        first, last = int(operation[0]), int(operation[-1]) + 1
+        if command[last] > command[first] and location[first] == jaws and location[last] == mg06 and place is None:
+            reached = first
+            while reached > 0 and z[reached - 1] == z[reached] and y[reached - 1] == y[reached]:
+                reached -= 1
+            down = reached
+            while down > 0 and z[down - 1] > z[down] and y[down - 1] == y[down]:
+                down -= 1
+            place = (float(tr.T[down]), float(tr.T[reached]), float(tr.T[first]))
+        elif command[last] < command[first] and location[first] == mg06 and regrip is None:
+            regrip = float(tr.T[last])
+        elif command[last] < command[first] and location[first] == cups and handover is None:
+            off = next((float(t) for t, name in tr.Events if name == 'vacuum_off' and t >= tr.T[first]), None)
+            handover = (float(tr.T[first]), off) if off is not None else None
+    return place, regrip, handover
 
 
 class Trajectory_Drive_Cls(object):
@@ -265,6 +361,9 @@ class Trajectory_Drive_Cls(object):
         # A trajectory without J_PARK or a Test step (a short probe) never places the PCB or closes MG06.
         self.Placed_Time = float(tr.T[min(int(tr.Segment_Start[park]), self.N - 1)]) if park is not None else float('inf')
         self.Closed_Time = float(tr.T[int(np.flatnonzero(tr.Step_Index == test)[0])]) if test is not None else float('inf')
+        # B work: the place into MG06 (the descent's start, L_PLACE reached, the open command), the re-grip's clamp end, the
+        # handover's clamp to its vacuum off; None in a probe without them.
+        self.Place, self.Regrip_End, self.Handover = _Gripper_Times(tr)
         # The vacuum switch's checks (F11): each WaitDI on DI_VACUUM_OK - when its wait ends, its step, its line, the input's
         # response time, the cups it needs, the WaitDI's timeout.
         sim = program.Simulation
@@ -598,6 +697,16 @@ class Physics_Run_Cls(object):
         self.robot_bodies, self.not_loader = robot, set(range(m.nbody)) - loader
         self.not_loader_pcb = self.not_loader - {self.PCB}
         self.collision = Robot_Collision_Cls(m, d)
+        # The place into MG06 (B work): the holder's supports and side guides, the jaws, the PCB's free-joint speed address.
+        base = m.body('mg06_base').id
+        meshes = {g: m.mesh(m.geom_dataid[g]).name for g in range(m.ngeom) if m.geom_bodyid[g] == base and m.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH}
+        holder = {name: g for g, name in meshes.items() if name.startswith('col_holder')}
+        self.BASE, self.SUPPORTS = base, {holder[n]: n[4:] for n in CONST_HOLDER_SUPPORTS}
+        self.GUIDES = {g: n[4:] for n, g in holder.items() if n not in CONST_HOLDER_SUPPORTS}
+        self.JAWS = {m.body('jaw_L').id, m.body('jaw_R').id}
+        self.PCB_GEOMS = [g for g in range(m.ngeom) if m.geom_bodyid[g] == self.PCB and m.geom_contype[g]]
+        self.pcb_dof = m.jnt_dofadr[m.joint('pcb_free').id]
+        self.place, self.jaw_gap_max, self.centring_x = Place_Physics_Str(), -math.inf, None
 
     @property
     def Done(self) -> bool:
@@ -714,6 +823,85 @@ class Physics_Run_Cls(object):
             self.marks['closed'] = (d.qpos[self.qa], d.qpos[self.qh], d.time)
         self.__Lost(cups, slip_now)
         self.__Vacuum_Switch(t, cups)
+        self.__Place(step)
+
+    def __Place(self, step: int) -> None:
+        """
+        Description:
+            The place into MG06 and the gripper operations around it (B work, items 7 and 9), when the drive has them: the
+            side-guide clearance over the descent (every 4 ms), the jaw gap and the holder force at L_PLACE, the release (the
+            jaws' last contact), the penetration while the PCB drops and settled, the seating Seat_Time after the release, the
+            handover clamp's centring along the jaw axis, the re-grip's PCB-ledge gap.
+
+        Args:
+            (1) step [int]: The physics step's index.
+        """
+
+        m, d, cell, place, drive = self.Model, self.Data, self.Cell, self.place, self.Drive
+        t = d.time
+        if drive.Handover is not None:
+            axis = d.xaxis[m.joint('jaw_R').id]
+            if self.centring_x is None and t >= drive.Handover[0] - 0.5 * CONST_DT:
+                self.centring_x = float(d.xpos[self.PCB] @ axis)
+            elif self.centring_x is not None and math.isnan(place.Centring) and t >= drive.Handover[1] - 0.5 * CONST_DT:
+                place.Centring = float(d.xpos[self.PCB] @ axis) - self.centring_x
+        if drive.Regrip_End is not None and math.isnan(place.Regrip_Gap) and t >= drive.Regrip_End + CONST_REGRIP_SETTLE:
+            place.Regrip_Gap = Ledge_Gap(m, d)
+        if drive.Place is None:
+            return
+        down, reached, opened = drive.Place
+        seat_at = place.Release + cell.Seat_Time
+        if t < down or t > seat_at + CONST_SETTLED_WINDOW:
+            return
+        force, deepest, jaw_contact, others, supports = 0.0, 0.0, False, [], []
+        for i, c in enumerate(d.contact[:d.ncon]):
+            g1, g2 = c.geom1, c.geom2
+            if self.PCB not in (m.geom_bodyid[g1], m.geom_bodyid[g2]):
+                continue
+            other = g2 if m.geom_bodyid[g1] == self.PCB else g1
+            if m.geom_bodyid[other] in self.JAWS:
+                jaw_contact = True
+                others.append(m.body(m.geom_bodyid[other]).name)
+            elif m.geom_bodyid[other] == self.BASE:
+                mujoco.mj_contactForce(m, d, i, self.fc)
+                force, deepest = force + self.fc[0], min(deepest, c.dist)
+                if other in self.SUPPORTS:
+                    supports.append(self.SUPPORTS[other])
+                elif other in self.GUIDES:
+                    others.append(self.GUIDES[other])
+        if t <= place.Release and step % self.sub == 0:
+            ft = np.zeros(6)
+            for g, name in self.GUIDES.items():
+                x = min(mujoco.mj_geomDistance(m, d, p, g, CONST_LOADER_CUT, ft) for p in self.PCB_GEOMS)
+                if x < place.Guide_Min:
+                    place.Guide_Min, place.Guide_Pair = x, '%s at %.3f s' % (name, t)
+        if reached <= t <= opened:
+            gap = d.qpos[self.qjl] + d.qpos[self.qjr]
+            self.jaw_gap_max = max(self.jaw_gap_max, gap)
+            place.Jaw_Closing = max(place.Jaw_Closing, self.jaw_gap_max - gap)
+            place.Holder_Force = max(place.Holder_Force, force)
+        if t >= opened and math.isinf(place.Release) and not jaw_contact:
+            place.Release, place.Release_Z = t, float(d.xpos[self.PCB][2])
+            return
+        if math.isinf(place.Release):
+            return
+        speed = float(np.linalg.norm(d.qvel[self.pcb_dof:self.pcb_dof + 3]))
+        if speed >= cell.Seat_Speed:
+            place.Settle_Time = t - place.Release
+        elif math.isinf(place.Settle_Time):
+            place.Settle_Time = 0.0
+        if t <= seat_at:
+            place.Transient = min(place.Transient, deepest)
+        if not place.Supports and t >= seat_at - 0.5 * m.opt.timestep:
+            ft, q = np.zeros(6), d.qpos[self.qpcb + 3:self.qpcb + 7]
+            place.Supports, place.Other_Contacts = sorted(set(supports)), sorted(set(others))
+            place.Support_Gaps = {name: min(mujoco.mj_geomDistance(m, d, p, g, CONST_LOADER_CUT, ft) for p in self.PCB_GEOMS)
+                                  for g, name in self.SUPPORTS.items()}
+            place.Speed, place.Seated_Z = speed, float(d.xpos[self.PCB][2])
+            place.Tilt = 2 * math.acos(min(1.0, abs(float(np.dot(q, self.Meta.Quat)))))
+            place.Drop = place.Release_Z - place.Seated_Z
+        elif t > seat_at:
+            place.Settled = min(place.Settled, deepest)
 
     def __Loader_Distances(self, record: 'Step_Physics_Str') -> None:
         """
@@ -820,7 +1008,8 @@ class Physics_Run_Cls(object):
                                 Handle_Load=self.handle_load, Joint_Torque=self.joint_torque, Torque_Limit=self.torque_limit, Penetration=self.pen,
                                 Contacts=self.worst, Lid_Open=self.Lid_Open,
                                 Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
-                                Fault=self.Fault, Fault_Kind=self.Fault_Kind, Holds=self.holds)
+                                Fault=self.Fault, Fault_Kind=self.Fault_Kind, Holds=self.holds,
+                                Place=self.place if self.Drive.Place is not None else None)
 
 
 def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
@@ -929,7 +1118,10 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
         on the vacuum switch gets its input in time, the robot and the carried PCB at least Acceptance.Loader_Distance from the
         loader in every free transfer; step 6's bounds: the slip and the tracking error (Slip_Max, Tracking_Max), the fork's net
         force on the handle bar and the handle hinge load (Fork_Net_Force_Max, Handle_Load_Max), the free transfers at least
-        Clearance.Loader_Free from the loader, no robot actuator saturated (CONST_TORQUE_SATURATION of the model's limits).
+        Clearance.Loader_Free from the loader, no robot actuator saturated (CONST_TORQUE_SATURATION of the model's limits); the B
+        work's place into MG06 (owner, 2026-10-25; Place_Checks): no jaw closing at L_PLACE, no press there, the release's
+        transient and settled penetration, no side guide touched on the way down, the PCB seated, the handover's centring and the
+        re-grip's ledge gap.
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A program run's values.
@@ -966,7 +1158,52 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
     share = r.Joint_Torque / r.Torque_Limit
     out.append(Acceptance_Check_Str('no robot actuator saturated (model limits)', bool(np.all(share < CONST_TORQUE_SATURATION)),
                                     ' '.join('%.0f%%' % (100 * x) for x in share) + ' of %s N m' % '/'.join('%g' % x for x in r.Torque_Limit)))
-    return out
+    return out + Place_Checks(r.Place, cell)
+
+
+def Place_Checks(place: tp.Optional[Place_Physics_Str], cell: Cell_Configuration_Str) -> tp.List[Acceptance_Check_Str]:
+    """
+    Description:
+        The place into MG06 and the gripper operations around it (B work, items 7 and 9; owner, 2026-10-25): from reaching
+        L_PLACE to the open command the jaw gap never shrinks (CONST_JAW_STILL) and the PCB - holder force stays within
+        Place_Holder_Force; after the release the deepest penetration within Release_Penetration while it drops and within
+        Rest_Penetration + Settle_Margin settled; no side guide touched from the travel height to the release; Seat_Time after the
+        release the PCB seated (at least Seat_Supports supports within Seat_Height, slower than Seat_Speed, tilted less than
+        Seat_Tilt, touching no side guide and no jaw); the handover clamp's centring at most Handover.Lateral_Max; the re-grip's
+        PCB-ledge gap within Handover.Ledge_Gap +- Ledge_Tolerance. A run without a place fails each, 'not measured'.
+
+    Args:
+        (1) place [Place_Physics_Str(object)]: The measurements, or None.
+        (2) cell [Cell_Configuration_Str(object)]: The limits.
+
+    Returns:
+        (1) parameter [List<Acceptance_Check_Str>]: One verdict per criterion.
+    """
+
+    names = ['place: no jaw closing at L_PLACE', 'place: holder force <= %.1f N (jaws closed)' % cell.Place_Holder_Force,
+             'release: penetration <= %.2f mm while dropping' % (1000 * cell.Release_Penetration),
+             'release: settled penetration <= %.4f mm' % (1000 * (cell.Rest_Penetration + cell.Settle_Margin)),
+             'place: no side guide touched on the way down', 'PCB seated in MG06 within %.1f s' % cell.Seat_Time,
+             'handover: centring <= %.1f mm' % (1000 * cell.Lateral_Max),
+             're-grip: ledge gap %.1f +- %.1f mm' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance)]
+    p = place
+    if p is None or math.isinf(p.Release):
+        return [Acceptance_Check_Str(n, False, 'not measured (no release into MG06)') for n in names]
+    within = [n for n, gap in sorted(p.Support_Gaps.items()) if abs(gap) <= cell.Seat_Height]
+    seated = (len(p.Supports) >= cell.Seat_Supports and len(within) >= cell.Seat_Supports and p.Speed < cell.Seat_Speed and p.Tilt < cell.Seat_Tilt
+              and not p.Other_Contacts)
+    low, high = cell.Ledge_Gap - cell.Ledge_Tolerance, cell.Ledge_Gap + cell.Ledge_Tolerance
+    return [Acceptance_Check_Str(names[0], p.Jaw_Closing <= CONST_JAW_STILL, 'jaw gap decrease %.4f mm' % (1000 * p.Jaw_Closing)),
+            Acceptance_Check_Str(names[1], p.Holder_Force <= cell.Place_Holder_Force, '%.2f N' % p.Holder_Force),
+            Acceptance_Check_Str(names[2], -p.Transient <= cell.Release_Penetration, '%.4f mm (drop %.3f mm from the release at %.3f s)'
+                                 % (-1000 * p.Transient, 1000 * p.Drop, p.Release)),
+            Acceptance_Check_Str(names[3], -p.Settled <= cell.Rest_Penetration + cell.Settle_Margin, '%.4f mm' % (-1000 * p.Settled)),
+            Acceptance_Check_Str(names[4], p.Guide_Min > 0.0, 'closest %.3f mm, %s' % (1000 * p.Guide_Min, p.Guide_Pair)),
+            Acceptance_Check_Str(names[5], seated, 'on %s (%d within %.2f mm), %.3f mm/s, tilt %.3f deg, settled in %.3f s%s' % (
+                '/'.join(p.Supports) or 'no support', len(within), 1000 * cell.Seat_Height, 1000 * p.Speed, math.degrees(p.Tilt), p.Settle_Time,
+                ', touching ' + ', '.join(p.Other_Contacts) if p.Other_Contacts else '')),
+            Acceptance_Check_Str(names[6], abs(p.Centring) <= cell.Lateral_Max, '%+.3f mm along the jaw axis' % (1000 * p.Centring)),
+            Acceptance_Check_Str(names[7], low <= p.Regrip_Gap <= high, '%.3f mm' % (1000 * p.Regrip_Gap))]
 
 
 def Free_Loader_Distance(result: Cycle_Result_Str) -> tp.Optional[tp.Tuple[float, float, str, str]]:
@@ -1039,6 +1276,12 @@ def Format_Program_Report(result: Cycle_Result_Str, cell: Cell_Configuration_Str
     lines.append('fork on the handle bar: net contact force max %.0f N at %.3f s, direction in the fork frame %s; squeeze max %.0f N; handle hinge '
                  'load max %.1f N m (the summed normal force above adds the squeeze, KNOWN_ISSUES.md)'
                  % (r.Fork_Net_Force, r.Fork_Net_T, '[%.2f %.2f %.2f]' % tuple(r.Fork_Net_Direction), r.Fork_Squeeze, r.Handle_Load))
+    p = r.Place
+    if p is not None and not math.isinf(p.Release):
+        lines.append('place into MG06: the jaws release the PCB at %.3f s, it drops %.3f mm and is seated in %.3f s on %s, at z %.3f mm, tilt %.3f '
+                     'deg; the closest side guide on the way down %.3f mm (%s)'
+                     % (p.Release, 1000 * p.Drop, p.Settle_Time, '/'.join(p.Supports), 1000 * p.Seated_Z, math.degrees(p.Tilt), 1000 * p.Guide_Min,
+                        p.Guide_Pair))
     lines.append('vacuum holds: ' + ('; '.join('%.3f-%.3f s min %d/%d cups%s' % (h.T_On, h.T_Off, h.Min_Cups, CONST_CUPS, ' at %.3f s' % h.T_Min
                                                                               if h.Min_Cups < CONST_CUPS else '') for h in r.Holds) or 'none'))
     lines.append('%-24s %15s %-6s %-3s %11s %9s %13s %13s %s' % ('step', 'span s', 'kind', 'par', 'track rad', 'slip mm', 'robot-loader',

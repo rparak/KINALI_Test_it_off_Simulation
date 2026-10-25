@@ -823,6 +823,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |
 | `Acceptance.Loader_Distance` (0.001), `Slip_Max` (0.00198), `Tracking_Max` (0.0189), `Fork_Net_Force_Max` (290), `Handle_Load_Max` (13.5) | m, m, rad, N, N m | the owner (F11: 1 mm; 1.5 x the legacy run's 1.32 mm and 0.0126 rad; step 6, 2026-10-25: the fork's worst mode 247.3 N / 11.45 N m x 1.15, rounded up) | `Simulation.Check_Program_Acceptance`, `Program_Warnings` |
+| `Acceptance.Place_Holder_Force` (1.0), `Release_Penetration` (0.00005), `Rest_Penetration` (0.0000002), `Settle_Margin` (0.00001), `Seat_Time` (0.2), `Seat_Supports` (3), `Seat_Height` (0.00005), `Seat_Speed` (0.001), `Seat_Tilt` (0.1) | N, m, m, m, s, -, m, m/s, deg | the owner, 2026-10-25 (B work, items 7 and 9); `Rest_Penetration` measured (B.1) | `Simulation.Place_Checks` (§10.1 items 18-25) |
 | `Simulation.Phase_Steps`, `Simulation.Cup_Touch` | -, m | the legacy run (F3.5) | `Simulation`, `Collision` |
 
 Not configured, on purpose: joint limits, loader axis ranges, the MG06 lid's open stop (the model holds them:
@@ -972,6 +973,24 @@ A program's run (F11, owner 2026-10-24; `Simulation.Check_Program_Acceptance`) a
 17. no robot actuator saturated: each joint's largest torque below 99.9 % of the model's actuator limit (180 / 180 / 150 /
     60 / 60 / 60 N m, the vendored model's estimates; the AUBO i5's official limits are not known, KNOWN_ISSUES.md) - also a
     model-based bound, not a safety limit.
+
+The loader's place into MG06 and the gripper operations around it (B work, owner 2026-10-25; `Simulation.Place_Checks`, the
+bounds in `Cell.yaml Acceptance`):
+
+18. from reaching `L_PLACE` to the open command the jaw gap never shrinks (by more than 0.01 mm, their contact compliance;
+    measured 0.0000-0.0002 mm): the jaws only open;
+19. while the jaws are closed at `L_PLACE` the PCB - MG06 holder contact force at most `Place_Holder_Force` (1.0 N): no press;
+20. after the jaws release the PCB (their last contact with it) the deepest PCB - holder penetration at most
+    `Release_Penetration` (0.05 mm) while it drops, and 21. settled at most `Rest_Penetration` (0.0002 mm, measured at rest under
+    its own weight) + `Settle_Margin` (0.01 mm);
+22. from the travel height to the release the PCB touches none of the holder's side guides and pins (every holder geom but its
+    four supports; the closest clearance is reported);
+23. seated: `Seat_Time` (0.2 s) after the release the PCB rests on at least `Seat_Supports` (3) of the holder's four supports
+    (`col_holder_03`, `04`, `06`, `10`: the holder geoms the centred PCB touches at its static seat), at least that many of them
+    within `Seat_Height` (0.05 mm), slower than `Seat_Speed` (1 mm/s), tilted less than `Seat_Tilt` (0.1°) from its place pose,
+    touching no side guide and no jaw;
+24. the handover clamp's centring of the PCB along the jaw axis at most `Handover.Lateral_Max` (0.5 mm);
+25. the re-grip's PCB-ledge gap (0.2 s after its clamp) within `Handover.Ledge_Gap` ± `Ledge_Tolerance`.
 
 The legacy reference run keeps items 1-7: its take carried the board on 2 of 4 cups (KNOWN_ISSUES.md), and its baseline
 report stays the regression of the old run.

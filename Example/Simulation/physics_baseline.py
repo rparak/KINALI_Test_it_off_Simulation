@@ -58,7 +58,7 @@ from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
 from Optimizer.Core import Platform_Record
 #   ../Simulation/Core - the physics run, its report and acceptance
 from Simulation.Core import (Trajectory_Drive_Cls, Physics_Run_Cls, Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance,
-                             Simulation_Error_Cls)
+                             Simulation_Error_Cls, Place_Physics_Str)
 
 """
 Description:
@@ -83,7 +83,10 @@ CONST_TOLERANCES = {'cycle_time': ('exact', 0.0), 'fault': ('exact', 0.0), 'vacu
                     'placed_tilt_deg': ('absolute', 0.02), 'final_position': ('absolute', 0.00005), 'final_tilt_deg': ('absolute', 0.02),
                     'closed_deg': ('absolute', 0.1), 'end_deg': ('absolute', 0.1), 'penetration': ('absolute', 0.00005), 'slip': ('absolute', 0.0002),
                     'tracking': ('relative', 0.10), 'loader_lag': ('relative', 0.10), 'fork_net_force': ('relative', 0.10),
-                    'handle_load': ('relative', 0.10), 'joint_torque': ('relative', 0.10), 'free_loader_distance': ('absolute', 0.0005)}
+                    'handle_load': ('relative', 0.10), 'joint_torque': ('relative', 0.10), 'free_loader_distance': ('absolute', 0.0005),
+                    'place_drop': ('absolute', 0.00002), 'place_transient': ('absolute', 0.00001), 'seat_supports': ('exact', 0.0),
+                    'seat_tilt_deg': ('absolute', 0.02), 'place_guide_min': ('absolute', 0.00005), 'handover_centring': ('absolute', 0.00002),
+                    'regrip_gap': ('absolute', 0.00002)}
 # The fork's force has two modes, 4 or 6 contact points on the handle bar at its peak, flipped by sub-micrometre differences
 # (KNOWN_ISSUES.md). A run in either documented mode passes when these metrics are within their tolerances of that mode's own
 # baseline (baseline_metrics_<program>.json 'fork_modes'); the other documented mode is a warning naming it, any other number
@@ -129,6 +132,7 @@ def Metrics(result: tp.Any) -> tp.Dict[str, tp.Any]:
 
     r = result
     closest = Free_Loader_Distance(r)
+    p = r.Place if r.Place is not None else Place_Physics_Str()
     groups = sorted(r.Penetration)
     return {'cycle_time': round(float(r.Cycle_Time), 6), 'fault': r.Fault or '', 'vacuum_times': [float(v.T) for v in r.Vacuum],
             'vacuum_cups': [v.Cups if v.Cups is not None else -1 for v in r.Vacuum],
@@ -141,7 +145,10 @@ def Metrics(result: tp.Any) -> tp.Dict[str, tp.Any]:
             'penetration': [float(r.Penetration[g][0]) for g in groups], 'slip': float(r.Slip), 'tracking': float(r.Track_Error),
             'loader_lag': float(r.Loader_Lag), 'fork_net_force': float(r.Fork_Net_Force), 'fork_summed_force': float(r.Fork_Force),
             'fork_points': int(r.Fork_Points), 'handle_load': float(r.Handle_Load), 'joint_torque': [float(x) for x in r.Joint_Torque],
-            'free_loader_distance': float(closest[0]) if closest else -1.0}
+            'free_loader_distance': float(closest[0]) if closest else -1.0,
+            'place_drop': float(p.Drop), 'place_transient': float(p.Transient), 'seat_supports': list(p.Supports),
+            'seat_tilt_deg': float(np.degrees(p.Tilt)) if np.isfinite(p.Tilt) else -1.0, 'place_guide_min': float(min(p.Guide_Min, 1.0)),
+            'handover_centring': float(np.nan_to_num(p.Centring, nan=-1.0)), 'regrip_gap': float(np.nan_to_num(p.Regrip_Gap, nan=-1.0))}
 
 
 def Capture(program: str, trajectories: tp.Optional[str] = None, pcb_offset: float = 0.0) -> tp.Dict[str, tp.Any]:
@@ -295,6 +302,9 @@ def Drift(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.List[
 
     mode, out, _ = Fork_Mode(now, baseline)
     for key, (kind, value) in CONST_TOLERANCES.items():
+        if key not in baseline:
+            out.append('%s: not in the baseline (re-capture it)' % key)
+            continue
         a, b = now[key], (mode if key in CONST_FORK_KEYS else baseline)[key]
         if kind == 'exact' or isinstance(a, str):
             if a != b:
