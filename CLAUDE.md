@@ -14,17 +14,24 @@ trailer (`.claude/settings.json`).
 The verified physics is never changed without an explicit request (SPEC §3, the style project page
 `mjcf.md`). Regression baselines: the programs' physics, `test/Simulation/data/baseline_report_<taught|optimized>.txt`
 with their metrics (bounds and drift tolerances, SPEC §10.2); the kinematic golden, `test/Program/data/`; the model,
-`test/Scene/data/baseline_model_fingerprint.json`. The legacy plan's run and baseline are retired (commit
-`7a8560c8c16806739a02da8e989c2a2f65d1e41d`).
+`test/Scene/data/baseline_model_fingerprint.json`.
 
-## Branches
+## Branches and checks
 
-Work directly on main. Commit only after the usual checks pass: the fingerprint (`model_fingerprint.py`, 1 difference),
-the kinematic golden (`golden_program.py`, 0 differences), both physics baselines (`physics_baseline.py`, 0 failures), the
-point table, the fast tests, the style checker. Push after each accepted feature. A failed experiment is undone with git
-revert, never with force-push or history rewrite. Restore points are referenced by commit hash: `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (the last commit with
-the legacy planner), `4110010eeec0377c4e1801f7a2311994f79ab038` (the state before F9), `7a8560c8c16806739a02da8e989c2a2f65d1e41d` (the last commit with the legacy cycle
-regression). Tags are used only for releases (`vMAJOR.MINOR`, annotated).
+Work directly on main. Push after each accepted feature. A failed experiment is undone with git revert, never with
+force-push or history rewrite. Tags are used only for releases (`vMAJOR.MINOR`, annotated). Restore points by commit
+hash: `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (the legacy planner), `4110010eeec0377c4e1801f7a2311994f79ab038` (before F9),
+`7a8560c8c16806739a02da8e989c2a2f65d1e41d` (the legacy cycle regression).
+
+The checks, in two tiers (Apple M2 Pro times):
+
+- **Per commit** (about 45 s): the fingerprint (`model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic golden
+  (`golden_program.py`, 0 differences), the point table (`check_keypoints.py`, 0 FAIL), the fast tests
+  (`pytest -n 8 -m "not slow"`), the style checker (0 issues).
+- **Per accepted feature, before the push** (about 3.5 min): both physics baselines with their envelopes
+  (`physics_baseline.py`, 0 failures) and the full suite (`pytest -n 8`).
+
+A change on the physics or build path is also proven by its outputs, byte for byte (the project-optimize reference).
 
 ## Skills
 
@@ -43,11 +50,11 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
-.venv/bin/python -m pytest -m "not slow"         # everyday, about 2 min
-.venv/bin/python -m pytest                       # before a commit, about 7.5 min
+.venv/bin/python -m pytest -n 8 -m "not slow"    # per commit, about 30 s (serially, -n 0: about 2 min)
+.venv/bin/python -m pytest -n 8                  # per accepted feature, about 3 min (serially: about 7.5 min)
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
-.venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~17 s
-.venv/bin/python Example/Simulation/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines; exit 0/1/2; ~35 s
+.venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~19 s
+.venv/bin/python Example/Simulation/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines (in parallel); exit 0/1/2; ~21 s; --out ~1 min
 .venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--time T] [--watchdog S]   # physics in the viewer, real time
 .venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...] [--image [FILE]]   # physics to T; offscreen image
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
@@ -63,8 +70,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/build_program.py [--program F] [--out DIR]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
 .venv/bin/mjpython Example/Program/show_program.py [--version default|optimized] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
-.venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~55 s
-.venv/bin/python Example/Program/compare_programs.py [--out DIR]   # legacy / default / optimized: table + figure
+.venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~60 s
+.venv/bin/python Example/Program/compare_programs.py [--out DIR]   # taught vs optimized: table + figure
 .venv/bin/python Example/Program/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
 ```
 
@@ -77,6 +84,6 @@ tool writes them). `Data/Optimized/Program_Optimized.yaml` is written only by `E
 re-run it when an input changes - a build refuses it stale).
 
 History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
-`git log --follow -M20% <file>`. The legacy planner and cycle test: commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`.
+`git log --follow -M20% <file>`. The full feature records: `git show e7739f4:.claude/project-docs/FEATURES.md`.
 
 Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).
