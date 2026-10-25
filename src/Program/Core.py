@@ -543,7 +543,9 @@ class _Builder_Cls(object):
             self.pcb = self.Held_Pose(q)
         elif self.location == 'jaws':
             self.pcb = np.r_[self.Jaw_Hold(), self.__meta.Quat]
-        between = self.location == 'jaws' or (self.location == 'cups' and self.Between_Jaws(self.pcb))
+        # The posed jaws are the command limited by the part: never closer than grip while the PCB is between them - in the jaws,
+        # on the cups at the handover or the take, or resting in MG06 while the jaws release it or close on it.
+        between = self.location == 'jaws' or (self.location in ('cups', 'mg06') and self.Between_Jaws(self.pcb))
         jaw = max(self.grip_command, self.__grip) if between else self.grip_command
         for key, value in (('q', q), ('qd', qd), ('y', self.y), ('z', self.z), ('grip', self.grip_command), ('vac', int(self.vacuum)), ('step', step),
                            ('seg', segment), ('loc', CONST_PCB_LOCATIONS.index(self.location)), ('pcb', self.pcb), ('lid', self.lid),
@@ -1063,6 +1065,39 @@ def Pose_Sample(kinematics: Robot_Kinematics_Cls, trajectory: Trajectory_Str, i:
     mujoco.mj_kinematics(model, d)
 
 
+def Jaw_Posing_Faults(trajectory: Trajectory_Str, grip: float) -> tp.List[tp.Tuple[int, str]]:
+    """
+    Description:
+        The posed jaws against their rule: during every gripper operation (the command ramping) the posed jaw opens
+        monotonically on an open and closes monotonically on a close, and it is never closer than grip while the PCB is in the
+        jaws.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) grip [float]: Where the jaws stop on the PCB (m; Simulation.yaml Jaw_Actual).
+
+    Returns:
+        (1) parameter [List<Tuple<int, string>>]: The sample and a sentence per fault; empty when the posing follows the rule.
+    """
+
+    command, jaw, out = np.asarray(trajectory.Gripper), np.asarray(trajectory.Jaw), []
+    moving = np.flatnonzero(np.abs(np.diff(command)) > 0.0)
+    for operation in np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1) if moving.size else []:
+        first, last = int(operation[0]), int(operation[-1]) + 1
+        opening = command[last] > command[first]
+        steps = np.diff(jaw[first:last + 1])
+        if np.any(steps < 0.0) if opening else np.any(steps > 0.0):
+            worst = int(np.argmin(steps) if opening else np.argmax(steps)) + first
+            out.append((worst + 1, 'the posed jaws %s by %.2f mm at %.3f s while the gripper %s (%.3f-%.3f s)' % (
+                'close' if opening else 'open', 1000 * abs(jaw[worst + 1] - jaw[worst]), trajectory.T[worst + 1],
+                'opens' if opening else 'closes', trajectory.T[first], trajectory.T[last])))
+    inside = np.flatnonzero((np.asarray(trajectory.PCB_Location) == CONST_PCB_LOCATIONS.index('jaws')) & (jaw < grip - 1e-12))
+    if inside.size:
+        out.append((int(inside[0]), 'the posed jaws are %.2f mm closer than grip with the PCB in them at %.3f s' % (
+            1000 * (grip - jaw[inside].min()), trajectory.T[inside[0]])))
+    return out
+
+
 def Loader_Actual(trajectory: Trajectory_Str, model: mujoco.MjModel) -> tp.Tuple[np.ndarray, np.ndarray]:
     """
     Description:
@@ -1478,6 +1513,9 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                 'never measured (the jaws never reach grip with the PCB on the cups)' if not clamped else
                 '%.3f .. %.3f mm' % (1000 * handover.Clamped_Min, 1000 * handover.Clamped_Max), 1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance))
         result.Handover = handover
+    # The posed jaws (the command limited by the part): their rule, in the step of each fault.
+    for i, fault in Jaw_Posing_Faults(tr, max(program.Simulation.Jaw_Actual.values())):
+        result.Steps[int(tr.Step_Index[i])].Failures.append(fault)
     used = []
     for command in commands:
         names = [command.Target] if command.Kind in ('MoveJ', 'MoveL') else []

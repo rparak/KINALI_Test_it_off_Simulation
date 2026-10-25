@@ -32,8 +32,8 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Program/Core
-from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Movej_Duration, Program_Error_Cls, Pose_Sample, Validate_Constants,
-                          Loader_Actual, Loader_Actual_Trajectory)
+from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Jaw_Posing_Faults, Movej_Duration, Program_Error_Cls, Pose_Sample,
+                          Validate_Constants, Loader_Actual, Loader_Actual_Trajectory)
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core
 from Configuration.Core import Read_PCB_Meta, CONST_PCB_LOCATIONS, CONST_FORK_PATH
 from Configuration.Program_Parser import (Program_Str, Segment_Str, Parse_Commands, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps,
@@ -248,6 +248,51 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
     assert np.all(trajectory.MG06_Lid[during] == cell_configuration.Closed_Lid)
     assert np.all(trajectory.MG06_Handle[during] == cell_configuration.Closed_Handle)
     assert trajectory.MG06_Lid[-1] < -0.69 and trajectory.MG06_Handle[-1] == 0.0
+
+
+def test_the_posed_jaws_are_the_command_limited_by_the_part(built, simulation):
+    """
+    Description:
+        Item 10 (owner, 2026-10-25): at all four gripper operations (the handover clamp, the release in MG06, the re-grip, the
+        release at the take) the posed jaw gap is monotonic in the command's direction and never closer than grip with the PCB in
+        the jaws; the release in MG06 opens from grip (17.75 mm), not from the clamp command (5.75 mm).
+    """
+
+    trajectory, _ = built
+    grip = simulation.Jaw_Actual['G_CLAMP']
+    assert Jaw_Posing_Faults(trajectory, grip) == []
+    moving = np.flatnonzero(np.abs(np.diff(trajectory.Gripper)) > 0.0)
+    operations = np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1)
+    assert len(operations) == 4
+    release = operations[1]
+    assert trajectory.Jaw[release[0]:release[0] + 3].tolist() == [grip] * 3 and trajectory.Gripper[release[0]] < grip
+
+
+def test_the_old_jaw_posing_is_refused(built, simulation):
+    """
+    Description:
+        Item 10, forced failure: the old posing of the release in MG06 (the raw command once the PCB is in MG06: the jaws jump
+        from grip to the clamp command, through the PCB, then open) closes the posed jaws by 12 mm while the gripper opens;
+        a jaw closer than grip with the PCB in the jaws is refused too.
+    """
+
+    trajectory, _ = built
+    grip = simulation.Jaw_Actual['G_CLAMP']
+    old = copy.deepcopy(trajectory)
+    moving = np.flatnonzero(np.abs(np.diff(old.Gripper)) > 0.0)
+    release = np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1)[1]
+    mg06 = CONST_PCB_LOCATIONS.index('mg06')
+    switched = int(release[0]) + int(np.argmax(old.PCB_Location[release[0]:] == mg06))
+    old.Jaw = np.array(old.Jaw)
+    old.Jaw[switched:release[-1] + 2] = old.Gripper[switched:release[-1] + 2]
+    faults = Jaw_Posing_Faults(old, grip)
+    assert len(faults) == 1 and faults[0][0] == switched and faults[0][1].startswith('the posed jaws close by 12.00 mm at ')
+    squeezed = copy.deepcopy(trajectory)
+    squeezed.Jaw = np.array(squeezed.Jaw)
+    inside = int(np.flatnonzero(squeezed.PCB_Location == CONST_PCB_LOCATIONS.index('jaws'))[100])
+    squeezed.Jaw[inside] = grip - 0.001
+    assert [f for _, f in Jaw_Posing_Faults(squeezed, grip) if 'closer than grip' in f] == [
+        'the posed jaws are 1.00 mm closer than grip with the PCB in them at %.3f s' % squeezed.T[inside]]
 
 
 def test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle(built, simulation):
