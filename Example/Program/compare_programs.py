@@ -216,9 +216,9 @@ def Figure(default: Trajectory_Str, optimized: Trajectory_Str, metrics: tp.Dict[
 def main():
     """
     Description:
-        Compare the taught program and the optimized one (FEATURES.md F9): both programs built afresh (the optimized one refused when stale); the cycle time,
-        the robot's joint travel per joint and the TCP's path, the PCB's path, the loader's travel, the robot's stops; per part
-        of the process both durations. A text table (stdout and Data/Generated/Reports/compare_programs.txt) and a figure
+        Compare the taught program and the optimized one (FEATURES.md F9): both programs built afresh (the optimized one refused
+        when stale); the cycle time, the robot's joint travel per joint and the TCP's path, the PCB's path, the loader's travel,
+        the robot's stops; per part of the process both durations. A text table (stdout and Data/Generated/Reports/compare_programs.txt) and a figure
         (Data/Generated/Images/compare_programs.png). Exit 0, 1 when a program cannot be built.
 
             .venv/bin/python Example/Program/compare_programs.py [--out DIR]
