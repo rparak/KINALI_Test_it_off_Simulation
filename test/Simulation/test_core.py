@@ -425,7 +425,7 @@ def test_a_program_run_warns_above_the_owners_thresholds():
         F11: no warning at the measured values; a slip above 1.98 mm, a tracking error above 0.0189 rad (1.5 x the legacy run's)
         and a free transfer within Loader_Free (10 mm) of the loader each warn once, naming the step; a LOCKED step at the
         loader does not warn; the free transfer within Loader_Free also fails the acceptance (step 6; the slip and the tracking
-        bounds are on the run's maxima, which this step's values do not change).
+        bounds are on the run's maxima, which this step's values do not change) and names the step, the time and the pair (A5).
     """
 
     cell = Load_Cell_Configuration()
@@ -436,7 +436,8 @@ def test_a_program_run_warns_above_the_owners_thresholds():
     assert warnings == ['S3_To_Loader: PCB slip 1.99 mm at 6.864 s above 1.98 mm (1.5 x the legacy run)',
                         'S3_To_Loader: robot tracking error 0.0190 rad above 0.0189 rad (1.5 x the legacy run)',
                         'S3_To_Loader: carried PCB 9.90 mm from the loader at 5.600 s (pcb / z_carriage), within Clearance.Loader_Free 10.0 mm']
-    assert [c.Name for c in Check_Program_Acceptance(result, cell) if not c.Passed] == ['free transfers >= Loader_Free 10.0 mm']
+    assert [(c.Name, c.Detail) for c in Check_Program_Acceptance(result, cell) if not c.Passed] == [
+        ('free transfers >= Loader_Free 10.0 mm', '9.90 mm at 5.600 s, S3_To_Loader (pcb / z_carriage)')]
 
 
 def test_the_program_report_has_its_sections():

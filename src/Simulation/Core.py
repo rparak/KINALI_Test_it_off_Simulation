@@ -954,7 +954,8 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
                                     '%.2f N m' % r.Handle_Load))
     out.append(Acceptance_Check_Str('free transfers >= Loader_Free %.1f mm' % (1000 * cell.Loader_Free),
                                     closest is None or closest[0] >= cell.Loader_Free,
-                                    'no free transfer' if closest is None else '%.2f mm' % (1000 * closest[0])))
+                                    'no free transfer' if closest is None else '%.2f mm at %.3f s, %s (%s)' % (1000 * closest[0], closest[1],
+                                                                                                             closest[3], closest[2])))
     share = r.Joint_Torque / r.Torque_Limit
     out.append(Acceptance_Check_Str('no robot actuator saturated (model limits)', bool(np.all(share < CONST_TORQUE_SATURATION)),
                                     ' '.join('%.0f%%' % (100 * x) for x in share) + ' of %s N m' % '/'.join('%g' % x for x in r.Torque_Limit)))
