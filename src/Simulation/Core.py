@@ -866,7 +866,7 @@ def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
                  f'{1000*cc[1]:.1f}, floor {1000*CONST_CRATE_FLOOR:.1f}); tilt {np.degrees(r.Final_Tilt):.2f} deg')
     lines.append('robot joint tracking error max %.4f rad, PCB slip in the cups max %.2f mm, loader axis lag max %.1f mm'
                  % (r.Track_Error, 1000 * r.Slip, 1000 * r.Loader_Lag))
-    lines.append('max contact force fork -> handle bar: %.0f N' % r.Fork_Force)
+    lines.append('summed normal force fork -> handle bar: %.0f N' % r.Fork_Force)
     lines.append('deepest PCB penetration: ' + ', '.join(f'{k} {1000*v[0]:.2f} mm (t={v[1]})' for k, v in sorted(r.Penetration.items())))
     for k in CONST_COLLISION_CHECKS:
         v = r.Contacts.get(k)
