@@ -1019,13 +1019,13 @@ commands, editing keypoints and program, the file formats.
   closed and end angles +-0.1 deg; the slip +-0.2 mm; the tracking error, the loader lag, the fork's net force, the handle hinge
   load and the joint torques +-10 %; the free transfers' closest loader distance +-0.5 mm. The report's diff is printed for
   information and never fails (contact physics changes with sub-micrometre differences, design-decisions).
-- **The fork's two modes** (owner, 2026-10-25): the metrics hold `fork_points` (the fork's contact points on the handle bar
-  at its summed-force peak) and `fork_modes`, per documented mode (4 and 6 points) its net force, hinge load, joint torques and
-  summed force, and the PCB start offset along x it was captured from (`--out` captures the run, then the first of
-  `CONST_FORK_TRIGGERS` = +1, -1, +5, -5 µm that reaches the other mode, and refuses to write when none does or that run fails
-  §10.1). A run in the baseline's own mode is compared as above; in the other documented mode its fork metrics are compared
-  with that mode's baseline (+-10 %) and it passes with a `[WARNING]` naming the mode; any other number of contact points is a
-  third mode and FAILS. §10.1 applies in every mode.
+- **The fork's envelope** (owner, 2026-10-25; supersedes the two documented modes): the fork's contact with the handle bar is
+  chaotic, so its net force, the handle hinge load and the J2 / J3 torques are compared with an envelope, not with the
+  baseline run: each program's metrics hold `envelope` (per metric [min, max]) and `envelope_runs` over `CONST_PERTURBATIONS`
+  - the PCB's start along x -5 / 0 / +5 µm, each without and with a 0.1 s settle wait before the closing path, and the MG06
+  handle hinge ±1 µrad (8 runs; `--out` refuses to write when one of them fails §10.1). A run passes inside its program's
+  envelope ± 10 %, and always within §10.1 (the fork's 290 N / 13.5 N m, the actuators below 99.9 %). The contact count
+  (`fork_points`) is reported only.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment;
   the legacy run's baseline was retired with it in step 6 (git tag `legacy-cycle-reference`).
 - **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one

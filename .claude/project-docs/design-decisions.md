@@ -1033,7 +1033,7 @@ Pinned by `test/Program/test_core.py::test_the_free_transfers_keep_the_loader_cl
 **Decision.** `PATH_FORK_CLOSE` is played as recorded (it presses up to 0.54 mm into the handle bar). The fork's bounds use the
 net contact force on the bar and the handle hinge load (SPEC §10.1); the summed normal force is reported for information.
 
-**Why.** The force has two modes (4 or 6 contact points, flipped by sub-micrometre differences; KNOWN_ISSUES.md). A retraction
+**Why.** The force is chaotic (4 or 6 contact points, flipped by sub-micrometre differences, with different values; KNOWN_ISSUES.md). A retraction
 of the recording off the bar (a `Bar_Retraction` per path, the rows moved along every nearby fork face's normal, fading out at a
 0.2 mm gap; experiment only, kept off main) was tested with 14 runs each (start -5 / -1 / 0 / +1 / +5 µm,
 waits 0 / 4 ms / 0.1 s, both programs), 2026-10-25:
@@ -1112,17 +1112,19 @@ any platform, solver or compiler difference that changes nothing physical, and t
 Tolerances wide enough for both fork modes: the hinge load differs by 22 % between them, which would hide a real change of
 either mode.
 
-**The fork's mode flip** (owner, 2026-10-25, superseding "a mode flip fails the regression"): a run that matches either
-documented mode within that mode's own baseline (+-10 %) and meets §10.1 passes, with a warning naming the mode; a third mode
-fails. The mode is named by the fork's contact points at the summed-force peak (4 or 6), and each baseline captures both modes
-(the second from a 1 µm PCB start offset), so the comparison never mixes one mode's values with the other's. Measured
-2026-10-25: the 6-point mode raises the net force 8 %, the hinge load 22 %, the J2 / J3 torques 12 % / 10 %; every other
-metric stays within its tolerance, and both programs give the same per-mode values to 1e-6. Alternative: one mode pinned by a
-start offset in the regression - it hides the flip, which can happen on the real cell's equivalent too.
+**The fork's envelope** (owner, 2026-10-25, superseding the two documented modes of the same day): the fork's net force, the
+hinge load and the J2 / J3 torques pass inside their program's envelope ± 10 % - min and max over 8 perturbation runs (the PCB
+-5 / 0 / +5 µm, each with and without a 0.1 s settle wait, the handle hinge ±1 µrad) - and always within §10.1. Why: the contact
+is chaotic and its outcomes are not well-defined modes - the contact count does not name one (6 contact points gave 247.3 N /
+11.45 N m in the taught program and 222.2 N / 10.01 N m in the optimized one, a handle offset of -1 µrad; the optimized
+program never reached 6 points from a PCB offset). Alternatives: the documented modes with a contact-count key (the first
+version; it failed on a 6-point outcome with other values) or clusters of values (no fixed number of clusters to rely on). The
+contact count is reported only.
 
 **Revisit if** a platform change makes a tolerance trip with no physical change, or a metric needs a tighter tolerance.
 
-Pinned by `test/Simulation/test_baselines.py` (the modes: both, synthetic, a third; a real flip of the taught run) and
+Pinned by `test/Simulation/test_baselines.py` (the envelope: inside, outside on both sides, J1 against the run, a failed bound
+inside the envelope) and
 `test/Example/Simulation/test_physics_baseline.py`.
 
 ## The golden data is captured in the current names by one tool (F11)

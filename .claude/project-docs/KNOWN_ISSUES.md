@@ -168,7 +168,7 @@ The take is not re-taught to it (owner): with the press relieved before the jaws
 - **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
   the whole edge.
 
-## The fork's force on the handle bar has two modes
+## The fork's force on the handle bar is chaotic
 
 The recorded closing path presses the fork into the handle bar (up to 0.54 mm, SPEC §4.7). At that stiff contact the fork
 touches the bar at 4 or at 6 points, and sub-micrometre state differences decide which: the PCB's start moved +1 µm, or a wait
@@ -182,8 +182,10 @@ stops the handle at 25.5 deg, short of the toggle's dead point (design-decisions
 force limit is not known.
 
 - **Impact:** the fork force is one of two values; the bounds cover the higher one; the real handle could be overloaded by a
-  force the simulation accepts. The physics regression accepts either mode against that mode's own baseline, with a warning
-  naming it, and fails a third (SPEC §10.2); the report names the mode (`(4 contact points)`).
+  force the simulation accepts. The outcomes are not two well-defined modes: 6 contact points gave 247.3 N / 11.45 N m in
+  the taught program and 222.2 N / 10.01 N m in the optimized one (2026-10-25). The physics regression compares the fork's
+  metrics with an envelope over 8 perturbation runs per program (± 10 %; SPEC §10.2); the report gives the contact count for
+  information.
 - **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar.
 
 ## The simulated fork-handle contact is stiff; the real robot is not

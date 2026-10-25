@@ -79,41 +79,27 @@ def test_the_program_meets_its_bounds_and_stays_within_its_drift_tolerances(tool
     now = tool.Capture(program, built)
     rows = [line.split() for line in now['report'] if re.fullmatch(r'S\d+_(Handover|Take_From_Loader)', (line.split() or [''])[0])]
     assert len(rows) == 2 and all(row[3] == 'LOCKED' and float(row[6]) > 0.0 for row in rows), rows
-    failures, warnings, diff = tool.Compare(now, tool.Read_Baseline(program))
+    failures, diff = tool.Compare(now, tool.Read_Baseline(program))
     if diff:
         print('\n'.join(['report diff (information):'] + diff))
-    assert failures == [] and warnings == [], (failures, warnings)
-
-
-@pytest.mark.slow
-def test_the_fork_s_other_mode_passes_with_a_warning_naming_it(tool, built):
-    """
-    Description:
-        Answer 1 (owner, 2026-10-25): the taught program started with the PCB 1 um along x (CONST_FORK_TRIGGERS[0]) runs in the
-        fork's 6-point mode, not its baseline's 4-point one; within the 6-point mode's own baseline and with SPEC §10.1 met it
-        passes, with one warning naming the mode.
-    """
-
-    now = tool.Capture('taught', built, tool.CONST_FORK_TRIGGERS[0])
-    failures, warnings, _ = tool.Compare(now, tool.Read_Baseline('taught'))
-    assert now['metrics']['fork_points'] == 6 and failures == [], failures
-    assert len(warnings) == 1 and warnings[0].startswith('the fork is in its 6-point mode'), warnings
+    assert failures == [], failures
 
 
 def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
     """
     Description:
         Each tolerance kind: the cycle time exact (+1 ms fails), a vacuum event within one sample (4 ms passes, 4.1 ms fails), the
-        slip within 0.2 mm, the fork's net force within 10 % (+9 % passes, +11 % fails), a changed number of values; a failed
+        slip within 0.2 mm, the fork's net force within its envelope +- 10 % (the run +9 % passes, the envelope's max +11 %
+        fails), a changed number of values; a failed
         criterion fails; a report line that differs is only in the diff.
     """
 
     baseline = tool.Read_Baseline('taught')
     now = {'report': list(baseline['report']), 'metrics': copy.deepcopy(baseline['metrics']),
            'acceptance': [('a criterion', True, '')]}
-    assert tool.Compare(now, baseline) == ([], [], [])
+    assert tool.Compare(now, baseline) == ([], [])
     now['report'][0] += ' (changed)'
-    failures, _, diff = tool.Compare(now, baseline)
+    failures, diff = tool.Compare(now, baseline)
     assert failures == [] and any(line.startswith('+') and '(changed)' in line for line in diff)
     m, b = now['metrics'], baseline['metrics']
     m['vacuum_times'][0] += 0.004
@@ -122,37 +108,59 @@ def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
     assert tool.Drift(m, b) == []
     m['cycle_time'] += 0.001
     m['vacuum_times'][0] += 0.0001
-    m['fork_net_force'] = b['fork_net_force'] * 1.11
+    m['fork_net_force'] = b['envelope']['fork_net_force'][1] * 1.11
     m['hold_min_cups'] = m['hold_min_cups'][:1]
     assert [line.split(':')[0] for line in tool.Drift(m, b)] == ['cycle_time', 'vacuum_times', 'hold_min_cups', 'fork_net_force']
     now['acceptance'] = [('PCB slip <= 1.98 mm', False, '2.10 mm')]
     assert tool.Compare(now, baseline)[0][0] == 'acceptance: PCB slip <= 1.98 mm (2.10 mm)'
 
 
-@pytest.mark.parametrize('points, values, failed, warned', [
-    ('4', '4', [], False),
-    ('6', '6', [], True),
-    ('6', '4', ['handle_load', 'joint_torque'], True),
-    ('5', '4', ['fork_points'], False),
+@pytest.mark.parametrize('key, index, factor, passes', [
+    ('fork_net_force', None, 1.0, True),
+    ('fork_net_force', None, 'high', True),
+    ('fork_net_force', None, 'over', False),
+    ('fork_net_force', None, 'under', False),
+    ('handle_load', None, 'over', False),
+    ('joint_torque', 1, 'over', False),
+    ('joint_torque', 2, 'under', False),
+    ('joint_torque', 0, 1.09, True),
+    ('joint_torque', 0, 1.11, False),
 ])
-def test_a_fork_mode_matches_its_own_baseline_and_a_third_mode_fails(tool, points, values, failed, warned):
+def test_the_fork_metrics_are_compared_with_the_envelope(tool, key, index, factor, passes):
     """
     Description:
-        Answer 1 (owner, 2026-10-25), on the taught baseline (4-point mode) with synthetic metrics: its own mode passes silently;
-        the 6-point mode with the 6-point values passes with one warning naming it; the 6-point mode with the 4-point values
-        drifts from the 6-point baseline (the hinge load 18 %, J2 / J3 10-11 %; the net force 7 % is within 10 %); 5 contact
-        points is a third mode and fails. A failed SPEC §10.1 criterion fails in any mode.
+        Item 1 (owner, 2026-10-25): the fork's net force, the hinge load and the J2 / J3 torques pass inside their program's
+        envelope +- 10 % ('high': at its max + 9.9 %) and fail outside it ('over': max + 10.1 %, 'under': min - 10.1 %); the other
+        torques keep +- 10 % of the baseline run (J1 +9 % passes, +11 % fails).
     """
 
     baseline = tool.Read_Baseline('taught')
     m = copy.deepcopy(baseline['metrics'])
-    m.update({k: copy.deepcopy(baseline['metrics']['fork_modes'][values][k]) for k in tool.CONST_FORK_KEYS}, fork_points=int(points))
-    now = {'report': list(baseline['report']), 'metrics': m, 'acceptance': [('a criterion', True, '')]}
-    failures, warnings, _ = tool.Compare(now, baseline)
-    assert [f.split(':')[1].strip() for f in failures] == failed, failures
-    assert len(warnings) == int(warned) and all('6-point mode' in w for w in warnings), warnings
-    now['acceptance'] = [('PCB slip <= 1.98 mm', False, '2.10 mm')]
-    assert tool.Compare(now, baseline)[0][0] == 'acceptance: PCB slip <= 1.98 mm (2.10 mm)'
+    low, high = baseline['metrics']['envelope'][key]
+    pick = (lambda v: v) if index is None else (lambda v: v[index])
+    value = {'high': pick(high) * 1.099, 'over': pick(high) * 1.101, 'under': pick(low) * 0.899}.get(factor)
+    if value is None:
+        value = pick(m[key]) * factor
+    if index is None:
+        m[key] = value
+    else:
+        m[key][index] = value
+    drift = tool.Drift(m, baseline['metrics'])
+    assert (drift == []) == passes, drift
+
+
+def test_a_failed_bound_fails_inside_the_envelope(tool):
+    """
+    Description:
+        Item 1: a run whose fork net force is inside the envelope but fails SPEC §10.1 (the 290 N bound, here as a failed
+        criterion) fails the regression: the bounds apply whatever the envelope.
+    """
+
+    baseline = tool.Read_Baseline('taught')
+    now = {'report': list(baseline['report']), 'metrics': copy.deepcopy(baseline['metrics']),
+           'acceptance': [('fork net force <= 290 N (sim. regression bound)', False, '291.0 N')]}
+    failures, _ = tool.Compare(now, baseline)
+    assert failures == ['acceptance: fork net force <= 290 N (sim. regression bound) (291.0 N)']
 
 
 def test_a_metric_missing_from_the_baseline_is_named(tool):
@@ -165,5 +173,4 @@ def test_a_metric_missing_from_the_baseline_is_named(tool):
     baseline = tool.Read_Baseline('taught')
     now = copy.deepcopy(baseline['metrics'])
     old = {k: v for k, v in copy.deepcopy(baseline['metrics']).items() if k != 'place_drop'}
-    old['fork_modes'] = baseline['metrics']['fork_modes']
     assert 'place_drop: not in the baseline (re-capture it)' in tool.Drift(now, old)
