@@ -324,6 +324,9 @@ class Cell_Configuration_Str:
     Acceleration_Limits: tp.List[float] = field(default_factory=list)
     Movej_Min_Duration: float = 0.0
     Movel_Min_Duration: float = 0.0
+    # The gripper's largest jaw speed (SCHUNK EGI 040-EI data sheet).
+    #   Unit [float] (m/s per jaw)
+    Jaw_Speed_Max: float = 0.0
     # The MG06 test duration (the program's Test command).
     #   Unit [float] (s)
     Test_Duration: float = 0.0
@@ -658,7 +661,8 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     clearance = r.Mapping(root, ('Clearance',), ('Robot', 'Allowed_Depth', 'Stale_Position', 'Stale_Angle', 'Family_Margin',
                                                  'Check_Step', 'Loader_Free', 'Tracking_Margin'))
     handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance', 'Lateral_Max'))
-    motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration'))
+    motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration',
+                                               'Jaw_Speed_Max'))
     process = r.Mapping(root, ('Process',), CONST_PROCESS_KEYS)
     acceptance = r.Mapping(root, ('Acceptance',), ('Place_Error', 'Place_Tilt', 'Crate_Distance', 'Open_Tolerance', 'Penetration', 'Loader_Distance',
                                                    'Slip_Max', 'Tracking_Max', 'Fork_Net_Force_Max', 'Handle_Load_Max'))
@@ -696,6 +700,7 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Acceleration_Limits=[math.radians(v) for v in r.Vector(motion, ('Motion', 'Acceleration_Limits'), 6, 1.0, 10000.0)],
         Movej_Min_Duration=r.Number(motion, ('Motion', 'Movej_Min_Duration'), 0.0, 10.0),
         Movel_Min_Duration=r.Number(motion, ('Motion', 'Movel_Min_Duration'), 0.0, 10.0),
+        Jaw_Speed_Max=r.Number(motion, ('Motion', 'Jaw_Speed_Max'), 0.001, 1.0),
         Test_Duration=r.Number(process, ('Process', 'Test_Duration'), 0.0, 600.0),
         Open_Join_Margin=math.radians(r.Number(mg06, ('MG06', 'Open_Join_Margin'), 0.0, 5.0)),
         Check_Step=r.Number(clearance, ('Clearance', 'Check_Step'), 1e-5, 0.01),

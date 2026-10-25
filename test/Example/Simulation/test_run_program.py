@@ -60,8 +60,8 @@ def test_the_taught_program_runs_and_meets_the_acceptance(tmp_path, run_script, 
                         work)
     assert result.returncode == CONST_PASSED, result.stdout[-2000:] + result.stderr
     lines = result.stdout.splitlines()
-    assert lines[0] == 'program Program: physics run of its trajectory, cycle 69.396 s'
-    assert 'vacuum holds: 3.276-9.912 s min 4/4 cups; 57.852-66.072 s min 4/4 cups' in lines
+    assert lines[0] == 'program Program: physics run of its trajectory, cycle 70.404 s'
+    assert 'vacuum holds: 3.276-10.164 s min 4/4 cups; 58.608-67.080 s min 4/4 cups' in lines
     assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (20 of 20). Simulation results only: not validated for the real cell.'
     assert (tmp_path / 'out' / 'Program_physics.txt').read_text().splitlines() == lines
     assert 'not validated for the real cell' in result.stderr and os.listdir(work) == []

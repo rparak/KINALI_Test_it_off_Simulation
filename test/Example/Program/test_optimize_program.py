@@ -44,5 +44,5 @@ def test_the_optimizer_reproduces_the_committed_program_byte_for_byte(tmp_path_f
     assert written == open(os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml'), 'rb').read()
     report = open(os.path.join(out, 'optimize_program.txt'), encoding='utf-8').read()
     assert report.count(' holds: ') == 8 and 'FAILS' not in report.split('LOCKED parts')[0]
-    assert 'cycle 57.708 s (taught 69.396 s, -11.688 s)' in report and 'Program_Optimized: the program check passed.' in report
+    assert 'cycle 58.716 s (taught 70.404 s, -11.688 s)' in report and 'Program_Optimized: the program check passed.' in report
     assert '[INFO] The optimized program passes its check.' in result.stdout

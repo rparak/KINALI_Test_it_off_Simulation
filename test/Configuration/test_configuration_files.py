@@ -48,6 +48,7 @@ CONST_CELL_FIELDS = [('Robot', 'Base_Position'), ('Robot', 'Base_Yaw'), ('Vacuum
                      ('Clearance', 'Family_Margin'), ('Clearance', 'Check_Step'), ('MG06', 'Open_Join_Margin'), ('Handover', 'Ledge_Gap'),
                      ('Handover', 'Ledge_Tolerance'), ('Handover', 'Lateral_Max'), ('Motion', 'Speed_Fraction'), ('Motion', 'Datasheet_Speeds'),
                      ('Motion', 'Acceleration_Limits'), ('Motion', 'Movej_Min_Duration'), ('Motion', 'Movel_Min_Duration'),
+                     ('Motion', 'Jaw_Speed_Max'),
                      ('Process', 'Test_Duration'), ('Acceptance', 'Place_Error'), ('Acceptance', 'Place_Tilt'),
                      ('Acceptance', 'Crate_Distance'), ('Acceptance', 'Open_Tolerance'), ('Acceptance', 'Penetration'),
                      ('Simulation', 'Phase_Steps'), ('Simulation', 'Cup_Touch')]
@@ -141,5 +142,5 @@ def test_the_motion_process_and_handover_fields_load_in_si_units(cell_configurat
     c = cell_configuration
     assert c.Speed_Fraction == 0.6 and c.Datasheet_Speeds == pytest.approx(np.radians([220, 220, 220, 220, 230, 230]), abs=1e-15)
     assert c.Acceleration_Limits == [3.0, 3.0, 3.0, 6.0, 6.0, 6.0]
-    assert (c.Movej_Min_Duration, c.Movel_Min_Duration, c.Test_Duration, c.Check_Step) == (0.5, 0.6, 2.0, 0.001)
+    assert (c.Movej_Min_Duration, c.Movel_Min_Duration, c.Test_Duration, c.Check_Step) == (0.5, 0.6, 2.0, 0.001) and c.Jaw_Speed_Max == 0.1
     assert c.Open_Join_Margin == pytest.approx(math.radians(0.2)) and (c.Ledge_Gap, c.Ledge_Tolerance, c.Lateral_Max) == (0.0003, 0.0001, 0.0005)

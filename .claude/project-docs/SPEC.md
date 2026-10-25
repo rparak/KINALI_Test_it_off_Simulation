@@ -752,8 +752,8 @@ rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Le
 clamped, never smaller along the MoveL into it - there with the jaws centred on the PCB across them, so only its height above the
 finger ledges counts; owner 2026-10-25) and the PCB centre at most `Handover.Lateral_Max` from the jaw centreline at
 `P_LOADER_PLACE` (along the jaw axis: the jaws centre the PCB as they clamp); the posed jaws are the command limited by the part
-(`Jaw_Posing_Faults`: every gripper operation monotonic, never closer than grip with the PCB in the jaws); the point check of
-every point the program uses.
+(`Jaw_Posing_Faults`: every gripper operation monotonic, never closer than grip with the PCB in the jaws) and every Gripper
+command ramp no faster than `Motion.Jaw_Speed_Max` (`Jaw_Speed_Faults`); the point check of every point the program uses.
 `Format_Check_Report` prints it. The loader moving in parallel is part of every measured sample's scene, so the check also
 measures the robot against the moving loader (I8).
 
@@ -816,6 +816,7 @@ converted to radians once. Tested in `test/Configuration/`; the checks against t
 | `MG06.Open_Join_Margin` | deg | the legacy planner (28.45°, §4.9) | `Robot.MovePath(PATH_FORK_OPEN)` |
 | `Handover.Ledge_Gap`, `Handover.Ledge_Tolerance` | m | §4.7, the owner (B1, F8) | the program check (no press at the handover) |
 | `Handover.Lateral_Max` (0.0005) | m | the owner, 2026-10-25 (B work, item 1) | the program check (the PCB centre's offset from the jaw centreline at `P_LOADER_PLACE`) |
+| `Motion.Jaw_Speed_Max` (0.1) | m/s per jaw | SCHUNK EGI 040-EI data sheet, max. speed 100 mm/s (2026-10-25) | the program check (every Gripper ramp's peak; the loader jobs' Gripper t = 0.6 s: 1.875 x 29.25 mm / 0.6 s = 91.4 mm/s) |
 | `Motion.Speed_Fraction` (MoveJ's default `v=`), `Motion.Datasheet_Speeds`, `Motion.Acceleration_Limits` (*assumed*), `Motion.Movej_Min_Duration`, `Motion.Movel_Min_Duration` | -, deg/s, deg/s², s | §4.4, §4.10, the legacy planner | MoveJ, MoveL |
 | `Process.Test_Duration` (a placeholder) | s | the owner, 2026-10-24 | `Test(Process.Test_Duration)` |
 | `Acceptance.*` | m, deg | §10.1 | `Simulation.Check_Acceptance` |

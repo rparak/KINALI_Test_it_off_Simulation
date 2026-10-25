@@ -125,7 +125,7 @@ Program:
 Loader_Jobs:
   # Clamp the PCB the robot holds at the handover.
   J_CLAMP:
-    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
 
   # Lift the PCB to the travel height, carry it to MG06, lower it into the holder, open.
   J_INSERT:
@@ -133,7 +133,7 @@ Loader_Jobs:
     - MoveY(L_TRAVEL, t=2.0)                              # legacy: loader_move('y', YP, 2.0)
     - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
     - Wait(0.1)                                           # legacy: hold(0.1)
-    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Gripper(G_OPEN, t=0.6)                              # legacy: loader_move('jaw', J_OPEN, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.1)                                           # legacy: hold(0.1)
 
   # Rise out of MG06 and park behind it (y -199.5 mm, z +20 mm).
@@ -149,7 +149,7 @@ Loader_Jobs:
     - MoveY(L_TRAVEL, t=2.2)                              # legacy: loader_move('y', YP, 2.2)
     - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
     - Wait(0.1)                                           # legacy: hold(0.1)
-    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.2)                                           # legacy: hold(0.2)
 
   # Lift the PCB out of MG06 and bring it home to the take position.
@@ -161,7 +161,7 @@ Loader_Jobs:
 
   # Release the PCB the robot has taken (the vacuum holds it).
   J_RELEASE:
-    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Gripper(G_OPEN, t=0.6)                              # legacy: loader_move('jaw', J_OPEN, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
 
 # The tester's job (MG06).
 Tester_Jobs:
@@ -216,10 +216,10 @@ Waypoints:
 # was made with, each segment's start time (compared at a build), the TOPP grid.
 Optimized:
   Inputs:
-    program: "8ad54ef10159299fbb8603b93a91a61112dbfba4998409ebe5ba3d80898e7db6"
+    program: "650de7aa929a371dd5f12057821efac73b70502ddff74b0a237fc1ba6fef1580"
     constants: "7705a7c6084dfe3e00836a209037f1514ff1961316d591620554840246d0c5d1"
     simulation: "9346b340d3802491524e87af1f618a48832b6844a7c265b99b5761f1ab9d33c9"
-    cell: "5d061b9173c92b21c78015eb29e6e7b285f0f64162457f756b4dac4b10a2dcac"
+    cell: "f941a5f8750a4e6fa494cc89c2e6e26a05475dcfdacd07f1696abc8a3eb97581"
     optimization: "5a7535352644a70875ee790b82cad3b0c5f028612e02a81d2f85b2de80a412e9"
     fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
     planning_model: "f6af87bfbc719432c5e61f1e11cfb36754761e096e35af3431ea741872e21f0c"
@@ -235,15 +235,15 @@ Optimized:
     S2_Pick_Input: 1.060
     S3_To_Loader: 4.984
     S4_Handover: 6.156
-    S5_To_MG06: 10.748
-    S6_Close_MG06: 17.948
-    S7_Leave_MG06: 25.020
-    S8_Test: 27.328
-    S9_Return_MG06: 29.328
-    S10_Open_MG06: 31.636
-    S11_To_Take: 37.060
-    S12_Take_From_Loader: 44.708
-    S13_To_Output: 50.844
-    S14_Place_Output: 52.644
-    S15_Home_End: 55.988
+    S5_To_MG06: 11.000
+    S6_Close_MG06: 18.452
+    S7_Leave_MG06: 25.524
+    S8_Test: 27.832
+    S9_Return_MG06: 29.832
+    S10_Open_MG06: 32.140
+    S11_To_Take: 37.564
+    S12_Take_From_Loader: 45.464
+    S13_To_Output: 51.852
+    S14_Place_Output: 53.652
+    S15_Home_End: 56.996
   Topp_Grid_Points: 1000

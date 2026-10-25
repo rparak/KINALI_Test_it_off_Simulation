@@ -413,7 +413,7 @@ def test_the_old_take_loses_the_board_at_the_release(program, constants, simulat
     old = Load_Program(constants, simulation, cell_configuration, str(path))
     run = _Run_To_End(old, _Build(old, cell_configuration), cell_configuration)
     assert run.Fault is not None and ', step S18_Take_From_Loader, line ' in run.Fault, run.Fault
-    assert (run.Fault_Kind == 'lost' and 'line "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)"' in run.Fault) or \
+    assert (run.Fault_Kind == 'lost' and 'line "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.6)"' in run.Fault) or \
         (run.Fault_Kind == 'input' and 'line "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)"' in run.Fault), run.Fault
     shipped = _Run_To_End(program, _Build(program, cell_configuration), cell_configuration).Result()
     assert [c.Name for c in Check_Program_Acceptance(shipped, cell_configuration) if not c.Passed] == []

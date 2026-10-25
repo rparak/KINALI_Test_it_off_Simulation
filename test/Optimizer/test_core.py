@@ -98,7 +98,7 @@ def test_a_changed_input_or_schedule_is_named(built):
     stale.Optimized.Inputs['cell'] = '0' * 64
     assert Stale_Inputs(stale, built['model']) == ['cell']
     stale.Optimized.Schedule['S6_Close_MG06'] += 0.5
-    assert Schedule_Differences(stale, built['trajectory']) == ['S6_Close_MG06: recorded 18.448 s, built 17.948 s']
+    assert Schedule_Differences(stale, built['trajectory']) == ['S6_Close_MG06: recorded 18.952 s, built 18.452 s']
 
 
 @pytest.mark.slow
@@ -106,15 +106,15 @@ def test_the_optimized_program_passes_every_check_and_is_faster(built, cell_conf
     """
     Description:
         The optimized program passes the F8 check (every sample exact on the planning model, the loader moving in parallel;
-        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (57.708 s against
-        69.396 s, measured 2026-10-25 after F11's take fix and loader clearance).
+        the limits; the handover's no press; the points used) and its cycle is shorter than the taught one (58.716 s against
+        70.404 s, measured 2026-10-25 after the gripper's 0.6 s ramps, B work item 3).
     """
 
     check = Check_Trajectory(built['trajectory'], built['optimized'], built['notes'], built['kinematics'], built['collision'], cell_configuration,
                              built['meta'])
     assert check.Verdict == 'PASS', [f for s in check.Steps for f in s.Failures]
     assert built['trajectory'].T[-1] < built['default'].T[-1]
-    assert round(float(built['trajectory'].T[-1]), 3) == 57.708
+    assert round(float(built['trajectory'].T[-1]), 3) == 58.716
 
 
 def test_the_interlocks_hold(built, cell_configuration):

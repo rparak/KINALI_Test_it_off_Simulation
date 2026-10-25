@@ -1098,6 +1098,31 @@ def Jaw_Posing_Faults(trajectory: Trajectory_Str, grip: float) -> tp.List[tp.Tup
     return out
 
 
+def Jaw_Speed_Faults(trajectory: Trajectory_Str, limit: float) -> tp.List[tp.Tuple[int, str]]:
+    """
+    Description:
+        The gripper operations whose command ramps faster than the gripper's largest jaw speed (Cell.yaml Motion.Jaw_Speed_Max,
+        the SCHUNK EGI 040-EI data sheet): the peak of the sampled command's finite differences.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) limit [float]: The largest jaw speed (m/s per jaw).
+
+    Returns:
+        (1) parameter [List<Tuple<int, string>>]: The sample and a sentence per fault; empty when every ramp is within it.
+    """
+
+    command, out = np.asarray(trajectory.Gripper), []
+    speed = np.abs(np.diff(command)) / CONST_DT
+    moving = np.flatnonzero(speed > 0.0)
+    for operation in np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1) if moving.size else []:
+        peak = int(operation[np.argmax(speed[operation])])
+        if speed[peak] > limit * (1 + CONST_DIFFERENCE_TOLERANCE):
+            out.append((peak + 1, 'the gripper command ramps at %.1f mm/s at %.3f s, faster than Motion.Jaw_Speed_Max %.0f mm/s (%.3f-%.3f s)'
+                        % (1000 * speed[peak], trajectory.T[peak + 1], 1000 * limit, trajectory.T[operation[0]], trajectory.T[operation[-1] + 1])))
+    return out
+
+
 def Loader_Actual(trajectory: Trajectory_Str, model: mujoco.MjModel) -> tp.Tuple[np.ndarray, np.ndarray]:
     """
     Description:
@@ -1530,8 +1555,8 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                                      'jaws would pull it off the cups as they centre it' % (1000 * abs(handover.Lateral), CONST_HANDOVER_KEYPOINT,
                                                                                             1000 * cell.Lateral_Max))
         result.Handover = handover
-    # The posed jaws (the command limited by the part): their rule, in the step of each fault.
-    for i, fault in Jaw_Posing_Faults(tr, max(program.Simulation.Jaw_Actual.values())):
+    # The posed jaws (the command limited by the part) and the gripper's jaw speed: their rules, in the step of each fault.
+    for i, fault in Jaw_Posing_Faults(tr, max(program.Simulation.Jaw_Actual.values())) + Jaw_Speed_Faults(tr, cell.Jaw_Speed_Max):
         result.Steps[int(tr.Step_Index[i])].Failures.append(fault)
     used = []
     for command in commands:

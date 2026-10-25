@@ -63,7 +63,7 @@ def test_headless_runs_the_physics_to_a_time_and_renders_it(tmp_path, run_script
     result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless', '--time', '3.5', '--image', str(image)],
                         work)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.startswith('[INFO] step 2/22 S2_Pick_Input   t = 3.500 s / 69.396 s (physics)   4/4 cups, slip ')
+    assert result.stdout.startswith('[INFO] step 2/22 S2_Pick_Input   t = 3.500 s / 70.404 s (physics)   4/4 cups, slip ')
     assert ': Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)\n' in result.stdout and image.stat().st_size > 10000 and os.listdir(work) == []
 
 

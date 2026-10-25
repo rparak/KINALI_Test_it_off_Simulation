@@ -164,7 +164,7 @@ Program:
 Loader_Jobs:
   # Clamp the PCB the robot holds at the handover.
   J_CLAMP:
-    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
 
   # Lift the PCB to the travel height, carry it to MG06, lower it into the holder, open.
   J_INSERT:
@@ -172,7 +172,7 @@ Loader_Jobs:
     - MoveY(L_TRAVEL, t=2.0)                              # legacy: loader_move('y', YP, 2.0)
     - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
     - Wait(0.1)                                           # legacy: hold(0.1)
-    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Gripper(G_OPEN, t=0.6)                              # legacy: loader_move('jaw', J_OPEN, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.1)                                           # legacy: hold(0.1)
 
   # Rise out of MG06 and park behind it (y -199.5 mm, z +20 mm).
@@ -188,7 +188,7 @@ Loader_Jobs:
     - MoveY(L_TRAVEL, t=2.2)                              # legacy: loader_move('y', YP, 2.2)
     - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
     - Wait(0.1)                                           # legacy: hold(0.1)
-    - Gripper(G_CLAMP, t=0.35)                            # legacy: loader_move('jaw', J_CLAMP, 0.35)
+    - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.2)                                           # legacy: hold(0.2)
 
   # Lift the PCB out of MG06 and bring it home to the take position.
@@ -200,7 +200,7 @@ Loader_Jobs:
 
   # Release the PCB the robot has taken (the vacuum holds it).
   J_RELEASE:
-    - Gripper(G_OPEN, t=0.35)                             # legacy: loader_move('jaw', J_OPEN, 0.35)
+    - Gripper(G_OPEN, t=0.6)                              # legacy: loader_move('jaw', J_OPEN, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
 
 # The tester's job (MG06).
 Tester_Jobs:

@@ -118,6 +118,10 @@ Motion:
   Movej_Min_Duration: 0.5
   # The shortest MoveL. Source: the legacy planner's linear_move. [s] REQUIRED.
   Movel_Min_Duration: 0.6
+  # The loader gripper's largest jaw speed: a Gripper command's ramp peaks at 1.875 x its mean speed (min-jerk),
+  # so a full stroke from G_OPEN to G_CLAMP (29.25 mm per jaw) takes at least 0.55 s. Source: SCHUNK EGI 040-EI
+  # (ID 1474382) data sheet, max. speed 100 mm/s (read 2026-10-25). [m/s per jaw] REQUIRED.
+  Jaw_Speed_Max: 0.1
 
 # The process times the program refers to.
 Process:

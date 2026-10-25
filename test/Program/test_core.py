@@ -32,8 +32,8 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Program/Core
-from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Jaw_Posing_Faults, Movej_Duration, Program_Error_Cls, Pose_Sample,
-                          Validate_Constants, Loader_Actual, Loader_Actual_Trajectory)
+from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Jaw_Posing_Faults, Jaw_Speed_Faults, Movej_Duration,
+                          Program_Error_Cls, Pose_Sample, Validate_Constants, Loader_Actual, Loader_Actual_Trajectory)
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core,
 #   ../Keypoints/Core
 from Configuration.Core import Read_PCB_Meta, CONST_PCB_LOCATIONS, CONST_FORK_PATH
@@ -232,7 +232,7 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
     """
     Description:
         The PCB's locations in order: input_crate, cups (vacuum on at 3.276 s, as the reference plan), jaws (vacuum off at
-        9.912 s), mg06 (the jaws open at MG06), jaws (clamped at MG06), cups (vacuum on at the take), output_crate (vacuum off)
+        10.164 s), mg06 (the jaws open at MG06), jaws (clamped at MG06), cups (vacuum on at the take), output_crate (vacuum off)
         - at its rest pose on the floor; the jaws stand at G_CLAMP's Jaw_Actual while the PCB is between them, the command at
         G_CLAMP's Jaw; MG06 is settled closed during the test and open at the end.
     """
@@ -241,9 +241,9 @@ def test_the_pcb_moves_through_the_cycle_by_the_rules(built, cell_configuration,
     locations = [CONST_PCB_LOCATIONS[i] for i in trajectory.PCB_Location]
     order = [locations[0]] + [b for a, b in zip(locations, locations[1:]) if a != b]
     assert order == ['input_crate', 'cups', 'jaws', 'mg06', 'jaws', 'cups', 'output_crate']
-    assert [e for e in trajectory.Events if e[1].startswith('vacuum')][:2] == [(3.276, 'vacuum_on'), (9.912, 'vacuum_off')]
+    assert [e for e in trajectory.Events if e[1].startswith('vacuum')][:2] == [(3.276, 'vacuum_on'), (10.164, 'vacuum_off')]
     assert trajectory.PCB_Pose[-1][:3] == pytest.approx([0.40620, -0.75160, 0.0049], abs=1e-9)
-    clamp = trajectory.Segment_Command.index('Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)')
+    clamp = trajectory.Segment_Command.index('Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.6)')
     assert trajectory.Jaw[trajectory.Segment_End[clamp] - 1] == simulation.Jaw_Actual['G_CLAMP']
     assert trajectory.Gripper[trajectory.Segment_End[clamp] - 1] == constants.Gripper['G_CLAMP'].Jaw
     during = trajectory.Step_Index == trajectory.Step_Names.index('S11_Test')
@@ -295,6 +295,33 @@ def test_the_old_jaw_posing_is_refused(built, simulation):
     squeezed.Jaw[inside] = grip - 0.001
     assert [f for _, f in Jaw_Posing_Faults(squeezed, grip) if 'closer than grip' in f] == [
         'the posed jaws are 1.00 mm closer than grip with the PCB in them at %.3f s' % squeezed.T[inside]]
+
+
+def test_the_gripper_ramps_within_the_datasheet_jaw_speed(built, cell_configuration):
+    """
+    Description:
+        Item 3 (owner, 2026-10-25): every Gripper command ramps (29.25 mm per jaw in 0.6 s, min-jerk) at most at
+        Motion.Jaw_Speed_Max (100 mm/s, the SCHUNK EGI 040-EI): its peak 91.4 mm/s = 1.875 x 29.25 mm / 0.6 s.
+    """
+
+    trajectory, _ = built
+    assert Jaw_Speed_Faults(trajectory, cell_configuration.Jaw_Speed_Max) == []
+    peak = np.max(np.abs(np.diff(trajectory.Gripper))) / 0.004
+    assert peak == pytest.approx(1.875 * 0.02925 / 0.6, rel=2e-3) and peak <= cell_configuration.Jaw_Speed_Max
+
+
+def test_a_gripper_ramp_faster_than_the_jaw_speed_is_refused(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        Item 3, forced failure: the legacy 0.35 s clamp ramps at 157.6 mm/s and fails the check, naming the speed and the limit.
+    """
+
+    lines = ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_APPROACH, v=0.2)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)', 'Loader.Run(J_CLAMP)']
+    probe = _Probe(lines, constants, simulation, cell_configuration, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+    failures = [f for s in _Check(probe, cell_configuration, tools).Steps for f in s.Failures]
+    assert len(failures) == 1 and failures[0].startswith('the gripper command ramps at 157.6 mm/s at ')
+    assert 'faster than Motion.Jaw_Speed_Max 100 mm/s' in failures[0]
 
 
 def test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle(built, simulation):
@@ -409,7 +436,8 @@ def test_the_default_program_passes_its_check(checked):
     Description:
         The default program's check (measured 2026-10-24): every step passes; S9_Close_MG06's deepest handle_bar overlap is the
         recorded closing path's 0.54 mm, within Cell.yaml's 0.6 mm; every allowed group occurs where declared; the press at the
-        pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples measured than exist); the cycle is 69.396 s (F11's take fix).
+        pick is 1.48 mm (cups_pcb); holds are skipped (fewer samples measured than exist); the cycle is 70.404 s (the gripper's
+        0.6 s ramps, B work item 3).
     """
 
     assert [s.Name for s in checked.Steps if s.Verdict == 'FAIL'] == [] and checked.Verdict == 'PASS'
@@ -418,7 +446,7 @@ def test_the_default_program_passes_its_check(checked):
     pick = next(s for s in checked.Steps if s.Name == 'S2_Pick_Input')
     assert pick.Allowed['cups_pcb'].Distance == pytest.approx(-0.00148, abs=0.00002) and pick.Allowed['pcb_crate'] is not None
     assert all(f is not None for s in checked.Steps for f in s.Allowed.values())
-    assert 0 < checked.Checked < 17350 and checked.Cycle_Time == pytest.approx(69.396, abs=1e-9)
+    assert 0 < checked.Checked < 17602 and checked.Cycle_Time == pytest.approx(70.404, abs=1e-9)
 
 
 def test_the_handover_keeps_the_board_off_the_ledges(checked):
@@ -453,7 +481,7 @@ def test_a_press_at_the_handover_is_reported(constants, simulation, cell_configu
             point.Reference, point.Offset = None, None
     lines = ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_APPROACH, v=0.2)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)', 'Loader.Run(J_CLAMP)']
     probe = _Probe(lines, pressed, pressed_simulation, cell_configuration, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
-                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.6)']})
     result = _Check(probe, cell_configuration, tools)
     assert any(f.startswith('the PCB-ledge gap at P_LOADER_PLACE is') and f.endswith('(a press)') for f in result.Handover.Failures)
     assert result.Verdict == 'FAIL'
@@ -477,7 +505,7 @@ def _Lateral_Handover(constants, simulation, cell, tools, dx, lines=None):
     lines = lines or ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_APPROACH, v=0.2)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)',
                       'Loader.Run(J_CLAMP)']
     probe = _Probe(lines, moved, moved_simulation, cell, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
-                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.6)']})
     return _Check(probe, cell, tools)
 
 
@@ -504,7 +532,7 @@ def test_a_dip_below_the_ledges_along_the_descent_is_reported(constants, simulat
 
     lines = ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_PICK, v=0.03)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)', 'Loader.Run(J_CLAMP)']
     probe = _Probe(lines, constants, simulation, cell_configuration, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
-                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.6)']})
     h = _Check(probe, cell_configuration, tools).Handover
     assert any(f.startswith('the PCB-ledge gap falls to') and f.endswith('(a press)') for f in h.Failures), h.Failures
 
@@ -581,7 +609,7 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
 
     lines = Format_Check_Report(checked, built[0], cell_configuration)
     text = '\n'.join(lines)
-    assert lines[0].startswith('program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s;')
+    assert lines[0].startswith('program Program: 22 steps, 17602 samples (4 ms), cycle time 70.404 s;')
     assert any(line.startswith('S2_Pick_Input ') and line.endswith('PASS') for line in lines)
     assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
     assert ('handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the '
