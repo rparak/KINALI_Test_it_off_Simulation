@@ -516,3 +516,24 @@ def test_the_program_report_has_its_sections():
             '2.23 m/s^2') in lines
     assert 'warnings: none' in lines and sum(1 for line in lines if line.endswith(('PASS', 'FAIL')) or '  PASS  ' in line) == 14
     assert lines[-1] == 'Program: the physics run meets SPEC §10.1 (14 of 14). Simulation results only: not validated for the real cell.'
+
+
+@pytest.mark.slow
+def test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load(program, cell_configuration):
+    """
+    Description:
+        F11: through the taught program's closing of MG06 the run measures the fork on the handle bar three ways: the summed
+        normal force, the net force on the bar (no larger than the sum; its direction a unit vector in the fork's frame, mostly
+        along the slot's pushing face, +x), the squeeze ((sum - |vector sum of the normals|) / 2, never negative) and the handle
+        hinge load; measured 2026-10-25 291 N / 229 N / 37 N / 9.4 N m.
+    """
+
+    trajectory = _Build(program, cell_configuration)
+    drive = Trajectory_Drive_Cls(trajectory, program)
+    run = Physics_Run_Cls(Build_Cell_Model(cell_configuration), drive, Read_PCB_Meta(), cell_configuration)
+    while run.Data.time < 31.0:
+        run.Step()
+    r = run.fork_force, run.fork_net, run.fork_squeeze, run.handle_load
+    assert 0.0 < run.fork_net <= run.fork_force and 0.0 <= run.fork_squeeze <= 0.5 * run.fork_force and run.handle_load > 0.0, r
+    assert np.linalg.norm(run.fork_net_direction) == pytest.approx(1.0) and run.fork_net_direction[0] > 0.5, run.fork_net_direction
+    assert [round(v, 1) for v in r] == pytest.approx([291.0, 229.0, 37.0, 9.4], abs=1.0), r

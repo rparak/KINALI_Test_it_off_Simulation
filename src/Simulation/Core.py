@@ -186,9 +186,19 @@ class Cycle_Result_Str:
     Track_Error: float = 0.0
     Slip: float = 0.0
     Loader_Lag: float = 0.0
-    # Largest total contact force of the fork on the handle bar.
+    # Largest total contact force of the fork on the handle bar (the sum of the contact points' normal forces).
     #   Unit [float] (N)
     Fork_Force: float = 0.0
+    # The fork on the handle bar (F11): the largest net contact force on the bar (the vector sum's magnitude), its direction in
+    # the fork's frame then (ee_tool: the bar's axis is its z), its time; the largest squeeze ((the summed normal force - the
+    # vector sum of the normal forces) / 2: what opposing slot walls cancel); the largest handle hinge load (its constraint
+    # torque).
+    #   Unit [float] (N), [Vector<float> 1x3] (-), [float] (s), [float] (N), [float] (N m)
+    Fork_Net_Force: float = 0.0
+    Fork_Net_Direction: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    Fork_Net_T: float = 0.0
+    Fork_Squeeze: float = 0.0
+    Handle_Load: float = 0.0
     # Deepest PCB penetration per group: (distance, time).
     #   Unit [Dict<string, Tuple<float>>] (m, s)
     Penetration: tp.Dict[str, tp.Tuple[float, float]] = field(default_factory=dict)
@@ -890,6 +900,9 @@ class Physics_Run_Cls(object):
         self.held: tp.Optional[tp.Tuple[float, int, float, float, float]] = None
         self.pcb_last = d.qpos[self.qpcb:self.qpcb + 3].copy()
         self.fc = np.zeros(6)
+        # The fork on the bar (F11): the largest net force (its direction in the fork's frame, its time), squeeze, hinge load.
+        self.fork_net, self.fork_net_direction, self.fork_net_t, self.fork_squeeze, self.handle_load = 0.0, np.zeros(3), 0.0, 0.0, 0.0
+        self.handle_dof, self.handle_body = m.jnt_dofadr[m.joint('handle_hinge').id], m.body('mg06_handle').id
         # The vacuum switch (F11): its checks due; since when at least k cups (index k) have touched the PCB with the vacuum on;
         # the vacuum holds.
         self.Fault_Kind: tp.Optional[str] = None
@@ -967,7 +980,7 @@ class Physics_Run_Cls(object):
                 self.rel0 = rel if self.rel0 is None else self.rel0
                 slip_now = np.linalg.norm(rel - self.rel0)
                 self.slip = max(self.slip, slip_now)
-        ff = 0.0
+        ff, net, normals = 0.0, np.zeros(3), np.zeros(3)
         record = self.steps.setdefault(ph, Step_Physics_Str(Name=ph, Start=t, Free=drive.Free(ph), Parallel=drive.Parallel(ph)))
         for i, c in enumerate(d.contact[:d.ncon]):
             k = self.classifier.Classify(c.geom1, c.geom2, ph, drive.Fork_Allowed(ph))
@@ -984,7 +997,18 @@ class Physics_Run_Cls(object):
             if {b1, b2} == {'aubo/tool/ee_tool', 'mg06_handle'}:
                 mujoco.mj_contactForce(m, d, i, self.fc)
                 ff += self.fc[0]
+                # The contact frame's normal runs from geom 1 to geom 2, and its force acts on geom 2: the force on the bar.
+                side = 1.0 if m.geom_bodyid[c.geom2] == self.handle_body else -1.0
+                frame = c.frame.reshape(3, 3)
+                net += side * frame.T @ self.fc[:3]
+                normals += side * self.fc[0] * frame[0]
         self.fork_force = max(self.fork_force, ff)
+        # The fork on the bar (F11): its net force, the squeeze between the slot's walls, the handle hinge's load.
+        if float(np.linalg.norm(net)) > self.fork_net:
+            self.fork_net, self.fork_net_t = float(np.linalg.norm(net)), d.time
+            self.fork_net_direction = d.xmat[TOOL].reshape(3, 3).T @ net / self.fork_net
+        self.fork_squeeze = max(self.fork_squeeze, 0.5 * (ff - float(np.linalg.norm(normals))))
+        self.handle_load = max(self.handle_load, abs(float(d.qfrc_constraint[self.handle_dof])))
         # The step's measurements (F11): tracking; every 4 ms the TCP's acceleration (second differences) and the tool's tilt
         # from the vertical; the slip with the tilt and the acceleration then; a parallel step's robot-loader distance.
         record.End = d.time
@@ -1106,8 +1130,10 @@ class Physics_Run_Cls(object):
                                 Placed_Tilt=2 * np.arccos(min(1, abs(qd[0]))), Closed=self.marks.get('closed'), Final_PCB=pf,
                                 Crate_Centre=Crate_Center('crate_place'),
                                 Final_Tilt=np.arccos(min(1, abs(1 - 2 * (pf[4]**2 + pf[5]**2)))), Track_Error=self.track_err, Slip=self.slip,
-                                Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Penetration=self.pen, Contacts=self.worst,
-                                Lid_Open=self.Lid_Open, Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
+                                Loader_Lag=self.loader_lag, Fork_Force=self.fork_force, Fork_Net_Force=self.fork_net,
+                                Fork_Net_Direction=self.fork_net_direction, Fork_Net_T=self.fork_net_t, Fork_Squeeze=self.fork_squeeze,
+                                Handle_Load=self.handle_load, Penetration=self.pen, Contacts=self.worst, Lid_Open=self.Lid_Open,
+                                Lid_End=d.qpos[self.qa], Handle_End=d.qpos[self.qh], Steps=list(self.steps.values()),
                                 Fault=self.Fault, Fault_Kind=self.Fault_Kind, Holds=self.holds)
 
 
@@ -1330,6 +1356,9 @@ def Format_Program_Report(result: Cycle_Result_Str, cell: Cell_Configuration_Str
     mm = lambda v: '>%g' % (1000 * CONST_LOADER_CUT) if v is None or v[0] >= CONST_LOADER_CUT else '%.2f' % (1000 * v[0])
     lines = ['program %s: physics run of its trajectory, cycle %.3f s%s' % (name, r.Cycle_Time, '' if r.Fault is None else '; STOPPED: ' + r.Fault)]
     lines += Format_Report(r)
+    lines.append('fork on the handle bar: net contact force max %.0f N at %.3f s, direction in the fork frame %s; squeeze max %.0f N; handle hinge '
+                 'load max %.1f N m (the summed normal force above adds the squeeze, KNOWN_ISSUES.md)'
+                 % (r.Fork_Net_Force, r.Fork_Net_T, '[%.2f %.2f %.2f]' % tuple(r.Fork_Net_Direction), r.Fork_Squeeze, r.Handle_Load))
     lines.append('vacuum holds: ' + ('; '.join('%.3f-%.3f s min %d/%d cups%s' % (h.T_On, h.T_Off, h.Min_Cups, CONST_CUPS, ' at %.3f s' % h.T_Min
                                                                               if h.Min_Cups < CONST_CUPS else '') for h in r.Holds) or 'none'))
     lines.append('%-24s %15s %-6s %-3s %11s %9s %13s %13s %s' % ('step', 'span s', 'kind', 'par', 'track rad', 'slip mm', 'robot-loader',
