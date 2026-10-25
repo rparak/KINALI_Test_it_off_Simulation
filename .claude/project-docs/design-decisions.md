@@ -1028,6 +1028,38 @@ Pinned by `test/Program/test_core.py::test_the_free_transfers_keep_the_loader_cl
 `test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_and_the_tilt` and
 `::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`.
 
+## The recorded closing path stays, and the fork is bounded on its net force and hinge load (F11)
+
+**Decision.** `PATH_FORK_CLOSE` is played as recorded (it presses up to 0.54 mm into the handle bar). The fork's bounds use the
+net contact force on the bar and the handle hinge load (SPEC §10.1); the summed normal force is reported for information.
+
+**Why.** The force has two modes (4 or 6 contact points, flipped by sub-micrometre differences; KNOWN_ISSUES.md). A retraction
+of the recording off the bar (a `Bar_Retraction` per path, the rows moved along every nearby fork face's normal, fading out at a
+0.2 mm gap; experiment only, its diff kept out of the repository) was tested with 14 runs each (start -5 / -1 / 0 / +1 / +5 µm,
+waits 0 / 4 ms / 0.1 s, both programs), 2026-10-25:
+
+| Retraction | Overlap left | Latch (handle / lid) | Modes | Net force | Hinge load | Summed (info) | Acceptance |
+|---|---|---|---|---|---|---|---|
+| 0 (as recorded) | 0.539 mm | 28.65 / -0.48 deg | 2 | 229.0-247.3 N | 9.38-11.45 N m | 291-371 N | 14/14 |
+| 0.55 mm | none | 28.53 / -0.49 deg | 1 | 186.8 N | 8.23 N m | 250 N | 14/14 |
+| 0.60 mm | none | 28.51 / -0.49 deg | 1 | 201.2 N | 9.23 N m | 318 N | 14/14 |
+| 0.65 mm | none | 25.51 / -0.64 deg | 1 | 406.7 N | 9.14 N m | 268 N | 13/14 (no latch) |
+| 0.70 mm | none | 25.51 / -0.64 deg | 1 | 406.7 N | 8.66 N m | 262 N | 13/14 (no latch) |
+
+The owner's rule adopts a retraction only when 0.55-0.65 mm all pass; 0.65 mm does not latch MG06, so the passing window
+(0.55-0.60 mm) is too narrow and the recording stays. (A first attempt with the summed force as the criterion, and with a
+retraction along the closest face only, is superseded: the summed force adds the squeeze between the slot's walls.)
+
+**Bounds** (from the worst mode x 1.15): net force 247.3 N -> 290 N; hinge load 11.45 N m -> 13.5 N m (rounded up to 10 N and
+0.5 N m); the summed force (371 N x 1.15 -> 430 N) is reported, not bounded.
+
+**Alternatives.** Adopting 0.55-0.60 mm: unimodal and lower, but 0.05 mm from a path that no longer latches. A re-recorded
+path: outside this project's data. A settle wait before the path: not the cause (any wait flips the mode).
+
+**Revisit if** the real MG06's handle force limit is known, or the path is re-recorded.
+
+Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
+
 ## The golden data is captured in the current names by one tool (F11)
 
 **Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;

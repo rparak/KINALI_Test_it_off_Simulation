@@ -190,16 +190,48 @@ The take is not re-taught to it (owner): with the press relieved before the jaws
 - **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
   the whole edge.
 
-## The fork's peak force on the handle bar depends on the run's history
+## The fork's force on the handle bar has two modes
 
-The recorded closing path overlaps the handle bar by 0.54 mm at one row (SPEC §4.7); the contact force there is the run's
-"max contact force fork -> handle bar". Measured 2026-10-25 at the same instant of `PATH_FORK_CLOSE` (4.04 s into it): 291 N in
-the taught program, 371 N in the optimized one (291 N before F11's loader clearance re-planned its approach), 294 N in the
-legacy run. The MG06 and PCB states at the path's start agree within 0.02 mm; the robot's settle state differs (taught
-0.00055 rad tracking error and 0.016 rad/s left from its MoveJ, optimized at rest).
+The recorded closing path presses the fork into the handle bar (up to 0.54 mm, SPEC §4.7). At that stiff contact the fork
+touches the bar at 4 or at 6 points, and sub-micrometre state differences decide which: the PCB's start moved +1 µm, or a wait
+of 4 ms or more before the path, flips it (F11, 2026-10-25; not the robot's settle state - the optimized robot stands still
+5 s before the path, the taught one still moves, and either mode occurs in both). Over the 14-run sweep (start -5 to +5 µm,
+waits 0 / 4 ms / 0.1 s, both programs): 4 points (11 runs) - net force on the bar 229 N, handle hinge load 9.4 N m (summed
+normal force 291 N); 6 points (3 runs) - 247 N, 11.5 N m (371 N). The summed force adds the squeeze between the slot's
+opposing walls (37 N), so the bounds use the net force and the hinge load (SPEC §10.1). Retracting the recording off the bar
+removes the second mode and lowers the force (0.55 mm: 187 N, 8.2 N m), but only 0.55-0.60 mm latch MG06; 0.65 mm already
+stops the handle at 25.5 deg, short of the toggle's dead point (design-decisions). The recording stays. The real MG06 handle's
+force limit is not known.
 
-- **Impact:** the reported fork force varies by tens of percent with what precedes the path; no criterion bounds it yet.
-- **What would close it:** a bound in step 6 measured over runs, or a recorded path without the 0.54 mm overlap.
+- **Impact:** the fork force is one of two values; the bounds cover the higher one; the real handle could be overloaded by a
+  force the simulation accepts.
+- **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar.
+
+## The simulated fork-handle contact is stiff; the real robot is not
+
+The fork closes MG06 position-controlled through a stiff contact without compliance: in the simulation the servos follow
+the recorded path while it presses 0.54 mm into the bar (net force up to 247 N on the bar, a wrench of up to 239 N and
+16.1 N m at the tool flange, joint torques up to 35 % of the model's actuator limits; F11, 2026-10-25). Passing the toggle's
+dead point needs about 156 N on the bar in the simulated MG06 (at 27.5 deg of handle, the same with and without the
+overlap). On the real cell the fork, the VGC10 and the robot would deflect, and the AUBO's collision detection may stop
+the robot. The AUBO i5's joint torque limits and collision thresholds and the VGC10's force and moment ratings are not
+known (no official figure found: the i5 manual v4.5.13 found online is a scanned copy without its tables, the VGC10
+datasheet gives the payload only, 6 kg with default cups, 15 kg with custom attachments).
+
+- **Impact:** the closing may not work, or may trip the collision detection, on the real cell, although it passes here.
+- **What would close it:** the closing tried on the real cell at reduced speed with force limits (collision detection at a
+  low level) active; the vendors' torque, force and moment ratings.
+
+## Real-cell transfer: a controller waits for "in position" before a LOCKED operation
+
+The optimized program's splines end where a LOCKED operation begins (the crate pick, the handover, the place) with up to
+1 mm of residual tool error (0.91 / 0.41 / 1.00 mm; the taught MoveJs 0.19 / 0.13 / 0.25 mm), measured in physics F11,
+2026-10-25. In the simulation it has no effect: each LOCKED step starts with a 15 mm approach, and the contact forces in those
+steps are the same in both programs (within 0.3 N). A real controller would wait for "in position" (every joint's error and
+speed below its threshold) before the next operation; the program does not (owner: not now).
+
+- **Impact:** on the real cell the optimized cycle may be longer by the in-position waits (about 0.1 s per join, estimated).
+- **What would close it:** the controller's in-position thresholds, and the rule in the optimizer if they cost time.
 
 ## The loader's actuator model is one load case
 
