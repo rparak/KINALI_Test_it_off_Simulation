@@ -1,5 +1,5 @@
 {
- "source": "the handover check with the jaws centred and the lateral offset (item 1)",
+ "source": "af9eadc: the handover re-taught 0.4 mm along the jaw axis (item 2)",
  "cycle_time": 69.396,
  "samples": 17350,
  "arrays": {
@@ -11,7 +11,7 @@
    ]
   },
   "robot_q": {
-   "sha256": "926c2a95a7941583a35624c65d2bc3672bbf5b520ce02a54db5895cc57d90938",
+   "sha256": "3fb73dac7c687eadee2e04c943b0a6e5b38e78f249ff947b4786255346e2e4a0",
    "dtype": "float64",
    "shape": [
     17350,
@@ -19,7 +19,7 @@
    ]
   },
   "robot_qd": {
-   "sha256": "a22bb2bc850f65c2892e44ad135470fdb3aba1ac41ef6b351485e1b785616e07",
+   "sha256": "d0c4daf2a87cfaf3c04a0f5ba1c49da1be7c09dbce849def88fb3aa5a98c9dc5",
    "dtype": "float64",
    "shape": [
     17350,
@@ -62,7 +62,7 @@
    ]
   },
   "pcb_pose": {
-   "sha256": "33406f28b4ade8111667ee924c5ad0ef6602713854cd3e6264c1edc662409d25",
+   "sha256": "f6d125567b63da288dc6083defde45c3e927f4776024a8aec8f812c35642913d",
    "dtype": "float64",
    "shape": [
     17350,
@@ -369,12 +369,12 @@
    "text": "Robot.MoveJ(P_LOADER_ABOVE)",
    "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
-    "-0x1.7cf2839388f18p-2",
-    "0x1.8456445bf3e7ap-3",
-    "0x1.cae4db62d4b17p+0",
-    "-0x1.fb5d46735c975p-6",
-    "0x1.6d917a447ba83p+0",
-    "-0x1.27249aeb69bc7p+0"
+    "-0x1.7c89c355cbd0ep-2",
+    "0x1.867534b3ea594p-3",
+    "0x1.cb192c92ac417p+0",
+    "-0x1.001bd9aabbc60p-5",
+    "0x1.6d93249c2a71ep+0",
+    "-0x1.270a2f6ad48bep+0"
    ],
    "speed": "0x1.3333333333333p-1",
    "duration": "0x0.0p+0",
@@ -389,12 +389,12 @@
    "text": "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
    "target": "P_LOADER_APPROACH",
    "joints_rad_hex": [
-    "-0x1.b2566a0562326p-2",
-    "0x1.b0f5cc317997ap-4",
-    "0x1.0f46a80d227a5p+1",
-    "0x1.8c98f34dc0726p-2",
-    "0x1.6cc6d585156c1p+0",
-    "-0x1.349b672a62fe5p+0"
+    "-0x1.b1fae194aa59dp-2",
+    "0x1.b55d7e4b47debp-4",
+    "0x1.0f65afc151eefp+1",
+    "0x1.8c69c1a5aa225p-2",
+    "0x1.6cc81e5aa58d9p+0",
+    "-0x1.34844f2d52fcbp+0"
    ],
    "speed": "0x1.999999999999ap-3",
    "duration": "0x0.0p+0",
@@ -409,12 +409,12 @@
    "text": "Robot.MoveL(P_LOADER_PLACE, v=0.03)",
    "target": "P_LOADER_PLACE",
    "joints_rad_hex": [
-    "-0x1.b7ef7209f3503p-2",
-    "0x1.6339b9feeb00ep-4",
-    "0x1.12ce0362b1675p+1",
-    "0x1.bd1548f9d821bp-2",
-    "0x1.6cb316e6c48fap+0",
-    "-0x1.3604f6d3d27ebp+0"
+    "-0x1.b795ee210075dp-2",
+    "0x1.678d6b4d2641bp-4",
+    "0x1.12ee42cb3440cp+1",
+    "0x1.bcf523a0e402ap-2",
+    "0x1.6cb452441c2e5p+0",
+    "-0x1.35ee60d996080p+0"
    ],
    "speed": "0x1.eb851eb851eb8p-6",
    "duration": "0x0.0p+0",
@@ -481,12 +481,12 @@
    "text": "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
    "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
-    "-0x1.7cf2839388f18p-2",
-    "0x1.8456445bf3e7ap-3",
-    "0x1.cae4db62d4b17p+0",
-    "-0x1.fb5d46735c975p-6",
-    "0x1.6d917a447ba83p+0",
-    "-0x1.27249aeb69bc7p+0"
+    "-0x1.7c89c355cbd0ep-2",
+    "0x1.867534b3ea594p-3",
+    "0x1.cb192c92ac417p+0",
+    "-0x1.001bd9aabbc60p-5",
+    "0x1.6d93249c2a71ep+0",
+    "-0x1.270a2f6ad48bep+0"
    ],
    "speed": "0x1.999999999999ap-3",
    "duration": "0x0.0p+0",
@@ -1060,12 +1060,12 @@
    "text": "Robot.MoveJ(P_LOADER_ABOVE)",
    "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
-    "-0x1.7cf2839388f18p-2",
-    "0x1.8456445bf3e7ap-3",
-    "0x1.cae4db62d4b17p+0",
-    "-0x1.fb5d46735c975p-6",
-    "0x1.6d917a447ba83p+0",
-    "-0x1.27249aeb69bc7p+0"
+    "-0x1.7c89c355cbd0ep-2",
+    "0x1.867534b3ea594p-3",
+    "0x1.cb192c92ac417p+0",
+    "-0x1.001bd9aabbc60p-5",
+    "0x1.6d93249c2a71ep+0",
+    "-0x1.270a2f6ad48bep+0"
    ],
    "speed": "0x1.3333333333333p-1",
    "duration": "0x0.0p+0",
@@ -1080,12 +1080,12 @@
    "text": "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
    "target": "P_LOADER_APPROACH",
    "joints_rad_hex": [
-    "-0x1.b2566a0562326p-2",
-    "0x1.b0f5cc317997ap-4",
-    "0x1.0f46a80d227a5p+1",
-    "0x1.8c98f34dc0726p-2",
-    "0x1.6cc6d585156c1p+0",
-    "-0x1.349b672a62fe5p+0"
+    "-0x1.b1fae194aa59dp-2",
+    "0x1.b55d7e4b47debp-4",
+    "0x1.0f65afc151eefp+1",
+    "0x1.8c69c1a5aa225p-2",
+    "0x1.6cc81e5aa58d9p+0",
+    "-0x1.34844f2d52fcbp+0"
    ],
    "speed": "0x1.999999999999ap-3",
    "duration": "0x0.0p+0",
@@ -1100,12 +1100,12 @@
    "text": "Robot.MoveL(P_LOADER_PICK, v=0.03)",
    "target": "P_LOADER_PICK",
    "joints_rad_hex": [
-    "-0x1.b87e828015591p-2",
-    "0x1.5afc369649bb5p-4",
-    "0x1.1325ccfe911fap+1",
-    "0x1.c1f7ff07c17f4p-2",
-    "0x1.6cb1222ee8dd1p+0",
-    "-0x1.36290fdc23718p+0"
+    "-0x1.b825fded6802dp-2",
+    "0x1.5f44b94ea6440p-4",
+    "0x1.1346627db4ce2p+1",
+    "0x1.c1dd6fcde457cp-2",
+    "0x1.6cb25b7f85cc0p+0",
+    "-0x1.3612ba4d648e1p+0"
    ],
    "speed": "0x1.eb851eb851eb8p-6",
    "duration": "0x0.0p+0",
@@ -1146,12 +1146,12 @@
    "text": "Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)",
    "target": "P_LOADER_TAKE_TOUCH",
    "joints_rad_hex": [
-    "-0x1.b7eef83a0a844p-2",
-    "0x1.63419894cdb74p-4",
-    "0x1.12cdb246683d0p+1",
-    "0x1.bd10ba63f16d1p-2",
-    "0x1.6cb318f37f3f5p+0",
-    "-0x1.3604d85fd84bbp+0"
+    "-0x1.b79696cab8f2ap-2",
+    "0x1.6788ef74c5d3ep-4",
+    "0x1.12ee2e00f34a4p+1",
+    "0x1.bcf59e9ca532fp-2",
+    "0x1.6cb4536ff492cp+0",
+    "-0x1.35ee8b99f0596p+0"
    ],
    "speed": "0x1.47ae147ae147bp-7",
    "duration": "0x0.0p+0",
@@ -1205,12 +1205,12 @@
    "text": "Robot.MoveL(P_LOADER_EXIT, v=0.05)",
    "target": "P_LOADER_EXIT",
    "joints_rad_hex": [
-    "-0x1.acc282ff60d1fp-2",
-    "0x1.f5e16a74509e2p-4",
-    "0x1.0b97cb3c01687p+1",
-    "0x1.5d15e5240573bp-2",
-    "0x1.6cdacb3020b85p+0",
-    "-0x1.33332a96290e4p+0"
+    "-0x1.ac630b43b79e3p-2",
+    "0x1.fa6b8482a4ccfp-4",
+    "0x1.0bb487b1432fcp+1",
+    "0x1.5ccb3425c991ap-2",
+    "0x1.6cdc270e2d39cp+0",
+    "-0x1.331b154f8e385p+0"
    ],
    "speed": "0x1.999999999999ap-5",
    "duration": "0x0.0p+0",
@@ -1225,12 +1225,12 @@
    "text": "Robot.MoveL(P_LOADER_ABOVE, v=0.20)",
    "target": "P_LOADER_ABOVE",
    "joints_rad_hex": [
-    "-0x1.7cf2839388f18p-2",
-    "0x1.8456445bf3e7ap-3",
-    "0x1.cae4db62d4b17p+0",
-    "-0x1.fb5d46735c975p-6",
-    "0x1.6d917a447ba83p+0",
-    "-0x1.27249aeb69bc7p+0"
+    "-0x1.7c89c355cbd0ep-2",
+    "0x1.867534b3ea594p-3",
+    "0x1.cb192c92ac417p+0",
+    "-0x1.001bd9aabbc60p-5",
+    "0x1.6d93249c2a71ep+0",
+    "-0x1.270a2f6ad48bep+0"
    ],
    "speed": "0x1.999999999999ap-3",
    "duration": "0x0.0p+0",
