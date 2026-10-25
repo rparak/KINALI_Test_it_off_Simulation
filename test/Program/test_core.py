@@ -257,7 +257,7 @@ def test_the_posed_jaws_are_the_command_limited_by_the_part(built, simulation):
     Description:
         Item 10 (owner, 2026-10-25): at all four gripper operations (the handover clamp, the release in MG06, the re-grip, the
         release at the take) the posed jaw gap is monotonic in the command's direction and never closer than grip with the PCB in
-        the jaws; the release in MG06 opens from grip (17.75 mm), not from the clamp command (5.75 mm).
+        the jaws; the release in MG06 opens from grip (Jaw_Actual), not from the clamp command (5.75 mm).
     """
 
     trajectory, _ = built
@@ -274,7 +274,8 @@ def test_the_old_jaw_posing_is_refused(built, simulation):
     """
     Description:
         Item 10, forced failure: the old posing of the release in MG06 (the raw command once the PCB is in MG06: the jaws jump
-        from grip to the clamp command, through the PCB, then open) closes the posed jaws by 12 mm while the gripper opens;
+        from grip, 17.54 mm, to the clamp command, 5.75 mm, through the PCB, then open) closes the posed jaws by 11.79 mm while
+        the gripper opens;
         a jaw closer than grip with the PCB in the jaws is refused too.
     """
 
@@ -288,7 +289,7 @@ def test_the_old_jaw_posing_is_refused(built, simulation):
     old.Jaw = np.array(old.Jaw)
     old.Jaw[switched:release[-1] + 2] = old.Gripper[switched:release[-1] + 2]
     faults = Jaw_Posing_Faults(old, grip)
-    assert len(faults) == 1 and faults[0][0] == switched and faults[0][1].startswith('the posed jaws close by 12.00 mm at ')
+    assert len(faults) == 1 and faults[0][0] == switched and faults[0][1].startswith('the posed jaws close by 11.79 mm at ')
     squeezed = copy.deepcopy(trajectory)
     squeezed.Jaw = np.array(squeezed.Jaw)
     inside = int(np.flatnonzero(squeezed.PCB_Location == CONST_PCB_LOCATIONS.index('jaws'))[100])
@@ -514,7 +515,9 @@ def test_the_descent_measures_the_height_above_the_ledges_only(constants, simula
     Description:
         Item 1 (owner, 2026-10-25): a handover taught 0.4 mm along the jaw axis (the re-teach's size) passes - along the
         descent the jaws are centred on the PCB, so the gap is its height above the finger ledges (with the jaws at grip about
-        the uncentred PCB it was -0.186 mm, the board in a jaw's pad corner); the lateral offset is reported, 0.400 mm.
+        the uncentred PCB it was -0.186 mm, the board in a jaw's pad corner): the descent's gap is the gap at the point plus the
+        PCB's height above it along the plate normal (with the jaws at the physics grip, Jaw_Actual 17.54 mm, beside the board
+        the lead-in faces gave 0.078 mm); the lateral offset is reported, 0.400 mm.
     """
 
     result = _Lateral_Handover(constants, simulation, cell_configuration, tools, 0.0004)
@@ -653,8 +656,8 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     assert lines[0].startswith('program Program: 22 steps, 17602 samples (4 ms), cycle time 70.404 s;')
     assert any(line.startswith('S2_Pick_Input ') and line.endswith('PASS') for line in lines)
     assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
-    assert ('handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the '
-            'PCB) min 0.299 mm') in text and 'mm from the jaw centreline (<= 0.5 mm): PASS' in text
+    assert ('handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (the PCB\'s height '
+            'above the ledges) min 0.299 mm') in text and 'mm from the jaw centreline (<= 0.5 mm): PASS' in text
     assert 'stretched MoveLs: none' in text and 'note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving' in text
     assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS;' in text
     assert lines[-1] == 'Program: the program check passed. Simulation results only: not validated for the real cell.'

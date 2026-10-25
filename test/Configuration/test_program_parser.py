@@ -156,7 +156,7 @@ def test_the_shipped_files_load(program, constants, simulation):
     assert (simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper, simulation.Start_Vacuum, simulation.Start_PCB,
             simulation.Start_MG06) == ('P_HOME', 'L_HOME', 'G_OPEN', False, 'input_crate', 'Open')
     assert simulation.Signal_Response == {'DI_VACUUM_OK': 0.3} and simulation.End_Settle == 0.8
-    assert simulation.Jaw_Actual == {'G_CLAMP': 0.017750000000000002}
+    assert simulation.Jaw_Actual == {'G_CLAMP': 0.01754}
 
 
 def test_the_commands_are_resolved(program, constants, cell_configuration):
@@ -252,7 +252,7 @@ def test_an_offset_cycle_is_rejected(tmp_path):
     ('  Vacuum: OFF', '  Vacuum: maybe', "Start.Vacuum: 'maybe' is not one of ON, OFF"),
     ('  Robot: P_HOME', '  Robot: P_GARAGE', "Start.Robot: 'P_GARAGE' is not one of"),
     ('  T_FLANGE: aubo/tool/tool_flange\n', '', 'Tool_Site.T_FLANGE: missing: every tool needs its model site'),
-    ('  G_CLAMP: 0.017750000000000002', '  G_SQUEEZE: 0.017750000000000002', 'Jaw_Actual.G_SQUEEZE: is not a declared gripper command'),
+    ('  G_CLAMP: 0.01754', '  G_SQUEEZE: 0.01754', 'Jaw_Actual.G_SQUEEZE: is not a declared gripper command'),
     ('  P_HOME:\n    Context', '  P_HOMME:\n    Context', 'Points.P_HOMME: is not a point of Constants.yaml (unknown point)'),
     ('    Fixture: Open\n    Contacts: []\n    PCB_Hold: null\n  P_INPUT_ABOVE',
      '    Fixture: Ajar\n    Contacts: []\n    PCB_Hold: null\n  P_INPUT_ABOVE',

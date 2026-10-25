@@ -251,13 +251,13 @@ Loader_Positions:
     Z: 0.02
 
 # The gripper commands (SCHUNK EGI 040-EI), the jaw set-point per jaw [m]. Source: the former pcb_meta.json
-# jaw_open; the clamp command 12 mm behind the part, held by the 70 N force limit (35 N per jaw; SPEC §4.3, §4.4).
+# jaw_open; the clamp command 11.79 mm behind the part (Simulation.yaml Jaw_Actual), held by the 70 N force limit (35 N per jaw; SPEC §4.3, §4.4).
 Gripper_Commands:
   G_OPEN:
     Description: "Fully open."
     Jaw: 0.035
   G_CLAMP:
-    Description: "Clamp: 12 mm behind the part; the force limit holds it (where the jaws stop: Simulation.yaml Jaw_Actual)."
+    Description: "Clamp: 11.79 mm behind the part; the force limit holds it (where the jaws stop: Simulation.yaml Jaw_Actual)."
     Jaw: 0.005750000000000002
 
 # The recorded flange paths (SPEC §4.9): File (repository-relative), Phase (CLOSE: the rows from 1 to the last

@@ -270,7 +270,7 @@ def test_posing_sets_loader_jaws_and_mg06(cell_model, constants, simulation, cel
     Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_MG06_CLOSE_END', loader='L_HOME', fixture='Closed')
     assert q[a['y_axis']] == -0.1 and math.degrees(q[a['lid_hinge']]) == pytest.approx(-0.5)
     Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'P_LOADER_PICK')
-    assert q[a['jaw_L']] == 0.017750000000000002
+    assert q[a['jaw_L']] == 0.01754
     with pytest.raises(Keypoints_Error_Cls, match="no point 'nowhere'"):
         Pose_Cell(kinematics, constants, simulation, cell_configuration, Read_PCB_Meta(), 'nowhere')
 

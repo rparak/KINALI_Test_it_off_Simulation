@@ -48,9 +48,11 @@ Signal_Response:
 Vacuum_OK_Min_Cups: 4
 
 # Where the jaws really stop when a gripper command closes them on the PCB (the 70 N force limit, 35 N per jaw, holds them on
-# its edges): the former pcb_meta.json jaw_grip (SPEC §4.4). Posing and the checks use it. [m]
+# its edges; SPEC §4.4). Posing and the checks use it. Source: physics with the synchronized jaws, both programs, 2026-10-25:
+# jaw_L / jaw_R 17.537-17.550 mm while clamped at the handover and at the place (B work; the former pcb_meta.json jaw_grip,
+# 17.75 mm, was the soft coupling's). [m]
 Jaw_Actual:
-  G_CLAMP: 0.017750000000000002
+  G_CLAMP: 0.01754
 
 # Everything holds this long after the program's last segment, so the PCB settles in the output crate before
 # the simulated cycle ends (the legacy planner's final hold(0.8); not part of the real cell's program). [s] REQUIRED.

@@ -1288,7 +1288,7 @@ class Handover_Check_Str:
     """
     Description:
         The no-press check of the handover (owner's B1, SPEC §4.7): the PCB-ledge gap with the jaws at grip over the MoveL into
-        P_LOADER_PLACE (its minimum; the jaws centred on the PCB across them, so only its height counts), at P_LOADER_PLACE, and
+        P_LOADER_PLACE (its minimum: the gap at the point plus the PCB's height above it along the plate normal), at P_LOADER_PLACE, and
         while the jaws clamp the PCB on the cups (min, max); the PCB centre's lateral offset from the jaw centreline there.
     """
 
@@ -1506,21 +1506,19 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
         grip = max(program.Simulation.Jaw_Actual.values())
         home = program.Constants.Loader[CONST_LOADER_HOME]
-        line, lateral = [], 0.0
-        for i in range(first, end):
-            Pose_Sample(kinematics, tr, i)
-            axis = data.xaxis[model.joint('jaw_R').id].copy()
-            hold = np.array(pcb_meta.Hold_Pos) + [0.0, tr.Loader_Y[i] - home.Y, tr.Loader_Z[i] - home.Z]
-            # Item 1: the jaws centred on the PCB across them - the PCB moved onto the jaw centreline along the jaw axis -, so
-            # the descent's gap is the height above the finger ledges only.
-            lateral = float((tr.PCB_Pose[i][:3] - hold) @ axis)
-            centred = np.r_[tr.PCB_Pose[i][:3] - lateral * axis, tr.PCB_Pose[i][3:]]
-            handle = float(tr.MG06_Handle[i])
-            for pcb in (centred, tr.PCB_Pose[i]) if i == end - 1 else (centred,):
-                kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[i]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[i]),
-                                     z=float(tr.Loader_Z[i]), jaw=grip, pcb=pcb)
-                mujoco.mj_kinematics(model, data)
-                line.append(Ledge_Gap(model, data))
+        # Item 1: along the descent only the PCB's height above the finger ledges counts - the gap at the point plus the PCB's
+        # height above its end position along the plate normal (the jaws are open during the descent, so a jaw posed at grip
+        # beside the board would measure its lead-in faces, not the ledges under it).
+        Pose_Sample(kinematics, tr, end - 1)
+        axis = data.xaxis[model.joint('jaw_R').id].copy()
+        hold = np.array(pcb_meta.Hold_Pos) + [0.0, tr.Loader_Y[end - 1] - home.Y, tr.Loader_Z[end - 1] - home.Z]
+        lateral = float((tr.PCB_Pose[end - 1][:3] - hold) @ axis)
+        handle = float(tr.MG06_Handle[end - 1])
+        kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[end - 1]), handle=handle, press=Press_For_Handle(model, handle),
+                             y=float(tr.Loader_Y[end - 1]), z=float(tr.Loader_Z[end - 1]), jaw=grip, pcb=tr.PCB_Pose[end - 1])
+        mujoco.mj_kinematics(model, data)
+        at_point, normal = Ledge_Gap(model, data), data.xmat[model.body('pcb').id].reshape(3, 3)[:, 2].copy()
+        line = [at_point + float((tr.PCB_Pose[i][:3] - tr.PCB_Pose[end - 1][:3]) @ normal) for i in range(first, end)]
         clamped = []
         for i in range(end, len(tr.T)):
             if CONST_PCB_LOCATIONS[tr.PCB_Location[i]] != 'cups':
@@ -1528,8 +1526,8 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
             if tr.Jaw[i] == grip:
                 Pose_Sample(kinematics, tr, i)
                 clamped.append(Ledge_Gap(model, data))
-        # The gap at the point itself is measured on the PCB as it is (the last entry), as while clamped.
-        handover = Handover_Check_Str(Line_Min=min(line), At_Handover=line[-1], Clamped_Min=min(clamped) if clamped else math.nan,
+        # The gap at the point itself is measured on the PCB as it is, as while clamped.
+        handover = Handover_Check_Str(Line_Min=min(line), At_Handover=at_point, Clamped_Min=min(clamped) if clamped else math.nan,
                                       Clamped_Max=max(clamped) if clamped else math.nan, Lateral=lateral)
         low, high = cell.Ledge_Gap - cell.Ledge_Tolerance, cell.Ledge_Gap + cell.Ledge_Tolerance
         if not low <= handover.At_Handover <= high:
@@ -1665,9 +1663,9 @@ def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, c
             lines.append('    %-12s %s' % ('loader', _Distance_Text(s.Loader if s.Loader.Sample >= 0 else None, CONST_LOADER_CUT)))
     if result.Handover is not None:
         h = result.Handover
-        lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s (jaws centred on '
-                     'the PCB) min %.3f mm, at it %.3f mm, while clamped %.3f .. %.3f mm; PCB centre %.3f mm from the jaw centreline (<= %.1f '
-                     'mm): %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT, 1000 * h.Line_Min,
+        lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s (the PCB\'s '
+                     'height above the ledges) min %.3f mm, at it %.3f mm, while clamped %.3f .. %.3f mm; PCB centre %.3f mm from the jaw '
+                     'centreline (<= %.1f mm): %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT, 1000 * h.Line_Min,
                                   1000 * h.At_Handover, 1000 * h.Clamped_Min, 1000 * h.Clamped_Max, 1000 * abs(h.Lateral), 1000 * cell.Lateral_Max,
                                   'FAIL' if h.Failures else 'PASS'))
     if result.Regrip is not None:

@@ -144,7 +144,7 @@ impratio 10, noslip iterations 5, solver Newton, integrator Euler (the scene's; 
 | ctrl | name | meaning |
 |---|---|---|
 | 0, 1 | `y_servo`, `z_servo` | loader axis position [m]; first-order lag τ = 30 ms (`filterexact`; its `act` state starts at the start position) |
-| 2 | `gripper` | jaw target [m], force-limited to 70 N, the gripping force as SCHUNK states it (the sum of both jaws: 35 N per jaw; EGI 040-EI 25-70 N); clamp = 12 mm behind the part (`jaw_grip − 0.012`), open = 0.035 |
+| 2 | `gripper` | jaw target [m], force-limited to 70 N, the gripping force as SCHUNK states it (the sum of both jaws: 35 N per jaw; EGI 040-EI 25-70 N); clamp = 11.79 mm behind the part (`jaw_grip − 0.012`), open = 0.035 |
 | 3–8 | `robot_*` | joint position servos, kp 5000/5000/4000/2000/2000/1500, kv 150/150/100/25/25/15, armature, gravity compensation; driven with velocity feed-forward `ctrl = q_ref + (kv/kp)·v_ref` |
 | 9–12 | `vacuum0..3` | adhesion on the 4 cups, ctrl 0/1, 7 N each (40 kPa × D15); holds only where a cup touches |
 
@@ -155,7 +155,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 ### 4.4 Key numbers
 
 - Loader: home y −0.1000 / z 0; place y +0.19666 / z +0.06722; travel height z +0.07922; park
-  y −0.1995 / z +0.020; jaws open 0.035, grip 0.01775 (clamp command 0.00575). Source: now
+  y −0.1995 / z +0.020; jaws open 0.035, grip 0.01754 (the physics grip with the synchronized jaws; 0.01775 until 2026-10-25; clamp command 0.00575). Source: now
   `Configuration/Constants.yaml` (`Loader_Positions`, `Gripper_Commands`; formerly `pcb_meta.json`), `legacy/plan_cell.py` (git
   tag `legacy-planner-reference`).
 - PCB in the loader jaws (loader home): position (0.0057, −0.30829, 0.14961), quaternion
@@ -749,8 +749,8 @@ occur; per segment and group the closest pair (up to 10 mm) and its sample and t
 peak joint speed and acceleration of every MoveJ and MoveSpline (at its `v=`; a MoveJ's rounding to whole samples allowed: 1 + 0.5 / n) and MoveL within
 `Motion` (finite differences, 0.1 % tolerance), the recorded paths' peaks reported, not limited; the handover's no-press
 rule (the PCB-ledge gap with the jaws at grip within `Handover.Ledge_Gap` ± `Ledge_Tolerance` at `P_LOADER_PLACE` and while
-clamped, never smaller along the MoveL into it - there with the jaws centred on the PCB across them, so only its height above the
-finger ledges counts; owner 2026-10-25) and the PCB centre at most `Handover.Lateral_Max` from the jaw centreline at
+clamped, never smaller along the MoveL into it - there only its height above the finger ledges counts: the gap at the point plus
+the PCB's height above it along the plate normal; owner 2026-10-25) and the PCB centre at most `Handover.Lateral_Max` from the jaw centreline at
 `P_LOADER_PLACE` (along the jaw axis: the jaws centre the PCB as they clamp); the posed jaws are the command limited by the part
 (`Jaw_Posing_Faults`: every gripper operation monotonic, never closer than grip with the PCB in the jaws) and every Gripper
 command ramp no faster than `Motion.Jaw_Speed_Max` (`Jaw_Speed_Faults`); the re-grip from MG06 (`Regrip_Check_Str`, item 5):
