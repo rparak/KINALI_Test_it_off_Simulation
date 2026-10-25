@@ -947,9 +947,10 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
                                                                                                              closest[3], closest[2])))
     out.append(Acceptance_Check_Str('PCB slip <= %.2f mm' % (1000 * cell.Slip_Max), r.Slip <= cell.Slip_Max, '%.2f mm' % (1000 * r.Slip)))
     out.append(Acceptance_Check_Str('tracking error <= %.4f rad' % cell.Tracking_Max, r.Track_Error <= cell.Tracking_Max, '%.4f rad' % r.Track_Error))
-    out.append(Acceptance_Check_Str('fork net force on the bar <= %.0f N' % cell.Fork_Net_Force_Max, r.Fork_Net_Force <= cell.Fork_Net_Force_Max,
+    out.append(Acceptance_Check_Str('fork net force <= %.0f N (sim. regression bound)' % cell.Fork_Net_Force_Max,
+                                    r.Fork_Net_Force <= cell.Fork_Net_Force_Max,
                                     '%.1f N (summed normal %.0f N, for information)' % (r.Fork_Net_Force, r.Fork_Force)))
-    out.append(Acceptance_Check_Str('handle hinge load <= %.1f N m' % cell.Handle_Load_Max, r.Handle_Load <= cell.Handle_Load_Max,
+    out.append(Acceptance_Check_Str('hinge load <= %.1f N m (sim. regression bound)' % cell.Handle_Load_Max, r.Handle_Load <= cell.Handle_Load_Max,
                                     '%.2f N m' % r.Handle_Load))
     out.append(Acceptance_Check_Str('free transfers >= Loader_Free %.1f mm' % (1000 * cell.Loader_Free),
                                     closest is None or closest[0] >= cell.Loader_Free,
@@ -1050,6 +1051,8 @@ def Format_Program_Report(result: Cycle_Result_Str, cell: Cell_Configuration_Str
     lines += ['[WARNING] %s' % w for w in warnings] or ['warnings: none']
     checks = Check_Program_Acceptance(r, cell)
     lines += ['%-50s %s  %s' % (c.Name, 'PASS' if c.Passed else 'FAIL', c.Detail) for c in checks]
+    lines.append('the fork net force and hinge load bounds are regression bounds derived from the simulation (the worst mode x 1.15) and '
+                 'the torque bound is the model\'s actuator estimate - not safety limits: no vendor rating is known (KNOWN_ISSUES.md)')
     lines.append('%s: the physics run %s SPEC §10.1 (%d of %d). Simulation results only: not validated for the real cell.'
                  % (name, 'meets' if all(c.Passed for c in checks) else 'FAILS', sum(c.Passed for c in checks), len(checks)))
     return lines

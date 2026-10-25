@@ -328,8 +328,8 @@ def _Program_Result():
     (lambda r: setattr(r.Steps[0], 'PCB_Loader', (0.0099, 5.6, 'pcb / z_carriage')), 'free transfers >= Loader_Free 10.0 mm'),
     (lambda r: setattr(r, 'Slip', 0.00199), 'PCB slip <= 1.98 mm'),
     (lambda r: setattr(r, 'Track_Error', 0.0190), 'tracking error <= 0.0189 rad'),
-    (lambda r: setattr(r, 'Fork_Net_Force', 290.1), 'fork net force on the bar <= 290 N'),
-    (lambda r: setattr(r, 'Handle_Load', 13.51), 'handle hinge load <= 13.5 N m'),
+    (lambda r: setattr(r, 'Fork_Net_Force', 290.1), 'fork net force <= 290 N (sim. regression bound)'),
+    (lambda r: setattr(r, 'Handle_Load', 13.51), 'hinge load <= 13.5 N m (sim. regression bound)'),
     (lambda r: r.Joint_Torque.__setitem__(5, 60.0), 'no robot actuator saturated (model limits)'),
 ])
 def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):

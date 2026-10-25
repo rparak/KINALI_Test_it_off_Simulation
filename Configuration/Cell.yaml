@@ -145,7 +145,8 @@ Acceptance:
   Tracking_Max: 0.0189
   # The fork on the MG06 handle bar while it closes and opens MG06: the net contact force on the bar and the
   # handle hinge load (its constraint torque), the worst of the force's two modes x 1.15, rounded up (247.3 N,
-  # 11.45 N m; F11, design-decisions). The real handle's limit is not known (KNOWN_ISSUES.md). Source: the owner,
+  # 11.45 N m; F11, design-decisions): regression bounds derived from the simulation, not safety limits - the real
+  # handle's, fork's and VGC10's ratings are not known (KNOWN_ISSUES.md). Source: the owner,
   # 2026-10-25 (step 6). [N], [N m] REQUIRED.
   Fork_Net_Force_Max: 290.0
   Handle_Load_Max: 13.5

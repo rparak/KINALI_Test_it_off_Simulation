@@ -951,11 +951,14 @@ A program's run (F11, owner 2026-10-24; `Simulation.Check_Program_Acceptance`) a
     `Tracking_Max` (0.0189 rad) - 1.5 x the legacy run's (step 6, owner 2026-10-25; a step above them is also a warning);
 14. the fork's net contact force on the handle bar at most `Fork_Net_Force_Max` (290 N) and 15. the handle hinge load at most
     `Handle_Load_Max` (13.5 N m) - the worst of the force's two modes x 1.15 (design-decisions); the summed normal force is
-    reported only (it adds the squeeze between the slot's walls);
+    reported only (it adds the squeeze between the slot's walls). Both are **regression bounds derived from the simulation**,
+    not safety limits: no rating of the real handle, fork or VGC10 is known (owner 2026-10-25: model-based until AUBO and
+    OnRobot answer; KNOWN_ISSUES.md). The report names them so (`(sim. regression bound)`) and says it under the table;
 16. in every free transfer the robot and the carried PCB at least `Clearance.Loader_Free` (10 mm) from the loader (closer is
     also a warning);
 17. no robot actuator saturated: each joint's largest torque below 99.9 % of the model's actuator limit (180 / 180 / 150 /
-    60 / 60 / 60 N m, the vendored model's estimates; the AUBO i5's official limits are not known, KNOWN_ISSUES.md).
+    60 / 60 / 60 N m, the vendored model's estimates; the AUBO i5's official limits are not known, KNOWN_ISSUES.md) - also a
+    model-based bound, not a safety limit.
 
 The legacy reference run keeps items 1-7: its take carried the board on 2 of 4 cups (KNOWN_ISSUES.md), and its baseline
 report stays the regression of the old run.
