@@ -1035,7 +1035,7 @@ net contact force on the bar and the handle hinge load (SPEC §10.1); the summed
 
 **Why.** The force has two modes (4 or 6 contact points, flipped by sub-micrometre differences; KNOWN_ISSUES.md). A retraction
 of the recording off the bar (a `Bar_Retraction` per path, the rows moved along every nearby fork face's normal, fading out at a
-0.2 mm gap; experiment only, its diff kept out of the repository) was tested with 14 runs each (start -5 / -1 / 0 / +1 / +5 µm,
+0.2 mm gap; experiment only, kept off main) was tested with 14 runs each (start -5 / -1 / 0 / +1 / +5 µm,
 waits 0 / 4 ms / 0.1 s, both programs), 2026-10-25:
 
 | Retraction | Overlap left | Latch (handle / lid) | Modes | Net force | Hinge load | Summed (info) | Acceptance |
@@ -1050,13 +1050,29 @@ The owner's rule adopts a retraction only when 0.55-0.65 mm all pass; 0.65 mm do
 (0.55-0.60 mm) is too narrow and the recording stays. (A first attempt with the summed force as the criterion, and with a
 retraction along the closest face only, is superseded: the summed force adds the squeeze between the slot's walls.)
 
+**How to repeat it.** The experiment is the commit `cb69907`, tag `experiment-fork-bar-retraction` (on top of `92d1943`, the
+state it ran on; not on main). It adds `Bar_Retraction` [m] to `Constants.yaml` `Paths` (range 0-5 mm, 0: as recorded) and
+`Example/Simulation/fork_retraction_sweep.py R_MM taught|optimized DX_UM WAIT_S`, one run per line: the retraction of
+`PATH_FORK_CLOSE` (`PATH_FORK_OPEN` stays 0), the PCB's start offset along x before the run (the mode's trigger), a `Wait`
+before the path (taught: after `MoveJ(P_MG06_FORK_START)`; optimized: after `Loader.WaitDone(J_PARK)`); `P_MG06_CLOSE_END`
+follows the retracted end. The table's runs: R 0 / 0.55 / 0.60 / 0.65 / 0.70 x DX -5 / -1 / 0 / +1 / +5 (WAIT 0) and WAIT 0.004 /
+0.1 (DX 0), both programs; MuJoCo 3.16.0, the environment of `test/Simulation/data/baseline_environment.json`. Re-run
+2026-10-25 from the tag: 0.55 mm, taught, DX 0, WAIT 0 -> net 186.8 N, hinge 8.23 N m, as in the table.
+
+**Not now: the narrow 0.55-0.60 mm window** (owner, 2026-10-25). It is revisited only if the closing on the real cell shows a
+problem (a force too high, a collision stop, wear of the bar); the real fork and MG06 would need their own sweep then.
+
 **Bounds** (from the worst mode x 1.15): net force 247.3 N -> 290 N; hinge load 11.45 N m -> 13.5 N m (rounded up to 10 N and
 0.5 N m); the summed force (371 N x 1.15 -> 430 N) is reported, not bounded.
 
 **Alternatives.** Adopting 0.55-0.60 mm: unimodal and lower, but 0.05 mm from a path that no longer latches. A re-recorded
 path: outside this project's data. A settle wait before the path: not the cause (any wait flips the mode).
 
-**Revisit if** the real MG06's handle force limit is known, or the path is re-recorded.
+These bounds are regression bounds derived from the simulation, not safety limits (the vendors' ratings are not known;
+KNOWN_ISSUES.md).
+
+**Revisit if** the real MG06's handle force limit or the VGC10's force and moment ratings are known, the closing on the real
+cell shows a problem, or the path is re-recorded.
 
 Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
 
