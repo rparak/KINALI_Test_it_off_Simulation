@@ -1,72 +1,72 @@
-program Program_Optimized: physics run of its trajectory, cycle 58.716 s
-cycle time 58.7 s
+program Program_Optimized: physics run of its trajectory, cycle 59.148 s
+cycle time 59.1 s
   3.07s vacuum ON  (4 of 4 cups touch the PCB)
   9.30s vacuum OFF
- 47.85s vacuum ON  (4 of 4 cups touch the PCB)
- 55.57s vacuum OFF
-PCB in MG06 (t=15.2s): error 0.19 mm (dx 0.01 dy -0.17 dz 0.08), tilt 0.01 deg
-MG06 closed with the robot away (t=27.8s): lid -0.5 deg, handle 28.6 deg
+ 48.28s vacuum ON  (4 of 4 cups touch the PCB)
+ 56.00s vacuum OFF
+PCB in MG06 (t=15.6s): error 0.19 mm (dx 0.01 dy -0.17 dz 0.08), tilt 0.01 deg
+MG06 closed with the robot away (t=28.3s): lid -0.5 deg, handle 28.6 deg
 PCB at the end: x 405.1 y -752.3 z 4.9 mm (right crate centre 406.2 -751.6, floor 4.0); tilt 0.00 deg
 robot joint tracking error max 0.0126 rad, PCB slip in the cups max 1.31 mm, loader axis lag max 22.6 mm
 summed normal force fork -> handle bar: 291 N (4 contact points)
-deepest PCB penetration: MG06 holder -0.04 mm (t=14.77), crate -0.15 mm (t=55.58), loader jaws -0.07 mm (t=41.4)
+deepest PCB penetration: MG06 holder -0.04 mm (t=15.2), crate -0.15 mm (t=56.02), loader jaws -0.07 mm (t=41.83)
 robot <-> MG06 / workstation / crates             : no contact
 robot tool <-> handle (outside closing / opening) : no contact
 robot <-> loader                                  : no contact
 loader <-> MG06 / workstation                     : no contact
 PCB <-> lid / press plate                         : no contact
 MG06 at the end: lid -40.0 deg, handle -0.0 deg
-fork on the handle bar: net contact force max 229 N at 22.371 s, direction in the fork frame [0.83 0.04 0.56]; squeeze max 37 N; handle hinge load max 9.4 N m (the summed normal force above adds the squeeze, KNOWN_ISSUES.md)
-place into MG06: the jaws release the PCB at 14.766 s, it drops 0.151 mm and is seated in 0.014 s on holder_03/holder_04/holder_10, at z 216.908 mm, tilt 0.012 deg; the closest side guide on the way down 0.174 mm (holder_14 at 14.748 s)
-vacuum holds: 3.072-9.296 s min 4/4 cups; 47.852-55.568 s min 4/4 cups
+fork on the handle bar: net contact force max 229 N at 22.803 s, direction in the fork frame [0.83 0.04 0.56]; squeeze max 37 N; handle hinge load max 9.4 N m (the summed normal force above adds the squeeze, KNOWN_ISSUES.md)
+place into MG06: the jaws release the PCB at 15.198 s, it drops 0.151 mm and is seated in 0.014 s on holder_03/holder_04/holder_10, at z 216.908 mm, tilt 0.012 deg; the closest side guide on the way down 0.174 mm (holder_14 at 15.184 s)
+vacuum holds: 3.072-9.296 s min 4/4 cups; 48.284-56.000 s min 4/4 cups
 step                              span s kind   par   track rad   slip mm  robot-loader    PCB-loader deepest contact
 (start)                    0.000-  0.010 LOCKED          0.0001      0.00           >50           >50 -
 S1_Approach_Input          0.010-  1.070 FREE            0.0020      0.00           >50           >50 -
 S2_Pick_Input              1.070-  4.990 LOCKED          0.0012      1.20           >50           >50 -
 S3_To_Loader               4.990-  6.160 FREE            0.0016      1.28         28.14         16.57 -
 S4_Handover                6.160- 11.000 LOCKED          0.0006      1.30          8.53         -0.04 -
-S5_To_MG06                11.000- 18.460 FREE   yes      0.0016      0.00           >50           >50 -
-S6_Close_MG06             18.460- 25.530 LOCKED          0.0126      0.00           >50           >50 -
-S7_Leave_MG06             25.530- 27.840 LOCKED          0.0007      0.00           >50           >50 -
-S8_Test                   27.840- 29.840 LOCKED          0.0001      0.00           >50           >50 -
-S9_Return_MG06            29.840- 32.150 LOCKED          0.0007      0.00           >50           >50 -
-S10_Open_MG06             32.150- 37.570 LOCKED          0.0016      0.00           >50           >50 -
-S11_To_Take               37.570- 45.470 FREE   yes      0.0020      0.00         29.02           >50 -
-S12_Take_From_Loader      45.470- 51.860 LOCKED          0.0007      1.01          8.30         -0.01 -
-S13_To_Output             51.860- 53.660 FREE            0.0021      1.31         26.07         15.62 -
-S14_Place_Output          53.660- 57.000 LOCKED          0.0009      1.30           >50           >50 -
-S15_Home_End              57.000- 57.920 FREE            0.0019      0.00           >50           >50 -
-End_Settle                57.920- 58.716 LOCKED          0.0019      0.00           >50           >50 -
+S5_To_MG06                11.000- 18.890 FREE   yes      0.0015      0.00           >50           >50 -
+S6_Close_MG06             18.890- 25.960 LOCKED          0.0126      0.00           >50           >50 -
+S7_Leave_MG06             25.960- 28.270 LOCKED          0.0007      0.00           >50           >50 -
+S8_Test                   28.270- 30.270 LOCKED          0.0001      0.00           >50           >50 -
+S9_Return_MG06            30.270- 32.580 LOCKED          0.0007      0.00           >50           >50 -
+S10_Open_MG06             32.580- 38.000 LOCKED          0.0016      0.00           >50           >50 -
+S11_To_Take               38.000- 45.900 FREE   yes      0.0020      0.00         29.02           >50 -
+S12_Take_From_Loader      45.900- 52.290 LOCKED          0.0007      1.01          8.30         -0.01 -
+S13_To_Output             52.290- 54.090 FREE            0.0021      1.31         26.07         15.62 -
+S14_Place_Output          54.090- 57.430 LOCKED          0.0010      1.30           >50           >50 -
+S15_Home_End              57.430- 58.360 FREE            0.0019      0.00           >50           >50 -
+End_Settle                58.360- 59.148 LOCKED          0.0017      0.00           >50           >50 -
 robot-loader: to the carriages and jaws (in a FREE step also the PCB in the jaws); PCB-loader: the carried PCB to them, which touches the jaws at the handover and the take by design (pcb_jaws)
 carrying free transfers (slip max and when; tool tilt from vertical and TCP acceleration then; their maxima while carried):
   S3_To_Loader           slip 1.28 mm at 6.146 s: tilt 8.9 deg, acceleration 1.52 m/s^2; max tilt 10.5 deg, max acceleration 3.50 m/s^2
-  S13_To_Output          slip 1.31 mm at 53.492 s: tilt 3.8 deg, acceleration 4.68 m/s^2; max tilt 16.8 deg, max acceleration 4.71 m/s^2
+  S13_To_Output          slip 1.31 mm at 53.924 s: tilt 3.8 deg, acceleration 4.68 m/s^2; max tilt 16.8 deg, max acceleration 4.71 m/s^2
 warnings: none
 robot <-> MG06 / workstation / crates              PASS  no contact
 robot tool <-> handle (outside closing / opening)  PASS  no contact
 robot <-> loader                                   PASS  no contact
 loader <-> MG06 / workstation                      PASS  no contact
 PCB <-> lid / press plate                          PASS  no contact
-vacuum ON 2x with 4/4 cups                         PASS  t=3.07s 4/4, t=47.85s 4/4
+vacuum ON 2x with 4/4 cups                         PASS  t=3.07s 4/4, t=48.28s 4/4
 PCB in MG06 error < 0.5 mm, tilt < 0.2 deg         PASS  0.19 mm, 0.01 deg
 PCB in the output crate < 2.0 mm from the centre   PASS  1.25 mm
 MG06 ends open                                     PASS  lid -40.0 deg, handle -0.0 deg
 PCB penetration <= 0.5 mm                          PASS  MG06 holder 0.04 mm, crate 0.15 mm, loader jaws 0.07 mm
-every vacuum hold keeps 4/4 cups                   PASS  3.07-9.30 s min 4/4; 47.85-55.57 s min 4/4
+every vacuum hold keeps 4/4 cups                   PASS  3.07-9.30 s min 4/4; 48.28-56.00 s min 4/4
 the PCB is never lost                              PASS  never lost
 every WaitDI gets DI_VACUUM_OK in time             PASS  every one
-free transfers >= 1.0 mm from the loader           PASS  15.62 mm at 52.580 s, S13_To_Output (pcb / z_carriage)
+free transfers >= 1.0 mm from the loader           PASS  15.62 mm at 53.012 s, S13_To_Output (pcb / z_carriage)
 PCB slip <= 1.98 mm                                PASS  1.31 mm
 tracking error <= 0.0189 rad                       PASS  0.0126 rad
 fork net force <= 290 N (sim. regression bound)    PASS  229.0 N (summed normal 291 N, for information)
 hinge load <= 13.5 N m (sim. regression bound)     PASS  9.38 N m
-free transfers >= Loader_Free 10.0 mm              PASS  15.62 mm at 52.580 s, S13_To_Output (pcb / z_carriage)
+free transfers >= Loader_Free 10.0 mm              PASS  15.62 mm at 53.012 s, S13_To_Output (pcb / z_carriage)
 no robot actuator saturated (model limits)         PASS  14% 29% 27% 30% 12% 34% of 180/180/150/60/60/60 N m
 place: no jaw closing at L_PLACE                   PASS  jaw gap decrease 0.0001 mm
 place: holder force <= 1.0 N (jaws closed)         PASS  0.00 N
-release: penetration <= 0.10 mm while dropping     PASS  0.0373 mm (drop 0.151 mm from the release at 14.766 s)
+release: penetration <= 0.10 mm while dropping     PASS  0.0373 mm (drop 0.151 mm from the release at 15.198 s)
 release: settled penetration <= 0.0102 mm          PASS  0.0002 mm
-place: no side guide touched on the way down       PASS  closest 0.174 mm, holder_14 at 14.748 s
+place: no side guide touched on the way down       PASS  closest 0.174 mm, holder_14 at 15.184 s
 PCB seated in MG06 within 0.2 s                    PASS  on holder_03/holder_04/holder_10 (4 within 0.05 mm), 0.000 mm/s, tilt 0.012 deg, settled in 0.014 s
 handover: centring <= 0.5 mm                       PASS  +0.026 mm along the jaw axis
 re-grip: ledge gap 0.3 +- 0.1 mm                   PASS  0.359 mm
