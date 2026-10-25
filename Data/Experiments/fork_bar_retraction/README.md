@@ -40,3 +40,9 @@ git apply <repository>/Data/Experiments/fork_bar_retraction/bar_retraction.patch
 
 The script's arguments: the retraction [mm], `taught` or `optimized`, the PCB's start offset along x [µm], a settle wait before
 the closing path [s]; it prints one line per run (re-run 2026-10-25: 0.55 mm, taught, 0, 0 -> net 186.8 N, hinge 8.23 N m).
+
+What the patch changes: `Bar_Retraction` [m] in `Constants.yaml` `Paths` (range 0-5 mm, 0: as recorded) retracts
+`PATH_FORK_CLOSE` (`PATH_FORK_OPEN` stays 0), and `P_MG06_CLOSE_END` follows the retracted end. The wait goes after
+`MoveJ(P_MG06_FORK_START)` in the taught program and after `Loader.WaitDone(J_PARK)` in the optimized one. The table's runs:
+the retractions 0 / 0.55 / 0.60 / 0.65 / 0.70 mm x the offsets -5 / -1 / 0 / +1 / +5 µm (no wait) and the waits 0.004 / 0.1 s
+(offset 0), both programs; MuJoCo 3.16.0, the environment of `test/Simulation/data/baseline_environment.json`.

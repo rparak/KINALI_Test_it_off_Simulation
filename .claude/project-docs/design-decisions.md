@@ -10,13 +10,12 @@ Deliberate choices whose reason is not visible in the code. Each one says what w
 `install.sh` + `requirements.txt`, `.claude/project-docs/`. This replaces the layout of the brief §5.1
 (package `kinali_sim`, `pyproject.toml`, console script `kinali-sim`, `tests/`, `config/`) wherever they
 conflict (owner, 2026-10-24). Where the skills and the template disagree, the skills win and the
-difference is recorded (`FEATURES.md` F3).
+difference is recorded (the style project reference > Departures).
 
 **Why.** One convention across the owner's projects; the skills carry the checker, the test discipline
 and the records that keep a verified simulation verified.
 
-**Alternatives.** The brief's package layout (step 1 was first done that way, commit `42a6121`):
-rejected by the owner for consistency. Copying the template's code: rejected - only its structure and
+**Alternatives.** The brief's package layout: rejected by the owner for consistency. Copying the template's code: rejected - only its structure and
 conventions are taken.
 
 **Revisit if** the owner's skills change their layout rules.
@@ -40,7 +39,9 @@ not possible, the procedure and the real cell's measurements do not exist yet.
 
 **Revisit if** the real-cell validation procedure is defined, or the transfer is cancelled.
 
-Pinned by: nothing yet (the formats come in steps 3–4; their tests will pin unit and order).
+Pinned by `test/Keypoints/test_core.py::test_every_pose_is_fk_of_its_joints` (the joints' unit and order, the TCP),
+`test/Trajectory/test_core.py` (the trajectory's metadata, its units included, kept through the file) and the README alert;
+the joint order and the TCP the metadata records are `Program.Core.CONST_META`.
 
 ## The MIT copyright holder is JIC Smart Factory; the author is Roman Parak
 
@@ -63,8 +64,8 @@ Pinned by the style checker (`holder`), run before every commit.
 
 **Decision.** An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA). (owner, 2026-10-24). The project carries the JIC Smart Factory brand with the
 KINALI logo; the product Test-it-off is referenced by name only (no logo):
-- where: the README header (now) and the Phase 2 application's header (later);
-- how: black SVG on light grounds, white SVG on dark grounds (GitHub dark mode, a possibly dark Phase 2 app),
+- where: the README header;
+- how: black SVG on light grounds, white SVG on dark grounds (GitHub dark mode),
   `Media/<Logo>_Black.svg` / `_White.svg`, written by `Example/Media/make_logo_variants.py` by recolouring the
   vector originals (paths and viewBox kept);
 - the originals stay in `Media/Original/` for regeneration; the JIC Smart Factory original is byte-identical
@@ -76,14 +77,13 @@ KINALI logo; the product Test-it-off is referenced by name only (no logo):
 - the KINALI logo is used with KINALI's consent (owner confirmed, 2026-10-24);
 - no funding band: the project has no external or public funding.
 
-*Corrected 2026-10-24: the Test-it-off logo is not used (owner); its raster original was removed, which
-resolves the former known issue "the Test-it-off logo exists only as a raster" (no tracing tool added).*
+*Corrected 2026-10-24: the Test-it-off logo is not used (owner).* *Corrected 2026-10-25 (owner): no PyQt GUI, so the
+application header is gone; jic-sf-ui-style remains the source of the JIC logo and its rules.*
 
 **Why.** One monochrome family reads on both grounds and beside each other; the owner's decision.
 
 **Alternatives.** The JIC purple original as jic-sf-ui-style prescribes ("the purple version is for white
-grounds"): overruled by the owner until the official monochrome file arrives. Tracing the raster
-Test-it-off logo: dropped, the logo is not used.
+grounds"): overruled by the owner until the official monochrome file arrives.
 
 **Revisit if** JIC Smart Factory supplies the official monochrome vector, KINALI supplies one, or the brand
 rules change.
@@ -93,9 +93,9 @@ byte-identical regeneration).
 
 ## The project is named "Test-it-off Simulation"
 
-**Decision.** The project and application name is **Test-it-off Simulation**; the full title
-**Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo**. It is used in the README title, SPEC's title and §1, `CLAUDE.md`
-and, later, as the Phase 2 window title. The official spelling of the product is **Test-it-off** (with
+**Decision.** The project name is **Test-it-off Simulation**; the full title
+**Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo**. It is used in the README title, SPEC's title and §1 and
+`CLAUDE.md`. The official spelling of the product is **Test-it-off** (with
 hyphens) everywhere except verbatim quotes of external sources and the URL testitoff.cz. The repository
 name `KINALI_Test_it_off_Simulation` stays unchanged (owner, 2026-10-24).
 
@@ -107,17 +107,21 @@ name `KINALI_Test_it_off_Simulation` stays unchanged (owner, 2026-10-24).
 
 Pinned by: none (text); checked by `git grep` for the old spellings when docs change.
 
-## Phase 2 GUI toolkit: PyQt5 or PyQt6 - open
+## No PyQt GUI (decided, owner 2026-10-25)
 
-**Open, not decided.** Recorded so the choice is made with its consequences in view.
+**Decision.** The project has no desktop GUI application: no PyQt5 or PyQt6 window and no Phase 2; the project is one phase.
+Its interface is the scripts of `Example/`, the MuJoCo viewer (`show_program.py`, `show_physics.py`, the keypoint viewers)
+and the offscreen renders. *Corrected 2026-10-25 (owner): this entry was "Phase 2 GUI toolkit: PyQt5 or PyQt6 - open".*
 
-- **PyQt5 (recommended by the brand skill):** jic-sf-ui-style is a ready PyQt5 package (palette, fonts,
-  logos, pixel icons, example app, tests), so the brand comes for free; but Qt 5.15 is the end of Qt 5 and
-  will age; MuJoCo's OpenGL in a `QOpenGLWidget` works on both.
-- **PyQt6 (brief §8):** Qt 6 is the current line with long support; but the brand package would have to be
-  ported (enum and API changes) and then maintained separately from the skill's PyQt5 version.
+**Why.** The owner's decision: the results are read in the viewer, the reports and the README.
 
-**Decide when** Phase 2 starts.
+**Alternatives.** PyQt5 with jic-sf-ui-style's ready package (the brand at no cost; Qt 5.15 is the end of Qt 5); PyQt6 as
+the brief §8 proposed (the brand package ported). Both dropped.
+
+**Revisit if** the owner asks for a GUI application; the toolkit choice is then reopened with these two options.
+
+Pinned by: `requirements.txt` has no Qt package; `src/Render/Core.py` imports the viewer only inside the functions that
+open it (the headless scripts and the tests never open a window).
 
 ## The keypoint check measures exact distances, not generated contacts
 
@@ -125,17 +129,15 @@ Pinned by: none (text); checked by `git grep` for the old spellings when docs ch
 for every collidable pair within the clearance (`Collision.Close_Pairs`), not read from the contacts MuJoCo generates in
 a model with an enlarged geom margin (the legacy planner's planning model). `Close_Pairs` filters the pairs with a
 vectorised bounding-sphere broad phase (numpy, a 1e-9 m slack so it keeps every pair the per-pair test kept), then
-measures each candidate exactly: the same pairs and distances as the per-pair loop, 38 times faster (owner's B2, F8.1).
+measures each candidate exactly: the same pairs and distances as the per-pair loop, 38 times faster (owner's B2).
 
 **Why.** Generated contacts miss near pairs depending on unrelated geometry: the carried PCB 1.02 mm above the crate
 floor at `P_OUTPUT_PLACE` produces no contact in the cell with the 6 mm margin, and 16 contacts once one more geom - even a
-box 5 m away - is added to the workstation body (measured 2026-10-24, F8.1). *Corrected 2026-10-24: this entry first
-blamed MuJoCo's box-box collider ignoring the margin; adding the table boxes showed the missing contact comes from the
-workstation body's mid-phase, so contact generation is not a reliable distance measure at all.* Exact distances also
-found the cup block 2.1 mm above a held PCB (now in `cups_pcb`) and the robot's mount (excluded by a code constant).
-B2 (2026-10-24, Apple M2 Pro): all 22 keypoints and 500 random samples of `Data/Reference/cell_plan.npz` (seed
-20261024, the PCB held by the cups), robot and PCB queries, cuts 3 and 50 mm - identical pair lists; 15.98 -> 0.42 ms
-per sample at 3 mm (37.9x), 16.13 -> 0.56 ms at 50 mm (28.8x).
+box 5 m away - is added to the workstation body (measured 2026-10-24): the workstation body's mid-phase decides, so
+contact generation is not a reliable distance measure. *Corrected 2026-10-24: first blamed on MuJoCo's box-box collider.*
+Exact distances also found the cup block 2.1 mm above a held PCB (now in `cups_pcb`) and the robot's mount (excluded by a
+code constant). The broad phase measured on the legacy plan (2026-10-24, Apple M2 Pro): identical pair lists, 15.98 -> 0.42
+ms per sample at 3 mm (37.9x).
 
 **Alternatives.** Contacts with a larger margin: rejected, whether a pair is generated depends on the model's other
 geoms. Converting the boxes to meshes: a model change. The per-pair loop: 14-16 ms per configuration, too slow for a
@@ -157,8 +159,11 @@ table. The PCB against the table counts as `pcb_crate` only while the PCB is ins
 a crate's inner footprint, below its 149 mm walls - the crate floor lies between them); a carried PCB or a PCB in the jaws
 keeps the 3 mm clearance to the table (owner, 2026-10-24).
 
-**Why.** The robot and the carried PCB can reach the table; nothing modelled it. Measured: the robot stays at least 8.9 mm
-from the boxes over the reference plan; the keypoint table is byte-identical with them; the PCB on a crate floor is
+**Why.** The robot and the carried PCB can reach the table; nothing modelled it. The workstation's collidable geoms are the
+pedestal and its plate, a frame post (`L_900`), the top beam (`L_340`), the camera holder, the cabinet and a box; nothing
+else above the table is within the robot's reach without already being collidable (corner brackets up to z 0.164 m at
+x ≈ −0.2, y ≈ −0.8 m, 0.78 m from the base; measured 2026-10-24). Measured: the robot stays at least 8.9 mm
+from the boxes over the legacy reference plan; the keypoint table is byte-identical with them; the PCB on a crate floor is
 2.00 mm from the table (the floor's thickness) and the carried PCB at `P_OUTPUT_PLACE` 3.02 mm - a margin on the boxes'
 top face would fail both, so none is added (a plate is a box).
 
@@ -177,16 +182,16 @@ Pinned by `test/Collision/test_core.py::test_the_table_boxes_are_the_plates_of_t
 **Decision.** `Fixture` is required for every keypoint: `Open`, `Closed` or the recorded `{Lid, Handle,
 Source}` of `Data/Paths/fork_close_open_path.npz`; the press plate follows the handle through the model's
 equality. `P_MG06_CLOSE_END` is row 286 (handle 29.13°), `P_MG06_OPEN_JOIN` row 663, `P_MG06_FORK_START` row 23; the
-leave / return keypoints are settled `Closed` (owner, 2026-10-24, condition C1).
+leave / return keypoints are settled `Closed` (owner, 2026-10-24).
 
 **Why.** The fork keypoints touch the handle bar, and the contact depends on the handle angle: at
 `P_MG06_CLOSE_END` the bar is 0.33 mm into the fork in the recorded state and 5.95 mm in the settled closed
-state (C1, FEATURES.md F6). Posing or checking in the wrong state reports a collision that is not there, or
+state (measured 2026-10-24). Posing or checking in the wrong state reports a collision that is not there, or
 hides one.
 
 **Alternatives.** One MG06 state per program step: rejected, the state changes along the fork path.
 
-**Revisit if** the fork path is re-recorded or replaced by MoveL keypoints (step 4).
+**Revisit if** the fork path is re-recorded.
 
 Pinned by `test/Keypoints/test_core.py::test_the_fork_points_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre`,
 `::test_the_close_end_in_the_wrong_mg06_state_is_reported`.
@@ -196,16 +201,15 @@ Pinned by `test/Keypoints/test_core.py::test_the_fork_points_in_their_recorded_s
 **Decision.** The check knows four contact groups, `cups_pcb`, `handle_bar`, `pcb_crate` and `pcb_jaws` (the PCB on the
 loader's jaws), each with its deepest allowed overlap in `Configuration/Cell.yaml` `Clearance.Allowed_Depth` (1.6, 0.6,
 0.5, 0.5 mm); a deeper overlap fails even where the group is allowed. `handle_bar` is 0.6 mm (owner, 2026-10-24): the
-recorded `PATH_FORK_CLOSE` path overlaps the bar by 0.539 mm at one row - the physics-verified path (up to 294 N on the bar,
-SPEC §4.6) - measured plus a margin; it was 0.5 mm, and the default program's check failed on that one row (F8.5). A keypoint declares groups in `Allow_Contact`, a
-program step in its `Allow_Contact` (owner, 2026-10-24); every declared group must be observed. *Corrected 2026-10-24:
-`pcb_jaws` was removed in F6.4 because no keypoint observed it; it is back (owner, step 4 answer 6) because the handover and
-take steps of the default program have the carried PCB between the closing jaws (F8).*
+recorded `PATH_FORK_CLOSE` path overlaps the bar by 0.539 mm at one row - the physics-verified path - measured plus a margin.
+A point declares its groups in `Simulation.yaml Points.<P>.Contacts`, a program segment in `Simulation.yaml Allow_Contact`
+(owner, 2026-10-24); every declared group must be observed. `pcb_jaws` is observed by the handover and the take, where the
+carried PCB is between the closing jaws. *Corrected 2026-10-25: a point's groups are its `Contacts`, not `Allow_Contact`.*
 
 **Why.** A group nothing declares is a field that cannot take effect; allowing only what is present keeps an unexpected
 contact visible.
 
-**Alternatives.** Keeping `pcb_jaws` through F6: rejected then, nothing observed it until step 4.
+**Alternatives.** A fixed list of every possible group: groups nothing declares would be fields without effect.
 
 **Revisit if** a group is no longer observed by any keypoint or step.
 
@@ -219,8 +223,9 @@ Pinned by `test/Configuration/test_program_parser.py::test_an_invalid_constant_i
 
 **Why.** The physics was tuned and verified on 3.16 (SPEC §4.7): in 3.16 `gap` is not applied to
 `includemargin`, which is why the PCB and the cups carry no `margin`/`gap`; another version may treat
-contacts differently. A pinned version also keeps the baseline deterministic: on one machine and one
-version the report is reproduced byte for byte (measured 2026-10-24, three runs, empty diffs).
+contacts differently. A pinned version also keeps the baselines deterministic: on one machine and one version both
+programs' physics reports are reproduced byte for byte (measured 2026-10-25: the 20 baseline runs, sequential and parallel,
+identical).
 
 **Alternatives.** An unpinned or `>=` dependency: rejected, a silent MuJoCo update could change every
 contact number and the baseline would no longer be comparable.
@@ -228,7 +233,7 @@ contact number and the baseline would no longer be comparable.
 **Revisit if** a MuJoCo release is needed for a feature; the upgrade is its own change with a new
 baseline, the fingerprint re-measured and the margin behaviour re-checked.
 
-Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow regression) and `test/Install/test_install.py` (the version check).
+Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_baselines.py` (slow regression) and `test/Install/test_install.py` (the version check).
 
 ## Python 3.11, pinned requirements, installed by install.sh
 
@@ -240,65 +245,39 @@ environment is created by `install.sh` into `.venv`. `pyproject.toml` is removed
 project-style-rpx prescribes the installer and pinned direct dependencies. The interpreter is named
 explicitly because a bare `python3` on this machine is miniforge's.
 
-**Alternatives.** Keeping the Python 3.14.7 / numpy 2.5.4 environment the baseline was first measured
-in: rejected by the owner. The baseline was re-measured in the pinned environment (2026-10-24, Python
-3.11.2, numpy 2.4.6, MuJoCo 3.16.0, `install.sh --recreate`): the cycle report is byte-identical to the
-3.14 one and the fingerprint compare shows only `geoms/pcb_vis/geom_rgba`, so no new baseline was
-needed and the 3.11 environment is the baseline environment (SPEC §4.6). `pyproject.toml` with an editable install: rejected, the skills use no package and
-no `__init__.py`.
+**Alternatives.** The Python 3.14.7 / numpy 2.5.4 environment the first baseline was measured in: rejected by the owner
+(the legacy report was byte-identical in 3.11, 2026-10-24); the 3.11 environment is the baseline environment (SPEC §5).
+`pyproject.toml` with an editable install: rejected, the skills use no package and no `__init__.py`.
 
 **Revisit if** a pinned package has no wheel for a target, or the owner moves both projects to a newer
 Python.
 
 Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
-## The legacy plan stays the regression input until step 6; the legacy planner is kept as a git tag
-
-**Decision.** `Data/Reference/cell_plan.npz` (the verified IK plan) stays the regression input of the cycle run
-(`Example/Simulation/run_cycle.py`, `test/Simulation`) until the keypoint program reproduces it (brief §7 step 6).
-The legacy planner `legacy/plan_cell.py`, the legacy cycle test `legacy/test_cell_cycle.py` and their shims were
-removed (owner, 2026-10-24, F4) after the last commit holding them, **`f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`**, was recorded as the
-restore point (referenced by its hash since 2026-10-25: tags are for releases only). *Corrected 2026-10-24: until F4 the planner and the cycle test stayed in
-`legacy/`, frozen.*
-
-**Why.** The plan is the only verified end-to-end cycle, so every change before step 6 is measured against
-it. The planner is not product code; step 4 needs it only as a reference for the fork-path joins, the
-leave / return path around the closed handle and the keypoints, which `git show
-f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py` gives. The port of the loop into `src/Simulation` was proven
-before the removal: the same report and every measured value the same float as the legacy run (F3.5); the
-planner regenerated the plan through the ported Kinematics and Collision code to 1.24e-14 rad (F3.4).
-
-**Alternatives.** Keeping `legacy/` until step 6: rejected by the owner (root layout). Deleting the plan
-too: rejected, nothing else would show that the physics is unchanged.
-
-**Revisit if** step 6 passes: the keypoint program's trajectory replaces the plan as the regression input.
-
-Pinned by `test/Simulation/test_core.py` (slow: the report equals the baseline; raw-value pins).
-
 ## The MG06 lock has 1.5 mm radial play
 
 **Decision.** The lock's hook and pin in `models/scene.xml` have 1.5 mm radial play instead of the 0.5 mm of
 `mg06_loader_mujoco` (the `GAP` of the MG06 build there).
 
-**Why.** The robot pushes the lid down harder than the free-guided fork of the earlier version: with 0.5 mm
+**Why.** The robot pushes the lid down harder than the free-guided fork of `mg06_loader_mujoco`: with 0.5 mm
 the lid sank 0.6 mm into the base, the hook hit the pin already at 27° and the handle never reached 29°.
-With 1.5 mm the handle closes to 28.7° (SPEC §4.6) and the lid rises 0.5° in the play.
+With 1.5 mm the handle closes to 28.6° (the physics baselines) and the lid rises 0.5° in the play.
 
 **Alternatives.** A softer lid contact: rejected, it would change the verified contact parameters.
 
 **Revisit if** the real lock is measured.
 
-Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`) and the report's
-"MG06 closed" line (`test/Simulation/test_core.py`).
+Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`) and the physics baselines (MG06's closed
+angles +-0.1 deg, SPEC §10.2).
 
 ## Logs go to logger/, generated artefacts to Data/Generated/<Kind>/
 
 **Decision.** One place per kind of file a run produces: logs (`logger/<script>.log`, MuJoCo's
-`logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the cycle report in
-`Reports/`, proof images (`pcb_green.png`, later `logo_check.png`) in `Images/`, the step 4 trajectory in
-`Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
-`--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it). The root
-output folder is gone (owner, 2026-10-24, F4.4).
+`logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the reports (a program's
+check and physics report, the optimizer's report, the comparison) in `Reports/`, images (`pcb_green.png`, `logo_check.png`,
+the comparison's figure) in `Images/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
+`--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it); no output folder at the root (owner,
+2026-10-24).
 
 **Why.** The root holds only declared entries (style skill); `Data/Generated/` is the template's place for
 generated output beside the inputs; logs are not results and keep their own folder. One folder per kind
@@ -307,9 +286,8 @@ keeps a report, an image and a trajectory from overwriting or hiding each other.
 **Alternatives.** Reports and images in `logger/`: rejected, they are results a reader opens, not run logs.
 Keeping an output folder at the root: rejected by the owner.
 
-**Revisit if** step 6 makes the trajectory the regression input: then the delivered file is un-ignored. *Corrected
-2026-10-24 (owner, step 4 answer 11): the trajectories stay git-ignored until step 6; F9's optimized program goes to the
-committed `Data/Optimized/`.*
+**Revisit if** a generated file becomes a delivered input (the optimized program is committed in `Data/Optimized/`, its
+own decision below).
 
 Pinned by `test/Install/test_install.py::test_the_run_folders_are_created` and the `test/Example` script
 tests (defaults and `--out`).
@@ -333,7 +311,7 @@ Pinned by `test/Scene/test_core.py::test_the_pcb_is_green_without_a_material` an
 
 ## The studio look: fog on, a 1 m grid, a statistic from the cell's bounding box
 
-**Decision.** The scene has the studio look of F7 (SPEC §4.7 Look), applied in code (`Scene.Core._Apply_Look`,
+**Decision.** The scene has the studio look (SPEC §4.10 Look), applied in code (`Scene.Core._Apply_Look`,
 `CONST_LOOK_*`; `scene.xml` unchanged): a gradient sky, a dark 1 m grid on the existing visual-only floor plane
 (20 m), a key spot light with shadows and a weak fill, haze and fog in the horizon colour, and an explicit
 `statistic`. Fog is on wherever the project renders (offscreen images, the passive viewer; owner, 2026-10-24,
@@ -374,9 +352,9 @@ Pinned by `test/Scene/test_core.py::test_the_floor_is_a_visual_plane_with_a_one_
 `test/Render/test_core.py::test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres`,
 `::test_the_offscreen_floor_fades_into_the_horizon_colour`, `::test_the_passive_viewer_switches_on_fog_and_haze`.
 
-## Step 4 has two programs: the default one is taught, the optimized one is planned
+## Two programs: the default one is taught, the optimized one is planned
 
-**Decision.** Step 4 produces two versions of the same process (owner, 2026-10-24). The **default program**
+**Decision.** Two versions of the same process (owner, 2026-10-24). The **default program**
 (`Configuration/Program.yaml`, `FEATURES.md` F8, F10) is written as a human operator would teach it: named
 sequential steps, every motion ending at rest at its point, no blending, the robot and the loader never moving
 at the same time, approach and retreat points as offsets from keypoints, vias where a person would put them. For
@@ -384,8 +362,8 @@ it the brief's rule stands: no planning algorithm, collision freedom is checked,
 program** (F9) keeps every process-critical segment of the default program unchanged (LOCKED) and replaces only
 the free-space transfers between them (FREE) by planned motion - a joint-space search with a fixed seed, shortcut,
 smoothing, time-optimal timing within the robot's limits - and lets the robot and the loader move in parallel
-under interlocks. Both versions pass the same segment checks (step 4) and, later, the physics checks of steps 5
-and 6. The brief's "no planning algorithm" (SPEC §2 item 4) is thereby narrowed to the default program; SPEC §2
+under interlocks. Both versions pass the same program check (SPEC §7.9) and the same physics acceptance (SPEC §10.1).
+The brief's "no planning algorithm" (SPEC §2 item 4) is thereby narrowed to the default program; SPEC §2
 and §3 say so.
 
 **Why.** The default program is the readable, teachable reference a person can check line by line and transfer
@@ -397,17 +375,17 @@ only, optimized: nothing a person can read and check against the process; a plan
 process-critical moves. Optimizing everything (contact moves included): rejected, the contact moves are the
 verified physics (SPEC §4.7) and stay as taught.
 
-**Revisit if** the optimized program cannot pass the physics checks of steps 5 or 6, or the owner decides one
-version is enough.
+**Revisit if** the optimized program cannot pass the physics baselines, or the owner decides one version is enough.
 
-Pinned by: nothing yet (F8 and F9 are designed, not implemented); their tests are listed in `FEATURES.md` F8 and
-F9.
+Pinned by `test/Program/test_check.py::test_the_default_program_passes_its_check`,
+`test/Optimizer/test_core.py::test_the_optimized_program_passes_every_check_and_is_faster` and
+`test/Simulation/test_baselines.py`.
 
 ## A program's robot points are stored joints; lines and paths end exactly on them
 
 **Decision.** Every robot point of a program is a keypoint's stored `Joints` (F6's determinism rule). A MoveJ interpolates
-joints between stored joints and its last sample is the target's stored joints exactly (since F9.6: `q0 + (q1 - q0) x 1.0`
-differed from them by up to a rounding, so the optimized program's LOCKED parts after a MoveJ differed by 1.6e-15 rad); a MoveL aims at the pose of its target's stored joints and a `Path` at its recorded rows, with
+joints between stored joints and its last sample is the target's stored joints exactly (`q0 + (q1 - q0) x 1.0` would differ by
+a rounding, and a LOCKED part after a MoveJ would no longer be byte-identical); a MoveL aims at the pose of its target's stored joints and a `Path` at its recorded rows, with
 IK per sample seeded from the previous sample, and their last sample is replaced by the target's stored joints when the IK
 end is on the same branch (within the stale tolerance and 1e-3 rad per joint); otherwise the build fails, and a line that
 would end in the other IK family fails with that reason. The per-sample IK is pure damped least squares (no null-space pull)
@@ -433,9 +411,8 @@ Pinned by `test/Program/test_core.py::test_movel_is_straight_and_ends_on_the_sto
 **Decision.** In a program's world state the PCB on the cups is the nominal held pose (the cup face, SPEC §4.4) set back
 along the tool axis by the bellows' compression left: the compression when the vacuum went on (1.5 mm at a press, 0 at the
 handover) less the TCP's travel since. The PCB therefore stays on its support for the first 1.5 mm of a lift and then hangs
-at the cup face. *Corrected 2026-10-24 (F8.4): Part A froze the PCB's pose relative to the TCP at vacuum on; that kept the
-1.5 mm compression for the whole carry, so the PCB reached `P_OUTPUT_PLACE` 2.5 mm above the crate floor instead of 1 mm, and
-the place rule (vacuum off within 2 mm of the floor pose) failed.*
+at the cup face. *Corrected 2026-10-24: the first design froze the PCB's pose relative to the TCP at vacuum on; the PCB then
+reached `P_OUTPUT_PLACE` 2.5 mm above the crate floor instead of 1 mm.*
 
 **Why.** Each cup sits on a sprung bellows (SPEC §4.10): under vacuum the board is pulled to the cup face as the bellows
 extend. The keypoints assume the nominal relation (`P_OUTPUT_PLACE` = the PCB 1 mm above the floor).
@@ -443,7 +420,7 @@ extend. The keypoints assume the nominal relation (`P_OUTPUT_PLACE` = the PCB 1 
 **Alternatives.** The nominal pose from vacuum on: the PCB would jump 1.5 mm into the crate floor at the pick. The frozen
 relative pose: above.
 
-**Revisit if** step 5's physics shows the board hanging elsewhere in the cups (PCB slip is reported there).
+**Revisit if** the physics run shows the board hanging elsewhere in the cups (it reports the PCB's slip).
 
 Pinned by `test/Program/test_core.py::test_the_carried_pcb_hangs_at_the_cup_face_once_the_bellows_extend`,
 `::test_the_pcb_moves_through_the_cycle_by_the_rules`.
@@ -451,21 +428,23 @@ Pinned by `test/Program/test_core.py::test_the_carried_pcb_hangs_at_the_cup_face
 ## PATH_FORK_OPEN keeps the recorded velocity step at its join
 
 **Decision.** `Robot.MovePath(PATH_FORK_OPEN)` starts at its join row as recorded: the flange already moves at 39.1 mm/s there, and the MoveL
-onto `P_MG06_OPEN_JOIN` ends at rest, so the trajectory has a velocity step at the join (owner, 2026-10-24, answer 9). The build
-notes it; step 5 reports the tracking error and the force on the bar there.
+onto `P_MG06_OPEN_JOIN` ends at rest, so the trajectory has a velocity step at the join (owner, 2026-10-24). The build notes
+it. The physics runs of both programs follow it: the opening's tracking error stays at 0.0016 rad (the run's maximum 0.0126
+rad is in the closing) and the fork's force on the bar stays within the closing's (the physics baselines, 2026-10-25). *Corrected
+2026-10-25: the known issue "PATH_FORK_OPEN starts with a velocity step" closed by these runs; the real robot's behaviour at the
+join is part of "the recorded fork paths exceed the assumed acceleration limits" (KNOWN_ISSUES.md).*
 
-**Why.** The verified physics ran the reference plan with the same step (SPEC §4.6); a time warp would change the recorded
-opening the regression was measured on.
+**Why.** The verified physics ran the legacy plan with the same step; a time warp would change the recorded opening.
 
 **Alternatives.** Ramping the first rows in with a time warp: smoother, but a change to the verified motion.
 
-**Revisit if** step 5 shows a tracking error or a force on the bar beyond the reference run's.
+**Revisit if** a physics run shows a tracking error or a force on the bar at the join beyond the closing's.
 
 Pinned by `test/Program/test_core.py::test_the_fork_paths_follow_the_recorded_rows_and_join_rule`.
 
 ## The program check holds the taught moves to the limits and reports the recorded paths
 
-**Decision.** `Program.Check_Trajectory` (F8.5) measures exact distances at every sample where anything may have moved more
+**Decision.** `Program.Check.Check_Trajectory` measures exact distances at every sample where anything may have moved more
 than `Clearance.Check_Step` (1 mm) since the last measured one, and at every segment end; it fails a pair within the 3 mm
 clearance unless the step allows its group, and an allowed pair deeper than the group's `Allowed_Depth`. It holds every MoveJ
 and MoveL to the `Motion` limits, allowing only a MoveJ's rounding to whole 4 ms samples (the legacy rule rounds T: speeds up
@@ -475,42 +454,40 @@ motion's time law.
 
 **Why.** Measured on the default program (2026-10-24): MoveJ peaks reach 1.0031 of the acceleration limit through the
 rounding alone; the recorded paths reach 2.03x the assumed acceleration (`PATH_FORK_CLOSE`) and 8.44x at `PATH_FORK_OPEN`'s join
-(the velocity step) - the verified physics ran them (SPEC §4.6), so they are the reference, not a fault of the build. With
-MG06 switched to the settled closed state at the start of the bar-centring MoveL (Part A's rule) the fork stood 5.95 mm in
-the bar (F6's C1 effect); the handle really settles as the fork lets go. Holds are skipped by the motion bound: 10 725 of
-17 214 samples measured, check 8 s.
+(the velocity step) - the verified physics ran them, so they are the reference, not a fault of the build. With MG06 switched
+to the settled closed state at the start of the bar-centring MoveL the fork stood 5.95 mm in the bar; the handle really
+settles as the fork lets go. Holds are skipped by the motion bound: 10 720 of the taught program's 17 602 samples are
+measured (`test/Program/data/golden_check_report.txt`).
 
 **Alternatives.** Every sample measured: the same result, about 1.6x the time. A fixed 1 % speed / acceleration tolerance:
 would hide a MoveL 1 % too fast. The recorded paths held to the assumed limits: the verified motion would fail.
 
 **Revisit if** the acceleration limits are measured on the real robot (KNOWN_ISSUES), or the fork paths are replaced.
 
-Pinned by `test/Program/test_core.py::test_the_default_program_passes_its_check`,
+Pinned by `test/Program/test_check.py::test_the_default_program_passes_its_check`,
 `::test_a_movej_over_its_rule_limits_is_reported`, `::test_contacts_are_allowed_only_where_declared_and_as_deep_as_configured`,
 `::test_a_colliding_step_is_reported_with_its_pair_and_time`, `::test_the_handover_keeps_the_board_off_the_ledges`,
 `::test_a_press_at_the_handover_is_reported`.
 
 ## The default program lifts the PCB clear of the crate and returns from MG06 over the family switch
 
-**Decision.** Two changes to the legacy sequence, found by the program check (F8.5): the pick lifts the carried PCB to a new
+**Decision.** Two changes to the legacy sequence, found by the program check: the pick lifts the carried PCB to a new
 auxiliary keypoint `P_INPUT_CLEAR` (170 mm above the PCB's place: the board's bottom 25 mm above the crate's 149 mm walls)
 instead of `P_INPUT_ABOVE` (120 mm, the board still below the walls); and the return from MG06 is `P_MG06_ABOVE` →
-`P_VIA_HOME_MG06` → `P_HOME`. *Corrected 2026-10-24: Part A said the legacy plan returns "above_handle → home directly", and the
-owner's answer 10 ("straight home, as in the legacy plan") rested on that. The reference plan's speed minima show the legacy
-planner's collision fallback inserted `P_VIA_HOME_MG06` on the return too (41.156 s P_MG06_ABOVE, 42.404 s P_VIA_HOME_MG06,
-43.824 s home); the direct MoveJ drives the fork 8.41 mm through the handle bar.*
+`P_VIA_HOME_MG06` → `P_HOME`: the direct MoveJ drives the fork 8.41 mm through the handle bar, and the legacy planner had
+inserted the same via on its return. *Corrected 2026-10-24: the first design returned straight home.*
 
 **Why.** Measured: with the 120 mm lift the carried PCB passes 1.64 mm from the input crate's wall during the MoveJ to
 `P_VIA_INPUT_LOADER` (the legacy plan's own motion; the legacy check, based on generated contacts, could not see it); with
-`P_INPUT_CLEAR` nothing comes within 10 mm. The keypoint table keeps its 22 rows byte-identical and gains one row (PASS).
-Cost: +0.388 s (the handover's vacuum off at 9.912 s instead of 9.524 s); the return over the via +0.6 s.
+`P_INPUT_CLEAR` nothing comes within 10 mm. Cost (measured 2026-10-24): +0.388 s for the lift, +0.6 s for the return over the
+via.
 
 **Alternatives.** Allowing `pcb_crate` in `S3_To_Loader`: would hide a real near-miss. A MoveL from `P_INPUT_ABOVE` to the via:
 a diagonal climb out of the crate, not a straight lift.
 
 **Revisit if** the crate is lower or the PCB smaller, or the owner wants the straight home move with another via.
 
-Pinned by `test/Program/test_core.py::test_the_default_program_passes_its_check`,
+Pinned by `test/Program/test_check.py::test_the_default_program_passes_its_check`,
 `test/Keypoints/test_core.py::test_every_point_passes_the_check`.
 
 ## The CAD deviations stay compensated in scene.xml
@@ -519,7 +496,7 @@ Pinned by `test/Program/test_core.py::test_the_default_program_passes_its_check`
 +100 mm in Y and +0.95 mm in X; the rear-right holder support (`holder_10`) lowered by 0.8 mm; the
 electrical cabinet 200 mm deep instead of 300 mm. The scene is never regenerated from Blender.
 
-**Why.** Without them the cycle does not work in the model (SPEC §4.10; the previous Czech README): the loader
+**Why.** Without them the cycle does not work in the model (SPEC §4.10): the loader
 lacks about 75 mm of stroke without the +100 mm; the jaw centre sits 0.95 mm left of the nest centre and
 the nest has no width play, so the PCB lands on a pin edge and stays tilted 1.4°; `holder_10` is 0.8 mm
 higher than the other three supports and the PCB's centre of mass lies outside the other three, so the
@@ -535,15 +512,15 @@ Pinned by the fingerprint (`test/Scene/data/baseline_model_fingerprint.json`).
 
 ## The cell program is three files: Constants, Simulation, Program
 
-**Decision.** The program of the cell is split by who uses each value (owner, 2026-10-24, `FEATURES.md` F10):
+**Decision.** The program of the cell is split by who uses each value (owner, 2026-10-24):
 `Configuration/Constants.yaml` declares every named value the cell's controllers use (tools, points, loader positions,
 gripper commands, recorded paths, I/O signals); `Configuration/Program.yaml` is what the controllers run (the robot's
 segments `S<n>_<Name>`, the loader's and the tester's jobs `J_<NAME>`), one call per line; `Configuration/Simulation.yaml`
 holds what only the simulation needs (the start state, the model site of each tool, the actuator of each output, the
 response time of each input, where the jaws really stop, the settle time, the contacts per segment, each point's scene).
 `Configuration/Cell.yaml` stays the cell's physical description. `src/Configuration/Program_Parser.py` is the only reader
-of the three new files and builds a typed intermediate representation (`Program_Str`) that everything else reads; the
-format change kept every number: the trajectory is byte-identical to the F8 build (the golden test below).
+of the three files and builds a typed intermediate representation (`Program_Str`) that everything else reads; the format
+change kept every number (proved against a golden build, below).
 
 **Why.** The program a person transfers to the real cell must not carry simulation data (contacts, scenes, simulated
 signal times), and a value used in several lines is declared once under one name. A typed IR checked at load turns every
@@ -575,8 +552,8 @@ MoveL takes a `P_`, a MoveY an `L_`).
 without making it a second source of truth. The 1e-5 m / 1e-3° tolerance is the rounding of the printed values (9 decimal
 places in metres and degrees), far below the stale tolerance.
 
-**Alternatives.** Pose as the source with IK at load: the IK family and branch become a run-time choice (F6's determinism
-rule). Lowercase names (F6, F8): no kind in the name.
+**Alternatives.** Pose as the source with IK at load: the IK family and branch become a run-time choice. Lowercase names:
+no kind in the name.
 
 **Revisit if** the RPY convention differs from the AUBO controller's (`KNOWN_ISSUES.md`), or points are taught on the real
 cell (their joints then come from the controller).
@@ -599,8 +576,8 @@ from `Simulation.yaml`'s `PCB_Hold` (a PCB location and an offset), since the PC
 offsets are within 0.0387 mm of their Reference (measured 2026-10-24).
 
 **Why.** An approach is taught as "15 mm before the part along the tool": the tool frame of the part's point is the frame
-a person thinks in, and it keeps the offset valid when the place is re-taught. The names `Reference` / `Offset` (owner,
-2026-10-24) replace F6's single mapping of a target, a frame and an offset.
+a person thinks in, and it keeps the offset valid when the place is re-taught (the names `Reference` / `Offset`: owner,
+2026-10-24).
 
 **Alternatives.** The offset in the base frame: wrong as soon as the place is tilted (the loader's plate is). The offset in
 the derived point's own frame: circular when the derived point is re-resolved.
@@ -624,39 +601,22 @@ constant of the kind the command needs. `a=` and `r=` (acceleration, blend radiu
 chance of executing the file. PyYAML's defaults silently take the last of two duplicate keys and read `ON` / `OFF` as
 booleans; both would hide an error in a hand-written file.
 
-**Alternatives.** One mapping per command (F8): verbose and far from a pendant program. A regular-expression parser: weaker
+**Alternatives.** One mapping per command: verbose and far from a pendant program. A regular-expression parser: weaker
 on nesting and quoting than `ast`, with no gain.
 
-**Revisit if** blending or accelerations are implemented (F9 or later), or a real controller's syntax is adopted.
+**Revisit if** blending or accelerations are implemented, or a real controller's syntax is adopted.
 
 Pinned by `test/Configuration/test_program_parser.py::test_a_command_line_is_parsed_never_evaluated`,
 `::test_the_yaml_loader_rejects_duplicate_keys_and_keeps_on_off_as_text`,
 `::test_an_invalid_program_line_is_named_with_file_segment_line_and_text`, `::test_a_program_using_a_value_v_and_blank_a_r_loads`.
-
-## Loader.Run starts a job and waits; Start and WaitDone are reserved for F9
-
-**Decision.** The robot's program is the master of the cycle. `Loader.Run(J_)` and `Tester.Run(J_)` run a station's job and
-wait until it is done (Run = Start + WaitDone), so the default program stays sequential. `Loader.Start` / `Loader.WaitDone`
-and `Tester.Start` / `Tester.WaitDone` are reserved names: the parser refuses them with that reason until F9 uses them for
-parallel motion under interlocks. The loader's job runs one axis after the other (owner, answer 1).
-
-**Why.** The real cell's loader is a PLC with its own program; jobs keep its steps in one place and the robot's program
-says only when it starts and waits. Reserving the names now keeps the format stable for F9.
-
-**Alternatives.** Loader commands inline in the robot's program (F8): the PLC's part could not be read as one unit.
-
-**Revisit if** F9's synchronisation needs more than start and wait (an interlock signal, a timeout).
-
-Pinned by `test/Configuration/test_program_parser.py::test_an_invalid_program_line_is_named_with_file_segment_line_and_text`,
-`::test_an_invalid_job_line_is_named`, `::test_the_commands_are_resolved`.
 
 ## Simulated I/O and the end settle live in Simulation.yaml
 
 **Decision.** `Robot.SetDO(DO_VACUUM, ON)` drives the output's simulated actuator (`Simulation.yaml Actuators`), and
 `Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)` holds for the input's simulated response (`Signal_Response`, 0.3 s: the legacy
 planner's hold after vacuum on) and fails the load when the response exceeds the timeout. The F8 program's last step
-(a 0.8 s wait for the physics to settle) is `End_Settle` in `Simulation.yaml`, appended after the last segment: the
-trajectory lasts 68.852 s as before, the program a controller would run 68.052 s. The signals' `Port` is a placeholder
+(a 0.8 s wait for the physics to settle) is `End_Settle` in `Simulation.yaml`, appended after the last segment: the taught
+trajectory lasts 70.404 s, the program a controller would run 0.8 s less. The signals' `Port` is a placeholder
 (`KNOWN_ISSUES.md`).
 
 **Why.** A real program waits for its vacuum sensor, not for a time; the time it takes is a property of the simulated cell.
@@ -664,7 +624,7 @@ A settle wait for the physics run means nothing to a controller.
 
 **Alternatives.** A plain `Wait(0.3)` after the vacuum: correct in time, but the real program would not check its vacuum.
 
-**Revisit if** the real cell's I/O map is defined, or step 5's physics measures the vacuum build-up.
+**Revisit if** the real cell's I/O map is defined, or the vacuum model gets a pressure state.
 
 Pinned by `test/Program/test_core.py::test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle`,
 `test/Configuration/test_program_parser.py::test_signals_contacts_and_constants_are_complete`.
@@ -673,8 +633,7 @@ Pinned by `test/Program/test_core.py::test_a_waitdi_holds_its_simulated_response
 
 **Decision.** A constant declared in `Constants.yaml` and used by neither `Program.yaml` nor `Simulation.yaml` is a load
 error, and so is a job no segment runs. So `T_FORK` is not declared (the fork's MoveLs and paths run on the flange,
-`T_FLANGE`), and `Cell.yaml Clearance.Check_Position` was removed: the old `Check` value it bounded is replaced by the
-`Pose` check (1e-5 m), and nothing read it any more.
+`T_FLANGE`).
 
 **Why.** project-style-rpx: no configuration field that cannot take effect; an unused constant is either a mistake or dead
 data a reader would trust.
@@ -701,35 +660,27 @@ need `Kinematics`.
 
 Pinned by `test/Program/test_core.py::test_the_constants_are_checked_against_the_model`, `::test_the_shipped_constants_match_the_model`.
 
-## The format change was proved against a golden build
+## The taught program's golden data is exact, captured by one tool
 
-**Decision.** Before the format change, the F8 build (`e5ec42c`) was captured in `test/Program/data/` (commit `e77c004`):
-the sha256 of every trajectory array's bytes, the cycle time, the events, the segments, each command's target joints as
-`float.hex`, the check report and the keypoint table. `test/Program/test_golden.py` rebuilds the program in the new format
-and compares: every numeric array byte-identical, the same events and cycle time (68.852 s), the 69 joint targets
-bit-identical, the report and the table identical after the old → new name map (`test/Program/data/name_map.json`). The
-table's check and stale columns are the exception: they now measure the `Pose` against FK and the `Reference` / `PCB_Hold`
-consistency, by design.
+**Decision.** `test/Program/data/` holds the taught program's golden data: the sha256 of every trajectory array's bytes, the
+cycle time, the events, the segments, each command's values as `float.hex`, the check report and the point table.
+`Example/Program/golden_program.py` writes (`--out DIR --source TEXT`) and compares it; `test/Program/test_golden.py`
+imports it. A change that moves a number on purpose re-captures the data in its own commit, listing what changed (its
+provenance in the record's `source`). The format change to the three files was proved this way: every array byte-identical.
 
-**Why.** A format change must not move a number; byte identity is the strongest proof and cheap to keep.
+**Why.** A program or format change must not move a number unnoticed; byte identity is the strongest proof and cheap to
+keep. One reader and writer of the format; a re-capture is one command.
 
-**Alternatives.** Tolerance comparisons: would let a real change through. Comparing only the cycle report: blind to the
-trajectory's internals.
+**Alternatives.** Tolerance comparisons: would let a real change through. Comparing only the check report: blind to the
+trajectory's internals. A name map beside old data: every change would extend a map of names that no longer differ.
 
-**Revisit if** the program's behaviour changes on purpose (F9, a re-taught point): the golden data is then re-captured in its
-own commit with the reason (since F11 by `Example/Program/golden_program.py`, in the current names; see below).
+**Revisit if** the trajectory format changes (the golden data is then re-captured in the new form; the old is in git).
 
-A change that moves the numbers on purpose re-captures the golden arrays in its own commit, with the samples that changed
-listed: F9.6 (MoveJ ends exactly on its stored joints) changed robot_q at 6073 samples by at most 1.55e-15 rad (6.2 ulp),
-robot_qd at 2395 by at most 3.0e-13 rad/s (the central differences of those roundings) and pcb_pose at 811 by at most
-8.5e-16 m; every other array, the events, the cycle time, the check report and the point table stayed the same.
+Pinned by `test/Program/test_golden.py` and `test/Example/Program/test_golden_program.py`.
 
-Pinned by `test/Program/test_golden.py`.
+## The optimizer drops the multi-seed IK of a FREE segment's ends
 
-## F9 drops the multi-seed IK of a FREE segment's ends
-
-**Decision.** F9's pipeline does not search several IK solutions for a FREE segment's start and end (owner, 2026-10-24,
-answer 5). A FREE segment runs between the ends of LOCKED segments, whose stored joints are fixed; there is nothing for a
+**Decision.** The optimizer does not search several IK solutions for a FREE segment's start and end (owner, 2026-10-24). A FREE segment runs between the ends of LOCKED segments, whose stored joints are fixed; there is nothing for a
 seed search to choose.
 
 **Why.** A different IK solution at an end would change the LOCKED segment it joins, which must stay byte-identical.
@@ -738,7 +689,7 @@ seed search to choose.
 
 **Revisit if** a FREE segment ever ends at a point no LOCKED segment fixes.
 
-Pinned by nothing yet (F9 is designed, not built).
+Pinned by `test/Optimizer/test_measure.py::test_a_locked_part_is_byte_identical_from_its_start`.
 
 ## The viewer loop holds the lock only while posing; the overlay is set outside it
 
@@ -791,14 +742,18 @@ constant per interval, its acceleration limits met at both ends of each interval
 closed form from the pairs of bounds; the timing is sampled exactly (`s` quadratic in time per interval), stretched to whole
 4 ms samples and further while a sample exceeds a limit between grid points.
 
-**Why.** toppra has no macOS arm64 wheel (FEATURES.md F9). Collocation at the grid points alone left `u` unbounded where a
+**Why.** toppra (0.6.10, MIT; checked on PyPI 2026-10-24) has Linux x86_64 wheels only - no macOS or aarch64 wheel, no sdist
+since 0.6.3 (a Cython build) - so it cannot be installed from a wheel on the primary platform. Collocation at the grid points alone left `u` unbounded where a
 clamped spline's `q'` vanishes (its ends): the sampled acceleration reached 1.75x the limit between grid points and the
-stretch made a 1.80 s transfer 3.11 s (measured 2026-10-24); with first-order interpolation the stretch is 0.1-0.3 %. A first
-vertex-enumeration LP was replaced by the closed form: with its open bounds of 1e9 it lost precision and the interval
-oscillated. B3: the closed-form trapezoid and triangle are met within 1.9e-7 (relative; 1000 intervals).
+stretch made a 1.80 s transfer 3.11 s (measured 2026-10-24); with first-order interpolation the stretch is 0.1-0.3 %. The
+interval in closed form, not by a vertex-enumeration LP (its open bounds of 1e9 lost precision). B3: the closed-form trapezoid
+and triangle are met within 1.9e-7 (relative; 1000 intervals).
 
-**Alternatives.** A jerk-limited timing: not approved (answer 13: bang-bang accelerations, step 5 reports the tracking).
-**Revisit if** step 5 shows tracking errors from the acceleration steps, or a real controller's limits differ.
+**Alternatives.** A jerk-limited timing: not approved (owner: bang-bang accelerations; the physics run reports the tracking).
+toppra: not installable on the primary platform (above).
+
+**Revisit if** the physics shows tracking errors from the acceleration steps, a real controller's limits differ, or toppra
+ships a macOS arm64 wheel.
 
 Pinned by `test/Planner/test_core.py::test_topp_matches_the_closed_form_of_a_straight_move`,
 `::test_a_timed_spline_keeps_the_limits_at_every_sample`.
@@ -827,9 +782,9 @@ Pinned by `test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_
 waits for each job and starts the next. When the build's check finds the robot within the clearance of the loader (I8), the
 spline moves after the start of the next job if the meeting happens while a later job runs (the robot would stand at its end
 point then), otherwise it waits longer before the spline by the length of the meeting window; a meeting while the robot waits
-at its start fails, naming the transfer. Shipped: To_MG06 runs its spline during `J_INSERT`; To_Take after the start of
-`J_RETURN` - with the spline during `J_FETCH` the robot standing at `P_LOADER_ABOVE` meets the `z_carriage` (-18.91 mm) while the
-loader comes back at its travel height (measured 2026-10-24).
+at its start fails, naming the transfer. Shipped (`Data/Optimized/Program_Optimized.yaml`): To_MG06 runs its spline during
+`J_INSERT`; To_Take goes to its waiting point `P_LOADER_WAIT` during `J_FETCH` and on to `P_LOADER_ABOVE` during `J_RETURN`
+after its wait (below).
 
 **Why.** In the taught program the robot is at home while the loader fetches and returns; `P_LOADER_ABOVE` is in the
 loader's travel height path. Waiting longer could not help there (the meeting moved with the wait); a later slot does.
@@ -839,7 +794,7 @@ loader's travel height path. Waiting longer could not help there (the meeting mo
 
 **Revisit if** the loader's positions or jobs change (the optimizer finds the slot again).
 
-Pinned by `test/Optimizer/test_core.py::test_the_interlocks_hold`, `test/Example/Program/test_optimize_program.py`.
+Pinned by `test/Optimizer/test_measure.py::test_the_interlocks_hold`, `test/Example/Program/test_optimize_program.py`.
 
 ## The optimized program is generated data, committed and reproducible
 
@@ -851,7 +806,7 @@ when it does not reproduce the schedule; the optimizer run again writes the same
 **Why.** The planning is random with a fixed seed: the file keeps the result reviewable and diffable, and the hashes keep it
 honest when the taught program or the cell changes.
 
-**Alternatives.** Planning at every build: slow (34 s) and the result unreviewed.
+**Alternatives.** Planning at every build: slow (the optimizer runs about 60 s) and the result unreviewed.
 
 **Revisit if** the optimizer runs on another platform (its output may then differ: re-run and commit with the platform).
 
@@ -861,43 +816,50 @@ Pinned by `test/Example/Program/test_optimize_program.py::test_the_optimizer_rep
 
 ## Run is Start plus WaitDone; a robot Wait holds only the robot
 
-**Decision.** The builder runs a started loader job one sample per robot sample (a motion, a `Wait`, a `WaitDI` of the robot
-all advance it); `Loader.WaitDone` holds the robot until the job's last sample. `Loader.Run` keeps its expanded form and gives
-the same samples as Start + WaitDone. In the taught program no job runs during a robot line, so its trajectory is unchanged
-(golden).
+**Decision.** The robot's program is the master of the cycle. `Loader.Run(J_)` and `Tester.Run(J_)` run a station's job
+and wait until it is done; the optimized program splits a loader job into `Loader.Start(J_)` and `Loader.WaitDone(J_)` (a
+taught program refuses them), and `Tester.Start` / `Tester.WaitDone` are reserved (the tester's job runs whole). The builder
+runs a started loader job one sample per robot sample (a motion, a `Wait`, a `WaitDI` of the robot all advance it);
+`Loader.WaitDone` holds the robot until the job's last sample; `Loader.Run` gives the same samples as Start + WaitDone, so the
+taught program's trajectory is unchanged (golden). A loader job runs one axis after the other (owner, 2026-10-24).
+*Corrected 2026-10-25: merged with the entry "Loader.Run starts a job and waits; Start and WaitDone are reserved", which F9
+superseded.*
 
-**Why.** A real master program runs this way: the PLC's job goes on while the robot works.
+**Why.** The real cell's loader is a PLC with its own program; a job keeps its steps in one place and the robot's program
+says only when it starts and waits - and a real master program runs this way: the PLC's job goes on while the robot works.
 
-**Alternatives.** A separate loader timeline merged afterwards: the PCB rules (clamp at MG06, release) would need the merge to
-know both lanes' states.
+**Alternatives.** Loader commands inline in the robot's program: the PLC's part could not be read as one unit. A separate
+loader timeline merged afterwards: the PCB rules (clamp at MG06, release) would need the merge to know both lanes' states.
 
 **Revisit if** the tester's job runs in parallel too (Tester.Start is reserved).
 
-Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `test/Optimizer/test_core.py::test_the_loader_moves_while_the_robot_moves`.
+Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `test/Optimizer/test_core.py::test_the_loader_moves_while_the_robot_moves`,
+`test/Configuration/test_program_parser.py::test_an_invalid_program_line_is_named_with_file_segment_line_and_text`,
+`::test_an_invalid_job_line_is_named`, `::test_the_commands_are_resolved`.
 
 ## The optimized program's longer PCB path is accepted
 
-**Decision.** The optimized program carries the PCB farther than the taught one: 3.010 m against 2.712 m (+11 %) with the first
-30 deg tilt limit, 2.856 m (+5 %) with 20 deg (measured 2026-10-24), while the robot's joint travel falls 18 % and the TCP's
-path 13-15 %: accepted (owner, 2026-10-24).
+**Decision.** The optimized program carries the PCB farther than the taught one: at the decision (2026-10-24) 2.856 m against
+2.712 m (+5 %, the 20 deg tilt limit), while the robot's joint travel fell 18 % and the TCP's path 13-15 %: accepted (owner,
+2026-10-24). The current lengths: `Example/Program/compare_programs.py`.
 
 **Why.** The optimizer's objective is time within the limits and the clearance; the FREE transfers that carry the PCB (To_Loader,
-To_Output) are shorter in time (1.148 s against 1.836 s, 1.768 s against 2.556 s), their clearances pass, and the tilt stays
-within its limit.
+To_Output) are shorter in time, their clearances pass, and the tilt stays within its limit.
 
 **Alternatives.** A path-length term in the planner: no gain in time, more tuning.
 
-**Revisit if** step 5 shows PCB slip in a carrying transfer.
+**Revisit if** the physics shows PCB slip in a carrying transfer above its warning.
 
 Pinned by `test/Example/Program/test_compare_programs.py`.
 
 ## A robot stop is a tenth of a second at rest
 
 **Decision.** The comparison counts a robot stop when every joint speed (its change per sample over 4 ms) stays below 1e-3 rad/s
-for at least 0.1 s after a motion (`Optimizer.CONST_STOP_SPEED`, `CONST_STOP_TIME`), and reports the time at rest in them.
-Legacy, taught and optimized all stop 11 times; at rest 18.600 / 21.176 / 16.716 s (measured 2026-10-24).
+for at least 0.1 s after a motion (`Optimizer.Measure.CONST_STOP_SPEED`, `CONST_STOP_TIME`), and reports the time at rest in
+them. Both programs stop 12 times (`test/Example/Program/test_compare_programs.py`).
 
-**Why.** The first count (a sample moving followed by one at rest) counted the legacy plan's single still rows: 135 stops. With
+**Why.** A count without a duration (a sample moving followed by one at rest) counted the legacy plan's single still rows: 135
+stops. With
 a duration, the count is the process's holds - the vacuum at the pick, the handover's clamp, the fork paths' recorded rests,
 the test, the take, the place - and the waits for the loader; the optimization removes motion and moves the waits, so the count
 stays and the time at rest falls.
@@ -906,38 +868,35 @@ stays and the time at rest falls.
 
 **Revisit if** the comparison should tell the process holds from the waits.
 
-Pinned by `test/Optimizer/test_core.py::test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion`,
+Pinned by `test/Optimizer/test_measure.py::test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion`,
 `test/Example/Program/test_compare_programs.py`.
 
 ## The optimized take waits at P_LOADER_WAIT; the loader is the critical path
 
 **Decision.** In the optimized program the robot leaves `P_MG06_FORK_START` at once after Open_MG06 (with `J_FETCH`), waits at
-`P_LOADER_WAIT` (25 mm above `P_LOADER_ABOVE` along the plate normal, `Optimization.yaml Waiting_Points`) and moves on to
-`P_LOADER_ABOVE` at the earliest moment the exact robot-loader check allows (1.660 s after `J_RETURN` starts). Interlock I7
-stays: the take starts when `J_RETURN` has ended.
+`P_LOADER_WAIT` (50 mm beyond `P_LOADER_ABOVE` along the plate normal, `Optimization.yaml Waiting_Points`) and moves on to
+`P_LOADER_ABOVE` at the earliest moment the exact robot-loader check allows (`Wait(1.648)` after `J_RETURN` starts). Interlock
+I7 stays: the take starts when `J_RETURN` has ended.
 
-**Why.** Owner's observation (2026-10-24): the robot waited 4.05 s above MG06. The analysis: the loader is the critical path -
-`J_FETCH` 37.036-41.080 s, `J_RETURN` 41.080-44.680 s (at rest at `L_HOME` from 44.480 s, then its Wait(0.2)) - and the robot was
-already at `P_LOADER_ABOVE` at 43.364 s, so leaving earlier gains no time: the cycle stayed 57.132 s (57.108 s since the 20 deg
-tilt limit). It removes the robot's wait
-above the tester (which a real cell's safety zones would have had to allow). `P_LOADER_ABOVE` itself cannot be the waiting
-point: the `z_carriage` at its travel height meets the robot there (-18.91 mm); 23 mm above keeps 3.26 mm, 25 mm 4.92 mm (3 mm
-plus the planner's first margin), 20 mm 0.85 mm (measured over every sample of `J_FETCH` and `J_RETURN`). I7' (the take on the
-loader at rest at home, during its trailing Wait(0.2)) would gain at most 0.2 s and needs a state-based "loader home" input and
-a WaitDone inside the LOCKED take: not done. Other candidates (measured): the wait before Close_MG06 (the robot at
-`P_MG06_FORK_START` 12.828-17.924 s while `J_PARK` runs) - loader-limited by I3, gain 0; starting `J_INSERT` during the
-handover's last MoveL (9.224-10.720 s) - at most 1.5 s, but it splits a LOCKED segment and relaxes I2: not done without a
-decision. The closest robot-loader distance is now 4.28 mm at 42.796 s (the last leg behind the passing `z_carriage`).
+**Why.** Owner's observation (2026-10-24): the robot waited 4.05 s above MG06. The loader is the critical path - the robot was
+already at `P_LOADER_ABOVE` before the loader was home - so leaving earlier gains no time; it removes the robot's wait above
+the tester (which a real cell's safety zones would have had to allow). `P_LOADER_ABOVE` itself cannot be the waiting point:
+the `z_carriage` at its travel height meets the robot there. Other candidates (measured 2026-10-24): I7' (the take on the
+loader at rest at home, during its trailing Wait(0.2)) would gain at most 0.2 s and needs a state-based "loader home" input
+and a WaitDone inside the LOCKED take: not done; the wait before Close_MG06 is loader-limited by I3 (gain 0); starting
+`J_INSERT` during the handover's last MoveL would gain at most 1.5 s, but it splits a LOCKED segment and relaxes I2 - an open
+candidate (FEATURES.md), not done without the owner's decision, a time-dependent check and the physics proof. The waiting
+point's distance: below (the free transfers keep 10 mm from the loader).
 
-**Alternatives.** One spline straight to `P_LOADER_ABOVE` timed after the loader passes (the previous program): the same time,
-the wait above MG06.
+**Alternatives.** One spline straight to `P_LOADER_ABOVE` timed after the loader passes: the same time, the wait above MG06.
 
 **Revisit if** the loader's jobs get faster (the robot may become the critical path), or I7' / I2' are wanted.
 
-Pinned by `test/Optimizer/test_core.py::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`, `::test_the_interlocks_hold`,
+Pinned by `test/Optimizer/test_core.py::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`,
+`test/Optimizer/test_measure.py::test_the_interlocks_hold`,
 `test/Configuration/test_program_parser.py::test_an_optimizer_point_is_used_only_by_the_optimized_program`.
 
-## The take relieves the press before the jaws open (F11)
+## The take relieves the press before the jaws open
 
 **Decision.** `S18_Take_From_Loader`, after the vacuum is OK, moves 1.5 mm back along the tool axis to `P_LOADER_TAKE_TOUCH`
 (Reference `P_LOADER_PICK`, Offset [0, 0, -0.0015], at 10 mm/s), then opens the jaws, then waits for `DI_VACUUM_OK` again
@@ -959,7 +918,7 @@ handover's no-press check is keyed on that point. Opening the jaws slower: untes
 Pinned by `test/Program/test_core.py::test_a_waitdi_holds_its_simulated_response_and_the_cycle_ends_with_the_settle`, the
 golden data (`test/Program/test_golden.py`) and the physics acceptance of both programs.
 
-## A WaitDI waits only for what is left of its input's response (F11)
+## A WaitDI waits only for what is left of its input's response
 
 **Decision.** A simulated input comes its `Signal_Response` after its cause (`Program.Core.CONST_INPUT_CAUSE`: `DI_VACUUM_OK`
 after `DO_VACUUM` went on); a WaitDI holds what is left of that time, nothing when it has passed; with the cause off the
@@ -968,25 +927,24 @@ build fails (the wait would time out).
 **Why.** A real WaitDI returns at once when its input is true; the take's second WaitDI (after the jaws open) must not add
 0.3 s to the cycle.
 
-**Alternatives.** Each WaitDI holds the full response (before F11): adds a wait the cell would not have.
+**Alternatives.** Each WaitDI holds the full response: adds a wait the cell would not have.
 
 **Revisit if** an input gets a cause other than an output, or more inputs exist.
 
 Pinned by `test/Program/test_core.py::test_a_waitdi_holds_only_what_is_left_of_the_response` and
 `::test_a_broken_world_rule_is_refused`.
 
-## The simulated vacuum switch counts cups in physics only (F11)
+## The simulated vacuum switch counts cups in physics only
 
 **Decision.** `DI_VACUUM_OK` is a sensor model in the physics run: true once `Simulation.yaml Vacuum_OK_Min_Cups` (4) cups have
 touched the PCB with the vacuum on for its `Signal_Response` (0.3 s); every `WaitDI(DI_VACUUM_OK)` is checked where its wait
 ends on the trajectory's timeline, and a false input stops the run with the step, the line, the cups and how long they held
-(`vacuum not OK at ...`, exit 1). The program's acceptance gets three items (SPEC §10.1 items 8-10: 4 of 4 cups in every hold,
-the PCB never lost, every WaitDI's input in time); the legacy run keeps items 1-7.
+(`vacuum not OK at ...`, exit 1). The program's acceptance has its items for it (SPEC §10.1 items 8-10).
 
 **Why.** The owner's rule: the program waits for a real vacuum signal; the post-release WaitDI then means something in physics.
 The kinematic build does not count cups: it attaches the PCB to the cups at vacuum on by its rules (the held pose within 2 mm,
-`CONST_PCB_TOLERANCE`) and poses the board in the jaws at the nominal hold pose, which physics showed is 0.7 deg off
-(KNOWN_ISSUES.md); a cup count there would always be 4 and prove nothing.
+`CONST_PCB_TOLERANCE`) and poses the board in the jaws at the nominal hold pose; a cup count there would always be 4 and prove
+nothing.
 
 **Alternatives.** Letting a WaitDI extend the timeline until the input comes: physics follows the trajectory's fixed timeline;
 an input later than the build expected is reported as the wait failing. Counting cups in the kinematic build: always 4 (above).
@@ -994,9 +952,9 @@ an input later than the build expected is reported as the wait failing. Counting
 **Revisit if** the trajectory gets event-driven waits, or the vacuum model gets a pressure state.
 
 Pinned by `test/Simulation/test_core.py::test_the_vacuum_switch_fails_a_waitdi_whose_input_has_not_come`,
-`::test_a_program_run_fails_exactly_its_new_criterion` and `::test_the_old_take_loses_the_board_at_the_release`.
+`::test_the_old_take_loses_the_board_at_the_release` and `test/Simulation/test_report.py::test_a_program_run_fails_exactly_its_new_criterion`.
 
-## The free transfers keep 10 mm from the loader where its actuators put it (F11)
+## The free transfers keep 10 mm from the loader where its actuators put it
 
 **Decision.** In every free transfer of both programs (the taught program's `Free_Segments`, the optimized program's splines)
 the robot and the carried PCB keep `Cell.yaml Clearance.Loader_Free` (10 mm, owner) plus `Tracking_Margin` (4 mm) from the
@@ -1012,10 +970,8 @@ command, measured 4.28 mm: the command leads the real loader by up to 22.8 mm. T
 reference in the free transfers (2.51 mm) and the model's error (1.04 mm), rounded up.
 
 **Measured (2026-10-25).** The waiting point's distance to the loader's swept volume (J_FETCH + J_RETURN): 25 mm -> 5.32 mm,
-30 -> 10.04, 35 -> 14.90, 40 -> 19.80, 45 -> 24.72, 50 -> 29.64, 60 -> 39.50 mm, 80 mm and more beyond 50 mm. The optimized
-program's free transfers before -> after: S3_To_Loader 5.41 -> 16.85 mm, S11_To_Take 0.47 -> 19.39 mm, S13_To_Output 4.87 ->
-16.51 mm; cycle 57.652 -> 57.708 s (To_Loader +0.024 s, To_Output +0.032 s, To_Take 0 s: its last leg 0.304 -> 0.432 s, its
-wait 1.660 -> 1.648 s - the loader is the critical path).
+30 -> 10.04, 35 -> 14.90, 40 -> 19.80, 45 -> 24.72, 50 -> 29.64, 60 -> 39.50 mm: 50 mm is the nearest that keeps the
+10 + 4 mm with a margin. The rule cost the optimized cycle 0.056 s.
 
 **Alternatives.** The command as the loader's position plus a larger margin: 22.8 mm of lag would make it ~25 mm everywhere.
 A first-order lag (the owner's first reading of the 30 ms): 9.6 mm off. Raising the taught vias: not needed.
@@ -1023,12 +979,12 @@ A first-order lag (the owner's first reading of the 30 ms): 9.6 mm off. Raising 
 **Revisit if** the loader's masses or servo gains change (the model reads them from the compiled cell), or the real loader's
 response is measured.
 
-Pinned by `test/Program/test_core.py::test_the_free_transfers_keep_the_loader_clearance`,
+Pinned by `test/Program/test_check.py::test_the_free_transfers_keep_the_loader_clearance`,
 `::test_the_loader_actuator_model_lags_and_settles`, `::test_the_loader_actuator_model_matches_the_physics` (slow),
 `test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_and_the_tilt` and
 `::test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait`.
 
-## The recorded closing path stays, and the fork is bounded on its net force and hinge load (F11)
+## The recorded closing path stays, and the fork is bounded on its net force and hinge load
 
 **Decision.** `PATH_FORK_CLOSE` is played as recorded (it presses up to 0.54 mm into the handle bar). The fork's bounds use the
 net contact force on the bar and the handle hinge load (SPEC §10.1); the summed normal force is reported for information.
@@ -1047,20 +1003,11 @@ waits 0 / 4 ms / 0.1 s, both programs), 2026-10-25:
 | 0.70 mm | none | 25.51 / -0.64 deg | 1 | 406.7 N | 8.66 N m | 262 N | 13/14 (no latch) |
 
 The owner's rule adopts a retraction only when 0.55-0.65 mm all pass; 0.65 mm does not latch MG06, so the passing window
-(0.55-0.60 mm) is too narrow and the recording stays. (A first attempt with the summed force as the criterion, and with a
-retraction along the closest face only, is superseded: the summed force adds the squeeze between the slot's walls.)
+(0.55-0.60 mm) is too narrow and the recording stays. The criterion is the net force, not the summed force: the summed force
+adds the squeeze between the slot's walls.
 
-**How to repeat it.** The experiment is exported to `Data/Experiments/fork_bar_retraction/` (its patch against `92d1943`, the
-state it ran on, the sweep script and a README; the experiment commit `cb69907` is not on main). It adds `Bar_Retraction` [m] to `Constants.yaml` `Paths` (range 0-5 mm, 0: as recorded) and
-`Example/Simulation/fork_retraction_sweep.py R_MM taught|optimized DX_UM WAIT_S`, one run per line: the retraction of
-`PATH_FORK_CLOSE` (`PATH_FORK_OPEN` stays 0), the PCB's start offset along x before the run (the mode's trigger), a `Wait`
-before the path (taught: after `MoveJ(P_MG06_FORK_START)`; optimized: after `Loader.WaitDone(J_PARK)`); `P_MG06_CLOSE_END`
-follows the retracted end. The table's runs: R 0 / 0.55 / 0.60 / 0.65 / 0.70 x DX -5 / -1 / 0 / +1 / +5 (WAIT 0) and WAIT 0.004 /
-0.1 (DX 0), both programs; MuJoCo 3.16.0, the environment of `test/Simulation/data/baseline_environment.json`. Re-run
-2026-10-25 from the tag: 0.55 mm, taught, DX 0, WAIT 0 -> net 186.8 N, hinge 8.23 N m, as in the table.
-
-**Not now: the narrow 0.55-0.60 mm window** (owner, 2026-10-25). It is revisited only if the closing on the real cell shows a
-problem (a force too high, a collision stop, wear of the bar); the real fork and MG06 would need their own sweep then.
+**How to repeat it:** `Data/Experiments/fork_bar_retraction/README.md` (its patch against `92d1943`, the sweep script and the
+runs; the experiment's own commit is not on main).
 
 **Bounds** (from the worst mode x 1.15): net force 247.3 N -> 290 N; hinge load 11.45 N m -> 13.5 N m (rounded up to 10 N and
 0.5 N m); the summed force (371 N x 1.15 -> 430 N) is reported, not bounded.
@@ -1072,32 +1019,31 @@ These bounds are regression bounds derived from the simulation, not safety limit
 KNOWN_ISSUES.md).
 
 **Revisit if** the real MG06's handle force limit or the VGC10's force and moment ratings are known, the closing on the real
-cell shows a problem, or the path is re-recorded.
+cell shows a problem (a force too high, a collision stop, wear of the bar; the real fork and MG06 would need their own sweep;
+owner, 2026-10-25: not the narrow window now), or the path is re-recorded.
 
 Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
 
-## The legacy cycle run is retired; the programs are the regression (step 6)
+## The legacy cycle run is retired; the programs are the regression
 
 **Decision.** `Example/Simulation/run_cycle.py`, `Data/Reference/cell_plan.npz`, `test/Simulation/data/baseline_report.txt`,
 `Simulation.Legacy_Drive_Cls` / `Run_Cycle` / `Read_Legacy_Plan` and their tests are removed (owner, 2026-10-25); the last
-commit with them is `7a8560c8c16806739a02da8e989c2a2f65d1e41d`. No test needed `Legacy_Drive_Cls` any more: the lost-PCB and instability
-tests drive a short program trajectory (`_Hold_Trajectory`), the broad-phase test samples the taught program's trajectory, the
-points' provenance check (rows of the plan) and the first MoveJ's plan comparison went with the plan, `build_program.py
---compare-legacy` and the legacy column of `compare_programs.py` likewise. Two KNOWN_ISSUES entries of the legacy run are closed
-by it: its crate penetration of -0.14 mm against the brief's -0.08 mm, and its take that carried the board on 2 of 4 cups
-(F11). The usual checks are now the fingerprint, the kinematic golden, both physics baselines, the point table, the fast
-tests and the style checker (CLAUDE.md).
+commit with them is `7a8560c8c16806739a02da8e989c2a2f65d1e41d`; the legacy planner and cycle test are in
+`f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (referenced by commit hash: tags are for releases only). Two known issues of the legacy
+run closed with it: its crate penetration of -0.14 mm against the brief's -0.08 mm, and its take that carried the board on 2 of
+4 cups. *Corrected 2026-10-25: merged with the entry "The legacy plan stays the regression input until step 6", which this
+superseded.*
 
-**Why.** Step 6 (SPEC §2): the keypoint programs replace the legacy plan as the regression; the legacy run proved the port
-of the physics loop (F3-F11) and its take was sound by chance only.
+**Why.** The keypoint programs replace the legacy plan as the regression (SPEC §2 item 6); the legacy run proved the port of
+the physics loop and its take was sound by chance only.
 
 **Alternatives.** Keeping it as a second regression: a knife-edge run that a 10 µm change fails, kept only for history.
 
-**Revisit if** the physics loop is rewritten and needs the old proof again (check out the tag).
+**Revisit if** the physics loop is rewritten and needs the old proof again (check out `7a8560c8c16806739a02da8e989c2a2f65d1e41d`).
 
 Pinned by `test/Simulation/test_baselines.py`.
 
-## The physics regression checks bounds and drift, not the report's text (step 6)
+## The physics regression checks bounds and drift, not the report's text
 
 **Decision.** The programs' physics baselines fail a run on SPEC §10.1 and on metrics drifting beyond stated tolerances
 (SPEC §10.2: the cycle time exact, events +-1 sample, PCB poses +-0.05 mm, the slip +-0.2 mm, forces and tracking +-10 %, ...);
@@ -1112,15 +1058,14 @@ any platform, solver or compiler difference that changes nothing physical, and t
 Tolerances wide enough for both fork modes: the hinge load differs by 22 % between them, which would hide a real change of
 either mode.
 
-**The fork's envelope** (owner, 2026-10-25, superseding the two documented modes of the same day): the fork's net force, the
+**The fork's envelope** (owner, 2026-10-25): the fork's net force, the
 hinge load and the J2 / J3 torques pass inside their program's envelope ± 10 % - min and max over 10 perturbation runs (the
 PCB -5 / -1 / 0 / +1 / +5 µm without and -5 / 0 / +5 µm with a 0.1 s settle wait, the handle hinge ±1 µrad; ±1 µm added to
 the owner's 8: they give the taught program's 247.3 N / 11.45 N m outcome, which the 8 missed) - and always within §10.1. Why: the contact
 is chaotic and its outcomes are not well-defined modes - the contact count does not name one (6 contact points gave 247.3 N /
 11.45 N m in the taught program and 222.2 N / 10.01 N m in the optimized one, a handle offset of -1 µrad; the optimized
-program never reached 6 points from a PCB offset). Alternatives: the documented modes with a contact-count key (the first
-version; it failed on a 6-point outcome with other values) or clusters of values (no fixed number of clusters to rely on). The
-contact count is reported only.
+program never reached 6 points from a PCB offset). Alternatives: modes keyed by the contact count (they failed on a 6-point
+outcome with other values) or clusters of values (no fixed number of clusters to rely on). The contact count is reported only.
 
 **Revisit if** a platform change makes a tolerance trip with no physical change, or a metric needs a tighter tolerance.
 
@@ -1128,58 +1073,42 @@ Pinned by `test/Simulation/test_baselines.py` (the envelope: inside, outside on 
 inside the envelope) and
 `test/Example/Simulation/test_physics_baseline.py`.
 
-## The golden data is captured in the current names by one tool (F11)
+## A program's physics runs through one loop fed by a trajectory drive
 
-**Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;
-`test/Program/test_golden.py` imports it. The F11 re-capture (the take fix) wrote it in the current names, so F10's name map
-(`name_map.json`) is retired.
+**Decision (owner, 2026-10-24).** The physics run of a program (`Simulation.Physics_Run_Cls`, `Run_Physics`) is the loop that
+was the legacy cycle run's (servo set-points with velocity feed-forward, the filtered loader drives, vacuum adhesion, the
+instability guard, every measurement), fed by `Trajectory_Drive_Cls` from a program's trajectory file. What the legacy run
+took from its phase labels comes from the program: the fork's allowed contact from the segments' `Allow_Contact`, the
+"placed" and "closed" marks from `J_PARK` and the `Test` step.
 
-**Why.** One reader and writer of the format; a re-capture is one command, its provenance in the record's `source`.
-
-**Alternatives.** Keeping the F8 data and its name map: every program change would extend a map of names that no longer differ.
-
-**Revisit if** names change again (a rename re-captures; the old data is in git).
-
-Pinned by `test/Program/test_golden.py` and `test/Example/Program/test_golden_program.py`.
-
-## Step 5 plays a trajectory through the cycle run's loop (design, F11)
-
-**Decision (owner, 2026-10-24; built in F11).** The physics playback of a program reuses `Simulation.Run_Cycle`'s loop unchanged
-(servo set-points with velocity feed-forward, the filtered loader drives, vacuum adhesion, the instability guard, every
-measurement), fed through a drive object: `Legacy_Drive_Cls` reproduces today's run from `cell_plan.npz` (its report
-byte-identical, the old baseline), `Trajectory_Drive_Cls` reads a trajectory file (the taught or the optimized program's).
-What the legacy run took from its phase labels comes from the program instead: the fork's allowed contact from the steps'
-`Allow_Contact`, the "placed" and "closed" marks from `J_PARK` and the `Test` step.
-
-**Why.** One loop keeps one physics: the programs are measured exactly as the reference plan was, and the legacy report proves
-the refactor.
+**Why.** One loop keeps one physics: the programs are measured as the verified plan was (the port proved by the legacy
+report, byte-identical, until the legacy run was retired).
 
 **Alternatives.** A second physics loop for trajectories: two loops to keep equal. Converting a trajectory into the legacy plan
 format: loses the analytic speeds and the steps.
 
-**Revisit if** the owner's answers to F11's questions change the marks or the fork rule.
+**Revisit if** a program needs a mark or a contact rule the trajectory does not carry.
 
-Pinned by `test/Simulation/test_core.py` (the baseline report through `Legacy_Drive_Cls`, slow; the drive's interpolation and step
-classes) and `test/Example/Simulation/test_run_program.py`.
+Pinned by `test/Simulation/test_core.py` (the drive's interpolation and step classes), `test/Simulation/test_baselines.py` and
+`test/Example/Simulation/test_run_program.py`.
 
 ## The carried PCB tilts at most 20 deg
 
 **Decision.** `Optimization.yaml Carry_Max_Tilt` is 20 deg (owner, 2026-10-24), not the first, assumed 30 deg.
 
-**Why.** It costs no time: with 20 deg the optimizer plans To_Output at 17.73 deg in 1.768 s (30 deg: 28.98 deg in 1.792 s), the
-cycle 57.108 s (57.132 s) - the tighter limit steered RRT-Connect to a slightly shorter path; a flatter board is less likely to
-slip on the cups (KNOWN_ISSUES.md).
+**Why.** It costs no time (at the decision, 2026-10-24: To_Output at 17.73 deg in 1.768 s against 28.98 deg in 1.792 s at
+30 deg; the cycle 24 ms shorter); a flatter board is less likely to slip on the cups (KNOWN_ISSUES.md).
 
 **Alternatives.** 30 deg: the same time, a board tilted almost 29 deg while it accelerates.
 
-**Confirmed** by F11's physics run (2026-10-25): the carries slip at most 1.28 / 1.14 mm on 4 of 4 cups, below the 1.98 mm
-warning; the owner keeps 20 deg.
+**Confirmed** by the physics run (2026-10-25): the carries slip on 4 of 4 cups below the 1.98 mm warning (KNOWN_ISSUES.md); the
+owner keeps 20 deg.
 
 **Revisit if** a real-cell value exists, or a later program's physics run warns.
 
-Pinned by `test/Optimizer/test_core.py::test_the_carried_pcb_keeps_its_tilt_limit`.
+Pinned by `test/Optimizer/test_measure.py::test_the_carried_pcb_keeps_its_tilt_limit`.
 
-## The loader gripper's jaws are synchronized and grip with 70 N (B work)
+## The loader gripper's jaws are synchronized and grip with 70 N
 
 **Decision.** `models/scene.xml`'s `jaw_sync` equality is stiff (solref 0.001 - twice the 0.5 ms timestep, the stiffest MuJoCo
 honours by default - and solimp 0.99 / 0.999, as the PCB contacts) and the gripper's force limit is 70 N, the sum of both jaws
@@ -1187,19 +1116,19 @@ honours by default - and solimp 0.99 / 0.999, as the PCB contacts) and the gripp
 
 **Why.** The SCHUNK EGI 040-EI (ID 1474382, data sheet) synchronizes its jaws by a toothed belt and grips with 25-70 N as the sum
 of both jaws. The former soft coupling (solref 0.004) gave 0.74 mm under the 80 N clamp, so the PCB was carried 0.37 mm off-centre,
-landed on MG06's side guide holder_17 (0.18 mm clearance), was pushed 3.5 mm down along it and dropped 1.4 mm at the release
-(B.1); 80 N (40 N per jaw) was above the EGI 040's maximum. Now the jaws differ by 0.007 mm under load. It also resolves the
+landed on MG06's side guide holder_17 (0.18 mm clearance), was pushed 3.5 mm down along it and dropped 1.4 mm at the release;
+80 N (40 N per jaw) was above the EGI 040's maximum. Now the jaws differ by 0.007 mm under load. It also resolves the
 board's sag in the jaws after the re-grip (0.74-0.84 deg with the soft jaws, F11): 0.01 deg.
 
 **Alternatives.** A tendon on both jaws: splits the force but does not synchronize the positions. The soft coupling kept: the
 guide landing and the drop. 80 N: above the data sheet. The real cell's force setting is not known (KNOWN_ISSUES.md); 25 and
-45 N give the same results (B work, item 4: 28/28, 4/4 cups, the PCB at most 0.007 mm in the jaws while the loader moves).
+45 N give the same results (28/28, 4/4 cups, the PCB at most 0.007 mm in the jaws while the loader moves; 2026-10-25).
 
 **Revisit if** the real gripper's force setting or centring is measured.
 
 Pinned by the fingerprint (three entries), the place acceptance items (SPEC §10.1 18-25) and the physics baselines.
 
-## The gripper ramps in 0.6 s: the EGI's jaw speed (B work)
+## The gripper ramps in 0.6 s: the EGI's jaw speed
 
 **Decision.** Every `Gripper(G_, t=)` in the loader jobs takes 0.6 s; the program check bounds every ramp's peak by
 `Motion.Jaw_Speed_Max` (0.1 m/s, the EGI 040-EI's max. speed).
@@ -1209,11 +1138,13 @@ physics jaws still reached 100.0 mm/s (the servo's overshoot), at 0.6 s 91.4 mm/
 0.35 s peaked at 157 mm/s. Cost: +1.008 s per program (accepted by the owner); the slower clamp also removed a 2-cup moment at
 the handover clamp and lowered the jaws' penetration into the board (-0.108 -> -0.062 mm).
 
+**Alternatives.** 0.55 s: the physics jaws reach 100.0 mm/s, no margin. The legacy 0.35 s: 157 mm/s, above the data sheet.
+
 **Revisit if** the real gripper's speed setting is known.
 
-Pinned by `test/Program/test_core.py::test_the_gripper_ramps_within_the_datasheet_jaw_speed` and its forced failure.
+Pinned by `test/Program/test_check.py::test_the_gripper_ramps_within_the_datasheet_jaw_speed` and its forced failure.
 
-## The handover is taught 0.4 mm along the jaw axis (B work)
+## The handover is taught 0.4 mm along the jaw axis
 
 **Decision.** `P_LOADER_PLACE`'s `PCB_Hold` offset is [0.0004, 0, 0] (its tool x is the jaw axis); the six points derived from
 it follow. The program check bounds the kinematic PCB's offset from the jaw centreline (`Handover.Lateral_Max` 0.5 mm) and
@@ -1221,8 +1152,8 @@ measures the descent by the PCB's height above the ledges.
 
 **Why.** The jaws centre the PCB as they clamp. In physics the PCB sits on the cups 1.226 mm off the TCP after the pick and slips
 0.41 / 0.46 mm by the handover, 0.372 / 0.425 mm short of the jaw centreline (taught / optimized); with the synchronized jaws the
-clamp pulled it that far across the cups. One shared point leaves -0.026 / +0.026 mm of centring. Margin (item 6, the PCB moved
-on the cups after the pick): along the jaw axis +-0.5 mm still keeps 4/4 cups (centring 0.47-0.52 mm); across it (tool y)
+clamp pulled it that far across the cups. One shared point leaves -0.026 / +0.026 mm of centring. Margin (the PCB moved on the
+cups after the pick): along the jaw axis +-0.5 mm still keeps 4/4 cups (centring 0.47-0.52 mm); across it (tool y)
 nothing is centred - +0.5 mm gives a PCB-in-MG06 error of 0.64 / 0.76 mm and 0.001 mm side-guide clearance (KNOWN_ISSUES.md).
 
 **Alternatives.** Teaching the kinematic model the measured cup offset (moves every PCB-hold point); keeping the centred point
@@ -1232,7 +1163,7 @@ nothing is centred - +0.5 mm gives a PCB-in-MG06 error of 0.64 / 0.76 mm and 0.0
 
 Pinned by `test/Program/test_core.py` (the handover tests), the point table and the physics baselines (`handover_centring`).
 
-## The loader releases the PCB 0.15 mm above its MG06 seat; the re-grip has its own height (B work)
+## The loader releases the PCB 0.15 mm above its MG06 seat; the re-grip has its own height
 
 **Decision.** `L_PLACE` is 0.37 mm above the CAD place height; `J_FETCH` goes to its own `L_FETCH` (+0.035 mm). Release, never
 press; re-grip with the PCB 0.3 +- 0.1 mm above the finger ledges.
@@ -1249,34 +1180,38 @@ height the re-grip closed the jaws with the ledges 0.066 mm above the board's un
 
 Pinned by the place acceptance items, the re-grip check and the physics baselines.
 
-## Jaw_Actual is the physics grip, and the posed jaws are the command limited by the part (B work)
+## Jaw_Actual is the physics grip, and the posed jaws are the command limited by the part
 
 **Decision.** `Simulation.yaml Jaw_Actual.G_CLAMP` is 17.54 mm (the synchronized jaws' grip in physics, 17.537-17.550 mm); the
 kinematic posing shows the jaws at the command, never closer than grip while the PCB is between them - in the jaws, on the cups
 at the handover or the take, or resting in MG06 (`Jaw_Posing_Faults` in the program check).
 
-**Why.** 17.75 mm was the soft coupling's grip (0.20 mm off the board's edges). The display bug (item 10): the release in MG06
-switched the PCB to `mg06` before the open ramp, so the posed jaws jumped from grip to the 5.75 mm command, through the PCB, then
-opened; physics (the command) only opened. The collision check does not test the PCB in MG06, so it masked the bug.
+**Why.** 17.75 mm was the soft coupling's grip (0.20 mm off the board's edges). Posing the jaws at the command alone showed
+them passing through the PCB at the release in MG06, which physics never did; the collision check does not test the PCB in
+MG06, so it could not catch that.
+
+**Alternatives.** 17.75 mm, the soft coupling's grip: 0.2 mm off the synchronized jaws. The jaws posed at the command: through
+the PCB.
 
 **Revisit if** the real grip is measured.
 
-Pinned by `test/Program/test_core.py::test_the_posed_jaws_are_the_command_limited_by_the_part` and its forced failure.
+Pinned by `test/Program/test_check.py::test_the_posed_jaws_are_the_command_limited_by_the_part` and its forced failure.
 
-## The place into MG06 is accepted on eight physics items (B work)
+## The place into MG06 is accepted on eight physics items
 
-**Decision.** SPEC §10.1 items 18-25: no jaw closing at L_PLACE, the holder force <= 1.0 N, the release's penetration <= 0.10 mm
-and settled <= 0.0102 mm, no side guide touched on the way down, the PCB seated within 0.2 s (>= 3 of the 4 supports within
-0.05 mm, < 1 mm/s, < 0.1 deg, no guide or jaw contact), the handover's centring <= 0.5 mm, the re-grip's ledge gap 0.3 +- 0.1 mm.
+**Decision.** The place into MG06 is accepted on SPEC §10.1 items 18-25 (owner, 2026-10-25), with the bounds in `Cell.yaml
+Acceptance` and `Handover`.
 
-**Why.** The owner's B decisions. The transient bound is 0.10 mm, not 0.05 mm: the margin runs reach 0.068 mm with the PCB 0.5 mm
+**Why.** The owner's decisions. The transient bound is 0.10 mm, not 0.05 mm: the margin runs reach 0.068 mm with the PCB 0.5 mm
 off the cups' centre; it still catches the old pressed place (0.157 / 0.181 mm). While the optimized program's robot moves in
 parallel (S5_To_MG06) it stays more than 200 mm from the loader and the PCB during the place and the release, and more than 50 mm
-from the loader over the whole step (item 5).
+from the loader over the whole step.
+
+**Alternatives.** A transient bound of 0.05 mm: the margin runs fail it.
 
 **Revisit if** the real place is measured.
 
-Pinned by `test/Simulation/test_core.py::test_a_program_run_fails_exactly_its_new_criterion` and the physics baselines.
+Pinned by `test/Simulation/test_report.py::test_a_program_run_fails_exactly_its_new_criterion` and the physics baselines.
 
 ## The module layout: Core.py, a topic module per second concern, Const.py only for shared constants
 
