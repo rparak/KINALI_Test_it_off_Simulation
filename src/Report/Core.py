@@ -1140,6 +1140,22 @@ def Travel(values: np.ndarray) -> np.ndarray:
     return np.sum(np.abs(np.diff(values.reshape(len(values), -1), axis=0)), axis=0)
 
 
+def Joint_Arc(q: np.ndarray) -> float:
+    """
+    Description:
+        The joint-space arc length of a sampled path: the sum over the samples of the Euclidean norm of the joints' change
+        (owner, 2026-10-25: the summary chart's sum of ||dq||; Travel gives the per-joint sum of |dq|).
+
+    Args:
+        (1) q [Matrix<float> Nxk]: The joints per sample (rad).
+
+    Returns:
+        (1) parameter [float]: The arc length (rad).
+    """
+
+    return float(np.sum(np.linalg.norm(np.diff(q, axis=0), axis=1)))
+
+
 def Channel_Peaks(values: np.ndarray, dt: float) -> tp.Tuple[np.ndarray, np.ndarray]:
     """
     Description:

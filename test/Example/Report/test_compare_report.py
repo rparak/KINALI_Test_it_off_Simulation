@@ -37,10 +37,11 @@ Description:
 def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_trajectory):
     """
     Description:
-        F14: exit 0; DIR holds Comparison.md, its five figures and both physics reports, nothing in the working directory. The
-        report gives the cycles (70.404 s, 58.716 s), the identical task, 28 of 28 checks in both, no loader slow-down up to 2 x
-        breaking I8 (F15: the take gated by Loader.WaitDone(J_RETURN_Y)), and the not-validated sentence; the optimized
-        program's physics report is byte for byte the one run_program.py writes (the recording does not change the run).
+        F14: exit 0; DIR holds Comparison.md, its seven figures (dark and light, PNG and SVG) and both physics reports, nothing
+        in the working directory. The report gives the cycles (70.404 s, 58.716 s) and throughputs (51.1, 61.3 PCB/h) of the
+        Default and the Optimized program, the identical task, 28 of 28 checks in both, no loader slow-down up to 2 x breaking I8
+        (F15: the take gated by Loader.WaitDone(J_RETURN_Y)), and the not-validated sentence; the optimized program's physics report
+        is byte for byte the one run_program.py writes (the recording does not change the run).
     """
 
     folder = os.path.dirname(str(built_trajectory('taught')))
@@ -49,12 +50,15 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
     work.mkdir()
     result = run_script('Report/compare_report.py', ['--out', str(out), '--trajectories', folder], work)
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
-    assert sorted(os.listdir(out)) == ['Comparison.md', 'Program_Optimized_physics.txt', 'Program_physics.txt', 'clearance.png',
-                                       'comparison.png', 'joints.png', 'paths.png', 'timeline.png'] and os.listdir(work) == []
+    figures = ['%s_%s.%s' % (n, t, e) for n in ('clearance', 'critical_path', 'joints', 'paths', 'stretch', 'summary', 'timeline')
+               for t in ('dark', 'light') for e in ('png', 'svg')]
+    assert sorted(os.listdir(out)) == sorted(['Comparison.md', 'Program_Optimized_physics.txt', 'Program_physics.txt'] + figures)
+    assert os.listdir(work) == []
     text = (out / 'Comparison.md').read_text(encoding='utf-8')
-    assert '- Cycle: taught 70.404 s, optimized 58.716 s [K] (16.6 % shorter).' in text
-    assert 'taught 29, optimized 29 lines, identical in text and order' in text and 'their lines identical [C]' in text
-    assert '- Acceptance: taught 28/28, optimized 28/28 checks pass [P].' in text
+    assert '- Cycle: Default 70.404 s, Optimized 58.716 s [K] (16.6 % shorter); throughput 51.1 and 61.3 PCB/h.' in text
+    assert '| throughput = 3600 s / cycle [K] | 51.1 PCB/h | 61.3 PCB/h | Optimized, +19.9 % |' in text
+    assert 'Default 29, Optimized 29 lines, identical in text and order' in text and 'their lines identical [C]' in text
+    assert '- Acceptance: Default 28/28, Optimized 28/28 checks pass [P].' in text
     assert '| Loader_Free + Tracking_Margin (I8) | 14.0 mm | none |' in text and '| contact | 0.0 mm | none |' in text
     assert '- A slower loader: no failure of I8 for any job up to 2 x as long' in text
     assert 'are simulation results and are NOT validated for driving the real cell.' in text

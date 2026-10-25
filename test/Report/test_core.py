@@ -29,7 +29,8 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test and what it works on
 #   ../Report/Core
-from Report.Core import (Moving, Spans, Travel, Channel_Peaks, Segment_Kind, Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach, Job_Window,
+from Report.Core import (Moving, Spans, Travel, Joint_Arc, Channel_Peaks, Segment_Kind, Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach,
+                         Job_Window,
                          Stretch_Job, Stretched_Distance, Handovers, Custody_Gaps, Tilt, Location_Spans, Geom_Points, Cell_Geometry_Cls, By_Design,
                          Overhang, Clear_Height, Physics_Record_Str, Swept_Zone, CONST_PAIRS, CONST_ROBOT_LINKS)
 #   ../Program/Check - the loader's actual position, its distance to the robot
@@ -65,6 +66,16 @@ def test_moving_marks_the_samples_reached_by_a_change_and_spans_join_them():
     assert mask.tolist() == [False, False, True, True, False, False, True, False]
     assert Spans(mask, t) == [(0.5, 1.5), (2.5, 3.0)]
     assert not Moving(1e-10 * np.arange(8)).any()
+
+
+def test_the_joint_space_arc_length_is_the_sum_of_norms():
+    """
+    Description:
+        Joint_Arc sums the Euclidean norm of each step: two joints moving 3 and 4 rad together give 5 rad (Travel gives 3 and 4).
+    """
+
+    q = np.array([[0.0, 0.0], [3.0, 4.0], [3.0, 4.0]])
+    assert Joint_Arc(q) == pytest.approx(5.0) and list(Travel(q)) == [3.0, 4.0]
 
 
 def test_travel_and_peaks_of_a_sine():

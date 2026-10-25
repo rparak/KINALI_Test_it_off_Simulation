@@ -11,9 +11,16 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
 Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for the JIC Smart Factory logo in the README header - its source
 file (`Media/Original/jic-smart-factory.svg`, byte-identical to the skill's asset) and its logo rules, with one departure
 (below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its chart rules are not ported - they are
-written for QPainter and give no categorical palette for matplotlib (owner, 2026-10-25). The figures use the dataviz palette
-(`compare_programs.py`, `compare_report.py`) and matplotlib's default font, no vendored fonts; the one brand colour in a figure
-is the JIC purple `#640ABA` as the optimized program's series accent (`Example/Report/compare_report.py`).
+written for QPainter and give no categorical palette for matplotlib (owner, 2026-10-25).
+
+**Figure style 📄** (owner, 2026-10-25; design-decisions: the figure style): the comparison's figures (`Example/Report/compare_report.py`)
+use `src/Report/Style.py` - one definition, two themes (`dark` #0D1117, `light` white), matplotlib's own Computer Modern
+(mathtext `cm`, serif `cmr10`; no TeX, no vendored fonts; a name with an underscore through `Style.Label`), units in brackets
+with math symbols (`$t$ [s]`), the Okabe-Ito palette for the moving objects, one colour per program in every figure (Default:
+sky blue / blue; Optimized: the JIC purple's 40 % tint on dark, the purple on light - each at least 4.5:1 on its background,
+`test/Report/test_style.py`), panel letters, both a 300 dpi PNG and an SVG per figure and theme (`<name>_dark`,
+`<name>_light`). The programs are shown as "Default program" and "Optimized program" (`Style.CONST_PROGRAM_NAMES`); the code
+keeps taught / optimized. `compare_programs.py`'s figure keeps the dataviz palette (owner: unchanged).
 
 ## Header and checker
 

@@ -69,8 +69,12 @@ from Optimizer.Core import Free_Transfers
 from Optimizer.Measure import Compare_Locked, Interlocks, Measure, Step_Bounds
 #   ../Trajectory/Core - the sample time
 from Trajectory.Core import CONST_DT
+#   ../Report/Style - the figures' themes, the programs' display names
+from Report.Style import (Theme_Str, Parameters, Panel_Letter, Save_Figure, Label, Contrast, CONST_THEMES, CONST_PROGRAM_NAMES, CONST_DOUBLE,
+                          CONST_BOUND)
 #   ../Report/Core - the comparison
-from Report.Core import (CONST_CUT, CONST_MG06_LOADER, Swept_Zone, Record_Physics, Cell_Geometry_Cls, Geometry_Series, By_Design, Handovers,
+from Report.Core import (CONST_CUT, Joint_Arc, CONST_MG06_LOADER, Swept_Zone, Record_Physics, Cell_Geometry_Cls, Geometry_Series, By_Design,
+                         Handovers,
                          Custody_Gaps, Location_Spans, Overhang,
                          Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach, Stretched_Distance, Clear_Height, Job_Window, Moving, Spans,
                          Object_Channels, Travel, Channel_Peaks, Tilt, Holder_Matrix, CONST_PAIRS, CONST_HOLDERS, CONST_LOCATION_HOLDER,
@@ -91,6 +95,9 @@ CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimiz
 #   Unit [List<string>], [Dict<string, string>]
 CONST_SWEPT_JOBS = ['J_INSERT', 'J_FETCH']
 CONST_SWEPT_PARTS = {'swept': 'MG06 shared zone (J_INSERT and J_FETCH swept)', 'mg06': 'its part at MG06 (the loader at the MG06 Y)'}
+# The summary chart's name in --media (the README's).
+#   Unit [string]
+CONST_MEDIA_SUMMARY = 'Default_vs_Optimized'
 # The default folder of the report and its figures.
 #   Unit [string]
 CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
@@ -102,13 +109,6 @@ CONST_FACTOR_RESOLUTION = 0.001
 # The PCB's acceleration is also given smoothed over this window (contact transients are single samples).
 #   Unit [int] (samples)
 CONST_SMOOTH = 5
-# The figures: the chart surface, the inks, the grid (the dataviz palette, as compare_programs.py), a colour per program
-# (the taught program slot 1 blue, the optimized one the JIC purple accent: owner 2026-10-25) and per moving object.
-#   Unit [string] (hex)
-CONST_SURFACE, CONST_INK, CONST_INK_2, CONST_GRID = '#fcfcfb', '#0b0b0b', '#52514e', '#e4e3df'
-CONST_PROGRAM_COLOUR = {'taught': '#2a78d6', 'optimized': '#640ABA'}
-CONST_OBJECT_COLOUR = {'robot': '#2a78d6', 'loader Y': '#eb6834', 'loader Z': '#eda100', 'loader jaws': '#1baf7a', 'MG06 lid/handle': '#e87ba4',
-                       'PCB': '#008300'}
 # The robot's waits in the timeline: a hatch per kind.
 #   Unit [Dict<string, string>]
 CONST_WAIT_HATCH = {'loader': '////', 'loader (timed wait)': 'xxxx', 'tester': '....', 'vacuum signal': '\\\\\\\\', 'robot dwell': '----'}
@@ -477,7 +477,7 @@ def Section_Same_Task(c: Context_Cls) -> tp.List[str]:
     transfers = Free_Transfers(taught, Load_Optimization(taught), a)
     locked = Compare_Locked(a, b, taught, transfers)
     lines += ['', 'Each LOCKED part (`Optimizer.Measure.Compare_Locked`: its samples relative to its own start, byte by byte) [K]:', '']
-    lines += _Table(['LOCKED part', 'taught start (s)', 'optimized start (s)', 'samples', 'identical'],
+    lines += _Table(['LOCKED part', 'Default start (s)', 'Optimized start (s)', 'samples', 'identical'],
                     [[p.Name, '%.3f' % p.Start_Default, '%.3f' % p.Start_Optimized, str(p.Samples), 'yes' if p.Identical else 'NO (%s)' % p.Channels]
                      for p in locked])
 
@@ -508,7 +508,7 @@ def Section_Same_Task(c: Context_Cls) -> tp.List[str]:
     free_taught = c.Free['taught'] | {k for t in transfers for k in t.Job_Keys}
     task_a, points_a = Targets(taught, free_taught)
     task_b, points_b = Targets(optimized, c.Free['optimized'])
-    lines += ['', 'The task - the robot\'s lines outside the FREE transfers, in order (the program files [C]): taught %d, optimized %d '
+    lines += ['', 'The task - the robot\'s lines outside the FREE transfers, in order (the program files [C]): Default %d, Optimized %d '
               'lines, %s.' % (len(task_a), len(task_b), 'identical in text and order' if task_a == task_b else 'DIFFERENT'), '']
     jobs = {v: [t.split('(', 1)[1].split(')', 1)[0] for t in c.Trajectories[v].Segment_Command if t.startswith(('Loader.Run(', 'Loader.Start('))]
             for v in CONST_VERSIONS}
@@ -539,7 +539,7 @@ def Section_Same_Task(c: Context_Cls) -> tp.List[str]:
             ta, tb = math.degrees(Travel(qa[:, j])[0]), math.degrees(Travel(qb[:, j])[0])
             rows.append([t.Name if j == 0 else '', fam(qa) if j == 0 else '', 'J%d' % (j + 1), '%+.1f / %.1f' % (na, ta), '%+.1f / %.1f' % (nb, tb),
                          'same' if abs(na - nb) < 0.1 else 'END DIFFERS'])
-    lines += _Table(['transfer', 'family', 'joint', 'taught net / travel', 'optimized net / travel', 'net'], rows)
+    lines += _Table(['transfer', 'family', 'joint', 'Default net / travel', 'Optimized net / travel', 'net'], rows)
     waypoints = [(cmd.Target, len(cmd.Waypoints) - 2) for s in optimized.Segments for cmd in s.Commands if cmd.Kind == 'MoveSpline']
     waits = [cmd.Text for s in optimized.Segments if s.Key in c.Free['optimized'] for cmd in s.Commands if cmd.Kind == 'Wait']
     lines += ['', 'What a real cell would need re-taught or verified for the optimized program (from the program files [C]):', '',
@@ -599,12 +599,12 @@ def Section_Conditions(c: Context_Cls) -> tp.List[str]:
     rows.append(['robot signals [C]', kinds['taught']['signals'], kinds['optimized']['signals']])
     rows.append(['loader handshake [C]', kinds['taught']['loader'], kinds['optimized']['loader']])
     rows.append(['robot Wait lines [C]', kinds['taught']['waits'], kinds['optimized']['waits']])
-    lines += _Table(['condition', 'taught', 'optimized'], rows)
+    lines += _Table(['condition', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']], rows)
     lines += ['', 'The interlocks I1-I8 (SPEC §7.11), verified on each built trajectory (`Optimizer.Measure.Interlocks`) [K]:', '']
     rows = []
     for (name, ok_a, text_a), (_, ok_b, text_b) in zip(c.Analyses['taught']['interlocks'], c.Analyses['optimized']['interlocks']):
         rows.append([name, ('holds' if ok_a else 'FAILS') + ': ' + text_a, ('holds' if ok_b else 'FAILS') + ': ' + text_b])
-    lines += _Table(['interlock', 'taught', 'optimized'], rows)
+    lines += _Table(['interlock', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']], rows)
     lines += ['', 'What differs: the timing method of the FREE transfers (MoveJ through taught vias against planned splines), the loader '
               'handshake (sequential Run against parallel Start / WaitDone, every robot motion gated by a WaitDone, F15). The model, '
               'the limits, the tools, the '
@@ -732,7 +732,8 @@ def Section_Objects(c: Context_Cls) -> tp.List[str]:
              'carriage over the table on its rail.' % (1000 * CONST_CUT), '']
     for name in rows['taught']:
         lines += ['### %s' % name, '']
-        lines += _Table(['metric', 'taught', 'optimized'], [[k, rows['taught'][name][k], rows['optimized'][name].get(k, '-')]
+        lines += _Table(['metric', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']],
+                        [[k, rows['taught'][name][k], rows['optimized'][name].get(k, '-')]
                                                            for k in rows['taught'][name]])
         lines.append('')
     return lines
@@ -754,7 +755,7 @@ def Section_Interactions(c: Context_Cls) -> tp.List[str]:
     rows = []
     for name, _, _ in CONST_PAIRS:
         rows.append([name] + [_Distance_Text(c.Analyses[v][k].Minimum.get(name), CONST_CUT) for v in CONST_VERSIONS for k in ('physics', 'planned')])
-    lines += _Table(['pair', 'taught [P]', 'taught [K]', 'optimized [P]', 'optimized [K]'], rows)
+    lines += _Table(['pair', 'Default [P]', 'Default [K]', 'Optimized [P]', 'Optimized [K]'], rows)
     lines += ['', 'Planning clearance `Clearance.Robot` %.0f mm, free transfers `Loader_Free` %.0f mm + `Tracking_Margin` %.0f mm [C]. A '
               'pair always in contact by design reads "always by design"; the robot\'s mount is not measured.' % (1000 * c.Cell.Clearance,
               1000 * c.Cell.Loader_Free, 1000 * c.Cell.Tracking_Margin), '', '### Shared zones', '']
@@ -778,13 +779,13 @@ def Section_Interactions(c: Context_Cls) -> tp.List[str]:
         robot_moving, loader_moving = Moving(tr.Robot_Q), Moving(np.c_[tr.Loader_Y, tr.Loader_Z, tr.Jaw])
         robot, loader = series.Occupied['robot in jaw zone'], series.Occupied['loader in jaw zone']
         moving = robot_moving[series.Samples] | loader_moving[series.Samples]
-        rows.append([v, 'jaw zone [P]', _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)),
+        rows.append([CONST_PROGRAM_NAMES[v], 'jaw zone [P]', _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)),
                      _Spans_Text(Spans(robot & loader, series.T)), _Spans_Text(Spans(robot & loader & moving, series.T))])
         for part, title in CONST_SWEPT_PARTS.items():
             z = c.Analyses[v]['swept'][part]
             t = tr.T[z.Samples]
             moving = robot_moving[z.Samples] | loader_moving[z.Samples]
-            rows.append([v, title + ' [K]', _Spans_Text(Spans(z.Robot, t)), _Spans_Text(Spans(z.Loader, t)),
+            rows.append([CONST_PROGRAM_NAMES[v], title + ' [K]', _Spans_Text(Spans(z.Robot, t)), _Spans_Text(Spans(z.Loader, t)),
                          _Spans_Text(Spans(z.Robot & z.Loader, t)), _Spans_Text(Spans(z.Robot & z.Loader & moving, t))])
     lines += _Table(['program', 'zone', 'robot', 'loader', 'robot and loader', 'moving overlap'], rows)
     lines += ['', 'The interlocks that keep the overlaps safe (SPEC §7.11): in the jaw zone I1 (the handover starts with the loader home and '
@@ -798,7 +799,7 @@ def Section_Interactions(c: Context_Cls) -> tp.List[str]:
               '### Synchronization', '']
     for v in CONST_VERSIONS:
         tr = c.Trajectories[v]
-        lines += ['**%s** - the robot\'s waits (its segments that are not motions) and the handshake in order [K]:' % v, '']
+        lines += ['**%s** - the robot\'s waits (its segments that are not motions) and the handshake in order [K]:' % CONST_PROGRAM_NAMES[v], '']
         lines += _Table(['start (s)', 'duration (s)', 'waits for', 'line'], [['%.3f' % t, '%.3f' % d, k, '`%s`' % text] for t, d, k, text in
                                                                               Robot_Waits(tr)])
         lines.append('')
@@ -840,8 +841,8 @@ def Section_Stretch(c: Context_Cls) -> tp.List[str]:
     """
 
     s = c.Stretch
-    lines = ['### A slower (or faster) loader', '', 'The taught program runs every loader job with Loader.Run: the robot does not move while '
-             'the loader does, so the loader\'s speed changes only the cycle time. In the optimized program the robot moves while the '
+    lines = ['### A slower (or faster) loader', '', 'The Default program runs every loader job with Loader.Run: the robot does not move while '
+             'the loader does, so the loader\'s speed changes only the cycle time. In the Optimized program the robot moves while the '
              'jobs %s run. Each job slowed by a factor (every move and hold of the job takes factor times as long; the robot\'s lines run '
              'as programmed and the robot holds at its WaitDone until the job ends); the closest robot - loader distance over the '
              'job, the loader posed where its actuators put it, exact every 4 ms (`Report.Core.Stretched_Distance`) [K]:'
@@ -864,7 +865,8 @@ def Section_Stretch(c: Context_Cls) -> tp.List[str]:
               'parallel loader job may run (after its Loader.Start, before its Loader.WaitDone) must not come within Loader_Free of a '
               'pose the job sweeps (the loader where its actuators put it); a motion that starts inside such a volume and only leaves '
               'it is listed with its lead over the loader [K]:', '']
-    rows = [[v, '`%s`' % f.Motion, f.Job, f.Kind, '%.2f mm (%s)' % (1000 * f.Distance, f.Pair), '%.2f s' % f.Lead if f.Kind == 'leaves'
+    rows = [[CONST_PROGRAM_NAMES[v], '`%s`' % f.Motion, f.Job, f.Kind, '%.2f mm (%s)' % (1000 * f.Distance, f.Pair),
+             '%.2f s' % f.Lead if f.Kind == 'leaves'
              else 'FAULT'] for v in CONST_VERSIONS for f in c.Analyses[v]['gating']]
     lines += _Table(['program', 'motion', 'job', 'kind', 'closest to the volume', 'lead / verdict'], rows) if rows else ['none']
     t = s.get('take')
@@ -901,7 +903,7 @@ def Section_PCB(c: Context_Cls) -> tp.List[str]:
         ta, tb = c.Trajectories['taught'].T, c.Trajectories['optimized'].T
         rows.append([la, CONST_LOCATION_HOLDER[la], '%.3f-%.3f (%.3f)' % (ta[a0], ta[a1], ta[a1] - ta[a0] + CONST_DT),
                      '%.3f-%.3f (%.3f)' % (tb[b0], tb[b1], tb[b1] - tb[b0] + CONST_DT), '%+.3f' % ((tb[b1] - tb[b0]) - (ta[a1] - ta[a0]))])
-    lines += _Table(['location', 'holder', 'taught (s)', 'optimized (s)', 'difference (s)'], rows)
+    lines += _Table(['location', 'holder', 'Default (s)', 'Optimized (s)', 'difference (s)'], rows)
     lines += ['', '### Handovers [P against K]', '', 'At each change of location in the trajectory: the PCB\'s pose in physics against the '
               'trajectory\'s; around it the new holder\'s first touch and the old one\'s release in physics (a contact closer than '
               '`Cup_Touch` %.1f mm), how long both held it, how long none did.' % (1000 * c.Cell.Cup_Touch), '']
@@ -909,7 +911,7 @@ def Section_PCB(c: Context_Cls) -> tp.List[str]:
     for v in CONST_VERSIONS:
         for h in c.Analyses[v]['handovers']:
             error = '%.2f mm, %.3f deg' % (1000 * h.Position_Error, math.degrees(h.Angle_Error))
-            rows.append([v, '%.3f' % h.T, '%s -> %s' % (h.Before, h.After), error,
+            rows.append([CONST_PROGRAM_NAMES[v], '%.3f' % h.T, '%s -> %s' % (h.Before, h.After), error,
                          _Fmt(h.New_Touch, 1, 3), _Fmt(h.Old_Release, 1, 3), '%.3f' % h.Both, '%.3f' % h.Free])
     lines += _Table(['program', 't (s)', 'holder before -> after', 'pose error', 'new first touch (s)', 'old release (s)', 'both (s)',
                      'none (s)'], rows)
@@ -959,7 +961,7 @@ def Section_PCB(c: Context_Cls) -> tp.List[str]:
     for k, label in enumerate(['peak speed', 'peak acceleration', 'tilt from horizontal per stage, min..max deg [P] (planned [K])', 'largest slip in '
                                'the cups']):
         rows.append([label, peak['taught'][k], peak['optimized'][k]])
-    lines += _Table(['', 'taught', 'optimized'], rows)
+    lines += _Table(['', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized']], rows)
     lines += ['', 'A PCB in the jaws or MG06 is tilted 8.94 deg by design (the cassette plane, SPEC §4.2); the carried tilt limit is %.0f deg '
               '(Optimization.yaml Carry_Max_Tilt, an assumption, KNOWN_ISSUES.md) [C].' % math.degrees(c.Carry_Max_Tilt), '',
               '### Time from input to output [P]', '']
@@ -967,7 +969,7 @@ def Section_PCB(c: Context_Cls) -> tp.List[str]:
     for v in CONST_VERSIONS:
         ev = c.Analyses[v]['result'].Vacuum
         on, off = ev[0].T, ev[-1].T
-        rows.append([v, '%.3f' % on, '%.3f' % off, '%.3f' % (off - on), '%.3f' % c.Analyses[v]['result'].Cycle_Time])
+        rows.append([CONST_PROGRAM_NAMES[v], '%.3f' % on, '%.3f' % off, '%.3f' % (off - on), '%.3f' % c.Analyses[v]['result'].Cycle_Time])
     lines += _Table(['program', 'picked: vacuum on (s)', 'placed: vacuum off (s)', 'input to output (s)', 'cycle (s)'], rows)
     return lines
 
@@ -993,9 +995,37 @@ def Section_Cycle(c: Context_Cls) -> tp.List[str]:
             for k in kinds]
     rows.append(['**cycle**'] + ['**%.3f**' % c.Trajectories[v].T[-1] for v in CONST_VERSIONS] + ['**%+.3f**' % (c.Trajectories['optimized'].T[-1] -
                                                                                                            c.Trajectories['taught'].T[-1])])
-    lines += _Table(['spent on', 'taught (s)', 'optimized (s)', 'difference (s)'], rows)
+    lines += _Table(['spent on', 'Default (s)', 'Optimized (s)', 'difference (s)'], rows)
     lines += ['', 'Physics follows the trajectory\'s timeline: the physics runs end at %s s [P].' % ' / '.join(
         '%.3f' % c.Analyses[v]['result'].Cycle_Time for v in CONST_VERSIONS)]
+    return lines
+
+
+def Section_Figures(c: Context_Cls, figures: tp.Dict[str, tp.List[str]]) -> tp.List[str]:
+    """
+    Description:
+        Item 7: the figures (their light PNGs; the dark ones beside them) and the summary chart's values with their sources.
+
+    Args:
+        (1) c [Context_Cls(object)]: The context.
+        (2) figures [Dict<string, List<string>>]: Per figure its files.
+
+    Returns:
+        (1) parameter [List<string>]: The section's lines.
+    """
+
+    lines = ['## 7. Figures', '', '**Default vs Optimized** - the values of the summary chart:', '']
+    rows = [[name.replace(r'$\sum\Vert\Delta q\Vert$', 'sum of |dq|'), unit, '%.*f' % (digits, d), '%.*f' % (digits, o),
+             '%+.1f %%' % (100 * (o / d - 1)),
+             '[%s]' % source] for name, unit, d, o, source, digits in Summary_Values(c)]
+    lines += _Table(['metric', 'unit', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized'], 'change', 'source'], rows)
+    lines += ['', 'Throughput = 3600 s / cycle time; the joint-space arc length is the sum over the 4 ms samples of the Euclidean norm of '
+              'the six joints\' change (`Report.Core.Joint_Arc`; section 3 gives the per-joint travel sum of |dq|).', '']
+    titles = {'summary': 'Default vs Optimized', 'timeline': 'the timeline of every moving object, waits and shared zones',
+              'joints': 'the joint angles', 'paths': 'the TCP and PCB paths, top and side', 'clearance': 'the clearance per pair over time',
+              'critical_path': 'the cycle by its critical path', 'stretch': 'I8 against the loader\'s speed'}
+    for name in figures:
+        lines += ['![%s](%s_light.png)' % (titles.get(name, name), name), '']
     return lines
 
 
@@ -1017,7 +1047,7 @@ def Section_Not_Modelled(c: Context_Cls) -> tp.List[str]:
     free = lambda f: '-' if f is None else '%.1f mm in %s' % (1000 * f[0], f[3])
     return ['## 8. Not modelled, and how it could change the ranking', '',
             '| not modelled | effect on the comparison |', '|---|---|',
-            '| blends (every motion ends at rest in both) | the taught program rests %.1f s in %d stops, the optimized one %.1f s in %d '
+            '| blends (every motion ends at rest in both) | the Default program rests %.1f s in %d stops, the Optimized one %.1f s in %d '
             '[K]; blending the taught vias would recover part of the optimized program\'s gain on a real controller |' % (
                 ma.Rest_Time, ma.Stops, mb.Rest_Time, mb.Stops),
             '| tool and machine times (vacuum build-up beyond the WaitDI response, gripper and PLC cycle times, the real test time; the '
@@ -1066,30 +1096,32 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
     gone = [f for f in c.Analyses['optimized']['gating'] if f.Kind == 'leaves']
     leaves = '; '.join('`%s` starts in %s\'s way and leaves it %.2f s ahead of the loader [K]: it rests on the robot starting promptly '
                        'after Loader.Start (a controller latency of that size would meet the loader)' % (f.Motion, f.Job, f.Lead) for f in gone)
-    rows = [['cycle time [K]', '%.3f s' % ta.T[-1], '%.3f s' % tb.T[-1], 'optimized, %.3f s (%.1f %%) shorter' % (ta.T[-1] - tb.T[-1],
+    rows = [['cycle time [K]', '%.3f s' % ta.T[-1], '%.3f s' % tb.T[-1], 'Optimized, %.3f s (%.1f %%) shorter' % (ta.T[-1] - tb.T[-1],
                                                                                                              100 * (1 - tb.T[-1] / ta.T[-1]))],
-            ['robot joint travel [K]', '%.1f rad' % ma.Joint_Travel.sum(), '%.1f rad' % mb.Joint_Travel.sum(), 'optimized, %.0f %% less' % (
+            ['throughput = 3600 s / cycle [K]', '%.1f PCB/h' % (3600 / ta.T[-1]), '%.1f PCB/h' % (3600 / tb.T[-1]), 'Optimized, %+.1f %%' % (
+                100 * (ta.T[-1] / tb.T[-1] - 1))],
+            ['robot joint travel [K]', '%.1f rad' % ma.Joint_Travel.sum(), '%.1f rad' % mb.Joint_Travel.sum(), 'Optimized, %.0f %% less' % (
                 100 * (1 - mb.Joint_Travel.sum() / ma.Joint_Travel.sum()))],
-            ['TCP path [K]', '%.2f m' % ma.Tcp_Path, '%.2f m' % mb.Tcp_Path, 'optimized, %.0f %% shorter' % (100 * (1 - mb.Tcp_Path / ma.Tcp_Path))],
-            ['PCB path [K]', '%.2f m' % ma.Pcb_Path, '%.2f m' % mb.Pcb_Path, 'taught, %.0f %% shorter' % (100 * (mb.Pcb_Path / ma.Pcb_Path - 1))],
-            ['closest robot - loader in a free transfer [P]', free(fa), free(fb), 'taught' if (fa or (1,))[0] > (fb or (1,))[0] else 'optimized'],
+            ['TCP path [K]', '%.2f m' % ma.Tcp_Path, '%.2f m' % mb.Tcp_Path, 'Optimized, %.0f %% shorter' % (100 * (1 - mb.Tcp_Path / ma.Tcp_Path))],
+            ['PCB path [K]', '%.2f m' % ma.Pcb_Path, '%.2f m' % mb.Pcb_Path, 'Default, %.0f %% shorter' % (100 * (mb.Pcb_Path / ma.Pcb_Path - 1))],
+            ['closest robot - loader in a free transfer [P]', free(fa), free(fb), 'Default' if (fa or (1,))[0] > (fb or (1,))[0] else 'Optimized'],
             ['closest robot - loader overall (the take, LOCKED) [P]', _Distance_Text(ra, CONST_CUT), _Distance_Text(rb, CONST_CUT), 'equal'],
-            ['largest carried PCB tilt [P]', '%.1f deg' % tilt['taught'], '%.1f deg' % tilt['optimized'], 'taught' if tilt['taught'] <
-             tilt['optimized'] else 'optimized'],
+            ['largest carried PCB tilt [P]', '%.1f deg' % tilt['taught'], '%.1f deg' % tilt['optimized'], 'Default' if tilt['taught'] <
+             tilt['optimized'] else 'Optimized'],
             ['tolerance to a slower loader [K]', 'any (sequential)', ('any up to %.0f x (gated, F15)' % CONST_FACTORS[-1]) if i8 is None else
              '%+.1f %% before I8, %s before contact' % (100 * (i8[0] - 1), '-' if hit is None else '%+.1f %%' % (100 * (hit[0] - 1))),
-             'equal' if i8 is None else 'taught'],
+             'equal' if i8 is None else 'Default'],
             ['acceptance checks (SPEC §10.1) [P]', '%d/%d pass' % (sum(1 for x in c.Analyses['taught']['acceptance'] if x[1]),
                                                                             len(c.Analyses['taught']['acceptance'])),
              '%d/%d pass' % (sum(1 for x in c.Analyses['optimized']['acceptance'] if x[1]), len(c.Analyses['optimized']['acceptance'])), 'equal'],
-            ['re-teaching on a real cell [C]', 'the taught points only', '+ P_LOADER_WAIT, spline via points, MoveSpline on the AUBO', 'taught']]
+            ['re-teaching on a real cell [C]', 'the taught points only', '+ P_LOADER_WAIT, spline via points, MoveSpline on the AUBO', 'Default']]
     lines = ['## 9. Verdict', '']
-    lines += _Table(['metric', 'taught', 'optimized', 'better'], rows)
+    lines += _Table(['metric', CONST_PROGRAM_NAMES['taught'], CONST_PROGRAM_NAMES['optimized'], 'better'], rows)
     lines += ['', '**Gain.** The optimized program is %.1f s (%.1f %%) shorter per cycle; the whole gain is in the FREE transfers and the '
               'parallel loader (section 6); the LOCKED process parts are identical.' % (ta.T[-1] - tb.T[-1], 100 * (1 - tb.T[-1] / ta.T[-1])), '',
               '**Risks, highest first.**', '',
               '1. **%s**' % (leaves if leaves else 'No robot motion relies on the loader\'s timing (the gating rule holds, section 4).'),
-              '2. **A smaller margin to the loader in the free transfers**: %s against %s in the taught program [P]; a model error or a '
+              '2. **A smaller margin to the loader in the free transfers**: %s against %s in the Default program [P]; a model error or a '
               'tracking lag on the real cell eats it first.' % (free(fb), free(fa)),
               '3. **A larger carried tilt**: the PCB on the cups tilts up to %.1f deg in the optimized program against %.1f deg [P] (the '
               'assumed limit %.0f deg [C], KNOWN_ISSUES.md); the slip stays at %.2f mm against %.2f mm [P].' % (
@@ -1108,284 +1140,365 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
     return lines
 
 
-def Figure_Style(axis: tp.Any) -> None:
+def _Figure(theme: Theme_Str, size: tp.Tuple[float, float], rows: int = 1, columns: int = 1, **options: tp.Any) -> tp.Tuple[tp.Any, tp.Any]:
     """
     Description:
-        The figures' axis style (as compare_programs.py): the surface, a light grid, no frame but the base.
+        A new figure in a theme (Report.Style.Parameters): its axes, in a grid.
 
     Args:
-        (1) axis [matplotlib Axes]: The axis.
-    """
-
-    axis.set_facecolor(CONST_SURFACE)
-    axis.grid(color=CONST_GRID, linewidth=0.6)
-    axis.set_axisbelow(True)
-    axis.tick_params(colors=CONST_INK_2, labelsize=8, length=0)
-    for side in ('top', 'right', 'left'):
-        axis.spines[side].set_visible(False)
-    axis.spines['bottom'].set_color(CONST_GRID)
-
-
-def _Save(figure: tp.Any, path: str, source: str) -> str:
-    """
-    Description:
-        Save a figure with its footer (the disclaimer and the source).
-
-    Args:
-        (1) figure [matplotlib Figure]: The figure.
-        (2) path [string]: The PNG file.
-        (3) source [string]: What the figure shows its numbers from.
+        (1) theme [Theme_Str(object)]: The theme.
+        (2) size [Tuple<float>]: Width, height (in).
+        (3 - 4) rows, columns [int]: The grid.
+        (5) options [Dict]: For plt.subplots (sharex, gridspec_kw ...).
 
     Returns:
-        (1) parameter [string]: The absolute path.
-    """
-
-    import matplotlib.pyplot as plt
-    figure.text(0.01, 0.004, 'Simulation results only: not validated for the real cell. %s. Example/Report/compare_report.py' % source,
-                color=CONST_INK_2, fontsize=7)
-    path = os.path.abspath(path)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    figure.savefig(path, dpi=120, facecolor=CONST_SURFACE)
-    plt.close(figure)
-    return path
-
-
-def Figure_Timeline(c: Context_Cls, path: str) -> str:
-    """
-    Description:
-        The timeline of every moving object in both programs: a bar where it moves, the robot's waits hatched by kind, the zones'
-        occupancy by the robot and the loader (physics, 20 ms).
-
-    Args:
-        (1) c [Context_Cls(object)]: The context.
-        (2) path [string]: The PNG file.
-
-    Returns:
-        (1) parameter [string]: The absolute path.
+        (1 - 2) parameter [Tuple]: The figure and its axes.
     """
 
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    with plt.rc_context(Parameters(theme)):
+        return plt.subplots(rows, columns, figsize=size, constrained_layout=True, **options)
+
+
+def _Themed(make: tp.Callable[[Context_Cls, Theme_Str], tp.Any], c: Context_Cls, folder: str, stem: str) -> tp.List[str]:
+    """
+    Description:
+        A figure made and saved in both themes (Report.Style.CONST_THEMES: <stem>_dark / <stem>_light, PNG and SVG), each made
+        inside its theme's settings.
+
+    Args:
+        (1) make [function]: (context, theme) -> the figure.
+        (2) c [Context_Cls(object)]: The context.
+        (3) folder [string]: The folder.
+        (4) stem [string]: The figure's name.
+
+    Returns:
+        (1) parameter [List<string>]: The files written.
+    """
+
+    import matplotlib.pyplot as plt
+    out = []
+    for theme in CONST_THEMES.values():
+        with plt.rc_context(Parameters(theme)):
+            out += Save_Figure(make(c, theme), folder, stem, theme)
+    return out
+
+
+def Summary_Values(c: Context_Cls) -> tp.List[tp.Tuple[str, str, float, float, str, int]]:
+    """
+    Description:
+        The summary chart's values (owner, 2026-10-25): the cycle time, the throughput (3600 / the cycle time), the TCP's arc length,
+        the joint-space arc length (the sum over the samples of |dq|, the Euclidean norm of the six joints' change), the PCB's
+        arc length - each from the trajectory [K] (Optimizer.Measure.Measure, Report.Core.Joint_Arc).
+
+    Args:
+        (1) c [Context_Cls(object)]: The context.
+
+    Returns:
+        (1) parameter [List<Tuple>]: (metric, the unit, Default, Optimized, the source, the decimals), in the chart's order.
+    """
+
+    a, b = c.Analyses['taught']['metrics'], c.Analyses['optimized']['metrics']
+    ta, tb = c.Trajectories['taught'], c.Trajectories['optimized']
+    return [('process (cycle) time', 's', float(ta.T[-1]), float(tb.T[-1]), 'K', 2),
+            ('throughput', 'PCB/h', 3600.0 / float(ta.T[-1]), 3600.0 / float(tb.T[-1]), 'K', 1),
+            ('TCP arc length', 'm', a.Tcp_Path, b.Tcp_Path, 'K', 2),
+            (r'joint-space arc length $\sum\Vert\Delta q\Vert$', 'rad', Joint_Arc(ta.Robot_Q), Joint_Arc(tb.Robot_Q), 'K', 1),
+            ('PCB arc length', 'm', a.Pcb_Path, b.Pcb_Path, 'K', 2)]
+
+
+def Figure_Summary(c: Context_Cls, theme: Theme_Str) -> tp.Any:
+    """
+    Description:
+        "Default vs Optimized" (owner, 2026-10-25): grouped bars per metric (Summary_Values), the Default program 100 %, the
+        Optimized program relative to it, each bar's absolute value with its unit above it.
+
+    Args:
+        (1) c [Context_Cls(object)]: The context.
+        (2) theme [Theme_Str(object)]: The theme.
+
+    Returns:
+        (1) parameter [matplotlib Figure]: The figure.
+    """
+
+    values = Summary_Values(c)
+    figure, axis = _Figure(theme, (CONST_DOUBLE, 3.0))
+    x, w = np.arange(len(values)), 0.36
+    for k, v in enumerate(CONST_VERSIONS):
+        percent = [100.0 if v == 'taught' else 100.0 * o / d for _, _, d, o, _, _ in values]
+        bars = axis.bar(x + (k - 0.5) * w, percent, w, color=theme.Program[v], label=CONST_PROGRAM_NAMES[v], edgecolor=theme.Background,
+                        linewidth=0.6)
+        for bar, (name, unit, d, o, _, digits) in zip(bars, values):
+            value = d if v == 'taught' else o
+            ink = max(('#111111', '#FFFFFF'), key=lambda c: Contrast(c, theme.Program[v]))
+            axis.text(bar.get_x() + bar.get_width() / 2, bar.get_height() - 3.0, '%.*f\n%s' % (digits, value, unit), ha='center', va='top',
+                      fontsize=6.5, color=ink)
+            if v == 'optimized':
+                axis.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 2.0, '%+.1f %%' % (100.0 * (o / d - 1.0)), ha='center',
+                          va='bottom', fontsize=7, color=theme.Program[v])
+    axis.axhline(100.0, color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (4, 3)), zorder=0)
+    axis.set_xticks(x)
+    axis.set_xticklabels(['%s\n[%s]' % (name, unit) for name, unit, _, _, _, _ in values])
+    axis.set_ylabel(r'relative to the Default program [%]')
+    axis.set_ylim(0, 135)
+    axis.grid(axis='x', visible=False)
+    axis.legend(loc='upper right', ncol=2)
+    axis.set_title('Default vs Optimized (all values from the trajectories [K]; throughput = 3600 s / cycle time)', loc='left')
+    return figure
+
+
+def Figure_Timeline(c: Context_Cls, theme: Theme_Str) -> tp.Any:
+    """
+    Description:
+        The timeline of every moving object in both programs, a panel each on one time axis: a bar where it moves, the robot's
+        waits hatched by kind, the PCB's holder, the robot in the jaw zone [P] and in the MG06 shared zone's part at MG06 [K], the
+        loader there [K]; the cycle time annotated.
+
+    Args:
+        (1) c [Context_Cls(object)]: The context.
+        (2) theme [Theme_Str(object)]: The theme.
+
+    Returns:
+        (1) parameter [matplotlib Figure]: The figure.
+    """
+
     from matplotlib.patches import Patch
-    figure, axes = plt.subplots(2, 1, figsize=(13.0, 8.0), sharex=True, facecolor=CONST_SURFACE)
-    for axis, v in zip(axes, CONST_VERSIONS):
-        tr, series = c.Trajectories[v], c.Analyses[v]['physics']
-        lanes = [(name, Spans(Moving(values), tr.T), CONST_OBJECT_COLOUR[name]) for name, values in Object_Channels(tr).items()]
-        pcb = []
-        for name, a, b in Location_Spans(tr):
-            pcb.append(((tr.T[a], tr.T[b] - tr.T[a] + CONST_DT), name))
-        labels = []
-        y = 0
-        for zone in reversed(list(c.Zones)):
-            for who in ('loader', 'robot'):
-                spans = Spans(series.Occupied['%s in %s' % (who, zone)], series.T)
-                axis.broken_barh([(a, b - a) for a, b in spans], (y - 0.3, 0.6), facecolors=CONST_GRID, edgecolor=CONST_OBJECT_COLOUR[who if who ==
-                                 'robot' else 'loader Y'], linewidth=0.8)
-                labels.append('%s in %s' % (who, zone))
-                y += 1
-        axis.broken_barh([s for s, _ in pcb], (y - 0.3, 0.6), facecolors=[CONST_OBJECT_COLOUR['PCB'] if n == 'cups' else '#7fc17f' if n == 'jaws' else
-                                                                          '#cfe7cf' for _, n in pcb], edgecolor=CONST_SURFACE, linewidth=0.5)
-        for (a, w), name in pcb:
-            axis.text(a + w / 2, y, {'input_crate': 'in', 'output_crate': 'out'}.get(name, name), ha='center', va='center', fontsize=6,
-                      color=CONST_INK)
-        labels.append('PCB holder')
-        y += 1
-        waits = Robot_Waits(tr)
-        for name, spans, colour in reversed(lanes):
-            axis.broken_barh([(a, b - a) for a, b in spans], (y - 0.3, 0.6), facecolors=colour, edgecolor=CONST_SURFACE, linewidth=0.3)
+    figure, axes = _Figure(theme, (CONST_DOUBLE, 5.6), 2, 1, sharex=True)
+    end = max(c.Trajectories[v].T[-1] for v in CONST_VERSIONS)
+    for p, (axis, v) in enumerate(zip(axes, CONST_VERSIONS)):
+        tr, series, zone = c.Trajectories[v], c.Analyses[v]['physics'], c.Analyses[v]['swept']['mg06']
+        lanes = []
+        lanes.append(('loader in MG06 part', Spans(zone.Loader, tr.T[zone.Samples]), theme.Object['loader Y'], 0.45))
+        lanes.append(('robot in MG06 part', Spans(zone.Robot, tr.T[zone.Samples]), theme.Object['robot'], 0.45))
+        lanes.append(('robot in jaw zone', Spans(series.Occupied['robot in jaw zone'], series.T), theme.Object['robot'], 0.45))
+        for name, values in reversed(list(Object_Channels(tr).items())):
+            lanes.append((name, Spans(Moving(values), tr.T), theme.Object[name], 1.0))
+        for y, (name, spans, colour, alpha) in enumerate(lanes):
+            axis.broken_barh([(a, b - a) for a, b in spans], (y - 0.32, 0.64), facecolors=colour, alpha=alpha, edgecolor=theme.Ink_2,
+                             linewidth=0.3)
             if name == 'robot':
-                for t0, duration, kind, _ in waits:
-                    axis.broken_barh([(t0, duration)], (y - 0.3, 0.6), facecolors='none', edgecolor=CONST_INK_2, hatch=CONST_WAIT_HATCH.get(kind, ''),
-                                     linewidth=0.0)
-            labels.append(name)
-            y += 1
+                for t0, duration, kind, _ in Robot_Waits(tr):
+                    axis.broken_barh([(t0, duration)], (y - 0.32, 0.64), facecolors='none', edgecolor=theme.Ink_2,
+                                     hatch=CONST_WAIT_HATCH.get(kind, ''), linewidth=0.0)
+        y = len(lanes)
+        for name, a, b in Location_Spans(tr):
+            colour = {'cups': theme.Object['robot'], 'jaws': theme.Object['loader jaws'], 'mg06': theme.Object['MG06 lid/handle']}.get(name,
+                                                                                                                              theme.Object['PCB'])
+            axis.broken_barh([(tr.T[a], tr.T[b] - tr.T[a] + CONST_DT)], (y - 0.32, 0.64), facecolors=colour, alpha=0.55, edgecolor=theme.Ink_2,
+                             linewidth=0.3)
+            axis.text(0.5 * (tr.T[a] + tr.T[b]), y, {'input_crate': 'in', 'output_crate': 'out', 'mg06': 'MG06'}.get(name, name),
+                      ha='center', va='center', fontsize=6, color=theme.Ink)
+        labels = [l[0] for l in lanes] + ['PCB holder']
         axis.set_yticks(range(len(labels)))
-        axis.set_yticklabels(labels, fontsize=8, color=CONST_INK_2)
-        axis.set_title('%s program (%s): cycle %.1f s' % (v, c.Paths[v], tr.T[-1]), loc='left', fontsize=10, color=CONST_PROGRAM_COLOUR[v])
-        Figure_Style(axis)
+        axis.set_yticklabels(labels)
         axis.grid(axis='y', visible=False)
-    axes[-1].set_xlabel('time (s)', color=CONST_INK_2, fontsize=9)
-    handles = [Patch(facecolor='none', edgecolor=CONST_INK_2, hatch=h, label='robot waits: ' + k) for k, h in CONST_WAIT_HATCH.items()]
-    figure.legend(handles=handles, loc='upper right', ncol=5, fontsize=7, frameon=False)
-    figure.tight_layout(rect=(0, 0.02, 1, 0.97))
-    return _Save(figure, path, 'Motion and waits from the trajectories [K]; zones from the physics runs [P]')
+        axis.axvline(tr.T[-1], color=theme.Program[v], linewidth=CONST_BOUND)
+        axis.annotate('cycle %.3f s' % tr.T[-1], (tr.T[-1], len(labels) - 0.5), xytext=(4, 0), textcoords='offset points', fontsize=7,
+                      color=theme.Program[v], va='center')
+        axis.set_title(CONST_PROGRAM_NAMES[v], loc='left', color=theme.Program[v])
+        axis.set_xlim(0, end + 8)
+        Panel_Letter(axis, p, theme)
+    axes[-1].set_xlabel('$t$ [s]')
+    handles = [Patch(facecolor='none', edgecolor=theme.Ink_2, hatch=h, label='robot waits: %s' % k) for k, h in CONST_WAIT_HATCH.items()
+               if k != 'loader (timed wait)']
+    figure.legend(handles=handles, loc='outside lower center', ncol=4, fontsize=6.5)
+    return figure
 
 
-def Figure_Joints(c: Context_Cls, path: str) -> str:
+def Figure_Joints(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
-        The robot's joint angles over time in both programs, a panel per joint.
+        The robot's joint angles over time, a panel per joint, both programs on one time axis; wrist_2 = 0 (the wrist
+        singularity) marked.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
-        (2) path [string]: The PNG file.
+        (2) theme [Theme_Str(object)]: The theme.
 
     Returns:
-        (1) parameter [string]: The absolute path.
+        (1) parameter [matplotlib Figure]: The figure.
     """
 
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    figure, axes = plt.subplots(3, 2, figsize=(13.0, 8.0), sharex=True, facecolor=CONST_SURFACE)
+    figure, axes = _Figure(theme, (CONST_DOUBLE, 6.2), 3, 2, sharex=True)
+    names = ['shoulder pan', 'shoulder lift', 'elbow', 'wrist 1', 'wrist 2', 'wrist 3']
     for j, axis in enumerate(axes.T.flat):
         for v in CONST_VERSIONS:
             tr = c.Trajectories[v]
-            axis.plot(tr.T, np.degrees(tr.Robot_Q[:, j]), color=CONST_PROGRAM_COLOUR[v], linewidth=1.2, label=v)
+            axis.plot(tr.T, np.degrees(tr.Robot_Q[:, j]), color=theme.Program[v], label=CONST_PROGRAM_NAMES[v])
         if j == 4:
-            axis.axhline(0.0, color=CONST_INK_2, linewidth=0.8, linestyle=(0, (2, 3)))
-            axis.text(0.5, 3, 'wrist singularity (wrist_2 = 0)', fontsize=7, color=CONST_INK_2)
-        axis.set_ylabel('J%d %s (deg)' % (j + 1, ['shoulder pan', 'shoulder lift', 'elbow', 'wrist 1', 'wrist 2', 'wrist 3'][j]), fontsize=8,
-                        color=CONST_INK_2)
-        Figure_Style(axis)
-    axes[0, 0].legend(fontsize=8, frameon=False, loc='upper right')
+            axis.axhline(0.0, color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (2, 2)))
+            axis.annotate('wrist singularity', (1.0, 0.0), xytext=(0, 3), textcoords='offset points', fontsize=6.5, color=theme.Ink_2)
+        axis.set_ylabel(r'$q_%d$ (%s) [deg]' % (j + 1, names[j]))
+        Panel_Letter(axis, j, theme)
     for axis in axes[-1]:
-        axis.set_xlabel('time (s)', fontsize=8, color=CONST_INK_2)
-    figure.suptitle('Robot joint angles, taught vs optimized', x=0.01, ha='left', fontsize=11, color=CONST_INK)
-    figure.tight_layout(rect=(0, 0.02, 1, 0.97))
-    return _Save(figure, path, 'The trajectories [K]')
+        axis.set_xlabel('$t$ [s]')
+    axes[0, 0].legend(loc='lower left', fontsize=6.5)
+    return figure
 
 
-def Figure_Paths(c: Context_Cls, path: str) -> str:
+def Figure_Paths(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
-        The robot TCP's and the PCB's paths from the top (x-y) and from the side (x-z), both programs (physics).
+        The robot TCP's and the PCB's paths from the top (x-y) and from the side (x-z) in physics [P], both programs; the jaw
+        zone and the MG06 shared zone's part at MG06 (its bounding box) dashed.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
-        (2) path [string]: The PNG file.
+        (2) theme [Theme_Str(object)]: The theme.
 
     Returns:
-        (1) parameter [string]: The absolute path.
+        (1) parameter [matplotlib Figure]: The figure.
     """
 
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    figure, axes = plt.subplots(2, 2, figsize=(13.0, 9.0), facecolor=CONST_SURFACE)
+    from matplotlib.patches import Rectangle
+    figure, axes = _Figure(theme, (CONST_DOUBLE, 6.4), 2, 2)
     q0 = c.Address['pcb_free'][0]
-    for row, (name, get) in enumerate((('robot TCP (suction_tcp)', lambda r: r.Tcp), ('PCB centre', lambda r: r.Qpos[:, q0:q0 + 3]))):
-        for col, (a, b, label) in enumerate(((0, 1, 'top view: x - y (m)'), (0, 2, 'side view: x - z (m)'))):
+    part = c.Analyses['optimized']['swept']['mg06'].Box
+    boxes = {'jaw zone': c.Zones['jaw zone'], 'MG06 part (its box)': (part[0], part[1])}
+    for row, (name, get) in enumerate((('TCP', lambda r: r.Tcp), ('PCB', lambda r: r.Qpos[:, q0:q0 + 3]))):
+        for col, (a, b) in enumerate(((0, 1), (0, 2))):
             axis = axes[row, col]
             for v in CONST_VERSIONS:
                 p = get(c.Analyses[v]['record'])
-                axis.plot(p[:, a], p[:, b], color=CONST_PROGRAM_COLOUR[v], linewidth=1.0, alpha=0.9, label=v)
-            for zone, (lo, hi) in c.Zones.items():
-                axis.add_patch(matplotlib.patches.Rectangle((lo[a], lo[b]), hi[a] - lo[a], hi[b] - lo[b], fill=False, edgecolor=CONST_INK_2,
-                                                            linestyle=(0, (3, 3)), linewidth=0.8))
-                axis.text(lo[a], hi[b], zone, fontsize=7, color=CONST_INK_2, va='bottom')
-            axis.set_aspect('equal', adjustable='datalim')
-            axis.set_title('%s, %s' % (name, label), loc='left', fontsize=9, color=CONST_INK)
-            Figure_Style(axis)
-    axes[0, 0].legend(fontsize=8, frameon=False)
-    figure.tight_layout(rect=(0, 0.02, 1, 1))
-    return _Save(figure, path, 'The physics runs, every 4 ms [P]; the zones dashed')
+                axis.plot(p[:, a], p[:, b], color=theme.Program[v], linewidth=1.0, label=CONST_PROGRAM_NAMES[v])
+            for zone, (lo, hi) in boxes.items():
+                axis.add_patch(Rectangle((lo[a], lo[b]), hi[a] - lo[a], hi[b] - lo[b], fill=False, edgecolor=theme.Bound,
+                                         linestyle=(0, (3, 2)), linewidth=CONST_BOUND))
+            data = np.vstack([get(c.Analyses[v]['record'])[:, [a, b]] for v in CONST_VERSIONS])
+            pad = 0.05 * np.ptp(data, axis=0).max()
+            axis.set_xlim(data[:, 0].min() - pad, data[:, 0].max() + pad)
+            axis.set_ylim(data[:, 1].min() - pad, data[:, 1].max() + pad)
+            axis.set_aspect('equal', adjustable='box')
+            axis.set_xlabel('$x$ [m]')
+            axis.set_ylabel('$y$ [m]' if b == 1 else '$z$ [m]')
+            axis.set_title('%s, %s' % (name, 'top view' if b == 1 else 'side view'), loc='left')
+            Panel_Letter(axis, 2 * row + col, theme)
+    from matplotlib.lines import Line2D
+    handles = axes[0, 0].get_legend_handles_labels()[0] + [Line2D([], [], color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (3, 2)))]
+    axes[0, 0].legend(handles, [CONST_PROGRAM_NAMES[v] for v in CONST_VERSIONS] + ['zones: jaw zone, MG06 part (boxes)'], loc='lower left',
+                      fontsize=6.5)
+    return figure
 
 
-def Figure_Clearance(c: Context_Cls, path: str) -> str:
+def Figure_Clearance(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
-        The clearance over time per pair (physics, every 20 ms; the contacts by design left out), both programs, with the
-        planning clearance and the loader's free-transfer distance marked.
+        The clearance over time per pair in physics (every 20 ms; the contacts by design left out) [P], both programs, the
+        planning clearance and the loader's free-transfer distance as bound lines, each program's minimum marked and annotated.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
-        (2) path [string]: The PNG file.
+        (2) theme [Theme_Str(object)]: The theme.
 
     Returns:
-        (1) parameter [string]: The absolute path.
+        (1) parameter [matplotlib Figure]: The figure.
     """
 
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    figure, axes = plt.subplots(5, 2, figsize=(13.0, 12.0), sharex=True, facecolor=CONST_SURFACE)
+    figure, axes = _Figure(theme, (CONST_DOUBLE, 8.6), 5, 2, sharex=True)
     for p, (axis, (name, _, _)) in enumerate(zip(axes.T.flat, CONST_PAIRS)):
         for v in CONST_VERSIONS:
             series, tr, program = c.Analyses[v]['physics'], c.Trajectories[v], c.Programs[v]
             design = By_Design(tr, program)
             d = series.Distance[:, p].copy()
             d[[design(name, int(i)) for i in series.Samples]] = np.nan
-            axis.plot(series.T, 1000 * d, color=CONST_PROGRAM_COLOUR[v], linewidth=1.0, label=v)
-        axis.axhline(1000 * c.Cell.Clearance, color=CONST_INK_2, linewidth=0.8, linestyle=(0, (2, 3)))
+            axis.plot(series.T, 1000 * d, color=theme.Program[v], linewidth=1.0, label=CONST_PROGRAM_NAMES[v])
+            found = series.Minimum.get(name)
+            if found is not None and found[0] < CONST_CUT:
+                axis.plot([found[1]], [1000 * found[0]], marker='o', markersize=3, color=theme.Program[v])
+                axis.text(0.99, 0.97 - 0.11 * (v == 'optimized'), r'min %.1f mm at %.1f s' % (1000 * found[0], found[1]), transform=axis.transAxes,
+                          ha='right', va='top', fontsize=6, color=theme.Program[v])
+        axis.axhline(1000 * c.Cell.Clearance, color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (1, 2)))
         if 'loader' in name:
-            axis.axhline(1000 * (c.Cell.Loader_Free + c.Cell.Tracking_Margin), color=CONST_INK_2, linewidth=0.8, linestyle=(0, (6, 4)))
+            axis.axhline(1000 * (c.Cell.Loader_Free + c.Cell.Tracking_Margin), color=theme.Bound, linewidth=CONST_BOUND, linestyle=(0, (5, 3)))
         axis.set_ylim(-5, 1000 * CONST_CUT + 5)
-        axis.set_title(name, loc='left', fontsize=9, color=CONST_INK)
-        axis.set_ylabel('distance (mm)', fontsize=8, color=CONST_INK_2)
-        Figure_Style(axis)
-    axes[0, 0].legend(fontsize=8, frameon=False, loc='upper right')
+        axis.set_title(name, loc='left', fontsize=8)
+        axis.set_ylabel('$d$ [mm]')
+        Panel_Letter(axis, p, theme)
     for axis in axes[-1]:
-        axis.set_xlabel('time (s)', fontsize=8, color=CONST_INK_2)
-    figure.suptitle('Clearance per pair over time (cut at %.0f mm; dotted %.0f mm planning clearance, dashed %.0f mm loader free-transfer '
+        axis.set_xlabel('$t$ [s]')
+    axes[0, 0].legend(loc='upper right', fontsize=6)
+    figure.suptitle('Clearance per pair [P] (cut at %.0f mm; dotted: %.0f mm planning clearance; dashed: %.0f mm loader free-transfer '
                     'distance; gaps: contact by design)' % (1000 * CONST_CUT, 1000 * c.Cell.Clearance, 1000 * (c.Cell.Loader_Free +
-                                                                                                                   c.Cell.Tracking_Margin)),
-                    x=0.01, ha='left', fontsize=10, color=CONST_INK)
-    figure.tight_layout(rect=(0, 0.02, 1, 0.97))
-    return _Save(figure, path, 'The physics runs, exact distances every 20 ms [P]')
+                                                                                                      c.Cell.Tracking_Margin)),
+                    fontsize=8, x=0.01, ha='left')
+    return figure
 
 
-def Figure_Comparison(c: Context_Cls, path: str) -> str:
+def Figure_Critical_Path(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
-        The comparison figure: the cycle by its critical path in both programs, and the optimized program's closest robot -
-        loader distance against the loader's slow-down (the timed wait's risk) with the bounds.
+        The cycle by its critical path in both programs [K]: stacked bars of what the robot's timeline spends its time on.
 
     Args:
         (1) c [Context_Cls(object)]: The context.
-        (2) path [string]: The PNG file.
+        (2) theme [Theme_Str(object)]: The theme.
 
     Returns:
-        (1) parameter [string]: The absolute path.
+        (1) parameter [matplotlib Figure]: The figure.
     """
 
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    figure, (bars, risk) = plt.subplots(1, 2, figsize=(13.0, 4.8), gridspec_kw={'width_ratios': [1.25, 1.0]}, facecolor=CONST_SURFACE)
+    figure, axis = _Figure(theme, (CONST_DOUBLE, 2.2))
     paths = {v: Critical_Path(c.Trajectories[v]) for v in CONST_VERSIONS}
-    kinds = [('robot motion', '#2a78d6'), ('loader', '#eb6834'), ('loader (timed wait)', '#eda100'), ('tester', '#e87ba4'),
-             ('vacuum signal', '#1baf7a'), ('robot dwell', '#52514e')]
-    labelled = set()
+    kinds = [('robot motion', theme.Object['robot']), ('loader', theme.Object['loader Y']), ('tester', theme.Object['MG06 lid/handle']),
+             ('vacuum signal', theme.Object['loader jaws']), ('robot dwell', theme.Object['PCB']), ('loader (timed wait)', theme.Object['loader Z'])]
     for k, v in enumerate(CONST_VERSIONS):
         left = 0.0
         for kind, colour in kinds:
             w = paths[v].get(kind, 0.0)
-            bars.barh(1 - k, w, left=left, color=colour, edgecolor=CONST_SURFACE, linewidth=1.5, height=0.55,
-                      label=kind if w > 0 and kind not in labelled else None)
-            labelled |= {kind} if w > 0 else set()
-            if w > 2.0:
-                bars.text(left + w / 2, 1 - k, '%.1f' % w, ha='center', va='center', fontsize=8, color='white')
+            if w <= 0:
+                continue
+            axis.barh(1 - k, w, left=left, color=colour, height=0.55, edgecolor=theme.Background, linewidth=0.8, label=kind if k == 0 else None)
+            if w > 2.5:
+                axis.text(left + w / 2, 1 - k, '%.1f' % w, ha='center', va='center', fontsize=6.5, color='#111111')
             left += w
-        bars.text(left + 0.6, 1 - k, '%.1f s' % left, va='center', fontsize=9, color=CONST_PROGRAM_COLOUR[v])
-    bars.set_yticks([1, 0])
-    bars.set_yticklabels(list(CONST_VERSIONS), fontsize=9)
-    for label, v in zip(bars.get_yticklabels(), CONST_VERSIONS):
-        label.set_color(CONST_PROGRAM_COLOUR[v])
-    bars.set_xlim(0, 80)
-    bars.set_xlabel('cycle time (s), by what the robot\'s timeline spends it on [K]', fontsize=8, color=CONST_INK_2)
-    bars.set_title('Cycle time and critical path', loc='left', fontsize=10, color=CONST_INK)
-    bars.legend(fontsize=7, frameon=False, ncol=3, loc='upper center', bbox_to_anchor=(0.5, -0.2))
-    Figure_Style(bars)
+        axis.annotate('%.3f s' % left, (left, 1 - k), xytext=(4, 0), textcoords='offset points', va='center', fontsize=7.5,
+                      color=theme.Program[v])
+    axis.set_yticks([1, 0])
+    axis.set_yticklabels([CONST_PROGRAM_NAMES[v] for v in CONST_VERSIONS])
+    axis.set_xlabel('$t$ [s] (each segment of the robot\'s timeline: its motion or what it waits for)')
+    axis.set_xlim(0, 80)
+    axis.grid(axis='y', visible=False)
+    figure.legend(loc='outside right upper', fontsize=6.5)
+    return figure
+
+
+def Figure_Stretch(c: Context_Cls, theme: Theme_Str) -> tp.Any:
+    """
+    Description:
+        The I8 check against a slower or faster loader [K]: per parallel job of the Optimized program the closest robot - loader
+        distance against the job's slow-down (Report.Core.Stretched_Distance), the bounds as lines.
+
+    Args:
+        (1) c [Context_Cls(object)]: The context.
+        (2) theme [Theme_Str(object)]: The theme.
+
+    Returns:
+        (1) parameter [matplotlib Figure]: The figure.
+    """
+
     s = c.Stretch
-    for job in s['jobs']:
-        f = [r[0] for r in s['rows'][job]]
-        d = [1000 * r[1] for r in s['rows'][job]]
-        risk.plot(100 * (np.array(f) - 1), d, marker='s', markersize=4, linewidth=1.5, label=job,
-                  color=CONST_PROGRAM_COLOUR['optimized'] if job == s.get('worst') else CONST_INK_2, alpha=1.0 if job == s.get('worst') else 0.5)
-    for (name, bound), style in zip(s['bounds'].items(), [(0, (6, 4)), (0, (3, 3)), (0, (1, 2)), '-']):
-        risk.axhline(1000 * bound, color=CONST_INK_2, linewidth=0.8, linestyle=style)
-        risk.text(103, 1000 * bound + 0.8, name, fontsize=6.5, color=CONST_INK_2, ha='right')
-    risk.set_xlim(-55, 105)
-    risk.set_ylim(-22, 52)
-    risk.set_xlabel('loader job slowed by (%) [K]', fontsize=8, color=CONST_INK_2)
-    risk.set_ylabel('closest robot - loader (mm; 50 = farther)', fontsize=8, color=CONST_INK_2)
-    risk.set_title('Optimized program: I8 against a slower loader', loc='left', fontsize=10, color=CONST_INK)
-    risk.legend(fontsize=7, frameon=False, loc='lower left')
-    Figure_Style(risk)
-    figure.tight_layout(rect=(0, 0.03, 1, 1))
-    return _Save(figure, path, 'Trajectories [K]')
+    figure, axis = _Figure(theme, (CONST_DOUBLE * 0.8, 2.8))
+    colours = [theme.Object[k] for k in ('robot', 'loader Y', 'loader jaws', 'MG06 lid/handle', 'PCB')]
+    markers = ['o', 's', '^', 'D', 'v', 'P']
+    for k, job in enumerate(s['jobs']):
+        f = 100 * (np.array([r[0] for r in s['rows'][job]]) - 1)
+        far = np.array([r[1] for r in s['rows'][job]]) >= 0.05
+        d = np.minimum([1000 * r[1] for r in s['rows'][job]], 50.0) + 0.6 * (k - len(s['jobs']) / 2) * far
+        axis.plot(f, d, marker=markers[k % len(markers)], markersize=3, linewidth=1.2, color=colours[k % len(colours)], label=Label(job))
+    for k, ((name, bound), style) in enumerate(zip(s['bounds'].items(), [(0, (5, 3)), (0, (3, 2)), (0, (1, 2)), '-'])):
+        axis.axhline(1000 * bound, color=theme.Bound, linewidth=CONST_BOUND, linestyle=style)
+        axis.annotate(Label(name), (100, 1000 * bound), xytext=(0, 1.5 if k < 2 else (-7 if k == 3 else 1.5)), textcoords='offset points',
+                      ha='right', fontsize=5.5, color=theme.Ink_2)
+    axis.set_xlabel('job slowed by [%]')
+    axis.set_ylabel(r'closest robot$-$loader $d$ [mm]')
+
+    axis.set_ylim(-3, 53)
+    axis.set_title('%s: I8 against the loader\'s speed' % CONST_PROGRAM_NAMES['optimized'], loc='left')
+    figure.legend(loc='outside right center', fontsize=6, title='at 50 mm: farther\n(the cut; spread\napart to be seen)', title_fontsize=5.5)
+    axis.set_xlim(-55, 105)
+    return figure
 
 
 def main():
@@ -1397,12 +1510,13 @@ def main():
         cell's geometry along them, the loader slowed against I8; Comparison.md and its figures in DIR. Exit 0, 1 when a run
         fails its acceptance, 2 when it cannot run.
 
-            .venv/bin/python Example/Report/compare_report.py [--out DIR] [--trajectories DIR]
+            .venv/bin/python Example/Report/compare_report.py [--out DIR] [--trajectories DIR] [--media DIR]
     """
 
     parser = argparse.ArgumentParser(description='Compare the taught and the optimized program: Comparison.md and its figures.')
     parser.add_argument('--out', default=CONST_OUT, help='the folder (default: %s)' % os.path.relpath(CONST_OUT, CONST_ROOT))
     parser.add_argument('--trajectories', help='the folder of Program.npz and Program_Optimized.npz (default: Data/Generated/Trajectories)')
+    parser.add_argument('--media', help='also copy the summary chart (both themes, PNG and SVG) into this folder for the README (e.g. Media)')
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
@@ -1430,12 +1544,13 @@ def main():
     for v in CONST_VERSIONS:
         with open(os.path.join(args.out, analyses[v]['name'] + '_physics.txt'), 'w', encoding='utf-8') as handle:
             handle.write('\n'.join(analyses[v]['report']) + '\n')
-    figures = {'timeline': Figure_Timeline(context, os.path.join(args.out, 'timeline.png')),
-               'joints': Figure_Joints(context, os.path.join(args.out, 'joints.png')),
-               'paths': Figure_Paths(context, os.path.join(args.out, 'paths.png')),
-               'clearance': Figure_Clearance(context, os.path.join(args.out, 'clearance.png')),
-               'comparison': Figure_Comparison(context, os.path.join(args.out, 'comparison.png'))}
-    sources = ['# Taught vs optimized program: comparison', '',
+    if args.media:
+        for path in _Themed(Figure_Summary, context, args.media, CONST_MEDIA_SUMMARY):
+            note('[INFO] %s (%.0f kB)' % (path, os.path.getsize(path) / 1e3))
+    figures = {stem: _Themed(make, context, args.out, stem) for stem, make in (
+        ('summary', Figure_Summary), ('timeline', Figure_Timeline), ('joints', Figure_Joints), ('paths', Figure_Paths),
+        ('clearance', Figure_Clearance), ('critical_path', Figure_Critical_Path), ('stretch', Figure_Stretch))}
+    sources = ['# Default vs Optimized program: comparison', '',
                '> %s' % CONST_DISCLAIMER, '',
                'Written by `Example/Report/compare_report.py` (commit %s%s). Sources of every number: **[K]** the kinematic trajectory '
                '(%s, %s: `Program.Core.Build_Program`, 4 ms); **[P]** the physics run of that trajectory, recorded every 4 ms '
@@ -1444,13 +1559,17 @@ def main():
                '(`mj_geomDistance`).' % (context.Trajectories['taught'].Meta['git_commit'][:7], ' + uncommitted changes' if
                                          context.Trajectories['taught'].Meta['git_dirty'] else '', 'Data/Generated/Trajectories/Program.npz',
                                          'Program_Optimized.npz', analyses['taught']['name'], analyses['optimized']['name']), '',
-               'Figures: %s.' % ', '.join('[%s](%s)' % (k, os.path.basename(p)) for k, p in figures.items()), '']
-    summary = ['## Summary', '', '- Cycle: taught %.3f s, optimized %.3f s [K] (%.1f %% shorter).' % (
+               'Figures (each `<name>_light` and `<name>_dark`, PNG at 300 dpi and SVG): %s.' % ', '.join(
+                   '[%s](%s_light.png)' % (k, k) for k in figures), '',
+               'The programs: **Default program** - the taught program, `Configuration/Program.yaml`; **Optimized program** - '
+               '`Data/Optimized/Program_Optimized.yaml` (in the code and the files: taught / optimized).', '']
+    summary = ['## Summary', '', '- Cycle: Default %.3f s, Optimized %.3f s [K] (%.1f %% shorter); throughput %.1f and %.1f PCB/h.' % (
         context.Trajectories['taught'].T[-1], context.Trajectories['optimized'].T[-1],
-        100 * (1 - context.Trajectories['optimized'].T[-1] / context.Trajectories['taught'].T[-1]))]
+        100 * (1 - context.Trajectories['optimized'].T[-1] / context.Trajectories['taught'].T[-1]), 3600 / context.Trajectories['taught'].T[-1],
+        3600 / context.Trajectories['optimized'].T[-1])]
     first = context.Stretch['first'].get('Loader_Free + Tracking_Margin (I8)')
     hit = context.Stretch['first'].get('contact')
-    summary.append('- Acceptance: taught %d/%d, optimized %d/%d checks pass [P].' % (
+    summary.append('- Acceptance: Default %d/%d, Optimized %d/%d checks pass [P].' % (
         sum(1 for x in analyses['taught']['acceptance'] if x[1]), len(analyses['taught']['acceptance']),
         sum(1 for x in analyses['optimized']['acceptance'] if x[1]), len(analyses['optimized']['acceptance'])))
     summary.append('- A slower loader: %s [K].' % ('no failure of I8 for any job up to %.0f x as long (the take gated by '
@@ -1460,8 +1579,8 @@ def main():
                                                        '-' if hit is None else '%.1f %%' % (100 * (hit[0] - 1)))))
     summary.append('')
     body = (sources + summary + Section_Same_Task(context) + [''] + Section_Conditions(context) + [''] + Section_Objects(context) +
-            Section_Interactions(context) + [''] + Section_PCB(context) + [''] + Section_Cycle(context) + ['', '## 7. Figures', ''] +
-            ['![%s](%s)' % (k, os.path.basename(p)) for k, p in figures.items()] + [''] + Section_Not_Modelled(context) + [''] +
+            Section_Interactions(context) + [''] + Section_PCB(context) + [''] + Section_Cycle(context) + [''] +
+            Section_Figures(context, figures) + [''] + Section_Not_Modelled(context) + [''] +
             Section_Verdict(context) + ['', '## 10. Media', '', 'Written by `Example/Report/make_media.py` (videos, previews, the key points, the '
                                          'collision structure); listed in its own output.', ''])
     report = os.path.join(os.path.abspath(args.out), 'Comparison.md')

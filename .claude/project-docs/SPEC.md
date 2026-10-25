@@ -743,8 +743,10 @@ changes no program, point, model or limit; it measures.
   sheet.
 
 `Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` (every number tagged with its source: [K] the
-trajectory, [P] the physics run, [C] the configuration, [M] the model), five figures (timeline, joints, paths, clearance,
-comparison; the dataviz palette, the optimized program's series in the JIC purple) and both physics reports.
+trajectory, [P] the physics run, [C] the configuration, [M] the model), seven figures (summary "Default vs Optimized",
+timeline, joints, paths, clearance, critical path, the I8 stretch; `src/Report/Style.py`: two themes, PNG at 300 dpi and SVG each)
+and both physics reports; `--media DIR` copies the summary chart (both themes) for the README. The programs are shown as
+"Default program" (the taught one) and "Optimized program".
 `Example/Report/make_media.py` writes the videos (1920 x 1080 or 2560 x 1440, 60 fps, real time) and the point images and collision
 image into `Data/Generated/Reports/Comparison/`, and the GIF previews (960 px, 4 x speed, 15 fps, at most 10 MB) and the key points' contact
 sheet into `Media/` (committed; the videos become release assets only with the owner's approval).

@@ -307,6 +307,27 @@ recorder relies on `Physics_Run_Cls.Step`, `Done`, `Data`, `Result`).
 Pinned by `test/Report/test_core.py` (`test_the_recording_does_not_change_the_run`, slow, and the measurements) and
 `test/Example/Report/test_compare_report.py` (slow).
 
+## The figure style: Computer Modern, two themes, Okabe-Ito, one colour per program
+
+**Decision.** The comparison's figures follow `src/Report/Style.py` (owner, 2026-10-25): LaTeX-like typesetting from
+matplotlib's own Computer Modern (mathtext `cm`, serif `cmr10`, no TeX install, no vendored fonts), a dark (#0D1117) and a light
+(white) theme from one definition, the Okabe-Ito colourblind-safe palette for the moving objects, the programs always in the
+same two colours - Default: Okabe-Ito sky blue on dark (8.2:1), blue on light (5.2:1); Optimized: the JIC purple tinted 40 % on
+dark (5.09:1; the purple itself is 2.07:1 there, below the owner's 4.5:1) and the purple on light (9.15:1) - panel letters, a
+300 dpi PNG and an SVG (text as paths) per figure and theme. The programs are "Default program" and "Optimized program" on every
+figure, label and heading (owner's addendum). A label's ink on a bar is black or white by the larger contrast.
+
+**Why.** Scientific-paper figures for data analysis, readable on screen and in print, the same colours meaning the same program
+everywhere. cmr10 has no bold face and no underscore glyph: panel letters use mathtext bold, names with underscores mathtext
+roman (`Style.Label`).
+
+**Alternatives.** The jic-sf-ui-style chart rules: QPainter only, no categorical palette (owner: not ported). A TeX
+installation (`text.usetex`): an external dependency for the same look. The dataviz palette: kept only for `compare_programs.py`.
+
+**Revisit if** a figure needs more than eight categories, or the README's background changes.
+
+Pinned by `test/Report/test_style.py` (the contrasts, the label, the files) and `test/Example/Report/test_compare_report.py`.
+
 ## The media use one fixed camera; the GIFs stay under 10 MB
 
 **Decision.** Every medium of `Example/Report/make_media.py` - the videos, the GIF previews, the point images, the collision
