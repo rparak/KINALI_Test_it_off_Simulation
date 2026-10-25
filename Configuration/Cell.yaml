@@ -65,8 +65,8 @@ Clearance:
     pcb_crate: 0.0005
     pcb_jaws: 0.0005
   # A derived point's FK (Constants.yaml Reference + Offset, Simulation.yaml PCB_Hold) against its target
-  # before it counts as stale: the legacy IK left up to
-  # 24 um (measured 2026-10-24, FEATURES.md F6). [m] REQUIRED.
+  # before it counts as stale: the legacy IK left up to 24 um on the legacy points (measured 2026-10-24, FEATURES.md
+  # F6); the largest now 0.026 mm, P_INPUT_CLEAR (test/Program/data/golden_keypoint_table.txt). [m] REQUIRED.
   Stale_Position: 0.00005
   # The same, for the orientation. Source: as above (measured at most 0.0001 deg). [deg] REQUIRED.
   Stale_Angle: 0.01
@@ -92,7 +92,7 @@ Clearance:
 # pressing it onto the finger ledges, so the jaws do not clamp on the ledge corners.
 Handover:
   # The gap between the PCB and the finger ledges at P_LOADER_PLACE, the jaws closed on it: 0.3 mm
-  # (SPEC §4.7; measured 0.318 mm, FEATURES.md F8). [m] REQUIRED.
+  # (SPEC §4.7; measured 0.299 mm, test/Program/data/golden_check_report.txt). [m] REQUIRED.
   Ledge_Gap: 0.0003
   # The gap may differ from Ledge_Gap by at most this; a smaller gap is a press and fails. Source: the
   # owner, 2026-10-24 (B1). [m] REQUIRED.
@@ -180,9 +180,8 @@ Acceptance:
 # Two settings of the physics run, kept from the legacy run (SPEC §10.1; their sensitivity is checked in
 # step 6 with the keypoint program, owner 2026-10-24).
 Simulation:
-  # The phase label is refreshed every this many steps. It changes no output of the reference plan
-  # (FEATURES.md F3.5). Source: legacy/test_cell_cycle.py (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [-] REQUIRED.
+  # The phase label is refreshed every this many steps. Source: legacy/test_cell_cycle.py (commit
+  # f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [-] REQUIRED.
   Phase_Steps: 20
-  # A cup counts as touching the PCB below this contact distance. A 0.1 mm threshold changes no output of
-  # the reference plan (F3.5). Source: as above. [m] REQUIRED.
+  # A cup counts as touching the PCB below this contact distance. Source: as above. [m] REQUIRED.
   Cup_Touch: 0.0005
