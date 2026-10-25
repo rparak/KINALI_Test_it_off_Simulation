@@ -292,7 +292,11 @@ run's report proves it (byte-identical to `run_program.py`'s for both programs, 
 **Choices inside.** Exact distances every 20 ms, refined to 4 ms around each pair's minimum, cut at 100 mm (a third of the
 distance calls of a 200 mm cut: 71 s for the whole report on the Apple M2 Pro, five processes); zone occupancy from the
 collision geoms' points (a mesh's vertices), not their bounding boxes, which make a robot link occupy a zone it only passes
-near; the zones are boxes (owner): the MG06 zone's box reaches into the loader's home, which the report states.
+near; the jaw zone is a box; the MG06 shared zone is the loader's swept volume in J_INSERT and J_FETCH (owner, 2026-10-25,
+replacing F14's box of MG06 over its states, which reached into the loader's home and held the robot most of the cycle). The swept
+volume holds the jobs' start poses (home, park), so the report adds its part at MG06 (the loader at the MG06 Y): there the robot
+and the loader are never in it together in either program (2026-10-25). The poses are one per 5 mm cell of (Y, Z, jaw), so a
+pose between kept ones is at most 2.5 mm from one along each axis; the occupancy takes 64-75 s per program.
 
 **Alternatives.** A hand-written report around generated tables: rejected (drift). A per-step recorder hook in `src/Simulation`:
 rejected (it changes the verified run's code for an analysis).

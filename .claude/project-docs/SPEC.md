@@ -725,8 +725,12 @@ changes no program, point, model or limit; it measures.
   out (`By_Design`: a step's `Allow_Contact` group, the PCB resting in a crate or MG06, the PCB between the jaws and the holder
   while the loader is down at MG06). The objects' extents and the zones' occupancy from their collision geoms' points (a
   mesh's vertices, a primitive's box corners).
-- **The shared zones** (owner 2026-10-25): the jaw zone, the box of the loader's jaws at `L_HOME` (open and clamped); the MG06 zone,
-  the box of MG06 with its lid, handle and press plate over every state of both trajectories; each grown by `Loader_Free`.
+- **The shared zones** (owner 2026-10-25): the jaw zone, the box of the loader's jaws at `L_HOME` (open and clamped), grown by
+  `Loader_Free`; the **MG06 shared zone**, the volume the loader (its carriages, jaws and the PCB in them) sweeps in `J_INSERT` and
+  `J_FETCH` where its actuators put it, grown by `Loader_Free` (`Swept_Zone`: one pose per 5 mm cell of (Y, Z, jaw); the robot is in
+  it when an exact distance to a pose is below `Loader_Free`, the poses nearest by box gap first; the loader when its Y and Z lie
+  within `Loader_Free` of a pose's), reported whole and in its part at MG06 (the poses at `L_TRAVEL`'s Y). The coarse box of
+  F14 is gone.
 - **The PCB** (`Handovers`, `Custody_Gaps`, `Overhang`, `Tilt`, `Location_Spans`): each location change of the trajectory checked
   in physics (pose error, both holders, none), the spans without a holder, the board beyond the cups and the jaws.
 - **The timeline** (`Critical_Path`, `Robot_Waits`, `Signal_Order`, `Wrist_Approach`): the robot's program is the cell's

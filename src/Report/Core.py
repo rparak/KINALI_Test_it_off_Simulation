@@ -77,11 +77,10 @@ CONST_ROBOT_LINKS = [('aubo/base_link',), ('aubo/shoulder_link',), ('aubo/upper_
 #   Unit [Set<string>], [string]
 CONST_STATIC_BODIES = {'world', 'workstation', 'mg06_base', 'loader_base'}
 CONST_MOUNT = 'aubo/base_link'
-# The shared zones (owner, 2026-10-25): the bounding box of these bodies' collision geoms over the states named, grown by
-# Cell.yaml Clearance.Loader_Free. The jaw zone: the loader's jaws at L_HOME (open and clamped); the MG06 zone: the fixture
-# with its lid, handle and press plate over every state of both trajectories (open, the recorded closing and opening, closed).
+# The jaw zone (owner, 2026-10-25): the bounding box of the loader's jaws' collision geoms at L_HOME (open and clamped), grown by
+# Cell.yaml Clearance.Loader_Free. The MG06 shared zone is the volume the loader sweeps (Swept_Zone), not a box.
 #   Unit [Dict<string, Set<string>>]
-CONST_ZONE_BODIES = {'jaw zone': {'jaw_L', 'jaw_R'}, 'MG06 zone': {'mg06_base'} | CONST_MG06_UPPER_BODIES}
+CONST_ZONE_BODIES = {'jaw zone': {'jaw_L', 'jaw_R'}}
 # Who may occupy a zone: the robot's moving links (its base and shoulder turn in place), the loader's Z carriage and jaws
 # (the Y carriage runs on its rail beside MG06), the PCB.
 #   Unit [Dict<string, Set<string>>]
@@ -867,6 +866,144 @@ class Cell_Geometry_Cls(object):
         """
 
         return set(self.__all)
+
+
+def _Box_Gaps(boxes: np.ndarray, others: np.ndarray) -> np.ndarray:
+    """
+    Description:
+        The smallest gap between any box of a set and any box of each other set: a lower bound of the exact distance (0 when
+        two boxes overlap).
+
+    Args:
+        (1) boxes [Matrix<float> Ax2x3]: The boxes (lower, upper corner).
+        (2) others [Matrix<float> PxBx2x3]: Per set its boxes.
+
+    Returns:
+        (1) parameter [Vector<float> P]: Per set the smallest gap (m).
+    """
+
+    lo, hi = boxes[:, 0], boxes[:, 1]
+    olo, ohi = others[:, :, 0], others[:, :, 1]
+    apart = np.maximum(0.0, np.maximum(olo[:, None, :, :] - hi[None, :, None, :], lo[None, :, None, :] - ohi[:, None, :, :]))
+    return np.sqrt(np.sum(apart ** 2, axis=3)).min(axis=(1, 2))
+
+
+@dataclass
+class Swept_Zone_Str:
+    """
+    Description:
+        A shared zone as the volume a loader's jobs sweep (Swept_Zone): the loader's poses, its corridor of axis positions,
+        and who is in it when.
+    """
+
+    # The jobs and their distinct poses (y, z, jaw), the bounding box of the swept collision geoms (for a figure).
+    #   Unit [List<string>], [Matrix<float> Kx3] (m), [Matrix<float> 2x3] (m)
+    Jobs: tp.List[str] = field(default_factory=list)
+    Poses: np.ndarray = field(default_factory=lambda: np.zeros((0, 3)))
+    Box: np.ndarray = field(default_factory=lambda: np.zeros((2, 3)))
+    # The samples tested and, per sample, whether the robot (with a carried PCB) comes within the margin of the volume, and
+    # whether the loader is on the corridor (its Y and Z within the margin of a swept pose's).
+    #   Unit [Vector<int> 1xM], [Vector<bool> 1xM], [Vector<bool> 1xM]
+    Samples: np.ndarray = field(default_factory=lambda: np.zeros(0, int))
+    Robot: np.ndarray = field(default_factory=lambda: np.zeros(0, bool))
+    Loader: np.ndarray = field(default_factory=lambda: np.zeros(0, bool))
+    # The exact distances computed (how many), for the record.
+    #   Unit [int]
+    Exact: int = 0
+
+
+def Swept_Zone(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, jobs: tp.Sequence[str],
+               margin: float, at_y: tp.Optional[float] = None, stride: int = CONST_STRIDE) -> Swept_Zone_Str:
+    """
+    Description:
+        A shared zone as the volume the loader (its Z carriage, jaws and the PCB in them) sweeps in jobs, where its actuators put
+        it (Loader_Actual_Trajectory), grown by a margin (owner, 2026-10-25: the MG06 shared zone, J_INSERT and J_FETCH); and who
+        is in it, every stride samples: the robot when an exact distance to one of the loader's poses is below the margin (the
+        poses with the smallest box gap first; a pose whose box gap, a lower bound, is not below the margin is skipped), the
+        loader when its Y and Z are within the margin of a swept pose's (its shape depends on its axes only). The poses are the
+        jobs' samples one per cell of a grid of half the margin in (Y, Z, jaw): a pose between two kept ones is at most a quarter
+        of the margin from one of them along each axis.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
+        (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (4) jobs [List<string>]: The jobs whose motion makes the zone.
+        (5) margin [float]: The growth (Cell.yaml Clearance.Loader_Free, m).
+        (6) at_y [float]: Only the poses with the loader's Y at this command (its part at MG06), or None for all (m).
+        (7) stride [int]: The samples tested (every stride-th and the last).
+
+    Returns:
+        (1) parameter [Swept_Zone_Str(object)]: The zone.
+    """
+
+    tr = Loader_Actual_Trajectory(trajectory, kinematics.Model)
+    model, data = kinematics.Model, kinematics.Data
+    address = kinematics.Scene_Address
+    pcb = model.body('pcb').id
+    robot, loader = collision.Robot_Bodies, {model.body(name).id for name in CONST_LOADER_BODIES}
+    collidable = (model.geom_contype > 0) | (model.geom_conaffinity > 0)
+    geoms = lambda bodies: np.flatnonzero(collidable & np.isin(model.geom_bodyid, list(bodies)))
+    jaws, cups = CONST_PCB_LOCATIONS.index('jaws'), CONST_PCB_LOCATIONS.index('cups')
+    samples = sorted({i for job in jobs for i in range(Job_Bounds(tr, job)[0], Job_Bounds(tr, job)[1] + 1)
+                      if at_y is None or trajectory.Loader_Y[i] == at_y})
+    seen, poses = set(), []
+    for i in samples:
+        key = tuple(np.round(np.array([tr.Loader_Y[i], tr.Loader_Z[i], tr.Jaw[i]]) / (margin / 2))) + (tr.PCB_Location[i] == jaws,)
+        if key not in seen:
+            seen.add(key)
+            poses.append(i)
+    loader_geoms = geoms(loader | {pcb})
+    boxes, owners = [], []
+    for i in poses:
+        Pose_Sample(kinematics, tr, i)
+        mine = geoms(loader | ({pcb} if tr.PCB_Location[i] == jaws else set()))
+        b = Geom_Points(model, mine)
+        world = data.geom_xpos[b[0]] + np.einsum('kij,kj->ki', data.geom_xmat[b[0]].reshape(-1, 3, 3), b[1])
+        lo = np.array([world[b[0] == g].min(axis=0) for g in mine])
+        hi = np.array([world[b[0] == g].max(axis=0) for g in mine])
+        pad = np.full((len(loader_geoms) - len(mine), 2, 3), np.nan)
+        boxes.append(np.concatenate([np.stack([lo, hi], axis=1), np.where(np.isnan(pad), 1e9, pad)]))
+        owners.append(np.vstack([lo, hi]))
+    boxes = np.array(boxes)
+    whole = np.array([[b[:, 0][b[:, 0, 0] < 1e8].min(axis=0), b[:, 1][b[:, 0, 0] < 1e8].max(axis=0)] for b in boxes])
+    corners = np.vstack(owners)
+    yz = np.c_[tr.Loader_Y[poses], tr.Loader_Z[poses]]
+    tested = np.unique(np.r_[np.arange(0, len(tr.T), stride), len(tr.T) - 1])
+    robot_in, loader_in, exact = np.zeros(len(tested), bool), np.zeros(len(tested), bool), 0
+    for k, i in enumerate(tested):
+        loader_in[k] = bool(np.min(np.hypot(yz[:, 0] - tr.Loader_Y[i], yz[:, 1] - tr.Loader_Z[i])) <= margin)
+        Pose_Sample(kinematics, tr, int(i))
+        mine = robot | ({pcb} if tr.PCB_Location[i] == cups else set())
+        rb = geoms(mine)
+        R = data.geom_xmat[rb].reshape(-1, 3, 3)
+        centre = data.geom_xpos[rb] + np.einsum('kij,kj->ki', R, model.geom_aabb[rb, :3])
+        half = np.einsum('kij,kj->ki', np.abs(R), model.geom_aabb[rb, 3:])
+        mine_boxes = np.stack([centre - half, centre + half], axis=1)
+        overall = np.array([mine_boxes[:, 0].min(axis=0), mine_boxes[:, 1].max(axis=0)])
+        near = np.flatnonzero(_Box_Gaps(overall[None], whole[:, None]) < margin)
+        if not len(near):
+            continue
+        gaps = np.full(len(poses), np.inf)
+        gaps[near] = _Box_Gaps(mine_boxes, boxes[near])
+        for p in np.argsort(gaps):
+            if gaps[p] >= margin:
+                break
+            j = poses[int(p)]
+            Pose_Sample(kinematics, tr, int(i))
+            data.qpos[address['y_axis']], data.qpos[address['z_axis']] = tr.Loader_Y[j], tr.Loader_Z[j]
+            data.qpos[address['jaw_L']] = data.qpos[address['jaw_R']] = tr.Jaw[j]
+            if tr.PCB_Location[j] == jaws:
+                data.qpos[address['pcb_free']:address['pcb_free'] + 7] = tr.PCB_Pose[j]
+            mujoco.mj_kinematics(model, data)
+            theirs = loader | ({pcb} if tr.PCB_Location[j] == jaws else set())
+            exact += 1
+            if collision.Close_Pairs(mine, margin, data, exclude=set(range(model.nbody)) - theirs):
+                robot_in[k] = True
+                break
+    return Swept_Zone_Str(Jobs=list(jobs), Poses=np.c_[tr.Loader_Y[poses], tr.Loader_Z[poses], tr.Jaw[poses]],
+                          Box=np.array([corners.min(axis=0) - margin, corners.max(axis=0) + margin]), Samples=tested, Robot=robot_in,
+                          Loader=loader_in, Exact=exact)
 
 
 def By_Design(trajectory: Trajectory_Str, program: Program_Str) -> tp.Callable[[str, int], bool]:

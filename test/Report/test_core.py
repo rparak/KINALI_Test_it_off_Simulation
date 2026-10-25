@@ -31,7 +31,7 @@ import pytest
 #   ../Report/Core
 from Report.Core import (Moving, Spans, Travel, Channel_Peaks, Segment_Kind, Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach, Job_Window,
                          Stretch_Job, Stretched_Distance, Handovers, Custody_Gaps, Tilt, Location_Spans, Geom_Points, Cell_Geometry_Cls, By_Design,
-                         Overhang, Clear_Height, Physics_Record_Str, CONST_PAIRS, CONST_ROBOT_LINKS)
+                         Overhang, Clear_Height, Physics_Record_Str, Swept_Zone, CONST_PAIRS, CONST_ROBOT_LINKS)
 #   ../Program/Check - the loader's actual position, its distance to the robot
 from Program.Check import Loader_Actual_Trajectory, Robot_Loader_Distance
 #   ../Trajectory/Core - the format
@@ -367,3 +367,25 @@ def test_the_recording_does_not_change_the_run(optimized_built, cell_model, cell
     recorded, record = Record_Physics(cell_model, Trajectory_Drive_Cls(tr, program, free), meta, cell_configuration)
     assert Format_Program_Report(recorded, cell_configuration, program.Name) == Format_Program_Report(plain, cell_configuration, program.Name)
     assert len(record.T) == len(tr.T) and np.allclose(record.T, tr.T, atol=1e-9)
+
+
+def test_the_mg06_shared_zone_is_the_loader_s_swept_volume(optimized_built, cell_configuration, program):
+    """
+    Description:
+        The MG06 shared zone (owner 2026-10-25): the volume the loader sweeps in J_INSERT and J_FETCH, grown by Loader_Free. The
+        taught robot over the input crate is in neither it nor its part at MG06 (the loader's Y at L_TRAVEL's); at the handover
+        it is in the zone (the jobs' start pose at home is part of it); at the fork's closing in both; the loader is always on
+        its corridor (home, park and MG06 lie on it); the part has fewer poses.
+    """
+
+    tr, kinematics, collision = _Taught(optimized_built), optimized_built['kinematics'], optimized_built['collision']
+    stride = 250
+    first = lambda step, k: stride * (int(np.flatnonzero(tr.Step_Index == tr.Step_Names.index(step))[k]) // stride)
+    pick, handover, close = first('S2_Pick_Input', 500), first('S4_Handover', -300), first('S9_Close_MG06', 1500)
+    inside = lambda zone, i: bool(zone.Robot[list(zone.Samples).index(i)])
+    whole = Swept_Zone(tr, kinematics, collision, ['J_INSERT', 'J_FETCH'], cell_configuration.Loader_Free, stride=stride)
+    part = Swept_Zone(tr, kinematics, collision, ['J_INSERT', 'J_FETCH'], cell_configuration.Loader_Free,
+                      at_y=program.Constants.Loader['L_TRAVEL'].Y, stride=stride)
+    assert not inside(whole, pick) and not inside(part, pick) and inside(whole, handover) and inside(whole, close) and inside(part, close)
+    assert whole.Loader.all() and len(part.Poses) < len(whole.Poses)
+

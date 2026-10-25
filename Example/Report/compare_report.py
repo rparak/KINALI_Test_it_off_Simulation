@@ -70,7 +70,8 @@ from Optimizer.Measure import Compare_Locked, Interlocks, Measure, Step_Bounds
 #   ../Trajectory/Core - the sample time
 from Trajectory.Core import CONST_DT
 #   ../Report/Core - the comparison
-from Report.Core import (CONST_CUT, Record_Physics, Cell_Geometry_Cls, Geometry_Series, By_Design, Handovers, Custody_Gaps, Location_Spans, Overhang,
+from Report.Core import (CONST_CUT, CONST_MG06_LOADER, Swept_Zone, Record_Physics, Cell_Geometry_Cls, Geometry_Series, By_Design, Handovers,
+                         Custody_Gaps, Location_Spans, Overhang,
                          Critical_Path, Robot_Waits, Signal_Order, Wrist_Approach, Stretched_Distance, Clear_Height, Job_Window, Moving, Spans,
                          Object_Channels, Travel, Channel_Peaks, Tilt, Holder_Matrix, CONST_PAIRS, CONST_HOLDERS, CONST_LOCATION_HOLDER,
                          CONST_ROBOT_LINKS)
@@ -85,6 +86,11 @@ CONST_VERSIONS = ('taught', 'optimized')
 # The trajectory files of the programs in a --trajectories folder (build_program.py's names).
 #   Unit [Dict<string, string>]
 CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimized.npz'}
+# The MG06 shared zone (owner, 2026-10-25): the volume the loader sweeps in these jobs; its parts: all of it, and its part at
+# MG06 (the loader's Y at L_TRAVEL's), each with its title.
+#   Unit [List<string>], [Dict<string, string>]
+CONST_SWEPT_JOBS = ['J_INSERT', 'J_FETCH']
+CONST_SWEPT_PARTS = {'swept': 'MG06 shared zone (J_INSERT and J_FETCH swept)', 'mg06': 'its part at MG06 (the loader at the MG06 Y)'}
 # The default folder of the report and its figures.
 #   Unit [string]
 CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
@@ -167,9 +173,9 @@ def Planning_Tools(cell: tp.Any) -> tp.Tuple[tp.Any, Robot_Kinematics_Cls, Robot
 def Zones(cell: tp.Any, trajectories: tp.List[tp.Any]) -> tp.Dict[str, tp.Tuple[np.ndarray, np.ndarray]]:
     """
     Description:
-        The shared zones (Report.Core CONST_ZONE_BODIES, owner 2026-10-25): the jaw zone over every sample of both trajectories
-        with the loader at its start position (home, the jaws open and clamped), the MG06 zone over every sample where MG06's
-        lid or handle moves and the first one (open, the recorded closing and opening, closed), each grown by Loader_Free.
+        The jaw zone (Report.Core CONST_ZONE_BODIES, owner 2026-10-25) over every sample of both trajectories with the loader at
+        its start position (home, the jaws open and clamped), grown by Loader_Free. The MG06 shared zone is a swept volume
+        (Swept_Analysis).
 
     Args:
         (1) cell [Cell_Configuration_Str(object)]: The cell.
@@ -182,9 +188,6 @@ def Zones(cell: tp.Any, trajectories: tp.List[tp.Any]) -> tp.Dict[str, tp.Tuple[
     _, kinematics, collision = Planning_Tools(cell)
     geometry = Cell_Geometry_Cls(kinematics, collision, cell.Loader_Free)
     for tr in trajectories:
-        for i in np.flatnonzero(np.r_[True, Moving(np.c_[tr.MG06_Lid, tr.MG06_Handle])[1:]]):
-            geometry.Pose_Sample(tr, int(i))
-            geometry.Grow_Zone('MG06 zone')
         home = np.flatnonzero((tr.Loader_Y == tr.Loader_Y[0]) & (tr.Loader_Z == tr.Loader_Z[0]))
         for i in np.unique(np.r_[home[::25], home[np.flatnonzero(Moving(tr.Jaw[home]))]]):
             geometry.Pose_Sample(tr, int(i))
@@ -309,10 +312,32 @@ def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.An
     return out
 
 
+def Swept_Analysis(job: tp.Tuple[str, str, tp.Optional[str]]) -> tp.Tuple[str, str, tp.Any]:
+    """
+    Description:
+        The MG06 shared zone of a program (a pool job; owner 2026-10-25): the volume the loader sweeps in J_INSERT and J_FETCH
+        where its actuators put it, grown by Loader_Free (Report.Core.Swept_Zone) - all of it ('swept'), or its part at MG06,
+        the poses with the loader's Y at L_TRAVEL's ('mg06') - and who is in it when (the trajectory, every 20 ms).
+
+    Args:
+        (1) job [Tuple<string>]: (the program, 'swept' or 'mg06', the trajectories' folder or None).
+
+    Returns:
+        (1) parameter [Tuple]: (the program, the part, the Swept_Zone_Str).
+    """
+
+    version, part, trajectories = job
+    cell, _, program, tr, _, _, _ = Load(version, trajectories)
+    _, kinematics, collision = Planning_Tools(cell)
+    at_y = program.Constants.Loader[CONST_MG06_LOADER].Y if part == 'mg06' else None
+    return version, part, Swept_Zone(tr, kinematics, collision, CONST_SWEPT_JOBS, cell.Loader_Free, at_y)
+
+
 def _Job(job: tp.Tuple[str, tp.Any]) -> tp.Any:
     """
     Description:
-        A pool job by its kind: ('physics' or 'planned', (program, zones, folder)), or ('stretch', (program, folder)).
+        A pool job by its kind: ('physics' or 'planned', (program, zones, folder)), ('stretch', (program, folder)) or ('swept',
+        (program, part, folder)).
 
     Args:
         (1) job [Tuple<string, Any>]: The kind and its argument.
@@ -322,7 +347,7 @@ def _Job(job: tp.Tuple[str, tp.Any]) -> tp.Any:
     """
 
     kind, argument = job
-    return {'physics': Analyse_Physics, 'planned': Analyse_Planned, 'stretch': Stretch_Analysis}[kind](argument)
+    return {'physics': Analyse_Physics, 'planned': Analyse_Planned, 'stretch': Stretch_Analysis, 'swept': Swept_Analysis}[kind](argument)
 
 
 def _Fmt(x: float, scale: float = 1.0, digits: int = 2) -> str:
@@ -733,36 +758,43 @@ def Section_Interactions(c: Context_Cls) -> tp.List[str]:
     lines += ['', 'Planning clearance `Clearance.Robot` %.0f mm, free transfers `Loader_Free` %.0f mm + `Tracking_Margin` %.0f mm [C]. A '
               'pair always in contact by design reads "always by design"; the robot\'s mount is not measured.' % (1000 * c.Cell.Clearance,
               1000 * c.Cell.Loader_Free, 1000 * c.Cell.Tracking_Margin), '', '### Shared zones', '']
-    for zone, (lo, hi) in c.Zones.items():
-        lines.append('- **%s**: x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m (Report.Core CONST_ZONE_BODIES: %s, grown by Loader_Free %.0f mm) '
-                     '[K, M].' % (zone, lo[0], hi[0], lo[1], hi[1], lo[2], hi[2], 'the loader\'s jaws at home, open and clamped' if zone ==
-                                  'jaw zone' else 'MG06 with its lid, handle and press plate over every state of both programs',
-                                  1000 * c.Cell.Loader_Free))
-    (alo, ahi), (blo, bhi) = c.Zones['MG06 zone'], c.Zones['jaw zone']
-    lo, hi = np.maximum(alo, blo), np.minimum(ahi, bhi)
-    if np.all(hi > lo):
-        lines += ['', 'The two zones overlap in x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m: the MG06 zone\'s box (the fixture\'s front, '
-                  'grown by Loader_Free) reaches into the loader\'s home, so the loader at home counts as in both [K, M].' % (
-                      lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])]
-    lines += ['', 'Who is in a zone when (a point of an object\'s collision geoms inside the zone; the physics recording every 20 ms) [P]. '
-              'An overlap is the robot and the loader in the zone together; a moving overlap, either of them moving then:', '']
+    lo, hi = c.Zones['jaw zone']
+    lines.append('- **jaw zone**: x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f m: the box of the loader\'s jaws at home, open and clamped, grown by '
+                 'Loader_Free %.0f mm (Report.Core CONST_ZONE_BODIES) [K, M].' % (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2],
+                                                                                  1000 * c.Cell.Loader_Free))
+    zone = c.Analyses['optimized']['swept']
+    lines.append('- **MG06 shared zone** (owner, 2026-10-25): the volume the loader (its carriages, jaws and the PCB in them) sweeps in '
+                 '%s, where its actuators put it, grown by Loader_Free %.0f mm (`Report.Core.Swept_Zone`: %d poses, one per %.0f mm cell '
+                 'of (Y, Z, jaw); the robot is in it when an exact distance to one pose is below Loader_Free) [K, M]. It includes the '
+                 'jobs\' start poses - the loader at home and parked - so the robot\'s handover and take are in it too; **its part at '
+                 'MG06** keeps only the poses with the loader at the MG06 Y (%d poses; bounding box x %.3f..%.3f, y %.3f..%.3f, z '
+                 '%.3f..%.3f m).' % (', '.join(CONST_SWEPT_JOBS), 1000 * c.Cell.Loader_Free, len(zone['swept'].Poses), 500 * c.Cell.Loader_Free,
+                                     len(zone['mg06'].Poses), *zone['mg06'].Box[:, 0], *zone['mg06'].Box[:, 1], *zone['mg06'].Box[:, 2]))
+    lines += ['', 'Who is in a zone when [K for the swept zones, every 20 ms; P for the jaw zone: a point of an object\'s collision geoms '
+              'inside the box]. An overlap is the robot and the loader in the zone together; a moving overlap, either of them moving then:', '']
     rows = []
     for v in CONST_VERSIONS:
         series, tr = c.Analyses[v]['physics'], c.Trajectories[v]
-        robot_moving = Moving(tr.Robot_Q)[series.Samples]
-        loader_moving = Moving(np.c_[tr.Loader_Y, tr.Loader_Z, tr.Jaw])[series.Samples]
-        for zone in c.Zones:
-            robot, loader = series.Occupied['robot in %s' % zone], series.Occupied['loader in %s' % zone]
-            pcb = series.Occupied['PCB in %s' % zone]
-            both = robot & loader
-            rows.append([v, zone, _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)), _Spans_Text(Spans(pcb, series.T)),
-                         _Spans_Text(Spans(both, series.T)), _Spans_Text(Spans(both & (robot_moving | loader_moving), series.T))])
-    lines += _Table(['program', 'zone', 'robot', 'loader (Z carriage, jaws)', 'PCB', 'robot and loader', 'moving overlap'], rows)
+        robot_moving, loader_moving = Moving(tr.Robot_Q), Moving(np.c_[tr.Loader_Y, tr.Loader_Z, tr.Jaw])
+        robot, loader = series.Occupied['robot in jaw zone'], series.Occupied['loader in jaw zone']
+        moving = robot_moving[series.Samples] | loader_moving[series.Samples]
+        rows.append([v, 'jaw zone [P]', _Spans_Text(Spans(robot, series.T)), _Spans_Text(Spans(loader, series.T)),
+                     _Spans_Text(Spans(robot & loader, series.T)), _Spans_Text(Spans(robot & loader & moving, series.T))])
+        for part, title in CONST_SWEPT_PARTS.items():
+            z = c.Analyses[v]['swept'][part]
+            t = tr.T[z.Samples]
+            moving = robot_moving[z.Samples] | loader_moving[z.Samples]
+            rows.append([v, title + ' [K]', _Spans_Text(Spans(z.Robot, t)), _Spans_Text(Spans(z.Loader, t)),
+                         _Spans_Text(Spans(z.Robot & z.Loader, t)), _Spans_Text(Spans(z.Robot & z.Loader & moving, t))])
+    lines += _Table(['program', 'zone', 'robot', 'loader', 'robot and loader', 'moving overlap'], rows)
     lines += ['', 'The interlocks that keep the overlaps safe (SPEC §7.11): in the jaw zone I1 (the handover starts with the loader home and '
-              'open), I2 (the loader moves only after the handover ends) and I7 (the take starts only after the loader is home); in the MG06 '
-              'zone I3 (the fork closes MG06 only after the park), I6 (the loader fetches only after MG06 is open and the fork gone), I4 and '
-              'I5 (nothing moves at MG06 during the test). Their times on each trajectory: section 2. A moving overlap in the jaw zone is '
-              'the loader\'s jaws closing on the PCB the robot holds (the handover) or opening under it (the take): by design.', '',
+              'open), I2 (the loader moves only after the handover ends), I7 (the take starts only after the loader is home) and I9 (the '
+              'robot moves to the take only after J_RETURN_Y); in the MG06 shared zone I3 (the fork closes MG06 only after the park), I6 '
+              '(the loader fetches only after MG06 is open and the fork gone), I4 and I5 (nothing moves at MG06 during the test), and the '
+              'gating rule (no robot motion comes into a running job\'s volume, below). Their times on each trajectory: section 2. A moving '
+              'overlap at home is the handover or the take, by design: the loader\'s jaws close on the PCB the robot holds, or open under it, '
+              'and its Z moves at home while the robot is at the jaws only in those LOCKED steps. In the swept zone the loader is always '
+              'on its corridor (home, park and MG06 are all on it), so "robot and loader" there is the robot\'s own time in the zone.', '',
               '### Synchronization', '']
     for v in CONST_VERSIONS:
         tr = c.Trajectories[v]
@@ -1383,6 +1415,7 @@ def main():
         zones = Zones(loaded[0][0], [x[3] for x in loaded])
         jobs = [(kind, (v, zones, args.trajectories)) for v in CONST_VERSIONS for kind in ('physics', 'planned')]
         jobs.append(('stretch', ('optimized', args.trajectories)))
+        jobs += [('swept', (v, part, args.trajectories)) for v in CONST_VERSIONS for part in CONST_SWEPT_PARTS]
         with multiprocessing.get_context('spawn').Pool(len(jobs), initializer=Configure_MuJoCo_Log) as pool:
             results = pool.map(_Job, jobs, chunksize=1)
     except (run_program.Run_Error_Cls, Simulation_Error_Cls) as error:
@@ -1390,7 +1423,9 @@ def main():
         log.Close()
         return 2
     analyses = {v: dict(results[2 * k], **results[2 * k + 1]) for k, v in enumerate(CONST_VERSIONS)}
-    context = Context_Cls(analyses, results[-1], zones, args.trajectories)
+    for version, part, zone in results[2 * len(CONST_VERSIONS) + 1:]:
+        analyses[version].setdefault('swept', {})[part] = zone
+    context = Context_Cls(analyses, results[2 * len(CONST_VERSIONS)], zones, args.trajectories)
     os.makedirs(args.out, exist_ok=True)
     for v in CONST_VERSIONS:
         with open(os.path.join(args.out, analyses[v]['name'] + '_physics.txt'), 'w', encoding='utf-8') as handle:
