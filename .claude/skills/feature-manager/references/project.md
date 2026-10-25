@@ -7,9 +7,9 @@ project skill of the same name). Style rules come from project-style-rpx and its
 
 ## What the output is
 
-Test-it-off Simulation, a MuJoCo simulation of KINALI's Test-it-off cell (SPEC §1): the compiled cell model, the cycle run
-with its report and acceptance verdict, and from steps 3–4 the cell program (`Constants.yaml`, `Simulation.yaml`,
-`Program.yaml`) and the trajectory file. The owner and whoever writes the robot program act on it.
+Test-it-off Simulation, a MuJoCo simulation of KINALI's Test-it-off cell (SPEC §1): the compiled cell model, the cell
+program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`) and the optimized program, their trajectory files and check
+reports, and the programs' physics runs with their reports and acceptance verdicts. The owner and whoever writes the robot program act on it.
 
 ## Physical system and safety
 
@@ -95,8 +95,8 @@ look at what changed.
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
 - Work directly on main, no feature branches (owner, 2026-10-24; `CLAUDE.md` > Branches): commit only after the usual
   checks pass, push after each accepted feature, undo a failed experiment with `git revert` (never force-push or rewrite).
-- Never committed: `logger/`, `Data/Generated/` (the trajectories stay git-ignored until step 6, owner 2026-10-24), `.venv/`.
-  F9's optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
+- Never committed: `logger/`, `Data/Generated/` (the trajectories included; owner 2026-10-24), `.venv/`.
+  The optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
   `Example/Program/optimize_program.py`; when an input changes, run it again and commit the result as its own change.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
   source changed, a re-captured physics baseline, golden data or fingerprint.

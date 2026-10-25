@@ -8,11 +8,10 @@ project skill of the same name, so a copy would be ignored and drift (`.gitignor
 
 Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, what is never changed).
 
-Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for every visual of the project - the README header now,
-the Phase 2 application later (toolkit open, design-decisions). Its logo rules apply with one departure (below).
-
-**Status (2026-10-24):** in force; the code was migrated to it in `FEATURES.md` F3 (before: 13 files,
-429 issues; after: 25 files, 0 issues).
+Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for the JIC Smart Factory logo in the README header - its source
+file (`Media/Original/jic-smart-factory.svg`, byte-identical to the skill's asset) and its logo rules, with one departure
+(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and the figures use neither its palette nor its
+fonts (`compare_programs.py` uses the dataviz palette).
 
 ## Header and checker
 
@@ -82,7 +81,8 @@ of the cell either.
 The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
 `pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `Media`, `Configuration`.
 Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` exists on disk
-but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`.
+but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`, which also refuses two tracked paths
+that differ only in letter case (macOS's file system is case-insensitive: a case-only rename goes through a temporary name).
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
 
@@ -144,10 +144,12 @@ returned list, printed by the script, exit code 1.
 
 ## Tests
 
-- Everyday `.venv/bin/python -m pytest -m "not slow"`; full `.venv/bin/python -m pytest` before a commit.
+- Per commit `.venv/bin/python -m pytest -n 8 -m "not slow"`; per accepted feature the full `.venv/bin/python -m pytest -n 8`
+  (pytest-xdist; the suite also passes serially, `-n 0`). The two tiers of checks: `CLAUDE.md`.
+- Shared fixtures in `test/conftest.py`: the cell, the program, one build per program and session (`built_trajectory`), the
+  in-process build and check (`program_built`, `program_checked`, `optimized_built`), the probe helpers.
 - Reference data: `test/Simulation/data/baseline_report_<program>.txt` and `baseline_metrics_<program>.json`,
-  `test/Program/data/` (the golden), `test/Scene/data/baseline_model_fingerprint.json`
-  (since F3).
+  `test/Program/data/` (the golden), `test/Scene/data/baseline_model_fingerprint.json`.
 - Equivalence outputs: the printed report, the fingerprint (project-optimize reference).
 
 ## Project rules

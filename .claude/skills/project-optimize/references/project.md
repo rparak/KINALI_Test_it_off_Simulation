@@ -14,13 +14,17 @@ file overrides it where they differ. No `SKILL.md` is tracked here.
 | `models/cell_scene.xml` | `.venv/bin/python Example/Scene/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
 
 The physics reports are the contract: a refactor of the physics path is proven by an empty diff against both programs'
-baseline reports on the same machine (stricter than the regression's drift tolerances), plus the acceptance checks. (Until
-step 6 the legacy cycle report was: commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d.)
+baseline reports on the same machine (stricter than the regression's drift tolerances), plus the acceptance checks.
 
 ## Normalisation filter for printed output
 
-Nothing varies in the report body. The acceptance block and the `report written to` line (stderr) name
-an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
+Nothing varies in the physics report body. The acceptance block and the `report written to` line (stderr) name an output
+path; compare stdout only, the output folder's path replaced by a token. MuJoCo's attach warning goes to stderr. Two more
+fields vary by design, and only these are filtered:
+
+- a trajectory's `meta` records `git_commit` and `git_dirty` (provenance): compare every array of the `.npz` byte for byte
+  and `meta` with those two keys removed;
+- the optimizer's report and stdout print its wall-clock time (`made in N s`): replace the number by a token.
 
 ## Never touched
 
@@ -39,12 +43,19 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 
 ## Slow paths and timings
 
-| Path | Time | Machine, date |
-|---|---|---|
-| cycle run (65.8 s simulated) | 15–16 s | Apple M2 Pro, 2026-10-24 |
-| test suite, `-m "not slow"` / full | about 80 s / about 225 s (360 / 376 tests) | Apple M2 Pro, 2026-10-24 (after F9.8) |
-| optimizer (Example/Program/optimize_program.py) | 52 s | Apple M2 Pro, 2026-10-24 |
-| program build / check (default program) | 1.2 s / 8 s | Apple M2 Pro, 2026-10-24 |
+Apple M2 Pro, 2026-10-25, three runs each (spread under 3 %):
+
+| Path | Time |
+|---|---|
+| one program's physics run (`run_program.py`, 70.4 s simulated) | 19.4 s |
+| both physics baselines, compare (`physics_baseline.py`, the two runs in parallel) | 20.8 s (35.8 s sequential) |
+| the baselines' capture, `--out` (20 runs in parallel) | 56.3 s (369.5 s sequential) |
+| one build with its check (`build_program.py`), taught / optimized | 10.8 s / 10.2 s |
+| the kinematic golden (`golden_program.py`) | 10.8 s |
+| the optimizer (`optimize_program.py`) | 59.8 s |
+| fingerprint / point table / style checker | 1.2 s / 0.4 s / 0.7 s |
+| test suite `-m "not slow"`, `-n 8` / serial | about 30 s / about 2 min (426 tests) |
+| test suite, full, `-n 8` / serial | about 2.8 min / about 7.4 min (446 tests) |
 
 ## Interpreter and tools
 
