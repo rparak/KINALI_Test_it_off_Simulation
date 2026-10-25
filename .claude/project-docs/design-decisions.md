@@ -1060,6 +1060,25 @@ path: outside this project's data. A settle wait before the path: not the cause 
 
 Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
 
+## The physics regression checks bounds and drift, not the report's text (step 6)
+
+**Decision.** The programs' physics baselines fail a run on SPEC §10.1 and on metrics drifting beyond stated tolerances
+(SPEC §10.2: the cycle time exact, events +-1 sample, PCB poses +-0.05 mm, the slip +-0.2 mm, forces and tracking +-10 %, ...);
+the full report is kept as the baseline and its diff is printed for information only. The kinematic golden data and the model
+fingerprint stay exact.
+
+**Why.** Contact physics is sensitive to sub-micrometre changes: the fork's force flips between two modes with a 1 µm change
+in the PCB's start (F11), the legacy take held the board on 2 cups or lost it with 10 µm; an exact report diff would fail on
+any platform, solver or compiler difference that changes nothing physical, and train people to re-capture blindly.
+
+**Alternatives.** The exact diff of the legacy baseline: right for a refactor proof, wrong as a regression of contact physics.
+Tolerances wide enough for both fork modes: the hinge load differs by 22 % between them, so a mode flip fails the regression
+and is investigated (it is documented, KNOWN_ISSUES.md).
+
+**Revisit if** a platform change makes a tolerance trip with no physical change, or a metric needs a tighter tolerance.
+
+Pinned by `test/Simulation/test_baselines.py` and `test/Example/Simulation/test_physics_baseline.py`.
+
 ## The golden data is captured in the current names by one tool (F11)
 
 **Decision.** `Example/Program/golden_program.py` writes (`--out`) and compares the taught program's golden data;

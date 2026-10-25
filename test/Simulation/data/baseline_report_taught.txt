@@ -1,0 +1,69 @@
+program Program: physics run of its trajectory, cycle 69.396 s
+cycle time 69.4 s
+  3.28s vacuum ON  (4 of 4 cups touch the PCB)
+  9.91s vacuum OFF
+ 57.85s vacuum ON  (4 of 4 cups touch the PCB)
+ 66.07s vacuum OFF
+PCB in MG06 (t=17.1s): error 0.28 mm (dx 0.06 dy -0.26 dz 0.07), tilt 0.02 deg
+MG06 closed with the robot away (t=33.1s): lid -0.5 deg, handle 28.6 deg
+PCB at the end: x 406.3 y -752.4 z 4.9 mm (right crate centre 406.2 -751.6, floor 4.0); tilt 0.00 deg
+robot joint tracking error max 0.0126 rad, PCB slip in the cups max 1.30 mm, loader axis lag max 22.6 mm
+max contact force fork -> handle bar: 291 N
+deepest PCB penetration: MG06 holder -0.16 mm (t=16.78), crate -0.15 mm (t=66.09), loader jaws -0.11 mm (t=9.52)
+robot <-> MG06 / workstation / crates             : no contact
+robot tool <-> handle (outside closing / opening) : no contact
+robot <-> loader                                  : no contact
+loader <-> MG06 / workstation                     : no contact
+PCB <-> lid / press plate                         : no contact
+MG06 at the end: lid -40.0 deg, handle -0.0 deg
+fork on the handle bar: net contact force max 229 N at 27.679 s, direction in the fork frame [0.83 0.04 0.56]; squeeze max 37 N; handle hinge load max 9.4 N m (the summed normal force above adds the squeeze, KNOWN_ISSUES.md)
+vacuum holds: 3.276-9.912 s min 4/4 cups; 57.852-66.072 s min 4/4 cups
+step                              span s kind   par   track rad   slip mm  robot-loader    PCB-loader deepest contact
+(start)                    0.000-  0.010 LOCKED          0.0000      0.00           >50           >50 -
+S1_Approach_Input          0.010-  1.270 FREE            0.0016      0.00           >50           >50 -
+S2_Pick_Input              1.270-  5.190 LOCKED          0.0009      1.20           >50           >50 -
+S3_To_Loader               5.190-  7.030 FREE            0.0014      1.28         35.14         20.02 -
+S4_Handover                7.030- 11.620 LOCKED          0.0011      1.30         -0.01         -0.11 -
+S5_Home_After_Handover    11.620- 13.120 FREE            0.0012      0.00           >50           >50 -
+S6_Loader_Insert          13.120- 17.060 LOCKED          0.0001      0.00           >50           >50 -
+S7_Loader_Park            17.060- 20.320 LOCKED          0.0000      0.00           >50           >50 -
+S8_To_MG06                20.320- 23.770 FREE            0.0017      0.00           >50           >50 -
+S9_Close_MG06             23.770- 30.840 LOCKED          0.0126      0.00           >50           >50 -
+S10_Leave_MG06            30.840- 33.150 LOCKED          0.0007      0.00           >50           >50 -
+S11_Test                  33.150- 35.150 LOCKED          0.0001      0.00           >50           >50 -
+S12_Return_MG06           35.150- 37.450 LOCKED          0.0007      0.00           >50           >50 -
+S13_Open_MG06             37.450- 42.880 LOCKED          0.0016      0.00           >50           >50 -
+S14_Home_After_MG06       42.880- 46.320 FREE            0.0017      0.00           >50           >50 -
+S15_Loader_Fetch          46.320- 50.370 LOCKED          0.0001      0.00           >50           >50 -
+S16_Loader_Return         50.370- 53.970 LOCKED          0.0000      0.00           >50           >50 -
+S17_To_Take               53.970- 55.470 FREE            0.0012      0.00           >50           >50 -
+S18_Take_From_Loader      55.470- 61.600 LOCKED          0.0006      0.97         -0.01         -0.03 -
+S19_To_Output             61.600- 64.160 FREE            0.0018      1.07           >50           >50 -
+S20_Place_Output          64.160- 67.500 LOCKED          0.0007      1.08           >50           >50 -
+S21_Home_End              67.500- 68.600 FREE            0.0019      0.00           >50           >50 -
+End_Settle                68.600- 69.396 LOCKED          0.0005      0.00           >50           >50 -
+carrying free transfers (slip max and when; tool tilt from vertical and TCP acceleration then; their maxima while carried):
+  S3_To_Loader           slip 1.28 mm at 6.864 s: tilt 8.8 deg, acceleration 1.75 m/s^2; max tilt 8.9 deg, max acceleration 2.23 m/s^2
+  S19_To_Output          slip 1.07 mm at 63.984 s: tilt 0.3 deg, acceleration 1.63 m/s^2; max tilt 8.9 deg, max acceleration 2.13 m/s^2
+warnings: none
+robot <-> MG06 / workstation / crates              PASS  no contact
+robot tool <-> handle (outside closing / opening)  PASS  no contact
+robot <-> loader                                   PASS  no contact
+loader <-> MG06 / workstation                      PASS  no contact
+PCB <-> lid / press plate                          PASS  no contact
+vacuum ON 2x with 4/4 cups                         PASS  t=3.28s 4/4, t=57.85s 4/4
+PCB in MG06 error < 0.5 mm, tilt < 0.2 deg         PASS  0.28 mm, 0.02 deg
+PCB in the output crate < 2.0 mm from the centre   PASS  0.81 mm
+MG06 ends open                                     PASS  lid -40.0 deg, handle -0.0 deg
+PCB penetration <= 0.5 mm                          PASS  MG06 holder 0.16 mm, crate 0.15 mm, loader jaws 0.11 mm
+every vacuum hold keeps 4/4 cups                   PASS  3.28-9.91 s min 4/4; 57.85-66.07 s min 4/4
+the PCB is never lost                              PASS  never lost
+every WaitDI gets DI_VACUUM_OK in time             PASS  every one
+free transfers >= 1.0 mm from the loader           PASS  20.02 mm at 5.600 s, S3_To_Loader (pcb / z_carriage)
+PCB slip <= 1.98 mm                                PASS  1.30 mm
+tracking error <= 0.0189 rad                       PASS  0.0126 rad
+fork net force on the bar <= 290 N                 PASS  229.0 N (summed normal 291 N, for information)
+handle hinge load <= 13.5 N m                      PASS  9.38 N m
+free transfers >= Loader_Free 10.0 mm              PASS  20.02 mm
+no robot actuator saturated (model limits)         PASS  14% 29% 27% 30% 12% 34% of 180/180/150/60/60/60 N m
+Program: the physics run meets SPEC §10.1 (20 of 20). Simulation results only: not validated for the real cell.

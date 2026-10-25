@@ -972,6 +972,16 @@ commands, editing keypoints and program, the file formats.
   segments, every command's values as float hex, the check report, the point table), written and compared by
   `Example/Program/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
   change to the program or its build re-captures it in its own commit, listing what changed.
+- **Physics baselines of the programs** (step 6, owner 2026-10-25): `test/Simulation/data/baseline_report_taught.txt` and
+  `baseline_report_optimized.txt` (the full report of `Example/Simulation/run_program.py`), `baseline_metrics_<program>.json`
+  (the compared metrics) and `baseline_environment.json` (the platform, the versions, the commit), written and compared by
+  `Example/Simulation/physics_baseline.py` (`--out DIR` re-captures, in its own commit with the reason), pinned by
+  `test/Simulation/test_baselines.py` (slow). A run FAILS on any §10.1 criterion and on a metric beyond its drift tolerance:
+  the cycle time, the fault, the cups at vacuum on and the fewest cups per hold exact; the vacuum events and the holds +-1
+  sample (4 ms); the PCB's placed error, final position and penetrations +-0.05 mm, its placed and final tilt +-0.02 deg; MG06's
+  closed and end angles +-0.1 deg; the slip +-0.2 mm; the tracking error, the loader lag, the fork's net force, the handle hinge
+  load and the joint torques +-10 %; the free transfers' closest loader distance +-0.5 mm. The report's diff is printed for
+  information and never fails (contact physics changes with sub-micrometre differences, design-decisions).
 - **Baselines by run** (owner, 2026-10-24, B6): `test/Simulation/data/baseline_report.txt` stays the baseline of the
   legacy run (`Data/Reference/cell_plan.npz`) and stays valid for it. Step 6 adds a new baseline report for the default
   program and one for the optimized program, each measured in the pinned environment; neither replaces the legacy one.
