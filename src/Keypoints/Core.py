@@ -34,7 +34,7 @@ import mujoco
 # Custom Lib.:
 #   ../Configuration/Core, ../Configuration/Program_Parser - the cell, the PCB poses, the constants and the simulation data
 from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str
-from Configuration.Program_Parser import Constants_Str, Simulation_Str, Point_Str, Point_Scene_Str
+from Configuration.Program_Parser import Constants_Str, Simulation_Str, Point_Str, Point_Scene_Str, CONST_WRIST_2
 #   ../Scene/Core - the crates
 from Scene.Core import PCB_In_Crate, Cup_Block_Geom, Crate_Holding
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups, rotations
@@ -55,9 +55,6 @@ Description:
 # The joints posed for the scene.
 #   Unit [string]
 CONST_LID, CONST_HANDLE, CONST_PRESS = 'lid_hinge', 'handle_hinge', 'press_slide'
-# wrist_2's index in the joint vector (its sign is the IK family, SPEC §4.7).
-#   Unit [int]
-CONST_WRIST_2 = 4
 # A point's Pose against FK(Joints, Tool): the Pose is written from FK to 9 decimals, so these bound a stale Pose, not
 # rounding (owner, 2026-10-24, F10).
 #   Unit [float] (m), [float] (rad)

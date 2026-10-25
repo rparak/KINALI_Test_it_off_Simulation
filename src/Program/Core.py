@@ -40,14 +40,14 @@ import os
 #   ../Configuration/Core - the cell, the PCB poses, the PCB locations
 from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_PCB_LOCATIONS, CONST_ROOT, CONST_CELL_YAML, CONST_FORK_PATH
 #   ../Configuration/Program_Parser - the program's intermediate representation
-from Configuration.Program_Parser import Program_Str, Command_Str, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML
+from Configuration.Program_Parser import Program_Str, Command_Str, CONST_CONSTANTS_YAML, CONST_SIMULATION_YAML, CONST_OPTIMIZATION_YAML, CONST_WRIST_2
 #   ../Scene/Core - the crates, the robot's joints
 from Scene.Core import PCB_In_Crate, Crate_Holding, CONST_ROBOT_JOINTS
 #   ../Kinematics/Core - FK, IK, the PCB held by the cups
 from Kinematics.Core import Robot_Kinematics_Cls, Quaternion_To_Matrix, PCB_For_TCP, RPY_To_Matrix, Rotation_Angle
 #   ../Keypoints/Core - the points' MG06 state, poses and targets, the press plate's coupling, the contact groups, the point check
 from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Group, Check_Keypoint, Keypoint_Check_Str, Point_Pose, Base_Pose,
-                            Target_Pose, CONST_WRIST_2, CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX, CONST_POSE_POSITION, CONST_POSE_ANGLE,
+                            Target_Pose, CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX, CONST_POSE_POSITION, CONST_POSE_ANGLE,
                             CONST_TOOL_POSITION, CONST_TOOL_ANGLE)
 #   ../Collision/Core - exact distances, the loader's bodies
 from Collision.Core import Robot_Collision_Cls, Ledge_Gap, CONST_LOADER_BODIES

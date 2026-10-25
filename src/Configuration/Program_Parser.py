@@ -79,7 +79,7 @@ CONST_CUPS = 4
 # The point where the robot switches its IK family (wrist_2's sign), the only one (SPEC §4.7): a single legal value.
 #   Unit [string]
 CONST_FAMILY_SWITCH_POINT = 'P_VIA_HOME_MG06'
-# wrist_2's index in the joint vector.
+# wrist_2's index in the joint vector (its sign is the IK family, SPEC §4.7).
 #   Unit [int]
 CONST_WRIST_2 = 4
 # The commands: per call name, its positional arguments' kinds and its keywords (True = required). Kinds: P point,
