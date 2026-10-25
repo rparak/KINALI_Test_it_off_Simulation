@@ -3,9 +3,20 @@
 The README decisions of this repository. The generic skill is personal (`~/.claude/skills/`); this
 file overrides it where they differ. No `SKILL.md` is tracked here.
 
-**Status (2026-10-24):** the README is a stub (install, the cycle run, the export, the viewer). The full
-README is brief §7 step 7, written in this skill's bootstrap procedure (survey, proposal, approval);
-this file then gains its readers, figures and tests.
+**Status:** the README is a stub (the logos, the summary, the safety alert, the commands). The full README is brief §7
+step 7, written in this skill's bootstrap procedure (survey, proposal, approval); this file then gains its readers, figures
+and tests.
+
+## Step 7 content (the owner's list, from the previous Czech README)
+
+- An overview: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the same end effector as the
+  MG06 project (VGC10 with the fork); the robot model from ian-chuang/Manipulator-Mujoco, MIT
+  (`models/aubo_i5/LICENSE_Manipulator-Mujoco`) - SPEC §4.1, §4.10.
+- The process in six steps as users read it (SPEC §4.5), and what a passing run means: the robot touches nothing but the
+  handle bar while closing and opening; the PCB ends in the right crate within 2 mm of its centre (measured 1.18 / 1.25 mm),
+  flat; an unstable run ends with an error instead of restarting silently (SPEC §10.1).
+- In the MuJoCo viewer, `[` / `]` switch between the cameras `cam_pcb` and `cam_tool`.
+- The simplifications (KNOWN_ISSUES > Simplifications of the model) in user terms.
 
 ## Readers
 
