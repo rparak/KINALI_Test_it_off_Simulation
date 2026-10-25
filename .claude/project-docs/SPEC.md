@@ -753,7 +753,9 @@ clamped, never smaller along the MoveL into it - there with the jaws centred on 
 finger ledges counts; owner 2026-10-25) and the PCB centre at most `Handover.Lateral_Max` from the jaw centreline at
 `P_LOADER_PLACE` (along the jaw axis: the jaws centre the PCB as they clamp); the posed jaws are the command limited by the part
 (`Jaw_Posing_Faults`: every gripper operation monotonic, never closer than grip with the PCB in the jaws) and every Gripper
-command ramp no faster than `Motion.Jaw_Speed_Max` (`Jaw_Speed_Faults`); the point check of every point the program uses.
+command ramp no faster than `Motion.Jaw_Speed_Max` (`Jaw_Speed_Faults`); the re-grip from MG06 (`Regrip_Check_Str`, item 5):
+the PCB-ledge gap with the jaws at grip about the PCB at its MG06 rest pose within the handover's rule, at `L_FETCH`, and the open
+jaws not touching the PCB or the MG06 holder over the descent before it; the point check of every point the program uses.
 `Format_Check_Report` prints it. The loader moving in parallel is part of every measured sample's scene, so the check also
 measures the robot against the moving loader (I8).
 
@@ -834,7 +836,7 @@ with a one-line `Description`, and used by `Program.yaml` or `Simulation.yaml` (
 |---|---|---|---|
 | `Tools` | `T_` | `Flange_Offset` [x, y, z, R, P, Y] | m, deg; the tool frame in the flange frame (`T_SUCTION`, `T_FLANGE`) |
 | `Points` | `P_` | `Tool`, `Reference`, `Offset`, `Joints`, `Pose` | `Joints` [deg] in the model's joint order - authoritative; `Pose` [x, y, z m; R, P, Y deg] the tool frame in the robot base frame, R = Rz(Y)·Ry(P)·Rx(R), each angle written in (-180, 180], FK(`Joints`, `Tool`) within 1e-5 m / 1e-3° as a rotation; `Reference: <P_> \| null`, `Offset: [dx, dy, dz] \| null` [m] in the Reference point's tool frame, both null or both set, no cycle, FK within `Stale_Position` / `Stale_Angle` |
-| `Loader_Positions` | `L_` | `Y`, `Z` | m, the model's axis zeros (`L_HOME`, `L_TRAVEL`, `L_PLACE`, `L_PARK`) |
+| `Loader_Positions` | `L_` | `Y`, `Z` | m, the model's axis zeros (`L_HOME`, `L_TRAVEL`, `L_PLACE`, `L_FETCH`, `L_PARK`) |
 | `Gripper_Commands` | `G_` | `Jaw` | m per jaw, the command (`G_OPEN`, `G_CLAMP`) |
 | `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path (§4.9) |
 | `Signals` | `DO_` / `DI_` | `Port` | a placeholder (`KNOWN_ISSUES.md`) |

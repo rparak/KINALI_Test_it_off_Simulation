@@ -1308,6 +1308,24 @@ class Handover_Check_Str:
 
 
 @dataclass
+class Regrip_Check_Str:
+    """
+    Description:
+        The re-grip from MG06 (item 5): the PCB-ledge gap with the jaws at grip about the PCB resting in MG06 (the handover's
+        no-press rule), and the open jaws' closest distance to the PCB and the MG06 holder over the descent before it.
+    """
+
+    # The gap; the descent's closest distance and its pair.
+    #   Unit [float] (m), [float] (m), [string]
+    Gap: float = 0.0
+    Descent_Min: float = 0.0
+    Descent_Pair: str = ''
+    # The failures; empty when it passes.
+    #   Unit [List<string>]
+    Failures: tp.List[str] = field(default_factory=list)
+
+
+@dataclass
 class Program_Check_Str:
     """
     Description:
@@ -1324,6 +1342,9 @@ class Program_Check_Str:
     # The handover's no-press check (None when the program has no MoveL into P_LOADER_PLACE).
     #   Unit [Handover_Check_Str(object)]
     Handover: tp.Optional[Handover_Check_Str] = None
+    # The re-grip from MG06 (None when the jaws never close on the PCB resting in MG06).
+    #   Unit [Regrip_Check_Str(object)]
+    Regrip: tp.Optional[Regrip_Check_Str] = None
     # The keypoint check of every keypoint the program uses.
     #   Unit [List<Keypoint_Check_Str>]
     Keypoints: tp.List[Keypoint_Check_Str] = field(default_factory=list)
@@ -1555,6 +1576,40 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                                      'jaws would pull it off the cups as they centre it' % (1000 * abs(handover.Lateral), CONST_HANDOVER_KEYPOINT,
                                                                                             1000 * cell.Lateral_Max))
         result.Handover = handover
+    # Item 5: the re-grip from MG06 - the jaws closing on the PCB resting in MG06.
+    moving = np.flatnonzero(np.abs(np.diff(tr.Gripper)) > 0.0)
+    mg06, jaw_bodies = CONST_PCB_LOCATIONS.index('mg06'), {model.body('jaw_L').id, model.body('jaw_R').id}
+    others = {b for b in range(model.nbody) if b not in (pcb_body, model.body('mg06_base').id)}
+    for operation in np.split(moving, np.flatnonzero(np.diff(moving) > 1) + 1) if moving.size else []:
+        first, last = int(operation[0]), int(operation[-1]) + 1
+        if tr.Gripper[last] >= tr.Gripper[first] or tr.PCB_Location[first] != mg06:
+            continue
+        grip = max(program.Simulation.Jaw_Actual.values())
+        handle = float(tr.MG06_Handle[last])
+        kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[last]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[last]),
+                             z=float(tr.Loader_Z[last]), jaw=grip, pcb=tr.PCB_Pose[first])
+        mujoco.mj_kinematics(model, data)
+        regrip = Regrip_Check_Str(Gap=_Ledge_Gap(model, data), Descent_Min=math.inf)
+        # The descent: back from the close while the loader stands or comes down at the same Y with the PCB in MG06.
+        start = first
+        while start > 0 and tr.PCB_Location[start - 1] == mg06 and tr.Loader_Y[start - 1] == tr.Loader_Y[start] \
+                and tr.Loader_Z[start - 1] >= tr.Loader_Z[start]:
+            start -= 1
+        for i in range(start, first + 1):
+            Pose_Sample(kinematics, tr, i)
+            for distance, body_1, body_2, _, geom_2 in collision.Close_Pairs(jaw_bodies, CONST_REPORT_CUT, data, exclude=others)[:1]:
+                if distance < regrip.Descent_Min:
+                    other = body_2 if geom_2.isdigit() else geom_2
+                    regrip.Descent_Min, regrip.Descent_Pair = distance, '%s / %s at %.3f s' % (body_1, other, tr.T[i])
+        low, high = cell.Ledge_Gap - cell.Ledge_Tolerance, cell.Ledge_Gap + cell.Ledge_Tolerance
+        if not low <= regrip.Gap <= high:
+            regrip.Failures.append('the PCB-ledge gap at the re-grip from MG06 is %.3f mm, not %.1f +- %.1f mm%s' % (
+                1000 * regrip.Gap, 1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance,
+                ' (the jaws clamp on the ledge corners)' if regrip.Gap < low else ''))
+        if regrip.Descent_Min <= 0.0:
+            regrip.Failures.append('the open jaws touch %s during the descent to the re-grip (%.3f mm)'
+                                   % (regrip.Descent_Pair, 1000 * regrip.Descent_Min))
+        result.Regrip = regrip
     # The posed jaws (the command limited by the part) and the gripper's jaw speed: their rules, in the step of each fault.
     for i, fault in Jaw_Posing_Faults(tr, max(program.Simulation.Jaw_Actual.values())) + Jaw_Speed_Faults(tr, cell.Jaw_Speed_Max):
         result.Steps[int(tr.Step_Index[i])].Failures.append(fault)
@@ -1581,7 +1636,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
     for check in result.Steps:
         check.Verdict = 'FAIL' if check.Failures else 'PASS'
     failed = any(c.Failures for c in result.Steps) or (result.Handover is not None and result.Handover.Failures) \
-        or any(k.Verdict == 'FAIL' for k in result.Keypoints)
+        or (result.Regrip is not None and result.Regrip.Failures) or any(k.Verdict == 'FAIL' for k in result.Keypoints)
     result.Verdict = 'FAIL' if failed else 'PASS'
     return result
 
@@ -1644,6 +1699,15 @@ def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, c
                      'mm): %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT, 1000 * h.Line_Min,
                                   1000 * h.At_Handover, 1000 * h.Clamped_Min, 1000 * h.Clamped_Max, 1000 * abs(h.Lateral), 1000 * cell.Lateral_Max,
                                   'FAIL' if h.Failures else 'PASS'))
+    if result.Regrip is not None:
+        r = result.Regrip
+        lines.append('re-grip from MG06 (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip %.3f mm; the open jaws over the descent '
+                     '%s from the PCB and the holder: %s' % (
+                         1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, 1000 * r.Gap,
+                         'more than %.0f mm' % (1000 * CONST_REPORT_CUT) if math.isinf(r.Descent_Min)
+                         else '%.2f mm (%s)' % (1000 * r.Descent_Min, r.Descent_Pair),
+                         'FAIL' if r.Failures else 'PASS'))
+        lines += ['  FAIL %s' % f for f in r.Failures]
     stretched = [n for n in result.Notes if n.Text.startswith('stretched')]
     lines.append('stretched MoveLs: %s' % ('none' if not stretched else '; '.join('%s %s %s' % (n.Step, n.Command, n.Text) for n in stretched)))
     lines += ['note: %s, %s: %s' % (n.Step, n.Command, n.Text) for n in result.Notes if n not in stretched]

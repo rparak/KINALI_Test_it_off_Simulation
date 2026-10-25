@@ -182,11 +182,11 @@ Loader_Jobs:
     - MoveZ(L_PARK, t=0.8)                                # legacy: loader_move('z', Z_PARK, 0.8)
     - Wait(0.15)                                          # legacy: hold(0.15)
 
-  # Back to MG06 at the travel height, down into the holder, clamp the tested PCB.
+  # Back to MG06 at the travel height, down to the re-grip height (its own: the ledge rule), clamp the tested PCB.
   J_FETCH:
     - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
     - MoveY(L_TRAVEL, t=2.2)                              # legacy: loader_move('y', YP, 2.2)
-    - MoveZ(L_PLACE, t=0.6)                               # legacy: loader_move('z', ZP, 0.6)
+    - MoveZ(L_FETCH, t=0.6)                               # legacy: loader_move('z', ZP, 0.6); L_FETCH since B work item 5
     - Wait(0.1)                                           # legacy: hold(0.1)
     - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.2)                                           # legacy: hold(0.2)

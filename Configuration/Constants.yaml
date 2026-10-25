@@ -241,6 +241,10 @@ Loader_Positions:
     Description: "The PCB released into the MG06 holder 0.15 mm above its seat (never pressed): 0.37 mm above the CAD place height, the centred PCB touching the seat 0.22 mm above it in physics (B work, item 2)."
     Y: 0.19665834418149383
     Z: 0.06758731047501317
+  L_FETCH:
+    Description: "The re-grip of the PCB resting in the MG06 holder: the jaws close with it 0.3 +- 0.1 mm above the finger ledges, as at the handover, never on the ledge corners - 0.265 mm with the PCB at the CAD place pose, 0.33 mm settled in physics (B work, item 5)."
+    Y: 0.19665834418149383
+    Z: 0.06725231047501317
   L_PARK:
     Description: "Parked while the robot closes and opens MG06."
     Y: -0.1995

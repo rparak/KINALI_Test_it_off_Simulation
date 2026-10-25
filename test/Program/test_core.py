@@ -551,6 +551,47 @@ def test_a_handover_off_the_jaw_centreline_is_reported(constants, simulation, ce
                                             '0.5 mm: the jaws would pull it off the cups as they centre it' % (1000 * abs(h.Lateral)))
 
 
+def _Regrip(constants, simulation, cell, tools, z):
+    """
+    Description:
+        A probe of the re-grip from MG06: the PCB resting in MG06, the loader's J_FETCH down to L_FETCH at height z (m); checked.
+    """
+
+    moved = copy.deepcopy(constants)
+    moved.Loader['L_FETCH'].Z = z
+    jobs = {'J_FETCH': ['MoveZ(L_TRAVEL, t=0.6)', 'MoveY(L_TRAVEL, t=2.2)', 'MoveZ(L_FETCH, t=0.6)', 'Wait(0.1)', 'Gripper(G_CLAMP, t=0.6)']}
+    probe = _Probe(['Loader.Run(J_FETCH)'], moved, simulation, cell, pcb='mg06', allow=('pcb_jaws',), loader_jobs=jobs)
+    return _Check(probe, cell, tools).Regrip
+
+
+def test_the_regrip_keeps_the_board_off_the_ledges(checked):
+    """
+    Description:
+        Item 5 (owner, 2026-10-25): the re-grip from MG06 at L_FETCH has the handover's no-press rule - the PCB-ledge gap with the
+        jaws at grip 0.265 mm about the PCB at its MG06 rest pose (0.3 +- 0.1 mm; 0.359 mm settled in physics) - and the open jaws
+        keep 7.13 mm from the PCB and the holder over the descent.
+    """
+
+    r = checked.Regrip
+    assert r.Failures == [] and r.Gap == pytest.approx(0.000265, abs=0.000002)
+    assert r.Descent_Min == pytest.approx(0.00713, abs=0.00002) and r.Descent_Pair.startswith('jaw_R / mg06_base at ')
+
+
+@pytest.mark.parametrize('lift, failure', [
+    (0.00037 - 0.000035, 'the PCB-ledge gap at the re-grip from MG06 is -0.066 mm, not 0.3 +- 0.1 mm (the jaws clamp on the ledge corners)'),
+    (-0.0085, 'the open jaws touch '),
+])
+def test_a_regrip_on_the_ledges_or_into_the_holder_is_reported(constants, simulation, cell_configuration, tools, lift, failure):
+    """
+    Description:
+        Item 5, forced failures: L_FETCH at the raised L_PLACE (the jaws close with the ledges 0.066 mm above the board's
+        underside) fails the gap; L_FETCH 8.5 mm below the shipped height drives the open jaws into the holder during the descent.
+    """
+
+    regrip = _Regrip(constants, simulation, cell_configuration, tools, constants.Loader['L_FETCH'].Z + lift)
+    assert any(f.startswith(failure) for f in regrip.Failures), regrip.Failures
+
+
 def test_a_colliding_step_is_reported_with_its_pair_and_time(constants, simulation, cell_configuration, tools):
     """
     Description:

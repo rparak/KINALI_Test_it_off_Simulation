@@ -149,7 +149,7 @@ def test_the_shipped_files_load(program, constants, simulation):
 
     assert program.Notes == []
     assert [len(t) for t in (constants.Tools, constants.Points, constants.Loader, constants.Gripper, constants.Paths,
-                             constants.Signals)] == [2, 25, 4, 2, 2, 2]
+                             constants.Signals)] == [2, 25, 5, 2, 2, 2]
     assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 54
     assert list(program.Loader_Jobs) == ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN',
                                          'J_RELEASE'] and list(program.Tester_Jobs) == ['J_TEST']
