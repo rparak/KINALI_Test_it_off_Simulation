@@ -65,7 +65,7 @@ S21_Home_End           67.500   1.100  0.739 / 1.002                 PASS
     loader       > 50 mm
 End_Settle             68.600   0.800  0.000 / 0.000                 PASS
     not allowed  10.00 mm at 17349 (69.396 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE min 0.318 mm, at it 0.318 mm, while clamped 0.318 .. 0.318 mm: PASS
+handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the PCB) min 0.318 mm, at it 0.318 mm, while clamped 0.318 .. 0.318 mm; PCB centre 0.000 mm from the jaw centreline (<= 0.5 mm): PASS
 stretched MoveLs: none
 note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving: the flange at 39.1 mm/s at its first row (a velocity step from rest; step 5 reports the tracking error and the force on the bar)
 events: 3.276 s vacuum_on, 9.316 s gripper_clamp, 9.912 s vacuum_off, 16.608 s gripper_open, 49.816 s gripper_clamp, 57.852 s vacuum_on, 58.752 s gripper_open, 66.072 s vacuum_off
