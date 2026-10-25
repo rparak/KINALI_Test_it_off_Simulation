@@ -200,6 +200,24 @@ datasheet gives the payload only, 6 kg with default cups, 15 kg with custom atta
 - **What would close it:** the closing tried on the real cell at reduced speed with force limits (collision detection at a
   low level) active; the vendors' torque, force and moment ratings.
 
+## The VGC10 interface carries about 1.6 x its payload's weight while the fork closes MG06
+
+The main real-cell risk of the closing (owner, 2026-10-25). In the simulation the tool flange, and so the VGC10's
+interface with the fork attachment, carries a wrench of up to 239 N and 16.1 N m while the fork presses the handle bar
+(the taught and the optimized program, F11, 2026-10-25). 239 N is about 1.6 x the weight of the VGC10's largest payload
+rating, 15 kg with custom attachments (147 N); the datasheet gives the payload only, no force or moment rating of the
+interface, so the 16.1 N m has nothing to be compared with. The acceptance bounds on the fork (`Fork_Net_Force_Max`,
+`Handle_Load_Max`) are regression bounds derived from the simulation, not this rating (SPEC §10.1).
+
+- **Impact:** the VGC10, its attachment or the fork could be overloaded on the real cell although the run passes here; the
+  simulated values are of a stiff contact (the entry above) and may differ on the real cell either way.
+- **Evidence:** the flange wrench measured in the F11 fork-force investigation (2026-10-25; the entry above; the
+  baselines pin the net force and the hinge load, not the wrench); the VGC10 datasheet (payload 6 kg with default cups,
+  15 kg with custom attachments). The owner will ask OnRobot and AUBO for the ratings.
+- **What would close it:** OnRobot's force and moment ratings of the VGC10 interface (and AUBO's of the i5's flange and
+  joints), the bounds replaced by them or by a margin under them; or the closing measured on the real cell with a force
+  sensor or the controller's force estimate, at reduced speed.
+
 ## Real-cell transfer: a controller waits for "in position" before a LOCKED operation
 
 The optimized program's splines end where a LOCKED operation begins (the crate pick, the handover, the place) with up to
