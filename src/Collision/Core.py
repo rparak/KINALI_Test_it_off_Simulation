@@ -21,6 +21,8 @@
 # File Name: ../Collision/Core.py
 ## =========================================================================== ##
 
+# Math (Mathematical functions)
+import math
 # Typing (Support for type hints)
 import typing as tp
 # Numpy (Array computing) [pip3 install numpy]
@@ -61,6 +63,10 @@ CONST_TABLE_CONTYPE, CONST_TABLE_CONAFFINITY, CONST_TABLE_GROUP = 2, 1, 3
 # so float rounding of the vectorised sphere distance can never drop a pair the exact distance would keep.
 #   Unit [float] (m)
 CONST_BROAD_SLACK = 1e-9
+# A finger ledge under the PCB: a jaw geom whose direction from the PCB is within this angle of the board's -normal (the
+# ledges lie under the board; the jaws' sides beside it); the distance it is measured up to.
+#   Unit [float] (rad), [float] (m)
+CONST_LEDGE_ANGLE, CONST_LEDGE_CUT = math.radians(45.0), 0.01
 
 
 def Build_Planning_Model(cell: Cell_Configuration_Str) -> mujoco.MjModel:
@@ -415,3 +421,32 @@ def Cup_Contacts(model: mujoco.MjModel, data: mujoco.MjData, pcb_body: int, cup_
         if pcb_body in b and b & cup_bodies and c.dist < touch:
             touching.add(c.geom1 if model.geom_bodyid[c.geom1] in cup_bodies else c.geom2)
     return len(touching)
+
+
+def Ledge_Gap(model: mujoco.MjModel, data: mujoco.MjData) -> float:
+    """
+    Description:
+        The PCB-ledge gap in the data's current kinematics: the smallest exact distance from the PCB to a jaw geom whose
+        direction from the PCB is within CONST_LEDGE_ANGLE of the board's -normal (a finger ledge under the board). The
+        program check (the handover, the re-grip) and the physics run use it.
+
+    Args:
+        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed data.
+
+    Returns:
+        (1) parameter [float]: The gap (m), or inf when no ledge is within CONST_LEDGE_CUT.
+    """
+
+    pcb = model.body('pcb').id
+    jaws = {model.body('jaw_L').id, model.body('jaw_R').id}
+    normal = data.xmat[pcb].reshape(3, 3)[:, 2]
+    best, ft = math.inf, np.zeros(6)
+    for a in (g for g in range(model.ngeom) if model.geom_bodyid[g] == pcb and model.geom_contype[g]):
+        for b in (g for g in range(model.ngeom) if model.geom_bodyid[g] in jaws and model.geom_contype[g]):
+            x = mujoco.mj_geomDistance(model, data, a, b, CONST_LEDGE_CUT, ft)
+            # The witness points run from the PCB to the jaw; an overlap reverses them, so the sign of x restores the side.
+            direction = math.copysign(1.0, x) * (ft[3:] - ft[:3])
+            length = float(np.linalg.norm(direction))
+            if x < CONST_LEDGE_CUT and length > 1e-9 and direction @ -normal >= math.cos(CONST_LEDGE_ANGLE) * length:
+                best = min(best, x)
+    return best

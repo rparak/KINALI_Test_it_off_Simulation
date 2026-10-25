@@ -50,7 +50,7 @@ from Keypoints.Core import (Fixture_State, Press_For_Handle, Site_Id, Contact_Gr
                             Target_Pose, CONST_WRIST_2, CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX, CONST_POSE_POSITION, CONST_POSE_ANGLE,
                             CONST_TOOL_POSITION, CONST_TOOL_ANGLE)
 #   ../Collision/Core - exact distances, the loader's bodies
-from Collision.Core import Robot_Collision_Cls, CONST_LOADER_BODIES
+from Collision.Core import Robot_Collision_Cls, Ledge_Gap, CONST_LOADER_BODIES
 #   ../Scene/Core - the cup block
 from Scene.Core import Cup_Block_Geom
 #   ../Trajectory/Core - the trajectory format
@@ -103,10 +103,9 @@ CONST_MG06_REACH = 0.5
 # of a sampled min-jerk may exceed the continuous peak by this fraction (measured at most 0.08 % on the default program).
 #   Unit [float] (-)
 CONST_DIFFERENCE_TOLERANCE = 1e-3
-# The keypoint whose handover is checked for a press (owner's B1, SPEC §4.7), and the angle within which a jaw geom's
-# direction from the PCB is the board's -normal (a finger ledge under the board, not a jaw face beside it).
-#   Unit [string], [float] (rad)
-CONST_HANDOVER_KEYPOINT, CONST_LEDGE_ANGLE = 'P_LOADER_PLACE', math.radians(45.0)
+# The keypoint whose handover is checked for a press (owner's B1, SPEC §4.7; the ledge gap: Collision.Core.Ledge_Gap).
+#   Unit [string]
+CONST_HANDOVER_KEYPOINT = 'P_LOADER_PLACE'
 # The cause of each simulated digital input: the output whose switch-on starts its response time (Simulation.yaml
 # Signal_Response); a WaitDI waits what is left of that time, nothing when it has passed (F11).
 #   Unit [Dict<string, string>]
@@ -1359,34 +1358,6 @@ class Program_Check_Str:
     Verdict: str = ''
 
 
-def _Ledge_Gap(model: mujoco.MjModel, data: mujoco.MjData) -> float:
-    """
-    Description:
-        The PCB-ledge gap in the data's current kinematics: the smallest exact distance from the PCB to a jaw geom whose
-        direction from the PCB is within CONST_LEDGE_ANGLE of the board's -normal (a finger ledge under the board).
-
-    Args:
-        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed data.
-
-    Returns:
-        (1) parameter [float]: The gap (m), or inf when no ledge is within CONST_REPORT_CUT.
-    """
-
-    pcb = model.body('pcb').id
-    jaws = {model.body('jaw_L').id, model.body('jaw_R').id}
-    normal = data.xmat[pcb].reshape(3, 3)[:, 2]
-    best, ft = math.inf, np.zeros(6)
-    for a in (g for g in range(model.ngeom) if model.geom_bodyid[g] == pcb and model.geom_contype[g]):
-        for b in (g for g in range(model.ngeom) if model.geom_bodyid[g] in jaws and model.geom_contype[g]):
-            x = mujoco.mj_geomDistance(model, data, a, b, CONST_REPORT_CUT, ft)
-            # The witness points run from the PCB to the jaw; an overlap reverses them, so the sign of x restores the side.
-            direction = math.copysign(1.0, x) * (ft[3:] - ft[:3])
-            length = float(np.linalg.norm(direction))
-            if x < CONST_REPORT_CUT and length > 1e-9 and direction @ -normal >= math.cos(CONST_LEDGE_ANGLE) * length:
-                best = min(best, x)
-    return best
-
-
 def _Peaks(trajectory: Trajectory_Str, first: int, last: int, cell: Cell_Configuration_Str) -> tp.Tuple[float, float]:
     """
     Description:
@@ -1549,14 +1520,14 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                 kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[i]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[i]),
                                      z=float(tr.Loader_Z[i]), jaw=grip, pcb=pcb)
                 mujoco.mj_kinematics(model, data)
-                line.append(_Ledge_Gap(model, data))
+                line.append(Ledge_Gap(model, data))
         clamped = []
         for i in range(end, len(tr.T)):
             if CONST_PCB_LOCATIONS[tr.PCB_Location[i]] != 'cups':
                 break
             if tr.Jaw[i] == grip:
                 Pose_Sample(kinematics, tr, i)
-                clamped.append(_Ledge_Gap(model, data))
+                clamped.append(Ledge_Gap(model, data))
         # The gap at the point itself is measured on the PCB as it is (the last entry), as while clamped.
         handover = Handover_Check_Str(Line_Min=min(line), At_Handover=line[-1], Clamped_Min=min(clamped) if clamped else math.nan,
                                       Clamped_Max=max(clamped) if clamped else math.nan, Lateral=lateral)
@@ -1589,7 +1560,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
         kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[last]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[last]),
                              z=float(tr.Loader_Z[last]), jaw=grip, pcb=tr.PCB_Pose[first])
         mujoco.mj_kinematics(model, data)
-        regrip = Regrip_Check_Str(Gap=_Ledge_Gap(model, data), Descent_Min=math.inf)
+        regrip = Regrip_Check_Str(Gap=Ledge_Gap(model, data), Descent_Min=math.inf)
         # The descent: back from the close while the loader stands or comes down at the same Y with the PCB in MG06.
         start = first
         while start > 0 and tr.PCB_Location[start - 1] == mg06 and tr.Loader_Y[start - 1] == tr.Loader_Y[start] \
