@@ -699,7 +699,8 @@ class Physics_Run_Cls(object):
         self.collision = Robot_Collision_Cls(m, d)
         # The place into MG06 (B work): the holder's supports and side guides, the jaws, the PCB's free-joint speed address.
         base = m.body('mg06_base').id
-        meshes = {g: m.mesh(m.geom_dataid[g]).name for g in range(m.ngeom) if m.geom_bodyid[g] == base and m.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH}
+        meshes = {g: m.mesh(m.geom_dataid[g]).name for g in range(m.ngeom)
+                  if m.geom_bodyid[g] == base and m.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH}
         holder = {name: g for g, name in meshes.items() if name.startswith('col_holder')}
         self.BASE, self.SUPPORTS = base, {holder[n]: n[4:] for n in CONST_HOLDER_SUPPORTS}
         self.GUIDES = {g: n[4:] for n, g in holder.items() if n not in CONST_HOLDER_SUPPORTS}
