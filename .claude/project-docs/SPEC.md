@@ -436,7 +436,7 @@ Example/Program/build_program.py       a program -> its trajectory (npz + csv) a
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
 Example/Program/compare_programs.py    taught vs optimized: a table and a figure (exit 0 / 1)
 Example/Report/compare_report.py       taught vs optimized in full: Data/Generated/Reports/Comparison/Comparison.md + figures (exit 0 / 1 / 2)
-Example/Report/make_media.py           videos (MP4), GIF previews and the key points' contact sheet (Media/), the collision image
+Example/Report/make_media.py           videos (MP4) from named views, GIF previews, view, point and collision images (exit 0 / 2)
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
@@ -738,18 +738,27 @@ changes no program, point, model or limit; it measures.
   loader by its time).
 - **The loader slowed** (`Stretch_Job`, `Stretched_Distance`, `Clear_Height`): a parallel job's loader lane slowed by a factor, the
   robot's lines as programmed and holding at its WaitDone, I8's distance on it (the actuator model, exact, every 4 ms).
-- **The media** (`Media.py`): frames from one fixed free camera with the studio look and a label; H.264 MP4 through
-  imageio-ffmpeg's pinned ffmpeg (CRF 18, preset slow, yuv420p); GIF previews with one palette, kept under a size; a contact
-  sheet.
+- **The media** (`Media.py`): frames from named free-camera views (`CONST_VIEWS`: lookat, distance, azimuth, elevation,
+  field of view; Overview_Right, Overview_Left, Top, Input_Crate, Output_Crate, Loader_Handover, MG06_Insert, MG06_Fork) on a
+  render-only copy of the model (`Render_Model`: the view's field of view, the aluminium tone-down `CONST_TONE`; the model and
+  its files unchanged) with a label; depth and the geom per pixel for the collision overlay (`Collision_Overlay`); H.264 MP4
+  through imageio-ffmpeg's pinned ffmpeg (CRF 18, preset slow, yuv420p); GIF previews with one palette, kept under a size;
+  PNGs kept under a size by width (`Write_Png`); a contact sheet.
 
 `Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` (every number tagged with its source: [K] the
 trajectory, [P] the physics run, [C] the configuration, [M] the model), seven figures (summary "Default vs Optimized",
 timeline, joints, paths, clearance, critical path, the I8 stretch; `src/Report/Style.py`: two themes, PNG at 300 dpi and SVG each)
 and both physics reports; `--media DIR` copies the summary chart (both themes) for the README. The programs are shown as
 "Default program" (the taught one) and "Optimized program".
-`Example/Report/make_media.py` writes the videos (1920 x 1080 or 2560 x 1440, 60 fps, real time) and the point images and collision
-image into `Data/Generated/Reports/Comparison/`, and the GIF previews (960 px, 4 x speed, 15 fps, at most 10 MB) and the key points' contact
-sheet into `Media/` (committed; the videos become release assets only with the owner's approval).
+`Example/Report/make_media.py` writes into `Data/Generated/Reports/Comparison/` (60 fps, real time, H.264): per program the main
+video in Overview_Right (1920 x 1080 and 2560 x 1440), the 2 x 2 mosaic of Overview_Right, Loader_Handover, MG06_Insert and
+MG06_Fork (2560 x 1440), the event clips (pick, handover, insert, fork close, fork open, fetch, take, place; 3 s either side
+in the event's close view, 1920 x 1080, `Clips/`); the Default and the Optimized program side by side (2 x 1280 x 720); every
+view at the key moments and the collision images (2560 x 1440 PNG, `Views/`); the cell at every point (`Points/`). Into
+`Media/` (committed): the GIF previews `Cycle_Side_by_Side.gif` and `Cycle_Optimized.gif` (960 px, 4 x speed, 15 fps, at
+most 10 MB), the curated images `View_<view>.png`, `Collision_Overview_Right.png`, `Collision_Loader_Handover.png` and
+`Key_Points.png` (at most 1.5 MB each). Every file's render and encode time and size is printed. The videos become release
+assets only with the owner's approval.
 
 ## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
 
@@ -878,8 +887,8 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
 | the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
-| the comparison `Data/Generated/Reports/Comparison/Comparison.md`, its figures, the videos, the point and collision images | written by `Example/Report/compare_report.py` and `make_media.py` (§7.12); never read |
-| the README previews `Media/Cycle_<Taught|Optimized>.gif`, `Media/Key_Points.png` | written by `Example/Report/make_media.py` (§7.12); read by the README |
+| the comparison `Data/Generated/Reports/Comparison/Comparison.md`, its figures, the videos, the view, point and collision images | written by `Example/Report/compare_report.py` and `make_media.py` (§7.12); never read |
+| the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png` | written by `Example/Report/make_media.py` (§7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
 | the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Simulation/physics_baseline.py` (writes and compares) |

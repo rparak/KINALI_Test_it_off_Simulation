@@ -35,7 +35,8 @@ from PIL import Image
 import imageio_ffmpeg
 # Custom Lib.: the module under test
 #   ../Report/Media
-from Report.Media import Frame_Renderer_Cls, Label_Frame, Frame_Samples, Video_Writer_Cls, Write_Gif, Contact_Sheet, Media_Error_Cls
+from Report.Media import (Frame_Renderer_Cls, Label_Frame, Frame_Samples, Video_Writer_Cls, Write_Gif, Contact_Sheet, Media_Error_Cls, View_Str,
+                          Render_Model, Collision_Overlay, Write_Png, CONST_VIEWS, CONST_TONE)
 
 """
 Description:
@@ -130,22 +131,78 @@ def test_a_contact_sheet_is_a_grid_with_gaps():
     assert tuple(sheet[0, 0]) == (252, 252, 251)
 
 
-def test_the_cell_renders_from_a_fixed_camera(cell_model):
+def test_the_cell_renders_from_a_named_view_on_a_render_only_copy(cell_model):
     """
     Description:
-        A frame of the cell from the fixed camera; only the collision groups shown it differs; a frame beyond the offscreen
-        buffer is refused with both sizes named.
+        A frame of the cell from Overview_Right; only the collision groups shown it differs; depth and the geom per pixel come
+        with it; the renderer's copy carries the view's field of view and the tone-down while the model is unchanged; a frame
+        beyond the offscreen buffer is refused with both sizes named.
     """
 
     data = mujoco.MjData(cell_model)
     mujoco.mj_forward(cell_model, data)
-    camera = (0.10, -0.34, 0.40, 2.0, 78.0, -34.0)
-    renderer = Frame_Renderer_Cls(cell_model, 160, 96, camera)
-    full = renderer.Render(data)
+    rgba, fovy = cell_model.geom_rgba.copy(), cell_model.vis.global_.fovy
+    view = View_Str((0.13, -0.36, 0.10), 2.0, 90.0, -60.0, 30.0)
+    renderer = Frame_Renderer_Cls(cell_model, 160, 96, view)
+    full, depth, geoms = renderer.Render(data), renderer.Depth(data), renderer.Geoms(data)
+    copy_fovy = renderer.Model.vis.global_.fovy
     renderer.Close()
-    renderer = Frame_Renderer_Cls(cell_model, 160, 96, camera, groups=[1, 3])
+    renderer = Frame_Renderer_Cls(cell_model, 160, 96, view, groups=[1, 3])
     collision = renderer.Render(data)
     renderer.Close()
     assert full.shape == (96, 160, 3) and full.std() > 0 and not np.array_equal(full, collision)
+    assert depth.shape == (96, 160) and np.nanmax(depth) > 0 and geoms.max() >= 0 and geoms.min() == -1
+    assert copy_fovy == 30.0 and cell_model.vis.global_.fovy == fovy and np.array_equal(cell_model.geom_rgba, rgba)
     with pytest.raises(Media_Error_Cls, match='3000x1440 px exceeds the model.s offscreen buffer 2560x1440 px'):
-        Frame_Renderer_Cls(cell_model, 3000, 1440, camera)
+        Frame_Renderer_Cls(cell_model, 3000, 1440, CONST_VIEWS['Overview_Right'])
+
+
+def test_the_tone_down_scales_the_aluminium_geoms_only(cell_model):
+    """
+    Description:
+        Render_Model scales the rgb of every geom with the look_alu material (their own rgba is what is drawn) and sets the
+        material's specular and shininess (CONST_TONE); no other geom changes; the model is not changed.
+    """
+
+    scale, specular, shininess = CONST_TONE['look_alu']
+    k = mujoco.mj_name2id(cell_model, mujoco.mjtObj.mjOBJ_MATERIAL, 'look_alu')
+    before = cell_model.geom_rgba.copy()
+    copy = Render_Model(cell_model)
+    alu = cell_model.geom_matid == k
+    assert alu.sum() == 86 and np.allclose(copy.geom_rgba[alu, :3], before[alu, :3] * scale) and np.array_equal(copy.geom_rgba[~alu], before[~alu])
+    assert copy.mat_specular[k] == pytest.approx(specular) and copy.mat_shininess[k] == pytest.approx(shininess)
+    assert np.array_equal(cell_model.geom_rgba, before) and cell_model.mat_specular[k] == pytest.approx(0.75)
+
+
+def test_the_collision_overlay_shows_only_visible_coloured_geoms():
+    """
+    Description:
+        Collision_Overlay dims the frame, blends a coloured geom where it lies on or before the visual surface (within the depth
+        tolerance), leaves out a geom behind it and a geom without a colour, and darkens the outline between geoms.
+    """
+
+    image = np.full((4, 6, 3), 200, np.uint8)
+    depth = np.full((4, 6), 1.0)
+    geoms = np.array([[-1, 5, 5, 7, 7, 9]] * 4)
+    geom_depth = np.array([[9.0, 1.0, 1.0, 1.5, 1.5, 0.5]] * 4)
+    out = Collision_Overlay(image, depth, geoms, geom_depth, {5: (255, 0, 0), 7: (0, 255, 0)})
+    assert tuple(out[0, 0]) == (176, 176, 176) and out[0, 2, 0] > out[0, 2, 1]
+    assert tuple(out[0, 3]) == tuple(out[0, 4]) == (176, 176, 176) and tuple(out[0, 5]) == (176, 176, 176)
+    assert tuple(out[0, 1]) == (140, 0, 0)
+
+
+def test_a_png_is_kept_under_its_size(tmp_path):
+    """
+    Description:
+        Write_Png writes the image as it is without a cap; with a cap the largest width that fits (the aspect kept); a cap no
+        width meets is refused.
+    """
+
+    noise = np.random.default_rng(3).integers(0, 256, (720, 1280, 3), dtype=np.uint8)
+    size, width = Write_Png(noise, str(tmp_path / 'a.png'))
+    assert width == 1280 and size > 1_000_000
+    capped, width = Write_Png(noise, str(tmp_path / 'b.png'), int(0.7 * size))
+    assert capped <= 0.7 * size and width == 960 and Image.open(tmp_path / 'b.png').size == (960, 540)
+    with pytest.raises(Media_Error_Cls, match='does not fit'):
+        Write_Png(noise, str(tmp_path / 'c.png'), 1000)
+

@@ -328,22 +328,65 @@ installation (`text.usetex`): an external dependency for the same look. The data
 
 Pinned by `test/Report/test_style.py` (the contrasts, the label, the files) and `test/Example/Report/test_compare_report.py`.
 
-## The media use one fixed camera; the GIFs stay under 10 MB
+## The media use named free-camera views on a render-only copy; the GIFs stay under 10 MB
 
-**Decision.** Every medium of `Example/Report/make_media.py` - the videos, the GIF previews, the point images, the collision
-image - uses one free camera (`CONST_CAMERA`: looking at (0.10, -0.34, 0.40) m from 2.0 m, azimuth 78 deg, elevation -34 deg,
-chosen from rendered candidates so MG06, the loader, both crates and the robot's highest pose are in view). The videos: H.264,
-CRF 18, preset slow, 60 fps, real time, 1920 x 1080 (2560 x 1440 on request), the step and the line running on a label; the
-previews: 960 px, 4 x speed, 15 fps on average (GIF frame times are 10 ms steps: 70, 70, 60 ms), one palette from all frames
-without dithering, kept under 10 MB by fewer colours, then every other frame (owner, 2026-10-25).
+**Decision.** Every medium of `Example/Report/make_media.py` is rendered from a named free-camera view of
+`Report.Media.CONST_VIEWS` (lookat, distance, azimuth, elevation, field of view; owner, 2026-10-25): Overview_Right (lookat
+(0.33, -0.08, 0.06) m, 3.15 m, azimuth 127 deg, elevation -23 deg, 45 deg; matched to the owner's viewer screenshot),
+Overview_Left (its mirror), Top, Input_Crate, Output_Crate, Loader_Handover, MG06_Insert, MG06_Fork. No camera is added to the
+model (the fingerprint unchanged); the field of view is set on a render-only copy (`Render_Model`). The views live in
+`Media.py`, not a `Report/Const.py`: `Media.py` is their only `src/` reader (the module-layout rule). The videos: H.264, CRF 18,
+preset slow, 60 fps, real time, the program, the step, the clock and the line running on a label; the previews: 960 px,
+4 x speed, 15 fps on average (GIF frame times are 10 ms steps: 70, 70, 60 ms), one palette from all frames without dithering,
+kept under 10 MB by fewer colours, then every other frame; the README's PNGs at most 1.5 MB by a smaller width.
 
-**Why.** One view makes the programs and the points comparable side by side. One palette avoids GIF flicker.
+**Why.** Named views make the programs, the points and the stations comparable from the same place; a close view per
+station shows what the overview hides (the jaws at the handover, the fork in MG06). One palette avoids GIF flicker.
 
-**Alternatives.** The model's `cam_tool` / `cam_pcb` (they follow a body: no common view). A per-frame palette (flicker).
+**Alternatives.** One fixed camera for everything (F14's first version: MG06's fork and the jaws too small to read). Cameras in
+the MJCF (they change the model and its fingerprint). The model's `cam_tool` / `cam_pcb` (they follow a body: no common view).
+A per-frame palette (flicker).
 
-**Revisit if** a part of the cell must be seen that this view hides (the camera post covers part of MG06 in some frames).
+**Revisit if** a part of the cell must be seen that no view shows.
 
 Pinned by `test/Report/test_media.py` and `test/Example/Report/test_make_media.py` (slow).
+
+## The renders tone down the aluminium; the model keeps its look
+
+**Decision.** `Report.Media.Render_Model` renders a copy of the model whose `look_alu` geoms have their rgb scaled by 0.75 and
+the material's specular 0.30 and shininess 0.50 (`CONST_TONE`; the geoms' own rgba is what MuJoCo draws, so the material's
+rgba alone has no effect). Only the media use it; `models/`, the viewers and the fingerprint are unchanged (owner, 2026-10-25:
+optional, render only). Measured at the home pose, 1280 x 720, pixels with every channel at 250 or more: Input_Crate 3.37 % before, 0.01 % after;
+Overview_Right 0.18 %, 0.00 %. The slats under the spot stay the brightest surface in the close views (below saturation).
+
+**Why.** The table's slats burned out to white under the key spot in the overview and drew the eye from the robot.
+
+**Alternatives.** Changing the material in `models/` (changes the model and every viewer; the verified look); a darker
+exposure for the whole frame (darkens the robot and the PCB too).
+
+**Revisit if** the studio lights change (F7).
+
+Pinned by `test/Report/test_media.py` (`test_the_tone_down_scales_the_aluminium_geoms_only`).
+
+## The collision structure is drawn over the visual cell in image space
+
+**Decision.** The collision images render the check model (the cell with the planning-only table boxes) twice from the same
+view: the visual cell, and the collision geoms only (their groups), each with its depth and geom per pixel. A collision
+geom's pixel is blended in its category's Okabe-Ito colour (alpha 0.38) over the visual cell dimmed to 0.88 where it lies on
+or before the visual surface (within 12 mm) and outlined where the geom changes (`Collision_Overlay`); a legend names the
+categories and their counts. A collision-only image (visuals hidden, opaque colours) is written beside them. All colours are
+set on a render-only copy.
+
+**Why.** Blending in image space has no z-fighting, which drawing translucent collision geoms over coincident visual geoms
+in one pass has; the depth test keeps hidden geoms out. 12 mm: the offscreen depth on macOS is coarse (no
+ARB_clip_control) and the table boxes lie within millimetres of the slats.
+
+**Alternatives.** One pass with translucent collision geoms (z-fighting on every coincident face); collision only (no
+context for where a geom is).
+
+**Revisit if** the offscreen depth becomes exact (then the tolerance can shrink to a millimetre).
+
+Pinned by `test/Report/test_media.py` (`test_the_collision_overlay_shows_only_visible_coloured_geoms`).
 
 ## The MG06 lock has 1.5 mm radial play
 

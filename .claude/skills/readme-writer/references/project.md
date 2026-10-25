@@ -46,9 +46,11 @@ None yet.
 None in the README yet. `Data/Generated/Images/` holds run outputs (proof images), not README figures. The README's images
 are the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (light: `_Black.svg`, dark: `_White.svg`).
 Generated for step 7, not yet used (F14, owner 2026-10-25: media now, the README in its own step):
-`Media/Cycle_Taught.gif`, `Media/Cycle_Optimized.gif` (each to link its full MP4, a v1.0 release asset once the owner approves)
-and `Media/Key_Points.png`, written by `Example/Report/make_media.py`; the comparison figure and the collision image are in
-`Data/Generated/Reports/Comparison/` (`compare_report.py`, `make_media.py`). The README's third-party notes then name imageio-ffmpeg's
+`Media/Cycle_Side_by_Side.gif` (Default vs Optimized) and `Media/Cycle_Optimized.gif` (each to link its full MP4, a v1.0
+release asset once the owner approves), the views `Media/View_<view>.png`, the collision overlays
+`Media/Collision_Overview_Right.png` and `Media/Collision_Loader_Handover.png`, and `Media/Key_Points.png`, written by
+`Example/Report/make_media.py`; the summary chart `Media/Default_vs_Optimized_<dark|light>.<png|svg>` by `compare_report.py
+--media Media` (dark for the dark theme, light for the light one); the rest in `Data/Generated/Reports/Comparison/`. The README's third-party notes then name imageio-ffmpeg's
 bundled GPL ffmpeg build as a tool dependency (design-decisions: the media are encoded with Pillow and imageio-ffmpeg).
 
 ## Rules

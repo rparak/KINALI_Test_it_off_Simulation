@@ -37,28 +37,50 @@ Description:
 """
 
 
+def _Video(path):
+    meta = next(imageio_ffmpeg.read_frames(str(path)))
+    frames, _ = imageio_ffmpeg.count_frames_and_secs(str(path))
+    return tuple(meta['size']), frames
+
+
 @pytest.mark.slow
 def test_the_media_are_written(tmp_path, run_script, built_trajectory):
     """
     Description:
-        F14: exit 0; the first second of the optimized program's physics run as 1920 x 1080 and 2560 x 1440 H.264 videos at
-        60 fps (61 frames each), its GIF preview from the first one's frames (960 px wide, at most 10 MB), the 25 point images
-        and their contact sheet, the collision image; nothing in the working directory.
+        F14 (owner, 2026-10-25): exit 0; the first second of both programs' physics runs in Overview_Right at 1920 x 1080 and
+        2560 x 1440 (61 frames at 60 fps), the 2 x 2 mosaics and the side by side (2560 x 1440, 2560 x 720), the eight event
+        clips per program (1080p, 0.2 s either side); the GIF previews (960 px wide, at most 10 MB); the view images of
+        Overview_Right at the seven moments of each program and the collision images (2560 x 1440); the curated README images,
+        the key points' sheet and the collision overlays at most 1.5 MB each; the 25 point images; nothing in the working
+        directory.
     """
 
     folder = os.path.dirname(str(built_trajectory('optimized')))
-    built_trajectory('taught')
+    assert os.path.dirname(str(built_trajectory('taught'))) == folder
     out, media, work = tmp_path / 'out', tmp_path / 'media', tmp_path / 'work'
     work.mkdir()
-    arguments = ['--out', str(out), '--media', str(media), '--trajectories', folder, '--program', 'optimized', '--until', '1.0',
-                 '--resolution', '1080p', '1440p']
+    arguments = ['--out', str(out), '--media', str(media), '--trajectories', folder, '--until', '1.0', '--clip', '0.2', '--views',
+                 'Overview_Right']
     result = run_script('Report/make_media.py', arguments, work)
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
     assert os.listdir(work) == []
-    for name in ('1080p', '1440p'):
-        frames, seconds = imageio_ffmpeg.count_frames_and_secs(str(out / ('Optimized_Program_%s.mp4' % name)))
-        assert frames == 61 and seconds == pytest.approx(61 / 60.0, abs=0.02)
-    assert sorted(os.listdir(media)) == ['Cycle_Optimized.gif', 'Key_Points.png']
-    gif = Image.open(media / 'Cycle_Optimized.gif')
-    assert gif.size == (960, 540) and os.path.getsize(media / 'Cycle_Optimized.gif') <= 10 * 1000 * 1000
-    assert len(os.listdir(out / 'Points')) == 25 and Image.open(out / 'Collision_Structure.png').size == (1920, 1080)
+    for stem in ('Default', 'Optimized'):
+        assert _Video(out / ('%s_Overview_Right_1080p.mp4' % stem)) == ((1920, 1080), 61)
+        assert _Video(out / ('%s_Overview_Right_1440p.mp4' % stem)) == ((2560, 1440), 61)
+        assert _Video(out / ('%s_Mosaic_1440p.mp4' % stem)) == ((2560, 1440), 61)
+    assert _Video(out / 'Default_vs_Optimized_Side_by_Side_1440p.mp4') == ((2560, 720), 61)
+    events = ('fetch', 'fork_close', 'fork_open', 'handover', 'insert', 'pick', 'place', 'take')
+    assert sorted(os.listdir(out / 'Clips')) == sorted('%s_%s.mp4' % (s, e) for s in ('Default', 'Optimized') for e in events)
+    assert _Video(out / 'Clips' / 'Optimized_insert.mp4') == ((1920, 1080), 25)
+    moments = ('MG06_closed', 'handover', 'insert', 'pick', 'place', 'take', 'test')
+    collision = ['Collision_%s.png' % v for v in ('Input_Crate', 'Loader_Handover', 'MG06_Fork', 'Only_Overview_Right', 'Overview_Right')]
+    assert sorted(os.listdir(out / 'Views')) == sorted(['%s_Overview_Right_%s.png' % (s, m) for s in ('Default', 'Optimized') for m in moments]
+                                                       + collision)
+    assert all(Image.open(out / 'Views' / f).size == (2560, 1440) for f in os.listdir(out / 'Views'))
+    curated = ['View_%s.png' % v for v in ('Input_Crate', 'Loader_Handover', 'MG06_Fork', 'MG06_Insert', 'Output_Crate', 'Overview_Right')]
+    gifs = ['Cycle_Optimized.gif', 'Cycle_Side_by_Side.gif']
+    assert sorted(os.listdir(media)) == sorted(curated + gifs + ['Collision_Loader_Handover.png', 'Collision_Overview_Right.png', 'Key_Points.png'])
+    assert all(os.path.getsize(media / f) <= 1500 * 1000 for f in os.listdir(media) if f.endswith('.png'))
+    for name in gifs:
+        assert Image.open(media / name).size[0] == 960 and os.path.getsize(media / name) <= 10 * 1000 * 1000
+    assert len(os.listdir(out / 'Points')) == 25
