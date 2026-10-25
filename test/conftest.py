@@ -178,6 +178,27 @@ def _Check_Program(program, cell, program_tools):
     return Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta)
 
 
+def _Failed_Criteria(result):
+    """
+    Description:
+        The names of the SPEC §10.1 criteria a run's result fails (Check_Acceptance on the shipped cell).
+    """
+
+    from Configuration.Core import Load_Cell_Configuration
+    from Simulation.Report import Check_Acceptance
+    return [c.Name for c in Check_Acceptance(result, Load_Cell_Configuration()) if not c.Passed]
+
+
+@pytest.fixture(scope='session')
+def failed_criteria():
+    """
+    Description:
+        The failed criteria of a run's result (_Failed_Criteria).
+    """
+
+    return _Failed_Criteria
+
+
 @pytest.fixture(scope='session')
 def probe_program():
     """

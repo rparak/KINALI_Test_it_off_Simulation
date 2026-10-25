@@ -66,9 +66,10 @@ from Program.Core import Build_Program
 from Scene.Core import Build_Cell_Model
 #   ../Optimizer/Core - the platform record
 from Optimizer.Core import Platform_Record
-#   ../Simulation/Core - the physics run, its report and acceptance
-from Simulation.Core import (Trajectory_Drive_Cls, Physics_Run_Cls, Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance,
-                             Simulation_Error_Cls, Place_Physics_Str)
+#   ../Simulation/Core - the physics run
+from Simulation.Core import Trajectory_Drive_Cls, Physics_Run_Cls, Simulation_Error_Cls, Place_Physics_Str
+#   ../Simulation/Report - a run's acceptance and report
+from Simulation.Report import Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance
 
 """
 Description:

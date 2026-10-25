@@ -51,8 +51,10 @@ from Optimizer.Core import Stale_Inputs
 from Program.Core import Stale_Trajectory
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls
-#   ../Simulation/Core - the physics run of a trajectory, its report and acceptance
-from Simulation.Core import Trajectory_Drive_Cls, Run_Physics, Format_Program_Report, Check_Program_Acceptance, Simulation_Error_Cls
+#   ../Simulation/Core - the physics run of a trajectory
+from Simulation.Core import Trajectory_Drive_Cls, Run_Physics, Simulation_Error_Cls
+#   ../Simulation/Report - a run's acceptance and report
+from Simulation.Report import Format_Program_Report, Check_Program_Acceptance
 
 """
 Description:
