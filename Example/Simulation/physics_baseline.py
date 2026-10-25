@@ -166,14 +166,35 @@ def Metrics(result: tp.Any) -> tp.Dict[str, tp.Any]:
             'handover_centring': float(np.nan_to_num(p.Centring, nan=-1.0)), 'regrip_gap': float(np.nan_to_num(p.Regrip_Gap, nan=-1.0))}
 
 
-def _Wait_Variant(program: str, wait: float) -> tp.Tuple[tp.Any, ...]:
+def _Trajectory_Path(program: str, trajectories: tp.Optional[str]) -> tp.Optional[str]:
     """
     Description:
-        A program with a settle wait before the closing path (CONST_WAIT_AFTER), built now: what Capture runs.
+        A program's trajectory file in the folder trajectories, or None for run_program.py's default
+        (Data/Generated/Trajectories).
+
+    Args:
+        (1) program [string]: 'taught' or 'optimized'.
+        (2) trajectories [string]: The folder of the trajectory files, or None.
+
+    Returns:
+        (1) parameter [string]: The file, or None.
+    """
+
+    if not trajectories:
+        return None
+    return os.path.join(trajectories, os.path.basename(_Script('Simulation/run_program.py').CONST_VERSIONS[program]).replace('.yaml', '.npz'))
+
+
+def _Wait_Variant(program: str, wait: float, trajectories: tp.Optional[str] = None) -> tp.Tuple[tp.Any, ...]:
+    """
+    Description:
+        A program with a settle wait before the closing path (CONST_WAIT_AFTER), built now: what Capture runs. The variant's
+        file lives in a temporary folder removed once it is built.
 
     Args:
         (1) program [string]: 'taught' or 'optimized'.
         (2) wait [float]: The wait (s).
+        (3) trajectories [string]: The folder of the trajectory files (default Data/Generated/Trajectories), or None.
 
     Returns:
         (1) parameter [Tuple]: (cell, pcb_meta, program, trajectory, free_steps, model).
@@ -186,14 +207,15 @@ def _Wait_Variant(program: str, wait: float) -> tp.Tuple[tp.Any, ...]:
     if len(at) != 1:
         raise run_program.Run_Error_Cls('%s: %d lines start with %r, not 1' % (program, len(at), CONST_WAIT_AFTER[program]))
     lines.insert(at[0] + 1, lines[at[0]][:len(lines[at[0]]) - len(lines[at[0]].lstrip())] + '- Wait(%g)\n' % wait)
-    path = os.path.join(tempfile.mkdtemp(), os.path.basename(run_program.CONST_VERSIONS[program]))
-    with open(path, 'w', encoding='utf-8') as handle:
-        handle.write(''.join(lines))
-    cell, meta, constants = Load_Cell_Configuration(), Read_PCB_Meta(), Load_Constants()
-    variant = Load_Program(constants, Load_Simulation(constants), cell, path)
-    planning = Build_Planning_Model(cell)
-    trajectory, _ = Build_Program(variant, cell, meta, Robot_Kinematics_Cls(planning, Robot_Collision_Cls(planning).Data), {})
-    shipped = run_program.Load_Run(program, None)
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, os.path.basename(run_program.CONST_VERSIONS[program]))
+        with open(path, 'w', encoding='utf-8') as handle:
+            handle.write(''.join(lines))
+        cell, meta, constants = Load_Cell_Configuration(), Read_PCB_Meta(), Load_Constants()
+        variant = Load_Program(constants, Load_Simulation(constants), cell, path)
+        planning = Build_Planning_Model(cell)
+        trajectory, _ = Build_Program(variant, cell, meta, Robot_Kinematics_Cls(planning, Robot_Collision_Cls(planning).Data), {})
+    shipped = run_program.Load_Run(program, _Trajectory_Path(program, trajectories))
     return cell, meta, variant, trajectory, shipped[4], Build_Cell_Model(cell)
 
 
@@ -217,11 +239,9 @@ def Capture(program: str, trajectories: tp.Optional[str] = None,
 
     pcb, wait, handle = perturbation
     if wait:
-        cell, meta, prog, trajectory, free, model = _Wait_Variant(program, wait)
+        cell, meta, prog, trajectory, free, model = _Wait_Variant(program, wait, trajectories)
     else:
-        run_program = _Script('Simulation/run_program.py')
-        name = os.path.basename(run_program.CONST_VERSIONS[program]).replace('.yaml', '.npz')
-        cell, meta, prog, trajectory, free, model, _ = run_program.Load_Run(program, os.path.join(trajectories, name) if trajectories else None)
+        cell, meta, prog, trajectory, free, model, _ = _Script('Simulation/run_program.py').Load_Run(program, _Trajectory_Path(program, trajectories))
     run = Physics_Run_Cls(model, Trajectory_Drive_Cls(trajectory, prog, free), meta, cell)
     if pcb or handle:
         run.Data.qpos[run.qpcb] += pcb
