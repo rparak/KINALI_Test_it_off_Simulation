@@ -122,6 +122,29 @@ def _Run_Script(script, arguments, cwd, timeout=600):
 
 
 @pytest.fixture(scope='session')
+def built_trajectory(tmp_path_factory):
+    """
+    Description:
+        A program's trajectory built by Example/Program/build_program.py, each program at most once per session (per pytest-xdist
+        worker), into one folder: built_trajectory('taught' | 'optimized') -> the .npz path. Read only: a test that needs a
+        changed trajectory writes a copy.
+    """
+
+    folder, made = tmp_path_factory.mktemp('trajectories'), {}
+
+    def _Build(program):
+        if program not in made:
+            arguments = ['--out', str(folder)]
+            if program == 'optimized':
+                arguments += ['--program', os.path.join(CONST_ROOT, 'Data', 'Optimized', 'Program_Optimized.yaml')]
+            result = _Run_Script('Program/build_program.py', arguments, folder)
+            assert result.returncode == 0, result.stdout[-2000:] + result.stderr
+            made[program] = folder / ('Program.npz' if program == 'taught' else 'Program_Optimized.npz')
+        return made[program]
+    return _Build
+
+
+@pytest.fixture(scope='session')
 def run_script():
     """
     Description:

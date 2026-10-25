@@ -44,10 +44,8 @@ from Kinematics.Core import Robot_Kinematics_Cls
 
 
 @pytest.fixture(scope='module')
-def trajectory(tmp_path_factory, run_script):
-    out = tmp_path_factory.mktemp('built')
-    run_script('Program/build_program.py', ['--out', str(out)], tmp_path_factory.mktemp('cwd'))
-    return str(out / 'Program.npz')
+def trajectory(built_trajectory):
+    return str(built_trajectory('taught'))
 
 
 @pytest.mark.slow

@@ -44,10 +44,8 @@ CONST_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.
 
 
 @pytest.fixture(scope='module')
-def taught_trajectory(tmp_path_factory, run_script):
-    out = tmp_path_factory.mktemp('built')
-    assert run_script('Program/build_program.py', ['--out', str(out)], out).returncode == 0
-    return out / 'Program.npz'
+def taught_trajectory(built_trajectory):
+    return built_trajectory('taught')
 
 
 def test_headless_runs_the_physics_to_a_time_and_renders_it(tmp_path, run_script, taught_trajectory):

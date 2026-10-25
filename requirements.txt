@@ -11,5 +11,6 @@ rtree==1.4.1
 coacd==1.0.14
 # Offscreen images (src/Render: Save_Image, Example/Render/render_image.py) and README figures (planned)
 matplotlib==3.11.2
-# Tests
+# Tests (pytest-xdist: the suite in parallel with -n 8; it also passes serially, -n 0)
 pytest==9.1.1
+pytest-xdist==3.8.0

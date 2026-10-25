@@ -39,10 +39,8 @@ CONST_PASSED, CONST_FAILED, CONST_ERROR = 0, 1, 2
 
 
 @pytest.fixture(scope='module')
-def taught_trajectory(tmp_path_factory, run_script):
-    out = tmp_path_factory.mktemp('built')
-    assert run_script('Program/build_program.py', ['--out', str(out)], out).returncode == 0
-    return out / 'Program.npz'
+def taught_trajectory(built_trajectory):
+    return built_trajectory('taught')
 
 
 @pytest.mark.slow

@@ -25,8 +25,6 @@
 import os
 import re
 import copy
-import subprocess
-import sys
 # Importlib (Import machinery)
 import importlib.util
 # Pytest (Testing framework) [pip3 install pytest]
@@ -55,13 +53,9 @@ def tool():
 
 
 @pytest.fixture(scope='module')
-def built(tmp_path_factory):
-    out = tmp_path_factory.mktemp('trajectories')
-    for arguments in ([], ['--program', os.path.join(CONST_ROOT, 'Data', 'Optimized', 'Program_Optimized.yaml')]):
-        result = subprocess.run([sys.executable, os.path.join(CONST_ROOT, 'Example', 'Program', 'build_program.py'), '--out', str(out)] + arguments,
-                                cwd=str(out), capture_output=True, text=True, timeout=600)
-        assert result.returncode == 0, result.stdout[-2000:] + result.stderr
-    return str(out)
+def built(built_trajectory):
+    built_trajectory('taught')
+    return str(built_trajectory('optimized').parent)
 
 
 @pytest.mark.slow
