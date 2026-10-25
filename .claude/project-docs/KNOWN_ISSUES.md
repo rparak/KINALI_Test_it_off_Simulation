@@ -54,13 +54,10 @@ integrator: parent has 0 (default), child has 3, keeping parent value
 The cause is `<option integrator="implicitfast"/>` (line 4) of the vendored robot MJCF
 `models/aubo_i5/aubo_i5.xml`, while `models/scene.xml` sets no integrator (Euler, the default). MuJoCo
 keeps the parent's Euler; the verified physics was run that way, so the warning describes the verified
-state. Not fixed on purpose: changing either file changes the physics or the vendored model. MuJoCo's log
-file goes to `logger/MUJOCO_LOG.TXT` (`Configuration.Core.Configure_MuJoCo_Log`, called by every script
-and the test suite), never into the working directory.
-
-Since 2026-10-24 (owner) the scripts and the tests show it as one line on stderr instead -
-`[INFO] Known: robot MJCF integrator ignored, scene uses Euler (KNOWN_ISSUES)` - by `Scene.Compile_Spec`, which matches
-exactly this message (at the attach and at the compile) and passes any other warning on; the model is unchanged.
+state. Not fixed on purpose: changing either file changes the physics or the vendored model. The scripts and the tests
+show it as one line on stderr, `[INFO] Known: robot MJCF integrator ignored, scene uses Euler (KNOWN_ISSUES)`
+(`Scene.Compile_Spec` matches exactly this message, at the attach and at the compile, and passes any other warning on;
+owner, 2026-10-24); MuJoCo's log file goes to `logger/` (design-decisions: logs).
 
 - **Impact:** none: one INFO line per compiled model; not a fault.
 - **Evidence:** `MjLogConfig` probe 2026-10-24: the message is logged at the attach in the scene build.
@@ -73,18 +70,8 @@ exactly this message (at the attach and at the compile) and passes any other war
 `Configuration/Cell.yaml` `Process.Test_Duration` is 2.0 s (owner, 2026-10-24); the real test time of the customer's PCB on
 the MG06 is not known.
 
-- **Impact:** the default program's cycle time (and F9's) includes this 2.0 s; a real test time changes it one for one.
+- **Impact:** both programs' cycle times include this 2.0 s; a real test time changes them one for one.
 - **What would close it:** the measured test time of the real board.
-
-## PATH_FORK_OPEN starts with a velocity step
-
-The recorded opening path is joined at a row where the flange already moves at 39.1 mm/s, after a MoveL that ends at rest
-(design-decisions). The trajectory's joint speeds jump there.
-
-- **Impact:** the servo's tracking error and the fork's force on the handle bar at the join are not known for the program yet
-  (the reference plan has the same step and passed, SPEC §4.6).
-- **Evidence:** `Program.Build_Program`'s note; `Data/Paths/fork_close_open_path.npz` rows 662-665.
-- **What would close it:** step 5's run of the default program reports the tracking error and the bar force there.
 
 ## The recorded fork paths exceed the assumed acceleration limits
 
@@ -93,7 +80,8 @@ The fork paths, replayed at their recorded timing, reach 2.03x the assumed joint
 assumption (SPEC §4.4). The program check reports these peaks and does not limit them (owner, 2026-10-24).
 
 - **Impact:** for the real-cell transfer (SPEC §17) the recorded timing is not executable as is: a real controller needs a
-  ramped join into `PATH_FORK_OPEN` and the paths limited to the real joint accelerations. The simulation ran them (SPEC §4.6).
+  ramped join into `PATH_FORK_OPEN` and the paths limited to the real joint accelerations. The simulation runs them as
+  recorded (design-decisions: PATH_FORK_OPEN keeps the recorded velocity step).
 - **What would close it:** the real AUBO i5's acceleration limits, and the paths re-timed (ramped join, limited path) to them.
 
 ## The I/O ports of the program's signals are placeholders
@@ -119,13 +107,11 @@ known; the two differ in path, timing and the limits that apply.
 
 ## The carried PCB's tilt limit is an assumption
 
-`Optimization.yaml Carry_Max_Tilt` is 20 deg (owner, 2026-10-24: it costs no time - the cycle 57.108 s against 57.132 s at the
-first, assumed 30 deg; To_Output then tilts the board 17.73 deg in 1.768 s instead of 28.98 deg in 1.792 s). No measurement of
-what the four cups hold while the board tilts and accelerates exists.
-
-F11's physics run (2026-10-25) confirms it in the simulation: the optimized carries slip at most 1.28 mm (To_Loader, tool tilt
-up to 10.5 deg) and 1.14 mm (To_Output, up to 16.8 deg and 4.72 m/s^2) with 4 of 4 cups, below the 1.98 mm warning (owner: the
-value stays).
+`Optimization.yaml Carry_Max_Tilt` is 20 deg (owner, 2026-10-24; design-decisions). No measurement of what the four cups hold
+while the board tilts and accelerates exists. The physics confirms it in the simulation: the optimized carries slip at most
+1.28 mm (To_Loader, tool tilt up to 10.5 deg) and 1.31 mm (To_Output, up to 16.8 deg and 4.71 m/s^2) with 4 of 4 cups, below the
+1.98 mm warning (the physics baseline; owner: the value stays). Not done (owner, 2026-10-25): an acceleration limit for the
+carrying transfers.
 
 - **Impact:** a planned transfer may tilt the board more than the vacuum holds on the real cell; the simulation's adhesion
   model (a constant force per cup while in contact) is not the real cup.
@@ -147,9 +133,8 @@ re-taught.
 MuJoCo's adhesion actuator pulls only through active contacts (the cups and the PCB have no margin, SPEC §4.7). At the take
 from the loader the 1.5 mm press compresses the bellows by about 0.9 mm (3000 N/m: 2.7 N per cup, 10.8 N in all) while
 the jaws hold the board; when the jaws open, that force throws the ~90 g board off the cups at about 120 m/s² and, once a
-cup face has left it, nothing pulls it back (F11, 2026-10-24: the taught program lost the board at 58.375 s, the optimized
-one in the next carry; the verified legacy run held it on 2 of 4 cups by chance - moving its start by -10 or +50 µm loses it).
-A real vacuum cup holds through a small gap and would likely keep the board. The take therefore relieves the press first (back
+cup face has left it, nothing pulls it back (measured 2026-10-24: both programs lost the board this way). A real vacuum cup
+holds through a small gap and would likely keep the board. The take therefore relieves the press first (back
 to touch, `P_LOADER_TAKE_TOUCH`, SPEC §4.7): conservative real-cell practice as well.
 
 - **Impact:** a program that opens a support under a pressed board loses it in the simulation; the real cell may forgive it.
@@ -168,8 +153,8 @@ at most; the loader releases the PCB 0.15 mm above its MG06 seat (L_PLACE) and r
 
 ## The handover relies on a simulated PCB position on the cups
 
-The handover point is taught 0.4 mm along the jaw axis so that the PCB, where it sits on the cups in physics (1.2 mm off the TCP
-after the pick, 0.4-0.5 mm of slip by the handover), is on the jaw centreline (design-decisions). The simulated bellows have no
+The handover point is taught 0.4 mm along the jaw axis so that the PCB, where it sits on the cups in physics, is on the jaw
+centreline (design-decisions: the handover). The simulated bellows have no
 lateral compliance (the real ones do), so the cup loss on centring is partly a model limitation. The gripper centres only along
 the jaw axis (tool x): moving the PCB on the cups after the pick by +-0.2 / +-0.5 mm there keeps 4/4 cups (centring up to 0.52
 mm). Across it (tool y) nothing is centred: +0.5 mm gives a PCB-in-MG06 error of 0.64 / 0.76 mm (fails the 0.5 mm item) and
@@ -184,60 +169,44 @@ reduces). Measured limit along tool y: about +0.2 / -0.5 mm with that offset, ab
 
 The recorded closing path presses the fork into the handle bar (up to 0.54 mm, SPEC §4.7). At that stiff contact the fork
 touches the bar at 4 or at 6 points, and sub-micrometre state differences decide which: the PCB's start moved +1 µm, or a wait
-of 4 ms or more before the path, flips it (F11, 2026-10-25; not the robot's settle state - the optimized robot stands still
-5 s before the path, the taught one still moves, and either mode occurs in both). Over the 14-run sweep (start -5 to +5 µm,
-waits 0 / 4 ms / 0.1 s, both programs): 4 points (11 runs) - net force on the bar 229 N, handle hinge load 9.4 N m (summed
-normal force 291 N); 6 points (3 runs) - 247 N, 11.5 N m (371 N). The summed force adds the squeeze between the slot's
-opposing walls (37 N), so the bounds use the net force and the hinge load (SPEC §10.1). Retracting the recording off the bar
-removes the second mode and lowers the force (0.55 mm: 187 N, 8.2 N m), but only 0.55-0.60 mm latch MG06; 0.65 mm already
-stops the handle at 25.5 deg, short of the toggle's dead point (design-decisions). The recording stays. The real MG06 handle's
-force limit is not known.
+of 4 ms or more before the path, flips it (2026-10-25; not the robot's settle state - the optimized robot stands still 5 s
+before the path, the taught one still moves, and either outcome occurs in both). The envelope runs (SPEC §10.2): 4 points -
+net force on the bar 229.0 N, handle hinge load 9.38 N m; 6 points - 247.3 N / 11.45 N m in the taught program, 222.2 N /
+10.01 N m in the optimized one. The summed normal force adds the squeeze between the slot's opposing walls, so the bounds use
+the net force and the hinge load (SPEC §10.1). Retracting the recording off the bar was tried and not adopted
+(design-decisions: the recorded closing path stays). The real MG06 handle's force limit is not known.
 
-- **Impact:** the fork force is one of two values; the bounds cover the higher one; the real handle could be overloaded by a
-  force the simulation accepts. The outcomes are not two well-defined modes: 6 contact points gave 247.3 N / 11.45 N m in
-  the taught program and 222.2 N / 10.01 N m in the optimized one (2026-10-25). The physics regression compares the fork's
-  metrics with an envelope over 8 perturbation runs per program (± 10 %; SPEC §10.2); the report gives the contact count for
-  information.
+- **Impact:** the outcomes are not well-defined modes; the bounds cover the highest one measured; the real handle could be
+  overloaded by a force the simulation accepts. The physics regression compares the fork's metrics with an envelope over 10
+  perturbation runs per program (± 10 %; SPEC §10.2); the report gives the contact count for information.
 - **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar.
 
-## The simulated fork-handle contact is stiff; the real robot is not
+## The simulated fork-handle contact is stiff; the real robot and the VGC10 interface are not checked
 
 The fork closes MG06 position-controlled through a stiff contact without compliance: in the simulation the servos follow
 the recorded path while it presses 0.54 mm into the bar (net force up to 247 N on the bar, a wrench of up to 239 N and
-16.1 N m at the tool flange, joint torques up to 35 % of the model's actuator limits; F11, 2026-10-25). Passing the toggle's
-dead point needs about 156 N on the bar in the simulated MG06 (at 27.5 deg of handle, the same with and without the
-overlap). On the real cell the fork, the VGC10 and the robot would deflect, and the AUBO's collision detection may stop
-the robot. The AUBO i5's joint torque limits and collision thresholds and the VGC10's force and moment ratings are not
-known (no official figure found: the i5 manual v4.5.13 found online is a scanned copy without its tables, the VGC10
-datasheet gives the payload only, 6 kg with default cups, 15 kg with custom attachments).
+16.1 N m at the tool flange, joint torques up to 34 % of the model's actuator limits; measured 2026-10-25). Passing the
+toggle's dead point needs about 156 N on the bar in the simulated MG06 (at 27.5 deg of handle, the same with and without the
+overlap). On the real cell the fork, the VGC10 and the robot would deflect, and the AUBO's collision detection may stop the
+robot. The main real-cell risk of the closing (owner, 2026-10-25): the flange wrench of 239 N is about 1.6 x the weight of the
+VGC10's largest payload rating (15 kg with custom attachments, 147 N); the datasheet gives the payload only (6 kg with default
+cups), no force or moment rating of the interface, so the 16.1 N m has nothing to be compared with. The AUBO i5's joint torque
+limits and collision thresholds are not known either (the i5 manual v4.5.13 found online is a scanned copy without its tables).
+The acceptance bounds on the fork are regression bounds derived from the simulation, not these ratings (SPEC §10.1).
 
-- **Impact:** the closing may not work, or may trip the collision detection, on the real cell, although it passes here.
+- **Impact:** the closing may not work, may trip the collision detection, or may overload the VGC10, its attachment or the
+  fork on the real cell although the run passes here; the simulated values are of a stiff contact and may differ either way.
+- **Evidence:** the flange wrench measured in the fork-force investigation (2026-10-25; the baselines pin the net force and
+  the hinge load, not the wrench); the VGC10 datasheet.
 - **What would close it:** the closing tried on the real cell at reduced speed with force limits (collision detection at a
-  low level) active; the vendors' torque, force and moment ratings.
-
-## The VGC10 interface carries about 1.6 x its payload's weight while the fork closes MG06
-
-The main real-cell risk of the closing (owner, 2026-10-25). In the simulation the tool flange, and so the VGC10's
-interface with the fork attachment, carries a wrench of up to 239 N and 16.1 N m while the fork presses the handle bar
-(the taught and the optimized program, F11, 2026-10-25). 239 N is about 1.6 x the weight of the VGC10's largest payload
-rating, 15 kg with custom attachments (147 N); the datasheet gives the payload only, no force or moment rating of the
-interface, so the 16.1 N m has nothing to be compared with. The acceptance bounds on the fork (`Fork_Net_Force_Max`,
-`Handle_Load_Max`) are regression bounds derived from the simulation, not this rating (SPEC §10.1).
-
-- **Impact:** the VGC10, its attachment or the fork could be overloaded on the real cell although the run passes here; the
-  simulated values are of a stiff contact (the entry above) and may differ on the real cell either way.
-- **Evidence:** the flange wrench measured in the F11 fork-force investigation (2026-10-25; the entry above; the
-  baselines pin the net force and the hinge load, not the wrench); the VGC10 datasheet (payload 6 kg with default cups,
-  15 kg with custom attachments). The owner will ask OnRobot and AUBO for the ratings.
-- **What would close it:** OnRobot's force and moment ratings of the VGC10 interface (and AUBO's of the i5's flange and
-  joints), the bounds replaced by them or by a margin under them; or the closing measured on the real cell with a force
-  sensor or the controller's force estimate, at reduced speed.
+  low level) active, or measured with a force sensor or the controller's force estimate; OnRobot's force and moment ratings
+  of the VGC10 interface and AUBO's of the i5's flange and joints, the bounds then replaced by them or by a margin under them.
 
 ## Real-cell transfer: a controller waits for "in position" before a LOCKED operation
 
 The optimized program's splines end where a LOCKED operation begins (the crate pick, the handover, the place) with up to
-1 mm of residual tool error (0.91 / 0.41 / 1.00 mm; the taught MoveJs 0.19 / 0.13 / 0.25 mm), measured in physics F11,
-2026-10-25. In the simulation it has no effect: each LOCKED step starts with a 15 mm approach, and the contact forces in those
+1 mm of residual tool error (0.91 / 0.41 / 1.00 mm; the taught MoveJs 0.19 / 0.13 / 0.25 mm), measured in physics on
+2026-10-25 before the B work's re-teach (not re-measured since). In the simulation it has no effect: each LOCKED step starts with a 15 mm approach, and the contact forces in those
 steps are the same in both programs (within 0.3 N). A real controller would wait for "in position" (every joint's error and
 speed below its threshold) before the next operation; the program does not (owner: not now).
 
@@ -246,7 +215,7 @@ speed below its threshold) before the next operation; the program does not (owne
 
 ## The loader's actuator model is one load case
 
-`Program.Check.Loader_Actual` (the kinematic checks' loader, F11) takes each axis' mass and gravity load at the trajectory's
+`Program.Check.Loader_Actual` (the kinematic checks' loader) takes each axis' mass and gravity load at the trajectory's
 start; in physics the z load changes with the PCB in the jaws and the jaws' contacts, which leaves up to 1.04 mm (y 0.17 mm),
 measured on the optimized program 2026-10-25. `Clearance.Tracking_Margin` covers it.
 
@@ -260,11 +229,12 @@ What the simulation does not model; whoever compares it with the real cell check
 - The vacuum is a constant force per touching cup (7 N): no leaks, no build-up of the vacuum (valve,
   ejector).
 - Robot joint torques and armature are estimates; the acceleration limits are assumed (SPEC §4.4, §4.10).
-- Cables and the robot pedestal (except its top plate) are not in the collision model.
+- Cables are not in the collision model; the table top is in the check model only (design-decisions: the table boxes), and the
+  physics model has no table.
 - The loader's masses are estimates (SPEC §4.10).
 - The PCB's components are one box in collision.
-- **Impact:** the comparison with reality is mainly the structure of the cycle; the absolute 65.8 s depends
-  on the chosen 60 % speed and the assumed accelerations.
+- **Impact:** the comparison with reality is mainly the structure of the cycle; the absolute cycle times (70.4 s taught,
+  58.7 s optimized) depend on the chosen 60 % speed and the assumed accelerations.
 - **What would close it:** the real-cell validation procedure (item above), measured joint data.
 
 ## The JIC Smart Factory logo is a recoloured copy, not an official monochrome file
@@ -274,7 +244,7 @@ and viewBox unchanged), a temporary project departure from jic-sf-ui-style ("nev
 by the owner (2026-10-24, design-decisions: the brand). An official monochrome JIC file has been requested
 from JIC.
 
-- **Impact:** the JIC logo in the README header (and later the Phase 2 header) is not the brand's own file.
+- **Impact:** the JIC logo in the README header is not the brand's own file.
 - **Pinned by:** `test/Example/Media/test_make_logo_variants.py` (one colour, original geometry).
 - **What would close it:** the official monochrome file from JIC replaces the recoloured one (in
   `Media/Original/`, made into `_Black` / `_White` by the script, or used as it is).
@@ -285,4 +255,4 @@ from JIC.
 
 - **Impact:** visual only; the collision geoms are separate boxes and unaffected.
 - **What would close it:** splitting the mesh into the board and the parts above the board top, and
-  colouring the components grey/black (brief §7 step 2, optional follow-up, `FEATURES.md`).
+  colouring the components grey/black (brief §7 step 2, an optional follow-up; FEATURES.md > Open).
