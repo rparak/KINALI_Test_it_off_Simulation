@@ -279,7 +279,7 @@ Pinned by `test/Report/test_media.py` (an MP4 and a GIF written and read back).
 
 ## The comparison is generated, measured from the runs, every number with its source
 
-**Decision.** `Example/Report/compare_report.py` writes `Data/Generated/Report/Comparison.md` whole (git-ignored), its prose
+**Decision.** `Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` whole (git-ignored), its prose
 fixed and every number computed and tagged with its source ([K] the trajectory, [P] the physics run, [C] the configuration,
 [M] the model); `src/Report/` holds the measurements (owner, 2026-10-25: a new `Report` domain at the top of the layer order).
 The physics side is read from the run by stepping `Physics_Run_Cls` as `Run_Physics` does and reading its data every 4 ms

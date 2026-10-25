@@ -13,11 +13,9 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
-- [~] F14: the comparison of the taught and the optimized program (`src/Report/`, `Example/Report/compare_report.py`,
-      `make_media.py`; SPEC §7.12) - built, awaiting the owner's acceptance; the full MP4s become v1.0 release assets only with
-      the owner's approval.
-- [ ] Candidate follow-up (F14, proposed): the optimized take's spline starts on a condition, not `Wait(1.648)` (split
-      `J_RETURN` or a "Y at home" input; KNOWN_ISSUES.md), with an interlock I9 and the stretch check showing no failure.
+- [~] F15 (owner, 2026-10-25): the optimized take's spline starts on `Loader.WaitDone(J_RETURN_Y)`, not `Wait(1.648)`
+      (`J_RETURN` split into `J_RETURN_Y` / `J_RETURN_Z`), the interlock I9 and the gating rule; the F14 follow-ups (the MG06
+      shared zone, the named views and media, the figure style, the folders).
 
 ## Done
 
@@ -36,3 +34,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F11 | Step 5: the physics run of either program's trajectory (the drive, the lost-PCB stop, the vacuum switch, `run_program.py`, `show_physics.py`); accepted by the owner 2026-10-25 | `a6f1b5c`…`4a80db7` |
 | F12 | Step 6: the acceptance items 12-17, the programs' physics baselines with drift tolerances, the legacy cycle run retired (its last commit `7a8560c`); accepted by the owner 2026-10-25 | `f6c5e47`…`a8080cc` |
 | F13 | The loader gripper and the place into MG06: synchronized 70 N jaws, 0.6 s ramps, `L_PLACE` / `L_FETCH`, items 18-25, the fork envelope, the regenerated baselines; accepted by the owner 2026-10-25 | `ea41e5c`…`ccb78b8` |
+| F14 | The comparison of the taught and the optimized program: `src/Report/`, `compare_report.py`, `make_media.py`, the timed-wait finding; accepted by the owner 2026-10-25 | `75ea8bc`…`bd09244` |

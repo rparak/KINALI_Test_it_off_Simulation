@@ -49,7 +49,7 @@ import typing as tp
 import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the logs, the folders
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_GENERATED
+from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_REPORTS
 #   ../Configuration/Const - the repository root
 from Configuration.Const import CONST_ROOT
 #   ../Configuration/Program_Parser - the PCB locations, the optimizer's settings, the free transfers
@@ -87,7 +87,7 @@ CONST_VERSIONS = ('taught', 'optimized')
 CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimized.npz'}
 # The default folder of the report and its figures.
 #   Unit [string]
-CONST_OUT = os.path.join(CONST_GENERATED, 'Report')
+CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
 # The loader slow-downs tried against I8 (owner, 2026-10-25: +10 / +25 / +50 %; faster ones and a finer step around the
 # first failure too), and the bisection's resolution for each bound's first failure.
 #   Unit [List<float>] (-), [float] (-)

@@ -48,7 +48,7 @@ are the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (lig
 Generated for step 7, not yet used (F14, owner 2026-10-25: media now, the README in its own step):
 `Media/Cycle_Taught.gif`, `Media/Cycle_Optimized.gif` (each to link its full MP4, a v1.0 release asset once the owner approves)
 and `Media/Key_Points.png`, written by `Example/Report/make_media.py`; the comparison figure and the collision image are in
-`Data/Generated/Report/` (`compare_report.py`, `make_media.py`). The README's third-party notes then name imageio-ffmpeg's
+`Data/Generated/Reports/Comparison/` (`compare_report.py`, `make_media.py`). The README's third-party notes then name imageio-ffmpeg's
 bundled GPL ffmpeg build as a tool dependency (design-decisions: the media are encoded with Pillow and imageio-ffmpeg).
 
 ## Rules

@@ -51,7 +51,7 @@ import mujoco
 from PIL import Image, ImageDraw, ImageFont
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs, the folders
-from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, CONST_GENERATED
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, CONST_REPORTS
 #   ../Configuration/Const - the repository root
 from Configuration.Const import CONST_ROOT
 #   ../Configuration/Program_Parser - the points and their scenes
@@ -87,7 +87,7 @@ CONST_VERSIONS = {'taught': ('Taught program', 'Taught'), 'optimized': ('Optimiz
 CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimized.npz'}
 # The folders: the full media (git-ignored) and the README's (committed).
 #   Unit [string]
-CONST_OUT = os.path.join(CONST_GENERATED, 'Report')
+CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
 CONST_MEDIA = os.path.join(CONST_ROOT, 'Media')
 # The fixed camera of every medium: the point looked at, the distance, the azimuth and the elevation (front-left, above:
 # MG06, the loader, both crates and the robot in view; chosen by rendering candidates, 2026-10-25).
@@ -347,7 +347,7 @@ def main():
         The comparison's media (FEATURES.md F14), every one from the same fixed camera (CONST_CAMERA): the physics run of each
         program as an H.264 video (real time, 60 fps, 1920 x 1080; --resolution 1440p adds or picks 2560 x 1440) with the step
         label, and its GIF preview (960 px, 4 x speed, 15 fps, at most 10 MB) into Media/; the cell posed at every point
-        (Data/Generated/Report/Points/) and their contact sheet into Media/; the collision structure. The trajectories are
+        (Data/Generated/Reports/Comparison/Points/) and their contact sheet into Media/; the collision structure. The trajectories are
         refused when stale (build them with build_program.py). Exit 0, 2 when a run or a medium cannot be made.
 
             .venv/bin/python Example/Report/make_media.py [--out DIR] [--media DIR] [--program taught|optimized ...]

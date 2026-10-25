@@ -394,7 +394,7 @@ Data/Optimized/Program_Optimized.yaml   the optimized program, written by Exampl
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Experiments/<name>/  a not-adopted experiment: its .patch, its script, README.md (the only copy of its commit)
-Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/, Report/ (the comparison, §7.12)
+Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/; Reports/Comparison/ (the comparison, §7.12)
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
 Media/Original/           the owner's logo originals, kept untouched for regeneration
 src/<Domain>/Core.py      each domain's primary module; a second concern in a topic module, shared constants in Const.py
@@ -435,7 +435,7 @@ Example/Program/build_program.py       a program -> its trajectory (npz + csv) a
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
 Example/Program/compare_programs.py    taught vs optimized: a table and a figure (exit 0 / 1)
-Example/Report/compare_report.py       taught vs optimized in full: Data/Generated/Report/Comparison.md + figures (exit 0 / 1 / 2)
+Example/Report/compare_report.py       taught vs optimized in full: Data/Generated/Reports/Comparison/Comparison.md + figures (exit 0 / 1 / 2)
 Example/Report/make_media.py           videos (MP4), GIF previews and the key points' contact sheet (Media/), the collision image
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
@@ -725,11 +725,11 @@ changes no program, point, model or limit; it measures.
   imageio-ffmpeg's pinned ffmpeg (CRF 18, preset slow, yuv420p); GIF previews with one palette, kept under a size; a contact
   sheet.
 
-`Example/Report/compare_report.py` writes `Data/Generated/Report/Comparison.md` (every number tagged with its source: [K] the
+`Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` (every number tagged with its source: [K] the
 trajectory, [P] the physics run, [C] the configuration, [M] the model), five figures (timeline, joints, paths, clearance,
 comparison; the dataviz palette, the optimized program's series in the JIC purple) and both physics reports.
 `Example/Report/make_media.py` writes the videos (1920 x 1080 or 2560 x 1440, 60 fps, real time) and the point images and collision
-image into `Data/Generated/Report/`, and the GIF previews (960 px, 4 x speed, 15 fps, at most 10 MB) and the key points' contact
+image into `Data/Generated/Reports/Comparison/`, and the GIF previews (960 px, 4 x speed, 15 fps, at most 10 MB) and the key points' contact
 sheet into `Media/` (committed; the videos become release assets only with the owner's approval).
 
 ## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
@@ -859,7 +859,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
 | the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
-| the comparison `Data/Generated/Report/Comparison.md`, its figures, the videos, the point and collision images | written by `Example/Report/compare_report.py` and `make_media.py` (§7.12); never read |
+| the comparison `Data/Generated/Reports/Comparison/Comparison.md`, its figures, the videos, the point and collision images | written by `Example/Report/compare_report.py` and `make_media.py` (§7.12); never read |
 | the README previews `Media/Cycle_<Taught|Optimized>.gif`, `Media/Key_Points.png` | written by `Example/Report/make_media.py` (§7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
