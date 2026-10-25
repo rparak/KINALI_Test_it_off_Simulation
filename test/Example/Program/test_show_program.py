@@ -35,9 +35,9 @@ import types
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
 # Custom Lib.:
-#   ../Render/Core, ../Program/Core, ../Trajectory/Core, ../Scene/Core, ../Kinematics/Core - the viewer loop and the posing it runs
+#   ../Render/Core, ../Program/Check, ../Trajectory/Core, ../Scene/Core, ../Kinematics/Core - the viewer loop and the posing it runs
 from Render.Core import Playback_Cls, Run_Viewer_Loop, CONST_FRAME_PERIOD
-from Program.Core import Pose_Sample
+from Program.Check import Pose_Sample
 from Trajectory.Core import Read_Trajectory, CONST_DT
 from Scene.Core import Build_Cell_Model
 from Kinematics.Core import Robot_Kinematics_Cls

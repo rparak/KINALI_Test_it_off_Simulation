@@ -47,8 +47,9 @@ from Scene.Core import Scene_Error_Cls
 #   ../Kinematics/Core, ../Collision/Core - FK, IK and exact distances on the planning model (the table included)
 from Kinematics.Core import Robot_Kinematics_Cls
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
-#   ../Program/Core - the taught program's build, the check report
-from Program.Core import Build_Program, Format_Check_Report, Program_Error_Cls
+#   ../Program/Core, ../Program/Check - the taught program's build, the check report
+from Program.Core import Build_Program, Program_Error_Cls
+from Program.Check import Format_Check_Report
 #   ../Planner/Core - the planner's errors
 from Planner.Core import Planner_Error_Cls
 #   ../Optimizer/Core - the optimization and its verification

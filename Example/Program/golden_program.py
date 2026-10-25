@@ -48,8 +48,9 @@ from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_P
 #   ../Collision/Core, ../Kinematics/Core - the planning model
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Kinematics.Core import Robot_Kinematics_Cls
-#   ../Program/Core, ../Keypoints/Core - the build, the program check, the point table
-from Program.Core import Build_Program, Check_Trajectory, Format_Check_Report, Executed_Commands
+#   ../Program/Core, ../Program/Check, ../Keypoints/Core - the build, the program check, the point table
+from Program.Core import Build_Program, Executed_Commands
+from Program.Check import Check_Trajectory, Format_Check_Report
 from Keypoints.Core import Check_Keypoints, Format_Check_Table
 
 """

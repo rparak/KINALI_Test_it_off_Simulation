@@ -110,6 +110,94 @@ def cell_model(cell_configuration):
     return Build_Cell_Model(cell_configuration)
 
 
+@pytest.fixture(scope='session')
+def program_tools(cell_configuration):
+    """
+    Description:
+        The taught program's build and check tools on the planning model: (kinematics, PCB poses, collision).
+    """
+
+    from Configuration.Core import Read_PCB_Meta
+    from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
+    from Kinematics.Core import Robot_Kinematics_Cls
+    model = Build_Planning_Model(cell_configuration)
+    collision = Robot_Collision_Cls(model)
+    return Robot_Kinematics_Cls(model, collision.Data), Read_PCB_Meta(), collision
+
+
+@pytest.fixture(scope='session')
+def program_built(program, cell_configuration, program_tools):
+    """
+    Description:
+        The taught program built in process (Build_Program): (trajectory, notes).
+    """
+
+    from Program.Core import Build_Program
+    kinematics, meta, _ = program_tools
+    return Build_Program(program, cell_configuration, meta, kinematics, {})
+
+
+@pytest.fixture(scope='session')
+def program_checked(program_built, program, cell_configuration, program_tools):
+    """
+    Description:
+        The taught program's check (Check_Trajectory), its FREE steps as the optimizer reads them.
+    """
+
+    from Configuration.Program_Parser import Load_Optimization, Free_Steps
+    from Program.Check import Check_Trajectory
+    kinematics, meta, collision = program_tools
+    free = Free_Steps(program, Load_Optimization(program))
+    return Check_Trajectory(program_built[0], program, program_built[1], kinematics, collision, cell_configuration, meta, free)
+
+
+def _Probe_Program(lines, constants, simulation, cell, start='P_HOME', pcb='input_crate', allow=(), loader_jobs=None, tester_jobs=None):
+    """
+    Description:
+        A one-segment program of the given robot lines, from a start point (loader home, gripper open, vacuum off, no end settle).
+    """
+
+    import dataclasses
+    from Configuration.Program_Parser import Program_Str, Segment_Str, Parse_Commands
+    probe_simulation = dataclasses.replace(simulation, Start_Robot=start, Start_PCB=pcb, End_Settle=0.0)
+    commands = Parse_Commands(lines, 'S1_Probe', constants, probe_simulation, cell, loader_jobs, tester_jobs)
+    return Program_Str(Name='probe', Segments=[Segment_Str(Key='S1_Probe', Name='Probe', Number=1, Commands=commands, Allow_Contact=list(allow))],
+                       Constants=constants, Simulation=probe_simulation)
+
+
+def _Check_Program(program, cell, program_tools):
+    """
+    Description:
+        Build and check a program.
+    """
+
+    from Program.Core import Build_Program
+    from Program.Check import Check_Trajectory
+    kinematics, meta, collision = program_tools
+    trajectory, notes = Build_Program(program, cell, meta, kinematics, {})
+    return Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta)
+
+
+@pytest.fixture(scope='session')
+def probe_program():
+    """
+    Description:
+        The builder of a one-segment probe program (_Probe_Program).
+    """
+
+    return _Probe_Program
+
+
+@pytest.fixture(scope='session')
+def check_program():
+    """
+    Description:
+        Build and check a program (_Check_Program).
+    """
+
+    return _Check_Program
+
+
 def _Run_Script(script, arguments, cwd, timeout=600):
     """
     Description:

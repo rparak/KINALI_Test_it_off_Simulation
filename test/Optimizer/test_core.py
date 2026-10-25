@@ -37,7 +37,8 @@ from Configuration.Program_Parser import Load_Program, Load_Optimization, CONST_
 from Configuration.Core import Read_PCB_Meta
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Kinematics.Core import Robot_Kinematics_Cls
-from Program.Core import Build_Program, Check_Trajectory
+from Program.Core import Build_Program
+from Program.Check import Check_Trajectory
 
 """
 Description:

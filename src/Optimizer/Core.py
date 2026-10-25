@@ -55,9 +55,10 @@ from Collision.Core import Robot_Collision_Cls, CONST_LOADER_BODIES
 from Keypoints.Core import CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX
 #   ../Planner/Core - RRT-Connect, the shortcut, the spline, its timing
 from Planner.Core import Rrt_Connect, Shortcut, Prune, Smooth, Time_Path, Planner_Error_Cls
-#   ../Program/Core - the build, its check, posing at a sample, the file hashes
-from Program.Core import (Pose_Sample, File_Hash, Build_Program, Check_Trajectory, Program_Check_Str, Build_Note_Str, Robot_Loader_Distance,
-                          Loader_Actual_Trajectory, CONST_LOADER_CUT)
+#   ../Program/Core - the build, its notes, the file hashes
+from Program.Core import File_Hash, Build_Program, Build_Note_Str
+#   ../Program/Check - the build's check, posing at a sample, the loader's actual position and its distance to the robot
+from Program.Check import Pose_Sample, Check_Trajectory, Program_Check_Str, Robot_Loader_Distance, Loader_Actual_Trajectory, CONST_LOADER_CUT
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 

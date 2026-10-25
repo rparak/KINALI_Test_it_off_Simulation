@@ -47,8 +47,9 @@ from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_P
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 #   ../Kinematics/Core - the model's robot joints
 from Kinematics.Core import Robot_Kinematics_Cls
-#   ../Program/Core - posing at a sample, a stale trajectory
-from Program.Core import Pose_Sample, Stale_Trajectory
+#   ../Program/Core, ../Program/Check - a stale trajectory, posing at a sample
+from Program.Core import Stale_Trajectory
+from Program.Check import Pose_Sample
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls, Trajectory_Str, CONST_DT
 #   ../Collision/Core, ../Optimizer/Core - an optimized program's inputs (its planning model's hash)
