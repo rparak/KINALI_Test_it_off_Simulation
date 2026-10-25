@@ -424,13 +424,15 @@ def test_the_default_program_passes_its_check(checked):
 def test_the_handover_keeps_the_board_off_the_ledges(checked):
     """
     Description:
-        B1 (SPEC §4.7): the PCB-ledge gap with the jaws at grip is 0.318 mm at P_LOADER_PLACE and while the jaws clamp the PCB
-        on the cups, and never smaller along the MoveL into it (0.3 +- 0.1 mm): no press.
+        B1 (SPEC §4.7): the PCB-ledge gap with the jaws at grip is 0.299 mm at P_LOADER_PLACE (0.318 mm before the lateral
+        re-teach, B work item 2) and while the jaws clamp the PCB on the cups, and never smaller along the MoveL into it (0.3 +-
+        0.1 mm): no press; the PCB centre is 0.4 mm from the jaw centreline (its physics position on the cups is on it).
     """
 
     h = checked.Handover
-    assert h.Failures == [] and h.At_Handover == pytest.approx(0.000318, abs=0.000002)
-    assert h.Line_Min == h.At_Handover and h.Clamped_Min == pytest.approx(0.000318, abs=0.000002) and h.Clamped_Max == h.Clamped_Min
+    assert h.Failures == [] and h.At_Handover == pytest.approx(0.000299, abs=0.000002)
+    assert h.Line_Min == pytest.approx(h.At_Handover, abs=2e-6) and h.Clamped_Min == pytest.approx(0.000299, abs=0.000002)
+    assert h.Clamped_Max == pytest.approx(h.Clamped_Min, abs=1e-9) and h.Lateral == pytest.approx(0.0004, abs=0.000002)
 
 
 def test_a_press_at_the_handover_is_reported(constants, simulation, cell_configuration, tools):
@@ -445,7 +447,7 @@ def test_a_press_at_the_handover_is_reported(constants, simulation, cell_configu
     pressed, pressed_simulation = copy.deepcopy(constants), copy.deepcopy(simulation)
     place, pick = pressed.Points['P_LOADER_PLACE'], constants.Points['P_LOADER_PICK']
     place.Joints, place.Pose = list(pick.Joints), list(pick.Pose)
-    pressed_simulation.Points['P_LOADER_PLACE'].Hold_Offset = [0.0, 0.0, 0.0015]
+    pressed_simulation.Points['P_LOADER_PLACE'].Hold_Offset = list(simulation.Points['P_LOADER_PLACE'].Hold_Offset[:2]) + [0.0015]
     for point in pressed.Points.values():
         if point.Reference == 'P_LOADER_PLACE':
             point.Reference, point.Offset = None, None
@@ -490,7 +492,7 @@ def test_the_descent_measures_the_height_above_the_ledges_only(constants, simula
     result = _Lateral_Handover(constants, simulation, cell_configuration, tools, 0.0004)
     h = result.Handover
     assert h.Failures == [] and h.Lateral == pytest.approx(0.0004, abs=2e-6)
-    assert h.Line_Min == pytest.approx(h.At_Handover, abs=2e-6) and h.At_Handover == pytest.approx(0.000318, abs=0.00002)
+    assert h.Line_Min == pytest.approx(h.At_Handover, abs=2e-6) and h.At_Handover == pytest.approx(0.000299, abs=0.000002)
 
 
 def test_a_dip_below_the_ledges_along_the_descent_is_reported(constants, simulation, cell_configuration, tools):
@@ -583,7 +585,7 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     assert any(line.startswith('S2_Pick_Input ') and line.endswith('PASS') for line in lines)
     assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
     assert ('handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the '
-            'PCB) min 0.318 mm') in text and 'mm from the jaw centreline (<= 0.5 mm): PASS' in text
+            'PCB) min 0.299 mm') in text and 'mm from the jaw centreline (<= 0.5 mm): PASS' in text
     assert 'stretched MoveLs: none' in text and 'note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving' in text
     assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS;' in text
     assert lines[-1] == 'Program: the program check passed. Simulation results only: not validated for the real cell.'

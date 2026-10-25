@@ -123,7 +123,7 @@ Points:
     Context: {Loader: L_HOME, Gripper: G_OPEN, PCB: cups}
     Fixture: Open
     Contacts: [cups_pcb]
-    PCB_Hold: {Location: jaws, Offset: [0.0, 0.0, 0.0]}
+    PCB_Hold: {Location: jaws, Offset: [0.0004, 0.0, 0.0]}
   P_LOADER_PICK:
     Context: {Loader: L_HOME, Gripper: G_CLAMP, PCB: jaws}
     Fixture: Open

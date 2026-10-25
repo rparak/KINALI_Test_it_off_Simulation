@@ -112,12 +112,13 @@ def test_the_derived_points_are_not_stale(results):
     """
     Description:
         The 14 derived points reach their Reference's pose moved by their Offset (11) or their PCB-hold target (3) within
-        0.05 mm / 0.01 deg (measured at most 0.0387 mm, P_LOADER_EXIT); the others have no target.
+        0.05 mm / 0.01 deg (measured at most 0.0255 mm after the handover points were resolved again, B work item 2); the others
+        have no target.
     """
 
     derived = {n for n, r in results.items() if r.Stale_Position is not None}
     assert derived == set(CONST_DERIVED)
-    assert max(results[n].Stale_Position for n in derived) == pytest.approx(0.0000387, abs=0.000001)
+    assert max(results[n].Stale_Position for n in derived) == pytest.approx(0.0000255, abs=0.000001)
     assert max(results[n].Stale_Angle for n in derived) <= math.radians(0.01)
 
 

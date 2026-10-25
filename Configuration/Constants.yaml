@@ -97,50 +97,50 @@ Points:
     Tool: T_SUCTION
     Reference: P_LOADER_PLACE
     Offset: [0.0, 0.0, -0.1600]
-    Joints: [-21.315111, 10.864292, 102.705812, -1.774282, 81.818434, -66.056436]
-    Pose: [0.290676286, -0.298017549, 0.153784869, -171.060031328, 0.000065844, 135.000014831]
+    Joints: [-21.292216, 10.923626, 102.751551, -1.791254, 81.819890, -66.033338]
+    Pose: [0.290395001, -0.297735770, 0.153788184, -171.060005167, -0.000020749, 135.000000516]
   P_LOADER_WAIT:
     Description: "50 mm farther out along the plate normal: where the optimized program waits while the loader fetches and returns (F9.8; F11: >= 29.6 mm from its swept volume)."
     Tool: T_SUCTION
     Reference: P_LOADER_ABOVE
     Offset: [0.0, 0.0, -0.0500]
-    Joints: [-20.304329, 10.479539, 94.823328, -9.416420, 81.883446, -65.037464]
-    Pose: [0.296169612, -0.292522836, 0.203175326, -171.060039754, 0.000100301, 135.000021227]
+    Joints: [-20.280688, 10.536741, 94.867375, -9.433074, 81.885024, -65.013617]
+    Pose: [0.295889434, -0.292242170, 0.203180730, -171.060007336, -0.000030779, 135.000001393]
   P_LOADER_APPROACH:
     Description: "15 mm along the plate normal above the hold pose."
     Tool: T_SUCTION
     Reference: P_LOADER_PLACE
     Offset: [0.0, 0.0, -0.0150]
-    Joints: [-24.302450, 6.056345, 121.429453, 22.190782, 81.641270, -69.069848]
-    Pose: [0.274744960, -0.313949717, 0.010557703, -171.059999833, -0.000000610, 135.000000585]
+    Joints: [-24.282444, 6.117964, 121.483710, 22.180467, 81.642393, -69.049658]
+    Pose: [0.274461777, -0.313669009, 0.010549549, -171.060004982, -0.000021693, 135.000000088]
   P_LOADER_PLACE:
-    Description: "PCB at the hold pose, no press: 0.3 mm above the finger ledges (SPEC §4.7)."
+    Description: "PCB at the hold pose moved 0.4 mm along the jaw axis, so the PCB as it sits on the cups in physics is on the jaw centreline (the clamp centres it); no press: 0.3 mm above the finger ledges (SPEC §4.7)."
     Tool: T_SUCTION
     Reference: null
     Offset: null
-    Joints: [-24.615662, 4.968975, 123.008998, 24.903697, 81.624008, -69.385948]
-    Pose: [0.273097899, -0.315596785, -0.004249242, -171.060000215, 0.000000512, 134.999999856]
+    Joints: [-24.596097, 5.029501, 123.065384, 24.896671, 81.625085, -69.366202]
+    Pose: [0.272813252, -0.315316632, -0.004267986, -171.060002349, -0.000011217, 135.000000207]
   P_LOADER_PICK:
     Description: "Cups pressed 1.5 mm onto the PCB held in the jaws, then vacuum on."
     Tool: T_SUCTION
     Reference: P_LOADER_PLACE
     Offset: [0.0, 0.0, 0.0015]
-    Joints: [-24.646931, 4.853708, 123.162497, 25.177060, 81.622298, -69.417507]
-    Pose: [0.272933678, -0.315760998, -0.005725531, -171.059999567, 0.000000094, 134.999999954]
+    Joints: [-24.627584, 4.913623, 123.219471, 25.171255, 81.623368, -69.397981]
+    Pose: [0.272648683, -0.315482090, -0.005749981, -171.060004763, -0.000022136, 134.999999953]
   P_LOADER_TAKE_TOUCH:
     Description: "1.5 mm back along the plate normal from the pick: the cups resting on the PCB in the jaws, the press relieved before the jaws open (F11)."
     Tool: T_SUCTION
     Reference: P_LOADER_PICK
     Offset: [0.0, 0.0, -0.0015]
-    Joints: [-24.615558, 4.969405, 123.008444, 24.902701, 81.624015, -69.385844]
-    Pose: [0.273098408, -0.315596212, -0.004243832, -171.060002587, 0.000002991, 135.000000736]
+    Joints: [-24.596241, 5.029256, 123.065242, 24.896776, 81.625089, -69.366348]
+    Pose: [0.272813765, -0.315317892, -0.004268428, -171.060006899, -0.000033659, 134.999999849]
   P_LOADER_EXIT:
     Description: "30 mm along the plate normal out of the jaws."
     Tool: T_SUCTION
     Reference: P_LOADER_PLACE
     Offset: [0.0, 0.0, -0.0300]
-    Joints: [-23.990359, 7.020419, 119.780831, 19.532351, 81.658720, -68.754906]
-    Pose: [0.276390180, -0.312304502, 0.025348094, -171.060000426, 0.000000143, 134.999999938]
+    Joints: [-23.969493, 7.083918, 119.831077, 19.516026, 81.659908, -68.733851]
+    Pose: [0.276110035, -0.312020755, 0.025367286, -171.060005305, -0.000020997, 135.000000282]
   P_VIA_HOME_MG06:
     Description: "Free-space switch between the wrist-up and wrist-down families (SPEC §4.7)."
     Tool: T_FLANGE

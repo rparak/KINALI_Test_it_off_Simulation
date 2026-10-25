@@ -187,14 +187,17 @@ def test_the_points_are_the_spec_table(constants):
     """
     Description:
         Every point's joints are within the SPEC §4.8 table's rounding (1e-4 rad) - except P_INPUT_CLEAR, the default program's
-        own point, P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11).
+        own point, P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11);
+        the handover's points, re-taught 0.4 mm along the jaw axis (B work, item 2: the PCB on the jaw centreline), within 2e-3
+        rad of it (measured at most 1.05e-3 rad, P_LOADER_ABOVE's shoulder_lift).
         (They were also rows of the legacy plan Data/Reference/cell_plan.npz to 1e-6 deg, checked until step 6 retired it:
         git tag legacy-cycle-reference.)
     """
 
+    retaught = {'P_LOADER_ABOVE', 'P_LOADER_APPROACH', 'P_LOADER_PLACE', 'P_LOADER_PICK', 'P_LOADER_EXIT'}
     for name, table in CONST_SPEC_TABLE.items():
         joints = np.array(constants.Points[name].Joints)
-        assert np.max(np.abs(joints - table)) <= 1e-4, name
+        assert np.max(np.abs(joints - table)) <= (2e-3 if name in retaught else 1e-4), name
     assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR', 'P_LOADER_WAIT', 'P_LOADER_TAKE_TOUCH'}
 
 

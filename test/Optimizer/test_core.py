@@ -166,13 +166,14 @@ def test_the_carried_pcb_keeps_its_tilt_limit(built):
     """
     Description:
         B4: in the FREE transfers that carry the PCB its tilt from horizontal stays within Carry_Max_Tilt (20 deg): 10.44 deg
-        (To_Loader, routed farther from the loader, F11) and 16.71 deg (To_Output; Carry_Max_Tilt 20 deg), measured 2026-10-25.
+        (To_Loader, routed farther from the loader, F11) and 16.70 deg (To_Output; Carry_Max_Tilt 20 deg), measured 2026-10-25
+        (after the handover re-teach, B work item 2).
     """
 
     limit = built['optimization'].Carry_Max_Tilt
     tilts = {name: Carried_Tilt(built['trajectory'], *Step_Bounds(built['trajectory'], name)) for name in ('To_Loader', 'To_Output')}
     assert all(t <= limit for t in tilts.values())
-    assert round(math.degrees(tilts['To_Loader']), 2) == 10.44 and round(math.degrees(tilts['To_Output']), 2) == 16.71
+    assert round(math.degrees(tilts['To_Loader']), 2) == 10.44 and round(math.degrees(tilts['To_Output']), 2) == 16.70
 
 
 def test_the_free_space_keeps_the_clearance_and_the_tilt(built, cell_configuration, program):
@@ -234,7 +235,7 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(built, cell_co
     standing.Robot_Q = np.array(tr.Robot_Q)
     standing.Robot_Q[first:last + 1] = wait
     distance, _, _ = Robot_Loader_Distance(standing, kinematics, collision, range(first, last + 1))
-    assert distance >= cell_configuration.Loader_Free + cell_configuration.Tracking_Margin and round(1000 * distance, 2) == 29.64
+    assert distance >= cell_configuration.Loader_Free + cell_configuration.Tracking_Margin and round(1000 * distance, 2) == 29.68
     final = texts.index('Robot.MoveSpline(W_TO_TAKE, v=0.6)')
     take, _ = Step_Bounds(tr, 'Take_From_Loader')
     assert int(tr.Segment_End[final]) <= Job_Bounds(tr, 'J_RETURN')[1] and take == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN)')])
