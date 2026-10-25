@@ -54,7 +54,7 @@ from Keypoints.Core import CONST_MOUNT_BODY, CONST_MOUNT_GEOM_PREFIX
 #   ../Planner/Core - RRT-Connect, the shortcut, the spline, its timing
 from Planner.Core import Rrt_Connect, Shortcut, Prune, Smooth, Time_Path, Planner_Error_Cls
 #   ../Program/Core - the build, its notes, the file hashes
-from Program.Core import File_Hash, Build_Program, Build_Note_Str
+from Program.Core import Input_Hash, Build_Program, Build_Note_Str
 #   ../Program/Check - the build's check, posing at a sample, the loader's actual position and its distance to the robot
 from Program.Check import Pose_Sample, Check_Trajectory, Program_Check_Str, Robot_Loader_Distance, Loader_Actual_Trajectory
 #   ../Trajectory/Core - the trajectory format
@@ -110,7 +110,8 @@ def Planning_Model_Hash(model: mujoco.MjModel) -> str:
 def Input_Hashes(model: mujoco.MjModel) -> tp.Dict[str, str]:
     """
     Description:
-        The sha256 of every input of an optimized program (CONST_INPUTS) and of the planning model.
+        The sha256 of every input of an optimized program (CONST_INPUTS, by Input_Hash: a YAML file's of its content) and of
+        the planning model.
 
     Args:
         (1) model [mujoco.MjModel]: The planning model.
@@ -119,7 +120,7 @@ def Input_Hashes(model: mujoco.MjModel) -> tp.Dict[str, str]:
         (1) parameter [Dict<string, string>]: Name -> hex digest.
     """
 
-    return dict({name: File_Hash(path) for name, path in CONST_INPUTS.items()}, planning_model=Planning_Model_Hash(model))
+    return dict({name: Input_Hash(path) for name, path in CONST_INPUTS.items()}, planning_model=Planning_Model_Hash(model))
 
 
 def Platform_Record() -> tp.Dict[str, str]:

@@ -776,8 +776,8 @@ only and committed (generated data). It has the `Program.yaml` format plus:
 `Robot.MoveSpline(W_<NAME>, v=)` (a planned spline, `v` a fraction of the datasheet speeds, required), `Loader.Start(J_)` /
 `Loader.WaitDone(J_)` (a job started while none runs and waited for before the next Start, Run or the end); `Waypoints`
 (`W_<NAME>`: `From`, `To` points, `Points` the interior waypoints [deg]); and `Optimized` (`Inputs`: the sha256 of
-`Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml`, `Optimization.yaml`, the fork path and the compiled planning
-model; `Platform`; `Schedule`: each segment's start [s]; `Topp_Grid_Points`). These are refused in `Program.yaml`; its constants
+`Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml` and `Optimization.yaml` - each of its loaded content
+(`Configuration.Core.YAML_Hash`: a comment-only edit keeps it) -, of the fork path's bytes and of the compiled planning model; `Platform`; `Schedule`: each segment's start [s]; `Topp_Grid_Points`). These are refused in `Program.yaml`; its constants
 are shared, so not all need be used. A build refuses it when an input changed or the schedule is not reproduced.
 
 `Optimization.yaml` (F9; read by `Load_Optimization`, every field REQUIRED):
@@ -820,7 +820,8 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
-| the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label` (a step is a segment `S<n>_<Name>`, or `End_Settle`), `segment_id` (one executed command), `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256 - program, constants, simulation, cell, fork path -, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
+| the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label` (a step is a segment `S<n>_<Name>`, or `End_Settle`), `segment_id` (one executed command), `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256 - program, constants, simulation, cell (their loaded
+content: `Program.Core.Input_Hash`), fork path (its bytes) -, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
 
 Scripts that write take `--out DIR`.
 

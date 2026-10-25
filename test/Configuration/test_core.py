@@ -28,12 +28,14 @@ import sys
 import subprocess
 # JSON (JSON encoder and decoder)
 import json
+# Hashlib (Secure hashes)
+import hashlib
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
 # Custom Lib.: the module under test
 #   ../Configuration/Core
-from Configuration.Core import (Read_PCB_Meta, Configuration_Error_Cls, Script_Log_Cls, Script_Log_Path, CONST_PCB_META,
-                                CONST_LOGGER)
+from Configuration.Core import (Read_PCB_Meta, Configuration_Error_Cls, Script_Log_Cls, Script_Log_Path, YAML_Hash, CONST_PCB_META,
+                                CONST_LOGGER, CONST_CELL_YAML)
 
 """
 Description:
@@ -153,6 +155,33 @@ def test_a_script_log_keeps_every_line_and_returns_it(tmp_path, monkeypatch):
     log.Line('[INFO] three')
     log.Close()
     assert open(os.path.join(str(tmp_path), 'demo.log'), encoding='utf-8').read() == '[INFO] three\n'
+
+
+def _Bytes_Hash(path):
+    """
+    Description:
+        The sha256 of a file's bytes.
+    """
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_the_yaml_hash_is_the_content_not_the_bytes(tmp_path):
+    """
+    Description:
+        A comment, a blank line and a re-indented comment keep a configuration file's YAML_Hash (its bytes' hash changes);
+        one value changed changes it.
+    """
+
+    text = open(CONST_CELL_YAML, encoding='utf-8').read()
+    original, commented, changed = tmp_path / 'original.yaml', tmp_path / 'commented.yaml', tmp_path / 'changed.yaml'
+    original.write_text(text, encoding='utf-8')
+    commented.write_text('# A new first comment.\n\n' + text.replace('  Ledge_Gap: 0.0003\n', '      # moved, re-indented\n  Ledge_Gap: 0.0003\n', 1),
+                         encoding='utf-8')
+    changed.write_text(text.replace('  Ledge_Gap: 0.0003\n', '  Ledge_Gap: 0.0004\n', 1), encoding='utf-8')
+    assert changed.read_text(encoding='utf-8') != text and _Bytes_Hash(commented) != _Bytes_Hash(original)
+    assert YAML_Hash(str(commented)) == YAML_Hash(str(original)) == YAML_Hash(CONST_CELL_YAML)
+    assert YAML_Hash(str(changed)) != YAML_Hash(str(original))
 
 
 def test_a_script_log_lives_in_logger():

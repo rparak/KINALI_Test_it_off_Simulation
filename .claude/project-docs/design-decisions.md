@@ -804,16 +804,23 @@ Pinned by `test/Optimizer/test_measure.py::test_the_interlocks_hold`, `test/Exam
 **Decision.** `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Program/optimize_program.py` and committed.
 It records the sha256 of its inputs (the four configuration files, `Optimization.yaml`, the fork path, the compiled planning
 model), the platform and versions, each segment's start time and the TOPP grid. A build refuses it when an input changed or
-when it does not reproduce the schedule; the optimizer run again writes the same bytes (B5).
+when it does not reproduce the schedule; the optimizer run again writes the same bytes (B5). A YAML input's hash - here and in
+a trajectory's metadata - is of its loaded content (`Configuration.Core.YAML_Hash`: the document as compact JSON, each mapping
+in the file's order), any other input's of its bytes (`Program.Core.Input_Hash`; owner, 2026-10-25).
 
 **Why.** The planning is random with a fixed seed: the file keeps the result reviewable and diffable, and the hashes keep it
-honest when the taught program or the cell changes.
+honest when the taught program or the cell changes. A comment is not an input: a comment-only edit of a hand-written file must
+not make the optimized program or a trajectory stale (two Cell.yaml comment fixes each forced a regeneration, 2026-10-25).
 
-**Alternatives.** Planning at every build: slow (the optimizer runs about 60 s) and the result unreviewed.
+**Alternatives.** Planning at every build: slow (the optimizer runs about 60 s) and the result unreviewed. Byte hashes of the
+YAML files: every comment edit makes the outputs stale. Sorted keys in the content hash: a reordering would then not count,
+although an order can matter to a reader.
 
 **Revisit if** the optimizer runs on another platform (its output may then differ: re-run and commit with the platform).
 
-Pinned by `test/Example/Program/test_optimize_program.py::test_the_optimizer_reproduces_the_committed_program_byte_for_byte`,
+Pinned by `test/Configuration/test_core.py::test_the_yaml_hash_is_the_content_not_the_bytes`,
+`test/Program/test_core.py::test_an_input_is_hashed_by_its_yaml_content_or_its_bytes`,
+`test/Example/Program/test_optimize_program.py::test_the_optimizer_reproduces_the_committed_program_byte_for_byte`,
 `test/Optimizer/test_core.py::test_the_shipped_optimized_program_is_current_and_matches_its_schedule`,
 `test/Example/Program/test_build_program.py::test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused`.
 

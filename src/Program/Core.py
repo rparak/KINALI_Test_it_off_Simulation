@@ -37,7 +37,7 @@ import mujoco
 import os
 # Custom Lib.:
 #   ../Configuration/Core - the cell, the PCB poses, the files
-from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, CONST_CELL_YAML, CONST_FORK_PATH
+from Configuration.Core import Cell_Configuration_Str, PCB_Meta_Str, YAML_Hash, CONST_CELL_YAML, CONST_FORK_PATH
 #   ../Configuration/Const - the repository root
 from Configuration.Const import CONST_ROOT
 #   ../Configuration/Program_Parser - the program's intermediate representation, the PCB locations
@@ -217,10 +217,27 @@ def File_Hash(path: str) -> str:
         return hashlib.sha256(handle.read()).hexdigest()
 
 
+def Input_Hash(path: str) -> str:
+    """
+    Description:
+        The sha256 an input is recorded and compared by (a trajectory's metadata, an optimized program's record): a YAML
+        configuration file's of its loaded content (Configuration.Core.YAML_Hash: a comment-only edit keeps it), any other
+        file's of its bytes (the recorded fork path).
+
+    Args:
+        (1) path [string]: The input file.
+
+    Returns:
+        (1) parameter [string]: The hex digest.
+    """
+
+    return YAML_Hash(path) if path.endswith('.yaml') else File_Hash(path)
+
+
 def Stale_Trajectory(trajectory: Trajectory_Str, program_path: str) -> tp.List[str]:
     """
     Description:
-        The input files that changed since a trajectory was built (their sha256 against its metadata): a stale trajectory is
+        The inputs that changed since a trajectory was built (their Input_Hash against its metadata): a stale trajectory is
         refused by the viewers and the physics run.
 
     Args:
@@ -236,7 +253,7 @@ def Stale_Trajectory(trajectory: Trajectory_Str, program_path: str) -> tp.List[s
            'fork_path': CONST_FORK_PATH}
     if 'optimization' in built:
         now['optimization'] = CONST_OPTIMIZATION_YAML
-    return [name for name, path in now.items() if built.get(name) != File_Hash(path)]
+    return [name for name, path in now.items() if built.get(name) != Input_Hash(path)]
 
 
 def Executed_Commands(program: Program_Str) -> tp.List[tp.Tuple[int, str, Command_Str, str]]:

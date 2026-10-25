@@ -56,7 +56,7 @@ from Scene.Core import Scene_Error_Cls
 from Kinematics.Core import Robot_Kinematics_Cls
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Program/Core, ../Program/Check - the build and the check
-from Program.Core import Build_Program, File_Hash, Program_Error_Cls
+from Program.Core import Build_Program, Input_Hash, Program_Error_Cls
 from Program.Check import Check_Trajectory, Format_Check_Report
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Write_Trajectory
@@ -88,9 +88,9 @@ def Git_State() -> tp.Tuple[str, bool]:
 def Build_Meta(program_path: str, optimized: bool = False) -> tp.Dict[str, tp.Any]:
     """
     Description:
-        The trajectory's metadata: the sha256 of every input file (an optimized program's also Configuration/
-        Optimization.yaml's), the git commit, the platform and the versions (B5: byte-identical outputs are promised on one
-        machine and platform only).
+        The trajectory's metadata: the sha256 of every input (Input_Hash: a YAML file's of its content; an optimized
+        program's also Configuration/Optimization.yaml's), the git commit, the platform and the versions (B5: byte-identical
+        outputs are promised on one machine and platform only).
 
     Args:
         (1) program_path [string]: The program file.
@@ -101,11 +101,11 @@ def Build_Meta(program_path: str, optimized: bool = False) -> tp.Dict[str, tp.An
     """
 
     commit, dirty = Git_State()
-    inputs = {name: File_Hash(path) for name, path in (('program', program_path), ('constants', CONST_CONSTANTS_YAML),
+    inputs = {name: Input_Hash(path) for name, path in (('program', program_path), ('constants', CONST_CONSTANTS_YAML),
                                                         ('simulation', CONST_SIMULATION_YAML), ('cell', CONST_CELL_YAML), ('fork_path',
                                                                                                                            CONST_FORK_PATH))}
     if optimized:
-        inputs['optimization'] = File_Hash(CONST_OPTIMIZATION_YAML)
+        inputs['optimization'] = Input_Hash(CONST_OPTIMIZATION_YAML)
     return {'inputs_sha256': inputs, 'git_commit': commit, 'git_dirty': dirty,
             'platform': {'system': platform.system(), 'machine': platform.machine(), 'python': platform.python_version(),
                          'numpy': np.__version__, 'mujoco': mujoco.__version__}}

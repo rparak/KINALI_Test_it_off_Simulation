@@ -22,6 +22,7 @@
 ## =========================================================================== ##
 
 # System (Default)
+import os
 import math
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
@@ -29,15 +30,15 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Program/Core
-from Program.Core import Build_Program, Movej_Duration, Program_Error_Cls, Validate_Constants
+from Program.Core import Build_Program, Movej_Duration, Program_Error_Cls, Validate_Constants, Input_Hash, File_Hash, Stale_Trajectory
 from Program.Check import Check_Trajectory
 #   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core,
 #   ../Keypoints/Core
-from Configuration.Core import CONST_FORK_PATH
+from Configuration.Core import YAML_Hash, CONST_FORK_PATH, CONST_CELL_YAML
 from Configuration.Program_Parser import (CONST_PCB_LOCATIONS, Program_Str, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps,
                                           CONST_CONSTANTS_YAML)
 from Kinematics.Core import PCB_For_TCP
-from Trajectory.Core import Write_Trajectory
+from Trajectory.Core import Write_Trajectory, Read_Trajectory
 
 """
 Description:
@@ -404,3 +405,26 @@ def test_the_free_steps_are_the_taught_list_and_the_optimized_splines(program, c
     assert Free_Steps(program) == set()
     optimized = Load_Program(program.Constants, program.Simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
     assert Free_Steps(optimized) == {'S1_Approach_Input', 'S3_To_Loader', 'S5_To_MG06', 'S11_To_Take', 'S13_To_Output', 'S15_Home_End'}
+
+
+def test_an_input_is_hashed_by_its_yaml_content_or_its_bytes(built_trajectory, tmp_path, monkeypatch):
+    """
+    Description:
+        Input_Hash takes a YAML configuration file's content (YAML_Hash) and any other input's bytes (the fork path). A built
+        trajectory stays current when Cell.yaml gains only a comment, and is stale, naming the cell, when a value changes.
+    """
+
+    assert Input_Hash(CONST_CELL_YAML) == YAML_Hash(CONST_CELL_YAML) != File_Hash(CONST_CELL_YAML)
+    assert Input_Hash(CONST_FORK_PATH) == File_Hash(CONST_FORK_PATH)
+    trajectory = Read_Trajectory(str(built_trajectory('taught')))
+    program_path = os.path.join(os.path.dirname(CONST_CELL_YAML), 'Program.yaml')
+    assert Stale_Trajectory(trajectory, program_path) == []
+    text = open(CONST_CELL_YAML, encoding='utf-8').read()
+    commented, changed = tmp_path / 'commented.yaml', tmp_path / 'changed.yaml'
+    commented.write_text(text + '# A comment only.\n', encoding='utf-8')
+    changed.write_text(text.replace('  Ledge_Gap: 0.0003\n', '  Ledge_Gap: 0.0004\n', 1), encoding='utf-8')
+    monkeypatch.setattr('Program.Core.CONST_CELL_YAML', str(commented))
+    assert Stale_Trajectory(trajectory, program_path) == []
+    monkeypatch.setattr('Program.Core.CONST_CELL_YAML', str(changed))
+    assert Stale_Trajectory(trajectory, program_path) == ['cell']
+

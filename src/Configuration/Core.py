@@ -25,6 +25,8 @@
 import os
 # JSON (JSON encoder and decoder)
 import json
+# Hashlib (Secure hashes)
+import hashlib
 # Math (Mathematical functions)
 import math
 # Re (Regular expressions)
@@ -638,6 +640,24 @@ def _Finish(reader: _Reader_Cls, path: str) -> None:
     if reader.Problems:
         raise Configuration_Error_Cls('The configuration file %s is invalid (%d problem(s)); correct it:\n  %s'
                                       % (path, len(reader.Problems), '\n  '.join(reader.Problems)))
+
+
+def YAML_Hash(path: str) -> str:
+    """
+    Description:
+        The sha256 of a configuration file's content: its document as Read_YAML loads it, written as compact JSON (each
+        mapping in the file's order, so a reordering counts as a change). A comment, a blank line or another layout of the same
+        values keeps the hash; a changed value changes it.
+
+    Args:
+        (1) path [string]: The YAML file.
+
+    Returns:
+        (1) parameter [string]: The hex digest.
+    """
+
+    text = json.dumps(Read_YAML(path), separators=(',', ':'), ensure_ascii=False)
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
 def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_Str:
