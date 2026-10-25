@@ -35,7 +35,7 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
     Description:
         Step 6: from an unrelated directory, on a trajectory built into a temporary folder, the optimized program's physics run
         compares with its baseline without a failure (exit 0); --out writes its report and metrics (the report identical to the
-        committed one on this machine; the metrics with the envelope over the 8 perturbation runs, the baseline run first) and the
+        committed one on this machine; the metrics with the envelope over the 10 perturbation runs, the baseline run first) and the
         environment record; nothing in the working directory.
     """
 
@@ -52,7 +52,8 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
     committed = open(os.path.join(root, 'test', 'Simulation', 'data', 'baseline_report_optimized.txt'), encoding='utf-8').read()
     assert (out / 'baseline_report_optimized.txt').read_text() == committed and os.listdir(work) == []
     metrics = json.loads((out / 'baseline_metrics_optimized.json').read_text())
-    assert [r[:3] for r in metrics['envelope_runs']] == [[0.0, 0.0, 0.0], [-5e-06, 0.0, 0.0], [5e-06, 0.0, 0.0], [0.0, 0.1, 0.0], [-5e-06, 0.1, 0.0],
-                                                       [5e-06, 0.1, 0.0], [0.0, 0.0, 1e-06], [0.0, 0.0, -1e-06]]
+    assert [r[:3] for r in metrics['envelope_runs']] == [list(p) for p in [(0.0, 0.0, 0.0), (-5e-6, 0.0, 0.0), (-1e-6, 0.0, 0.0), (1e-6, 0.0, 0.0),
+                                                                         (5e-6, 0.0, 0.0), (-5e-6, 0.1, 0.0), (0.0, 0.1, 0.0), (5e-6, 0.1, 0.0),
+                                                                         (0.0, 0.0, 1e-6), (0.0, 0.0, -1e-6)]]
     low, high = metrics['envelope']['fork_net_force']
     assert low <= metrics['fork_net_force'] <= high and sorted(metrics['envelope']) == ['fork_net_force', 'handle_load', 'joint_torque']

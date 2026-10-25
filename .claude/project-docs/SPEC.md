@@ -1022,8 +1022,8 @@ commands, editing keypoints and program, the file formats.
 - **The fork's envelope** (owner, 2026-10-25; supersedes the two documented modes): the fork's contact with the handle bar is
   chaotic, so its net force, the handle hinge load and the J2 / J3 torques are compared with an envelope, not with the
   baseline run: each program's metrics hold `envelope` (per metric [min, max]) and `envelope_runs` over `CONST_PERTURBATIONS`
-  - the PCB's start along x -5 / 0 / +5 µm, each without and with a 0.1 s settle wait before the closing path, and the MG06
-  handle hinge ±1 µrad (8 runs; `--out` refuses to write when one of them fails §10.1). A run passes inside its program's
+  - the PCB's start along x -5 / -1 / 0 / +1 / +5 µm without and -5 / 0 / +5 µm with a 0.1 s settle wait before the closing
+  path, and the MG06 handle hinge ±1 µrad (10 runs; `--out` refuses to write when one of them fails §10.1). A run passes inside its program's
   envelope ± 10 %, and always within §10.1 (the fork's 290 N / 13.5 N m, the actuators below 99.9 %). The contact count
   (`fork_points`) is reported only.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment;

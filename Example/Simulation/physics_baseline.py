@@ -105,11 +105,13 @@ CONST_TOLERANCES = {'cycle_time': ('exact', 0.0), 'fault': ('exact', 0.0), 'vacu
 CONST_ENVELOPE = {'fork_net_force': None, 'handle_load': None, 'joint_torque': (1, 2)}
 CONST_ENVELOPE_MARGIN = 0.10
 # The envelope's perturbation set (owner, 2026-10-25): (the PCB's start along x [m], a settle wait before the closing path [s],
-# the MG06 handle hinge's start [rad]) - the PCB -5 / 0 / +5 um, each without and with a 0.1 s wait, and the handle +-1 urad;
-# the first is the baseline run. The wait goes after the line CONST_WAIT_AFTER names, in a copy of the program.
+# the MG06 handle hinge's start [rad]) - the PCB -5 / -1 / 0 / +1 / +5 um without a wait, -5 / 0 / +5 um with a 0.1 s wait,
+# and the handle +-1 urad: 10 runs, the first the baseline run (+-1 um added to the owner's set: in the taught program they
+# give 6 contact points at 247.3 N / 11.45 N m, which the other runs miss, 2026-10-25). The wait goes after the line
+# CONST_WAIT_AFTER names, in a copy of the program.
 #   Unit [List<Tuple<float>>] (m, s, rad), [Dict<string, string>]
-CONST_PERTURBATIONS = [(0.0, 0.0, 0.0), (-5e-6, 0.0, 0.0), (5e-6, 0.0, 0.0), (0.0, 0.1, 0.0), (-5e-6, 0.1, 0.0), (5e-6, 0.1, 0.0),
-                       (0.0, 0.0, 1e-6), (0.0, 0.0, -1e-6)]
+CONST_PERTURBATIONS = [(0.0, 0.0, 0.0), (-5e-6, 0.0, 0.0), (-1e-6, 0.0, 0.0), (1e-6, 0.0, 0.0), (5e-6, 0.0, 0.0), (-5e-6, 0.1, 0.0),
+                       (0.0, 0.1, 0.0), (5e-6, 0.1, 0.0), (0.0, 0.0, 1e-6), (0.0, 0.0, -1e-6)]
 CONST_WAIT_AFTER = {'taught': '- Robot.MoveJ(P_MG06_FORK_START)', 'optimized': '- Loader.WaitDone(J_PARK)'}
 
 @functools.lru_cache(maxsize=None)

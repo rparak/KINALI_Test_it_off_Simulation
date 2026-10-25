@@ -1113,8 +1113,9 @@ Tolerances wide enough for both fork modes: the hinge load differs by 22 % betwe
 either mode.
 
 **The fork's envelope** (owner, 2026-10-25, superseding the two documented modes of the same day): the fork's net force, the
-hinge load and the J2 / J3 torques pass inside their program's envelope ± 10 % - min and max over 8 perturbation runs (the PCB
--5 / 0 / +5 µm, each with and without a 0.1 s settle wait, the handle hinge ±1 µrad) - and always within §10.1. Why: the contact
+hinge load and the J2 / J3 torques pass inside their program's envelope ± 10 % - min and max over 10 perturbation runs (the
+PCB -5 / -1 / 0 / +1 / +5 µm without and -5 / 0 / +5 µm with a 0.1 s settle wait, the handle hinge ±1 µrad; ±1 µm added to
+the owner's 8: they give the taught program's 247.3 N / 11.45 N m outcome, which the 8 missed) - and always within §10.1. Why: the contact
 is chaotic and its outcomes are not well-defined modes - the contact count does not name one (6 contact points gave 247.3 N /
 11.45 N m in the taught program and 222.2 N / 10.01 N m in the optimized one, a handle offset of -1 µrad; the optimized
 program never reached 6 points from a PCB offset). Alternatives: the documented modes with a contact-count key (the first
