@@ -255,6 +255,9 @@ Kinematics and Collision code; F3.4).
   on the ledge corners. **At the take from the loader, relieve the 1.5 mm press (back to touch,
   `P_LOADER_TAKE_TOUCH`) before the jaws open**; the stored bellows force would otherwise throw the board off the
   cups (owner, 2026-10-24, F11; KNOWN_ISSUES.md).
+- **Loader gripper** (owner, 2026-10-25, B work): The loader gripper centres the PCB; the handover pose must put the PCB on the jaw
+  centreline, otherwise the clamp pulls it off the cups. Release the PCB into MG06 slightly above its seat, never pressed. The
+  re-grip from MG06 uses its own height L_FETCH with the same 0.3 mm ledge rule.
 - **IK families**: PCB handling uses "wrist up" (wrist_2 > 0), the MG06 fork path "wrist down"
   (wrist_2 < 0); the switch happens only in free space (via `P_VIA_HOME_MG06`, §4.8).
 - **MG06 fork path**: the recorded close/open path is tight (bar on the slot bottom). Leaving and

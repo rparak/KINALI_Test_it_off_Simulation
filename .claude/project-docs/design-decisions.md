@@ -1178,3 +1178,102 @@ warning; the owner keeps 20 deg.
 **Revisit if** a real-cell value exists, or a later program's physics run warns.
 
 Pinned by `test/Optimizer/test_core.py::test_the_carried_pcb_keeps_its_tilt_limit`.
+
+## The loader gripper's jaws are synchronized and grip with 70 N (B work)
+
+**Decision.** `models/scene.xml`'s `jaw_sync` equality is stiff (solref 0.001 - twice the 0.5 ms timestep, the stiffest MuJoCo
+honours by default - and solimp 0.99 / 0.999, as the PCB contacts) and the gripper's force limit is 70 N, the sum of both jaws
+(owner, 2026-10-25).
+
+**Why.** The SCHUNK EGI 040-EI (ID 1474382, data sheet) synchronizes its jaws by a toothed belt and grips with 25-70 N as the sum
+of both jaws. The former soft coupling (solref 0.004) gave 0.74 mm under the 80 N clamp, so the PCB was carried 0.37 mm off-centre,
+landed on MG06's side guide holder_17 (0.18 mm clearance), was pushed 3.5 mm down along it and dropped 1.4 mm at the release
+(B.1); 80 N (40 N per jaw) was above the EGI 040's maximum. Now the jaws differ by 0.007 mm under load. It also resolves the
+board's sag in the jaws after the re-grip (0.74-0.84 deg with the soft jaws, F11): 0.01 deg.
+
+**Alternatives.** A tendon on both jaws: splits the force but does not synchronize the positions. The soft coupling kept: the
+guide landing and the drop. 80 N: above the data sheet. The real cell's force setting is not known (KNOWN_ISSUES.md); 25 and
+45 N give the same results (B work, item 4: 28/28, 4/4 cups, the PCB at most 0.007 mm in the jaws while the loader moves).
+
+**Revisit if** the real gripper's force setting or centring is measured.
+
+Pinned by the fingerprint (three entries), the place acceptance items (SPEC §10.1 18-25) and the physics baselines.
+
+## The gripper ramps in 0.6 s: the EGI's jaw speed (B work)
+
+**Decision.** Every `Gripper(G_, t=)` in the loader jobs takes 0.6 s; the program check bounds every ramp's peak by
+`Motion.Jaw_Speed_Max` (0.1 m/s, the EGI 040-EI's max. speed).
+
+**Why.** A min-jerk ramp peaks at 1.875 x its mean speed: the full 29.25 mm per jaw needs at least 0.548 s; at 0.55 s the
+physics jaws still reached 100.0 mm/s (the servo's overshoot), at 0.6 s 91.4 mm/s commanded, 92.0 mm/s in physics. The legacy
+0.35 s peaked at 157 mm/s. Cost: +1.008 s per program (accepted by the owner); the slower clamp also removed a 2-cup moment at
+the handover clamp and lowered the jaws' penetration into the board (-0.108 -> -0.062 mm).
+
+**Revisit if** the real gripper's speed setting is known.
+
+Pinned by `test/Program/test_core.py::test_the_gripper_ramps_within_the_datasheet_jaw_speed` and its forced failure.
+
+## The handover is taught 0.4 mm along the jaw axis (B work)
+
+**Decision.** `P_LOADER_PLACE`'s `PCB_Hold` offset is [0.0004, 0, 0] (its tool x is the jaw axis); the six points derived from
+it follow. The program check bounds the kinematic PCB's offset from the jaw centreline (`Handover.Lateral_Max` 0.5 mm) and
+measures the descent by the PCB's height above the ledges.
+
+**Why.** The jaws centre the PCB as they clamp. In physics the PCB sits on the cups 1.226 mm off the TCP after the pick and slips
+0.41 / 0.46 mm by the handover, 0.372 / 0.425 mm short of the jaw centreline (taught / optimized); with the synchronized jaws the
+clamp pulled it that far across the cups. One shared point leaves -0.026 / +0.026 mm of centring. Margin (item 6, the PCB moved
+on the cups after the pick): along the jaw axis +-0.5 mm still keeps 4/4 cups (centring 0.47-0.52 mm); across it (tool y)
+nothing is centred - +0.5 mm gives a PCB-in-MG06 error of 0.64 / 0.76 mm and 0.001 mm side-guide clearance (KNOWN_ISSUES.md).
+
+**Alternatives.** Teaching the kinematic model the measured cup offset (moves every PCB-hold point); keeping the centred point
+(the clamp pulls the PCB across the cups).
+
+**Revisit if** the real handover is taught with real boards.
+
+Pinned by `test/Program/test_core.py` (the handover tests), the point table and the physics baselines (`handover_centring`).
+
+## The loader releases the PCB 0.15 mm above its MG06 seat; the re-grip has its own height (B work)
+
+**Decision.** `L_PLACE` is 0.37 mm above the CAD place height; `J_FETCH` goes to its own `L_FETCH` (+0.035 mm). Release, never
+press; re-grip with the PCB 0.3 +- 0.1 mm above the finger ledges.
+
+**Why.** With the PCB centred, `L_PLACE` pressed it 9 N into the supports (the centred PCB touches the seat 0.216 / 0.223 mm above
+it in physics; statically 0.124 mm above `place_pos`, the PCB 0.09 mm lower in the jaws). +0.37 mm releases it 0.152 / 0.151 mm
+above the seat: it drops and is seated on holder_03 / 04 / 10 in 0.014 s, 0.040 / 0.037 mm transient penetration. At the raised
+height the re-grip closed the jaws with the ledges 0.066 mm above the board's underside - on the ledge corners - so the fetch got
+`L_FETCH`: the kinematic gap 0.265 mm (the PCB at the CAD place pose, 0.10-0.12 mm into the supports), 0.359 mm in physics.
+
+**Alternatives.** The static seat alone (+0.274 mm): 0.06 mm of release height in physics. One height for both: on the ledges.
+
+**Revisit if** the real loader's release and re-grip heights are measured.
+
+Pinned by the place acceptance items, the re-grip check and the physics baselines.
+
+## Jaw_Actual is the physics grip, and the posed jaws are the command limited by the part (B work)
+
+**Decision.** `Simulation.yaml Jaw_Actual.G_CLAMP` is 17.54 mm (the synchronized jaws' grip in physics, 17.537-17.550 mm); the
+kinematic posing shows the jaws at the command, never closer than grip while the PCB is between them - in the jaws, on the cups
+at the handover or the take, or resting in MG06 (`Jaw_Posing_Faults` in the program check).
+
+**Why.** 17.75 mm was the soft coupling's grip (0.20 mm off the board's edges). The display bug (item 10): the release in MG06
+switched the PCB to `mg06` before the open ramp, so the posed jaws jumped from grip to the 5.75 mm command, through the PCB, then
+opened; physics (the command) only opened. The collision check does not test the PCB in MG06, so it masked the bug.
+
+**Revisit if** the real grip is measured.
+
+Pinned by `test/Program/test_core.py::test_the_posed_jaws_are_the_command_limited_by_the_part` and its forced failure.
+
+## The place into MG06 is accepted on eight physics items (B work)
+
+**Decision.** SPEC §10.1 items 18-25: no jaw closing at L_PLACE, the holder force <= 1.0 N, the release's penetration <= 0.10 mm
+and settled <= 0.0102 mm, no side guide touched on the way down, the PCB seated within 0.2 s (>= 3 of the 4 supports within
+0.05 mm, < 1 mm/s, < 0.1 deg, no guide or jaw contact), the handover's centring <= 0.5 mm, the re-grip's ledge gap 0.3 +- 0.1 mm.
+
+**Why.** The owner's B decisions. The transient bound is 0.10 mm, not 0.05 mm: the margin runs reach 0.068 mm with the PCB 0.5 mm
+off the cups' centre; it still catches the old pressed place (0.157 / 0.181 mm). While the optimized program's robot moves in
+parallel (S5_To_MG06) it stays more than 200 mm from the loader and the PCB during the place and the release, and more than 50 mm
+from the loader over the whole step (item 5).
+
+**Revisit if** the real place is measured.
+
+Pinned by `test/Simulation/test_core.py::test_a_program_run_fails_exactly_its_new_criterion` and the physics baselines.

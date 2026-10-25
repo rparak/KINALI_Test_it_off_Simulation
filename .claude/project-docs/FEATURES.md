@@ -1435,6 +1435,17 @@ TCP acceleration then, and their maxima.
 - [x] F12.3 The physics baselines of both programs and their drift tolerances (`7a8560c`); the report diff informational.
 - [x] F12.4 The legacy cycle run retired behind git tag `legacy-cycle-reference`; the usual checks updated.
 
+## F13 - The loader gripper and the place into MG06 (B work, owner 2026-10-25) - built on main, not pushed, awaiting acceptance
+
+- [x] F13.1 The kinematic jaw posing at the release (item 10; `ea41e5c`), the descent check by height and the lateral offset
+      bound (item 1; `d1f2939`), the lateral handover re-teach (`af9eadc`).
+- [x] F13.2 The synchronized jaws at 70 N (`7eb171f`), the L_PLACE raise (`d7dcde9`), the 0.6 s gripper ramps (`ffd7827`),
+      L_FETCH and the re-grip check (`2e0e5db`), Jaw_Actual 17.54 mm (`57f98c7`).
+- [x] F13.3 The place acceptance items 18-25 (`84fb13f`), the release bound 0.10 mm (`2eb0606`).
+- [x] F13.4 The fork envelope replacing the modes (`7b686d9`, `94ea909`), both physics baselines regenerated (`1bfa4b7`).
+- [x] F13.5 Measured: the handover margin, the gripping force 25 / 45 / 70 N, the robot's distance during the place
+      (design-decisions, KNOWN_ISSUES.md).
+
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
 - An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the

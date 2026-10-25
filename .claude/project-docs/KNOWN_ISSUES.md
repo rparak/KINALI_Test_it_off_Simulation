@@ -155,18 +155,30 @@ to touch, `P_LOADER_TAKE_TOUCH`, SPEC §4.7): conservative real-cell practice as
 - **Impact:** a program that opens a support under a pressed board loses it in the simulation; the real cell may forgive it.
 - **What would close it:** a vacuum model with a holding range, or a real-cell observation of the take.
 
-## The board sags in the jaws after the re-grip from MG06
+## The real loader gripper's behaviour is not verified
 
-Measured in physics at the take (F11, 2026-10-24, 10 ms before the cups touch): the board lies 0.7-0.8 deg about its X axis
-and about 0.16 mm lower along its normal than the nominal hold pose (taught 0.74 deg / -0.153 mm, optimized 0.74 deg /
--0.159 mm, legacy 0.84 deg / -0.165 mm); the jaws touch it only along the front ~38 mm of its edges (board y -39.6 to -2 mm),
-so the rear half sags. The 1.5 mm press then compresses the front cups by 0.93-1.15 mm and the rear ones by 0.49-0.72 mm.
-The take is not re-taught to it (owner): with the press relieved before the jaws open the board stays on 4 of 4 cups.
+The simulated SCHUNK EGI 040-EI centres the PCB with stiffly synchronized jaws at 70 N (the data sheet's maximum) and 100 mm/s
+at most; the loader releases the PCB 0.15 mm above its MG06 seat (L_PLACE) and re-grips it 0.3 mm above the finger ledges
+(L_FETCH) (B work, 2026-10-25; design-decisions).
 
-- **Impact:** the kinematic model (the program check, the point table) poses the board at the nominal hold pose, 0.7 deg
-  from where physics settles it; the press depths it reports at the take are nominal.
-- **What would close it:** a real-cell measurement of the board in the jaws after the re-grip, or a jaw model that clamps
-  the whole edge.
+- **Impact:** the real gripper's centring, its force and speed settings and the real release and re-grip heights may differ;
+  the place, the seating and the re-grip pass here on the model's values.
+- **What would close it:** on the real cell: the gripper's configured force and speed, its centring of a board placed off-centre,
+  the PCB's height above its seat at the release and above the ledges at the re-grip.
+
+## The handover relies on a simulated PCB position on the cups
+
+The handover point is taught 0.4 mm along the jaw axis so that the PCB, where it sits on the cups in physics (1.2 mm off the TCP
+after the pick, 0.4-0.5 mm of slip by the handover), is on the jaw centreline (design-decisions). The simulated bellows have no
+lateral compliance (the real ones do), so the cup loss on centring is partly a model limitation. The gripper centres only along
+the jaw axis (tool x): moving the PCB on the cups after the pick by +-0.2 / +-0.5 mm there keeps 4/4 cups (centring up to 0.52
+mm). Across it (tool y) nothing is centred: +0.5 mm gives a PCB-in-MG06 error of 0.64 / 0.76 mm (fails the 0.5 mm item) and
+0.001 mm side-guide clearance; +0.2 mm passes (0.49 / 0.37 mm error); -0.5 mm passes (the programs' own -0.30 / -0.17 mm y error
+reduces). Measured limit along tool y: about +0.2 / -0.5 mm with that offset, about +-0.3 mm without it.
+
+- **Impact:** the real handover point and the PCB's position on the cups cannot be taken from the simulation.
+- **What would close it:** the handover point taught on the real cell with real boards and the real centring tolerance verified;
+  the pick in the input crate accurate to about +-0.3 mm along tool y, or a y-locating feature in MG06 or the jaws.
 
 ## The fork's force on the handle bar is chaotic
 
