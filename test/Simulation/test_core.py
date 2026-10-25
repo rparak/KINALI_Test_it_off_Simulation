@@ -37,10 +37,8 @@ import numpy as np
 import pytest
 # Custom Lib.: the module under test
 #   ../Simulation/Core
-from Simulation.Core import (Legacy_Plan_Str, Cycle_Result_Str, Vacuum_Event_Str, Read_Legacy_Plan, Run_Cycle, Format_Report, Trajectory_Drive_Cls,
-                             Legacy_Drive_Cls, Physics_Run_Cls, Hold_Str, Check_Program_Acceptance,
-                             Step_Physics_Str, Program_Warnings, Format_Program_Report,
-                             Check_Acceptance, Min_Jerk, Loader_Target, Robot_Target, Phase_At, Simulation_Error_Cls)
+from Simulation.Core import (Cycle_Result_Str, Vacuum_Event_Str, Format_Report, Trajectory_Drive_Cls, Physics_Run_Cls, Hold_Str,
+                             Check_Program_Acceptance, Step_Physics_Str, Program_Warnings, Format_Program_Report, Check_Acceptance)
 #   ../Configuration/Core
 from Configuration.Core import Read_PCB_Meta, Load_Cell_Configuration
 #   ../Scene/Core
@@ -145,32 +143,23 @@ def test_the_report_lines_have_the_reference_format():
     assert lines[-1] == 'MG06 at the end: lid -40.0 deg, handle 0.0 deg'
 
 
-def test_the_profiles_and_the_plan_lookups():
+def _Hold_Trajectory(constants, events, seconds):
     """
     Description:
-        Min-jerk is 0, 0.5, 1 at the start, middle and end and clipped outside; a loader move reaches its
-        target; the servo command adds kv/kp times the planned velocity; the phase is the last started.
+        A program trajectory that holds the robot at P_HOME, the loader at L_HOME with the gripper open and the PCB in the input
+        crate for a time, with the given vacuum events [(time, 'vacuum_on' or 'vacuum_off')], and its program (one step, S1_Hold).
     """
 
-    assert [Min_Jerk(s) for s in (-1, 0, 0.5, 1, 2)] == [0, 0, 0.5, 1, 1]
-    plan = Legacy_Plan_Str(Dt=0.5, Q=np.array([[0.0] * 6, [1.0] * 6, [2.0] * 6]), T_End=1.0, Loader={'y': [[1.0, 2.0, 0.3]]},
-                           Phases=[[0.0, 'a'], [2.0, 'b']])
-    assert Loader_Target(plan, {'y': -0.1}, 'y', 0.5) == -0.1
-    assert Loader_Target(plan, {'y': -0.1}, 'y', 2.0) == pytest.approx(0.1)
-    assert Loader_Target(plan, {'y': -0.1}, 'y', 5.0) == pytest.approx(0.3)
-    command, q = Robot_Target(plan, np.full((3, 6), 2.0), np.full(6, 0.03), 0.25)
-    assert q == pytest.approx([0.5] * 6) and command == pytest.approx([0.56] * 6)
-    assert [Phase_At(plan, t) for t in (-1.0, 0.0, 1.9, 2.0)] == ['', 'a', 'a', 'b']
-
-
-def test_a_plan_that_cannot_be_read_is_named(tmp_path):
-    """
-    Description:
-        A missing plan file is a Simulation_Error_Cls naming it.
-    """
-
-    with pytest.raises(Simulation_Error_Cls, match='absent.npz cannot be read'):
-        Read_Legacy_Plan(str(tmp_path / 'absent.npz'))
+    n = int(round(seconds / 0.004)) + 1
+    home, loader = np.array(constants.Points['P_HOME'].Joints), constants.Loader['L_HOME']
+    tr = Trajectory_Str(T=np.arange(n) * 0.004, Robot_Q=np.tile(home, (n, 1)), Robot_QD=np.zeros((n, 6)), Loader_Y=np.full(n, loader.Y),
+                        Loader_Z=np.full(n, loader.Z), Gripper=np.full(n, constants.Gripper['G_OPEN'].Jaw), Vacuum=np.zeros(n, np.int8),
+                        Step_Index=np.zeros(n, np.int32), Segment_Id=np.zeros(n, np.int32), PCB_Location=np.zeros(n, np.int8),
+                        Step_Names=['S1_Hold'], Segment_Step=np.zeros(1, np.int32), Segment_Command=['Wait(%g)' % seconds],
+                        Segment_Start=np.zeros(1, np.int32), Segment_End=np.full(1, n, np.int32), Events=list(events))
+    program = SimpleNamespace(Segments=[SimpleNamespace(Key='S1_Hold', Allow_Contact=[])],
+                              Simulation=SimpleNamespace(Signal_Response={'DI_VACUUM_OK': 0.3}, Vacuum_OK_Min_Cups=4))
+    return tr, program
 
 
 def test_an_unstable_simulation_fails_instead_of_continuing(root):
@@ -184,26 +173,23 @@ def test_an_unstable_simulation_fails_instead_of_continuing(root):
 
     code = """import sys
 sys.path.insert(0, %r)
+sys.path.insert(0, %r)
 from Configuration.Core import Configure_MuJoCo_Log, Read_PCB_Meta, Load_Cell_Configuration
 from Configuration.Program_Parser import Load_Constants
 Configure_MuJoCo_Log()
 from Scene.Core import Build_Cell_Model
-#   ../Trajectory/Core
-from Trajectory.Core import Trajectory_Str
-from Simulation.Core import Legacy_Plan_Str, Read_Legacy_Plan, Run_Cycle, Simulation_Error_Cls
+from Simulation.Core import Trajectory_Drive_Cls, Run_Physics, Simulation_Error_Cls
+from test_core import _Hold_Trajectory
 cell = Load_Cell_Configuration()
 model = Build_Cell_Model(cell)
 model.opt.timestep = 0.05
 model.body_gravcomp[model.body('pcb').id] = 1.0
-real = Read_Legacy_Plan()
-plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:500], T_End=2.0, Loader={'y': [], 'z': [], 'jaw': []}, Events=[],
-                       Phases=[[0.0, 'loader: up, to park']], Jaw_Open=real.Jaw_Open)
 try:
-    Run_Cycle(model, plan, Read_PCB_Meta(), cell, Load_Constants().Loader['L_HOME'])
+    Run_Physics(model, Trajectory_Drive_Cls(*_Hold_Trajectory(Load_Constants(), [], 2.0)), Read_PCB_Meta(), cell)
     print('NO ERROR')
 except Simulation_Error_Cls as error:
     print('ERROR', error)
-""" % os.path.join(root, 'src')
+""" % (os.path.join(root, 'src'), os.path.join(root, 'test', 'Simulation'))
     try:
         result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, timeout=120)
     except subprocess.TimeoutExpired:
@@ -211,63 +197,6 @@ except Simulation_Error_Cls as error:
     assert re.search(r'^ERROR The simulation became unstable at t = [0-9.]+ s .*MuJoCo reset the state \(line: .*; the PCB was at x '
                      r'-?[0-9.]+ y -?[0-9.]+ z -?[0-9.]+ mm\)', result.stdout, re.M), \
         result.stdout + result.stderr
-
-
-@pytest.fixture(scope='module')
-def reference_run(cell_configuration, constants):
-    return Run_Cycle(Build_Cell_Model(cell_configuration), Read_Legacy_Plan(), Read_PCB_Meta(), cell_configuration, constants.Loader['L_HOME'])
-
-
-@pytest.mark.slow
-def test_the_reference_plan_reproduces_the_baseline_report(root, reference_run):
-    """
-    Description:
-        The full run of Data/Reference/cell_plan.npz prints test/Simulation/data/baseline_report.txt line for line
-        (SPEC §10.2).
-    """
-
-    with open(os.path.join(root, 'test', 'Simulation', 'data', 'baseline_report.txt'), encoding='utf-8') as handle:
-        assert Format_Report(reference_run) == handle.read().splitlines()
-
-
-@pytest.mark.slow
-def test_the_reference_plan_meets_the_acceptance_criteria(reference_run):
-    """
-    Description:
-        SPEC §10.1 on the full run, with the limits written here: no contact in any category, 4 of 4 cups at
-        both picks, PCB in MG06 < 0.5 mm and < 0.2 deg, < 2 mm from the output crate centre, MG06 ends open
-        (lid within 2 deg of -0.6974 rad, handle within 2 deg of 0), penetration <= 0.5 mm. No instability:
-        the run returned.
-    """
-
-    r = reference_run
-    for check in CONST_CHECKS:
-        assert check not in r.Contacts, (check, r.Contacts.get(check))
-    assert [v.Cups for v in r.Vacuum if v.On] == [4, 4]
-    assert np.linalg.norm(r.Placed_Error) < 0.0005 and np.degrees(r.Placed_Tilt) < 0.2
-    assert np.linalg.norm(r.Final_PCB[:2] - r.Crate_Centre) < 0.002
-    assert abs(np.degrees(r.Lid_End - (-0.6974))) < 2.0 and abs(np.degrees(r.Handle_End)) < 2.0
-    assert all(-v[0] <= 0.0005 for v in r.Penetration.values()), r.Penetration
-
-
-@pytest.mark.slow
-def test_the_raw_values_of_the_reference_run_are_pinned(reference_run):
-    """
-    Description:
-        Regression pin of the unrounded values (measured 2026-10-24 on the code proven bit-identical to the
-        legacy run, tag legacy-planner-reference, FEATURES.md F3.5): the report rounds them, so a change below its precision (the
-        phase sampling, the cup-touch threshold) would pass the report test. A pin, not a bound.
-    """
-
-    r = reference_run
-    assert r.Placed_T == pytest.approx(16.42, abs=1e-6) and r.Closed[2] == pytest.approx(31.65, abs=1e-6)
-    assert [v.T for v in r.Vacuum] == pytest.approx([3.276, 9.524, 54.764, 62.444], abs=1e-6)
-    assert r.Track_Error == pytest.approx(0.012575964178209498, rel=1e-9)
-    assert r.Slip == pytest.approx(0.0013238278119356037, rel=1e-9)
-    assert r.Loader_Lag == pytest.approx(0.022590242934832326, rel=1e-9)
-    assert r.Fork_Force == pytest.approx(293.694615772405, rel=1e-9)
-    assert np.linalg.norm(r.Placed_Error) == pytest.approx(0.0003017790990516208, rel=1e-9)
-    assert r.Placed_Tilt == pytest.approx(0.00040800224934629315, rel=1e-9)
 
 
 def _Small_Trajectory():
@@ -293,7 +222,7 @@ def _Small_Trajectory():
 def test_the_trajectory_drive_interpolates_its_samples():
     """
     Description:
-        Trajectory_Drive_Cls (F11): the servo command is q + kv/kp x qd, linear between the 4 ms samples like Robot_Target; the
+        Trajectory_Drive_Cls (F11): the servo command is q + kv/kp x qd, linear between the 4 ms samples; the
         loader channels likewise; the start is sample 0; the label and the line are those of the sample at or before t; past the
         end it holds the last sample (the last interval's label); only the vacuum events drive the cups.
     """
@@ -330,14 +259,11 @@ def test_the_trajectory_drive_classifies_its_steps():
 def _Short_Run(cell_configuration, constants, events):
     """
     Description:
-        A physics run of the reference plan's first 0.3 s (the robot at home, the PCB in the input crate) with the given vacuum
+        A physics run of 0.3 s with the robot at home and the PCB in the input crate (_Hold_Trajectory), with the given vacuum
         events.
     """
 
-    real = Read_Legacy_Plan()
-    plan = Legacy_Plan_Str(Dt=real.Dt, Q=real.Q[:100], T_End=0.3, Loader={'y': [], 'z': [], 'jaw': []}, Events=events,
-                           Phases=[[0.0, 'robot: to the input crate']], Jaw_Open=real.Jaw_Open)
-    drive = Legacy_Drive_Cls(plan, constants.Loader['L_HOME'])
+    drive = Trajectory_Drive_Cls(*_Hold_Trajectory(constants, events, 0.3))
     return Physics_Run_Cls(Build_Cell_Model(cell_configuration), drive, Read_PCB_Meta(), cell_configuration)
 
 
@@ -348,13 +274,13 @@ def test_the_vacuum_on_with_no_cup_on_the_pcb_loses_it(cell_configuration, const
         with a fault naming the time, the step and the line; the result carries it and the placement is unknown (nan), so the MG06 criterion fails.
     """
 
-    run = _Short_Run(cell_configuration, constants, [[0.1, 'suction_on']])
+    run = _Short_Run(cell_configuration, constants, [(0.1, 'vacuum_on')])
     while not run.Done:
         run.Step()
     result = run.Result()
     assert run.Data.time == pytest.approx(0.1205, abs=1e-6), run.Data.time
-    assert re.fullmatch(r'PCB lost at t = 0\.12[01] s, step robot: to the input crate, line "robot: to the input crate": no cup has touched '
-                        r'it for 20 ms with the vacuum on\.', result.Fault), result.Fault
+    assert re.fullmatch(r'PCB lost at t = 0\.12[01] s, step S1_Hold, line "Wait\(0\.3\)": no cup has touched it for 20 ms with the vacuum '
+                        r'on\.', result.Fault), result.Fault
     assert 'PCB in MG06 error < 0.5 mm, tilt < 0.2 deg' in _Failed(result)
 
 

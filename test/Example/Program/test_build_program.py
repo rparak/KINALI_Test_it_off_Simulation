@@ -31,7 +31,7 @@ import pytest
 def built(tmp_path_factory, run_script):
     out = tmp_path_factory.mktemp('built')
     cwd = tmp_path_factory.mktemp('cwd')
-    return out, cwd, run_script('Program/build_program.py', ['--out', str(out), '--compare-legacy'], cwd)
+    return out, cwd, run_script('Program/build_program.py', ['--out', str(out)], cwd)
 
 
 @pytest.mark.slow
@@ -39,7 +39,7 @@ def test_the_default_program_is_built_checked_and_written(built):
     """
     Description:
         From an unrelated directory the script writes the trajectory (npz, csv) and the check report into --out, prints the
-        report and the legacy diagnostic, and writes nothing into the working directory; exit 0, every step passes.
+        report (the free transfers' loader lines included), and writes nothing into the working directory; exit 0, every step passes.
     """
 
     out, cwd, result = built
@@ -47,8 +47,7 @@ def test_the_default_program_is_built_checked_and_written(built):
     assert sorted(os.listdir(out)) == ['Program.csv', 'Program.npz', 'Program_check.txt'] and os.listdir(cwd) == []
     report = open(os.path.join(out, 'Program_check.txt'), encoding='utf-8').read()
     assert report.startswith('program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s;')
-    assert '  cycle time: program 69.396 s, legacy 65.768 s, difference +3.628 s' in report
-    assert '  vacuum_on    program    3.276 s, legacy    3.276 s, +0.000 s' in report
+    assert '    loader       20.59 mm at 1399 (5.596 s) pcb / z_carriage' in report and 'legacy' not in report
     assert all(line in result.stdout for line in report.splitlines())
     assert '[INFO] Program: the check passed.' in result.stdout
 

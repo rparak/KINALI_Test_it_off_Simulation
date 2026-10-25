@@ -12,14 +12,18 @@ file. The owner's notes may be in Czech or Slovak; answer in English anyway. Com
 trailer (`.claude/settings.json`).
 
 The verified physics is never changed without an explicit request (SPEC §3, the style project page
-`mjcf.md`). Regression baseline: `test/Simulation/data/baseline_report.txt`,
-`test/Scene/data/baseline_model_fingerprint.json`.
+`mjcf.md`). Regression baselines: the programs' physics, `test/Simulation/data/baseline_report_<taught|optimized>.txt`
+with their metrics (bounds and drift tolerances, SPEC §10.2); the kinematic golden, `test/Program/data/`; the model,
+`test/Scene/data/baseline_model_fingerprint.json`. The legacy plan's run and baseline are retired (git tag
+`legacy-cycle-reference`).
 
 ## Branches
 
-Work directly on main. Commit only after the usual checks pass (fingerprint, cycle diff, golden, point table, fast
-tests, style). Push after each accepted feature. A failed experiment is undone with git revert, never with force-push
-or history rewrite. The tags `legacy-planner-reference` and `pre-F9` (the state before F9) stay.
+Work directly on main. Commit only after the usual checks pass: the fingerprint (`model_fingerprint.py`, 1 difference),
+the kinematic golden (`golden_program.py`, 0 differences), both physics baselines (`physics_baseline.py`, 0 failures), the
+point table, the fast tests, the style checker. Push after each accepted feature. A failed experiment is undone with git
+revert, never with force-push or history rewrite. The tags `legacy-planner-reference`, `pre-F9` (the state before F9) and
+`legacy-cycle-reference` (the last commit with the legacy cycle regression) stay.
 
 ## Skills
 
@@ -39,9 +43,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
 .venv/bin/python -m pytest -m "not slow"         # everyday, about 2 min
-.venv/bin/python -m pytest                       # before a commit, about 6 min
+.venv/bin/python -m pytest                       # before a commit, about 7.5 min
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
-.venv/bin/python Example/Simulation/run_cycle.py [--out DIR] # reference plan: report (stdout + DIR/report.txt) + acceptance; exit 0/1/2; ~18 s
 .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~17 s
 .venv/bin/python Example/Simulation/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines; exit 0/1/2; ~35 s
 .venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--time T] [--watchdog S]   # physics in the viewer, real time
@@ -56,7 +59,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Keypoints/show_keypoint.py --name K --headless [--image [FILE]]   # pose; offscreen image
 .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name K [--loader P --gripper S --pcb L --mg06 Open|Closed]
 .venv/bin/mjpython Example/Keypoints/step_keypoints.py [--start K]   # Page Down / '.' next, Page Up previous
-.venv/bin/python Example/Program/build_program.py [--program F] [--out DIR] [--compare-legacy]   # trajectory + check report; exit 0/1
+.venv/bin/python Example/Program/build_program.py [--program F] [--out DIR]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
 .venv/bin/mjpython Example/Program/show_program.py [--version default|optimized] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
 .venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~55 s

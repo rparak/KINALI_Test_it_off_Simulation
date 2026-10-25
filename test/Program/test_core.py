@@ -105,12 +105,12 @@ def _Segment(trajectory, text):
     return trajectory.Segment_Start[i], trajectory.Segment_End[i]
 
 
-def test_movej_follows_the_legacy_rule_and_reproduces_the_reference_plan(built, constants, cell_configuration, root):
+def test_movej_follows_the_legacy_rule(built, constants, cell_configuration):
     """
     Description:
         MoveJ P_HOME -> P_INPUT_ABOVE: T = max(0.5, max 1.875 |dq| / v_max, max sqrt(5.774 |dq| / a_max)) with the legacy
-        numbers, round(T / 4 ms) samples; its samples are the reference plan's first ones to the points' rounding (1e-6 deg =
-        1.7e-8 rad); min-jerk: at rest at both ends, the analytic speed's peak 1.875 dq / T.
+        numbers, round(T / 4 ms) samples; min-jerk: at rest at both ends, the analytic speed's peak 1.875 dq / T. (Its samples
+        were the legacy plan's first ones to 1.7e-8 rad, checked until step 6 retired the plan: git tag legacy-cycle-reference.)
     """
 
     q0, q1 = np.array(constants.Points['P_HOME'].Joints), np.array(constants.Points['P_INPUT_ABOVE'].Joints)
@@ -121,8 +121,6 @@ def test_movej_follows_the_legacy_rule_and_reproduces_the_reference_plan(built, 
     first, last = _Segment(trajectory, 'Robot.MoveJ(P_INPUT_ABOVE)')
     n = int(round(expected / 0.004))
     assert (first, last) == (0, n + 1)
-    plan = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))['q']
-    assert np.max(np.abs(trajectory.Robot_Q[1:n + 1] - plan[:n])) <= 2e-8
     qd = trajectory.Robot_QD[first:last]
     assert np.all(qd[0] == 0) and np.all(qd[-1] == 0)
     assert np.max(np.abs(qd), axis=0) == pytest.approx(1.875 * (q1 - q0).__abs__() / (n * 0.004), rel=1e-3)

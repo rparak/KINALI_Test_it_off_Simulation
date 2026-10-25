@@ -45,8 +45,7 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_FILES = {'CONST_SCENE_XML': 'models/scene.xml', 'CONST_CELL_SCENE_XML': 'models/cell_scene.xml',
                'CONST_ROBOT_XML': 'models/aubo_i5/aubo_i5.xml', 'CONST_TOOL_XML': 'models/robot_tool/vgc10_opener_free.xml',
-               'CONST_PCB_META': 'Data/PCB/pcb_meta.json', 'CONST_FORK_PATH': 'Data/Paths/fork_close_open_path.npz',
-               'CONST_REFERENCE_PLAN': 'Data/Reference/cell_plan.npz'}
+               'CONST_PCB_META': 'Data/PCB/pcb_meta.json', 'CONST_FORK_PATH': 'Data/Paths/fork_close_open_path.npz'}
 
 
 def _Run_Python(root, code, cwd):

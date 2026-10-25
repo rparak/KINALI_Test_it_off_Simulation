@@ -158,20 +158,20 @@ def _Brute_Close_Pairs(model, data, bodies, cut, exclude=()):
     return sorted(out)
 
 
-def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configuration, constants, simulation, root):
+def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configuration, constants, simulation, program):
     """
     Description:
         B2: Close_Pairs (vectorised broad phase) returns exactly the brute-force pairs - the same pairs, the same
         distances, so the same minimum - for the robot and for the carried PCB, at every point posed in its scene
-        and at 500 random samples of Data/Reference/cell_plan.npz (seed 20261024, the PCB held by the cups), with the
+        and at 500 random samples of the taught program's trajectory (seed 20261024, the PCB held by the cups), with the
         3 mm clearance and a 50 mm cut.
     """
 
-    import os
     import mujoco
     from Configuration.Core import Read_PCB_Meta
     from Keypoints.Core import Pose_Cell
     from Kinematics.Core import PCB_For_TCP
+    from Program.Core import Build_Program
     model = Build_Planning_Model(cell_configuration)
     collision = Robot_Collision_Cls(model)
     kinematics = Robot_Kinematics_Cls(model, collision.Data)
@@ -188,7 +188,7 @@ def test_the_vectorised_broad_phase_gives_the_brute_force_pairs(cell_configurati
     for name in constants.Points:
         Pose_Cell(kinematics, constants, simulation, cell_configuration, meta, name)
         assert Same(), name
-    q = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))['q']
+    q = Build_Program(program, cell_configuration, meta, kinematics, {})[0].Robot_Q
     for i in np.random.default_rng(20261024).choice(len(q), 500, replace=False):
         kinematics.Set_Scene(data, pcb=np.r_[PCB_For_TCP(*kinematics.Site_Pose(q[i]))])
         data.qpos[kinematics.Q_Address] = q[i]

@@ -1060,6 +1060,27 @@ path: outside this project's data. A settle wait before the path: not the cause 
 
 Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
 
+## The legacy cycle run is retired; the programs are the regression (step 6)
+
+**Decision.** `Example/Simulation/run_cycle.py`, `Data/Reference/cell_plan.npz`, `test/Simulation/data/baseline_report.txt`,
+`Simulation.Legacy_Drive_Cls` / `Run_Cycle` / `Read_Legacy_Plan` and their tests are removed (owner, 2026-10-25); the last
+commit with them is git tag `legacy-cycle-reference`. No test needed `Legacy_Drive_Cls` any more: the lost-PCB and instability
+tests drive a short program trajectory (`_Hold_Trajectory`), the broad-phase test samples the taught program's trajectory, the
+points' provenance check (rows of the plan) and the first MoveJ's plan comparison went with the plan, `build_program.py
+--compare-legacy` and the legacy column of `compare_programs.py` likewise. Two KNOWN_ISSUES entries of the legacy run are closed
+by it: its crate penetration of -0.14 mm against the brief's -0.08 mm, and its take that carried the board on 2 of 4 cups
+(F11). The usual checks are now the fingerprint, the kinematic golden, both physics baselines, the point table, the fast
+tests and the style checker (CLAUDE.md).
+
+**Why.** Step 6 (SPEC §2): the keypoint programs replace the legacy plan as the regression; the legacy run proved the port
+of the physics loop (F3-F11) and its take was sound by chance only.
+
+**Alternatives.** Keeping it as a second regression: a knife-edge run that a 10 µm change fails, kept only for history.
+
+**Revisit if** the physics loop is rewritten and needs the old proof again (check out the tag).
+
+Pinned by `test/Simulation/test_baselines.py`.
+
 ## The physics regression checks bounds and drift, not the report's text (step 6)
 
 **Decision.** The programs' physics baselines fail a run on SPEC §10.1 and on metrics drifting beyond stated tolerances

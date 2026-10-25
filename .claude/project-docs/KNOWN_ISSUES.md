@@ -42,17 +42,6 @@ these are compared on the real AUBO i5 controller, and this entry is removed whe
   The simulation itself is not affected: FK of the joints is checked against `Pose` with this project's convention.
 - **What would close it:** the four comparisons above, recorded in SPEC §8 (the convention, or a conversion) and §4.2.
 
-## The crate penetration is −0.14 mm in this environment, −0.08 mm in the brief's reference
-
-The brief's reference result (produced on the original machine of `mg06_cell_mujoco`, environment not
-recorded) gives the deepest PCB penetration into the crate as −0.08 mm, the previous Czech README (git `legacy-planner-reference:docs/README_cs_mg06_cell.md`) −0.07 mm;
-every run here gives −0.14 mm at t = 62.46 s. Every other number of the report is identical.
-
-- **Impact:** none on acceptance (bound 0.5 mm, SPEC §10.1); it shows that the report is reproducible
-  only per environment, so the baseline is per environment.
-- **Evidence:** `test/Simulation/data/baseline_report.txt` against git `427e076:docs/PROJECT_BRIEF.md` §3 (SPEC §4.6).
-- **What would close it:** the original environment's versions; not expected to be available.
-
 ## MuJoCo warns about an integrator conflict when the robot is attached
 
 Every build of the cell makes MuJoCo log, print on stderr and raise as a Python UserWarning:
@@ -165,17 +154,6 @@ to touch, `P_LOADER_TAKE_TOUCH`, SPEC §4.7): conservative real-cell practice as
 
 - **Impact:** a program that opens a support under a pressed board loses it in the simulation; the real cell may forgive it.
 - **What would close it:** a vacuum model with a holding range, or a real-cell observation of the take.
-
-## The verified legacy baseline carried the board on 2 of 4 cups after the take
-
-Found in F11 (2026-10-24): in the legacy reference run (`Data/Reference/cell_plan.npz`, `test/Simulation/data/baseline_report.txt`)
-the jaws open at the take with the bellows pressed and the board then hangs on 2 of the 4 cups (cup1, cup3) to the output
-crate; moving the PCB's start by -10 or +50 µm loses it at the release (knife-edge). The baseline stays unchanged as the
-regression of the old run and is checked against SPEC §10.1 items 1-7 only; the programs must meet items 8-10 too.
-
-- **Impact:** the legacy run's slip (1.32 mm) and its pass are not evidence that the old take was sound.
-- **What would close it:** nothing to do while the legacy run is only the old regression; it is retired with step 6's
-  program baselines if the owner decides so.
 
 ## The board sags in the jaws after the re-grip from MG06
 

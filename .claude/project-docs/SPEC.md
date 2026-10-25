@@ -51,6 +51,8 @@ Phase 1 (brief §7, in this order):
    real-time viewer playback, a headless run.
 6. **Regression**: the default program reproduces §4.6 within §10.1; then it replaces `Data/Reference/cell_plan.npz`
    as the regression input. (The legacy planner and cycle test were removed in F4; git tag `legacy-planner-reference`.)
+   Done 2026-10-25: the two programs' physics baselines (§10.2); the legacy plan, its run and its baseline retired (git tag
+   `legacy-cycle-reference`).
 7. **Docs**: the README (readme-writer) and `CLAUDE.md`.
 
 Phase 2 (later): a PyQt5 or PyQt6 window (open, see design-decisions: *Phase 2 GUI toolkit*) rendering MuJoCo through
@@ -175,7 +177,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 5. Loader: back → down → close (pick) → up → home.
 6. The robot takes the PCB (vacuum on, loader opens), puts it into the right (output) crate, goes home.
 
-### 4.6 Reference result (*measured*, `test/Simulation/data/baseline_report.txt`)
+### 4.6 Reference result (*measured*, `test/Simulation/data/baseline_report.txt`; retired in step 6, git tag `legacy-cycle-reference`)
 
 The reference plan `Data/Reference/cell_plan.npz` (written by the legacy planner) run with physics, 2026-10-24, on macOS 26.6.2, Apple M2 Pro.
 Baseline environment: Python 3.11.2, numpy 2.4.6, scipy 1.17.1, MuJoCo 3.16.0 (`install.sh`). First
@@ -542,7 +544,6 @@ Configuration/Optimization.yaml   the optimized program's settings: the FREE seg
 Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
-Data/Reference/cell_plan.npz   the verified IK plan, the regression input until step 6
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/; step 4 adds Trajectories/
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
 Media/Original/           the owner's logo originals, kept untouched for regeneration
@@ -558,7 +559,9 @@ src/Trajectory/Core.py    the trajectory file format: the only writer and reader
 src/Program/Core.py       the constants' model checks, the program build (motion laws, world state, the loader's lane), the program check, posing at a sample (§7.9)
 src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written, its interlocks and LOCKED parts verified (§7.11)
-Example/Simulation/run_cycle.py        the physics run of a plan + report + acceptance (exit 0 / 1 / 2)
+Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
+Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time, --image
+Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Render/show_cell.py            opens the viewer on the cell
@@ -569,9 +572,10 @@ Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose
 Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
 Example/Keypoints/step_keypoints.py    steps through the points in the viewer (mjpython): Page Down / . / Page Up
 Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
-                                       stale or its schedule differs), --compare-legacy
+                                       stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
-Example/Program/compare_programs.py    legacy vs taught vs optimized: a table and a figure (exit 0 / 1)
+Example/Program/compare_programs.py    taught vs optimized: a table and a figure (exit 0 / 1)
+Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
 test/<Domain>/test_core.py     mirroring src/; test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
@@ -637,13 +641,12 @@ its physics run there, at most 50 ms of wall time per frame, and only copies the
 
 ### 7.6 Simulation
 
-Reads a plan in the legacy planner's format (`Data/Reference/cell_plan.npz`: dt, robot joint trajectory, loader moves, vacuum events, phase
-labels); runs it with physics (servo set-point with velocity feed-forward, min-jerk loader profiles,
-vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured
-values; formats the report of §4.6; checks §10.1.
+Runs a program's trajectory with physics (servo set-point with velocity feed-forward, the loader's and the gripper's commands,
+vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured values; formats the
+report of §4.6 and the program report; checks §10.1. (Until step 6 it also ran the legacy plan `Data/Reference/cell_plan.npz`,
+`Legacy_Drive_Cls` / `Run_Cycle`, its report byte-identical to the legacy baseline: git tag `legacy-cycle-reference`.)
 
-Since F11 the physics run (`Physics_Run_Cls`, `Run_Physics`) takes a drive: `Legacy_Drive_Cls` (the plan above, `Run_Cycle`;
-its report stays byte-identical to the baseline) or `Trajectory_Drive_Cls` (a program's 4 ms trajectory: set-points linear
+The physics run (`Physics_Run_Cls`, `Run_Physics`) takes the drive `Trajectory_Drive_Cls` (a program's 4 ms trajectory: set-points linear
 between samples with the stored `robot_qd` as feed-forward, the loader and gripper commands, the vacuum events, the steps as
 labels; the fork may touch the handle in the steps whose `Allow_Contact` has `handle_bar`). Per step it measures the tracking
 error, the PCB's slip in the cups (from the first cup contact after vacuum on until vacuum off, also after the cups lose it),
@@ -905,8 +908,8 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
 | the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
-| `Data/Reference/cell_plan.npz` | `Simulation` (`Read_Legacy_Plan`); written by the legacy planner (git tag `legacy-planner-reference`); never written now |
-| the report (text) | `Simulation` (`Format_Report`), printed by `Example/Simulation/run_cycle.py`, copied to `--out`/`report.txt` (default `Data/Generated/Reports/`) |
+| a program's physics report (text) | `Simulation` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
+| the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Simulation/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README (and the Phase 2 app) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
@@ -917,8 +920,8 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker. Everyday
-`.venv/bin/python -m pytest -m "not slow"` (383 tests, about 115 s), full `.venv/bin/python -m pytest`
-before a commit (403 tests, about 370 s; Apple M2 Pro, 2026-10-25, after F11).
+`.venv/bin/python -m pytest -m "not slow"` (385 tests, about 2 min), full `.venv/bin/python -m pytest`
+before a commit (405 tests, about 7.5 min; Apple M2 Pro, 2026-10-25, after step 6).
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
@@ -965,9 +968,8 @@ commands, editing keypoints and program, the file formats.
 
 - The compiled model's fingerprint equals `test/Scene/data/baseline_model_fingerprint.json` except
   `geoms/pcb_vis/geom_rgba` (the green PCB).
-- The cycle run's printed report diffs empty against `test/Simulation/data/baseline_report.txt`.
-- Pinned by `test/Scene/test_core.py` (fingerprint), `test/Simulation/test_core.py` (slow: report, §10.1, raw values)
-  and `test/Example/Simulation/test_run_cycle.py` (slow: the script's stdout).
+- Pinned by `test/Scene/test_core.py` (fingerprint). (Until step 6 the legacy cycle run's report diffed empty against
+  `test/Simulation/data/baseline_report.txt`: git tag `legacy-cycle-reference`.)
 - **Golden data of the taught program** (`test/Program/data/`: the trajectory arrays' sha256, the cycle time, the events, the
   segments, every command's values as float hex, the check report, the point table), written and compared by
   `Example/Program/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
@@ -982,9 +984,8 @@ commands, editing keypoints and program, the file formats.
   closed and end angles +-0.1 deg; the slip +-0.2 mm; the tracking error, the loader lag, the fork's net force, the handle hinge
   load and the joint torques +-10 %; the free transfers' closest loader distance +-0.5 mm. The report's diff is printed for
   information and never fails (contact physics changes with sub-micrometre differences, design-decisions).
-- **Baselines by run** (owner, 2026-10-24, B6): `test/Simulation/data/baseline_report.txt` stays the baseline of the
-  legacy run (`Data/Reference/cell_plan.npz`) and stays valid for it. Step 6 adds a new baseline report for the default
-  program and one for the optimized program, each measured in the pinned environment; neither replaces the legacy one.
+- **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment;
+  the legacy run's baseline was retired with it in step 6 (git tag `legacy-cycle-reference`).
 - **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one
   machine and platform (`test/Program/test_core.py::test_the_build_is_deterministic`); across platforms results agree
   within numeric tolerance only. The trajectory's metadata records the platform and the versions.
@@ -1017,7 +1018,7 @@ this project's reference in `.claude/skills/<skill>/references/project.md` (proj
 | 2 | A restructure silently changes the physics result | the report diffs empty against the baseline (§10.2); the slow regression (§10.1) |
 | 3 | Instability hidden by MuJoCo's state reset | `d.time` going backwards fails the run (exit 2) |
 | 4 | Platform drift of the numbers (Python / numpy version) | pinned requirements; re-baseline in the pinned environment (`KNOWN_ISSUES.md`) |
-| 5 | The ported physics loop drifts from the verified legacy run | the report of `Data/Reference/cell_plan.npz` diffs empty against the baseline and its raw values are pinned (`test/Simulation`); the legacy run is in git tag `legacy-planner-reference` |
+| 5 | The physics loop drifts | the programs' physics baselines: SPEC §10.1 and the metrics' drift tolerances (§10.2); a refactor proven by an empty report diff on one machine; the legacy run is in git tags `legacy-planner-reference` and `legacy-cycle-reference` |
 
 ## 14. Open questions
 

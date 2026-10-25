@@ -1425,6 +1425,16 @@ TCP acceleration then, and their maxima.
 - Not done (owner): fix 2, an acceleration limit for carried transfers (the slip stays below 1.98 mm).
 - Tests: 376 -> 403 collected (383 fast); every new test broken once.
 
+## F12 - Step 6: the programs' physics regression (owner, 2026-10-25) - built on main, pushed, awaiting acceptance
+
+- [x] F12.1 The fork force (owner's decisions): the settle hypothesis rejected (bimodal: 4 or 6 contact points, flipped by
+      sub-micrometre changes); the net force, squeeze and hinge load measured (`92d1943`); the retraction of the closing path
+      tested and not adopted (0.55-0.60 mm pass, 0.65 mm does not latch) (`4a80db7`).
+- [x] F12.2 The acceptance bounds, SPEC §10.1 items 12-17 (`f6c5e47`): slip 1.98 mm, tracking 0.0189 rad, fork net force 290 N,
+      hinge load 13.5 N m, free transfers >= Loader_Free 10 mm, no actuator saturated.
+- [x] F12.3 The physics baselines of both programs and their drift tolerances (`7a8560c`); the report diff informational.
+- [x] F12.4 The legacy cycle run retired behind git tag `legacy-cycle-reference`; the usual checks updated.
+
 ## For the step 7 README (from the previous Czech README, removed in F4.2)
 
 - An overview paragraph: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the

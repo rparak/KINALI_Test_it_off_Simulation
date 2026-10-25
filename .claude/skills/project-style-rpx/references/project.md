@@ -20,7 +20,7 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
   the template UR_PathGen_SF_1); the `Author   :` line names the author, **Roman Parak**. The checker enforces
   the copyright line (`check_style.json` `holder`), not the author line. Vendored licences keep their holders
   (`models/aubo_i5/LICENSE_Manipulator-Mujoco`). The `#`-comment header form. `File Name:` examples:
-  `../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_cycle.py`, `../test/Scene/test_core.py`.
+  `../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_program.py`, `../test/Scene/test_core.py`.
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
   `Example`, `test`; no exclusions.
 - Command: `.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test`.
@@ -31,7 +31,7 @@ the Phase 2 application later (toolkit open, design-decisions). Its logo rules a
 src/<Domain>/Core.py   Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints, Trajectory, Program, Planner,
                        Optimizer;
                        plus src/Configuration/Program_Parser.py (the cell program's reader, F10)
-Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
+Example/<Domain>/<script>.py   Simulation/run_program.py, Scene/export_cell_scene.py, Scene/model_fingerprint.py,
                        Render/show_cell.py, Render/render_image.py, Media/make_logo_variants.py,
                        Keypoints/check_keypoints.py, Keypoints/resolve_keypoint.py, Keypoints/show_keypoint.py,
                        Keypoints/step_keypoints.py, Program/build_program.py, Program/show_program.py,
@@ -39,7 +39,7 @@ Example/<Domain>/<script>.py   Simulation/run_cycle.py, Scene/export_cell_scene.
 test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
-Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Reference/cell_plan.npz, Optimized/Program_Optimized.yaml
+Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10); Optimization.yaml (F9)
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
@@ -88,8 +88,8 @@ but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer.Core.Optimized_Text` (only through `Example/Program/optimize_program.py`); read by `Configuration.Program_Parser.Load_Program` |
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
-| `Data/Reference/cell_plan.npz` | `Simulation.Core.Read_Legacy_Plan`; written by the legacy planner (git tag `legacy-planner-reference`), never written now |
-| the cycle report | `Simulation.Core.Format_Report`; printed and copied to `Data/Generated/Reports/report.txt` by `Example/Simulation/run_cycle.py` |
+| a program's physics report | `Simulation.Core.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
+| the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
@@ -136,7 +136,8 @@ returned list, printed by the script, exit code 1.
 ## Tests
 
 - Everyday `.venv/bin/python -m pytest -m "not slow"`; full `.venv/bin/python -m pytest` before a commit.
-- Reference data: `test/Simulation/data/baseline_report.txt`, `test/Scene/data/baseline_model_fingerprint.json`
+- Reference data: `test/Simulation/data/baseline_report_<program>.txt` and `baseline_metrics_<program>.json`,
+  `test/Program/data/` (the golden), `test/Scene/data/baseline_model_fingerprint.json`
   (since F3).
 - Equivalence outputs: the printed report, the fingerprint (project-optimize reference).
 
@@ -145,8 +146,8 @@ returned list, printed by the script, exit code 1.
 - Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and write every line
   to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
   to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
-  `test/conftest.py`). `Example/Simulation/run_cycle.py` prints the report on stdout and its own lines on stderr, so
-  stdout is the report byte for byte.
+  `test/conftest.py`). `Example/Simulation/run_program.py` prints the report on stdout and its own lines on stderr,
+  so stdout is the report byte for byte.
 - Module-level private helpers: `_Pascal_Snake_Case` (e.g. `Scene.Core._Apply_Look`), like test
   helpers (the generic skill leaves it *Unsettled*; decided 2026-10-24).
 - Stream protocols are not implemented in `src/` (no `write`/`flush` methods, which the naming rule would

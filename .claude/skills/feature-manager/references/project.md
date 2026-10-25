@@ -25,15 +25,16 @@ Language: English in every file, report and commit; the owner's notes may be in 
 
 - The verified physics (SPEC §3, mjcf.md): timestep, solver options, contact parameters, friction,
   masses, geometry, actuator gains and ranges, vacuum, bellows, the CAD deviations.
-- Formats: `models/scene.xml`, `Data/PCB/pcb_meta.json`, `Data/Reference/cell_plan.npz`, the trajectory file and
+- Formats: `models/scene.xml`, `Data/PCB/pcb_meta.json`, the trajectory file and
   the cell program's three files and their grammar (SPEC §8, F10), the report's lines.
 - The acceptance criteria (SPEC §10.1) and the 3 mm keypoint / segment clearance.
 - `requirements.txt` pins and the interpreter.
 
 ## Real data for reproducing a premise
 
-The reference plan `Data/Reference/cell_plan.npz` and its run (`Example/Simulation/run_cycle.py`; the legacy planner and
-cycle test in git tag `legacy-planner-reference`), the baseline report and fingerprint (`test/<Domain>/data/`), the scene files. Walk the chain: the
+The two programs and their physics runs (`Example/Simulation/run_program.py`; their baselines and the kinematic golden in
+`test/<Domain>/data/`; the legacy planner in git tag `legacy-planner-reference`, the legacy cycle run in
+`legacy-cycle-reference`), the fingerprint, the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
 
@@ -98,7 +99,7 @@ look at what changed.
   F9's optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
   `Example/Program/optimize_program.py`; when an input changes, run it again and commit the result as its own change.
 - Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
-  source changed, a new `Data/Reference/cell_plan.npz`, a new baseline report or fingerprint.
+  source changed, a re-captured physics baseline, golden data or fingerprint.
 
 ## Docs
 

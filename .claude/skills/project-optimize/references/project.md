@@ -7,14 +7,15 @@ file overrides it where they differ. No `SKILL.md` is tracked here.
 
 | Output | Produced by (into a temporary directory) | Deterministic inputs | Identical on two runs (date) |
 |---|---|---|---|
-| The cycle report (stdout) | `.venv/bin/python Example/Simulation/run_cycle.py --out "$SCRATCH"` | `Data/Reference/cell_plan.npz`, the scene files, `Data/PCB/pcb_meta.json`; no randomness | yes, 2026-10-24 (every run of F1-F3, Python 3.14 and 3.11, empty diffs against `test/Simulation/data/baseline_report.txt`) |
+| The programs' physics reports | `.venv/bin/python Example/Simulation/physics_baseline.py --out "$SCRATCH"` (after `build_program.py` for both programs) | the trajectories, the scene files, `Data/PCB/pcb_meta.json`; no randomness | yes, 2026-10-25 (byte-identical reports on one machine; `test/Example/Simulation/test_physics_baseline.py`); compared with tolerances in the regression (SPEC §10.2) |
 | The model fingerprint | `.venv/bin/python Example/Scene/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
 | The program trajectory and check report | `.venv/bin/python Example/Program/build_program.py --out "$SCRATCH"` | the configuration files (`Cell.yaml`, `Constants.yaml`, `Simulation.yaml`, `Program.yaml`), the fork path, the scene files; no randomness | yes, 2026-10-24 (`test/Program/test_core.py::test_the_build_is_deterministic`; byte-identical on one machine and platform; `test/Program/test_golden.py` pins it to the golden data, `Example/Program/golden_program.py`) |
 | The optimized program and its report | `.venv/bin/python Example/Program/optimize_program.py --out "$SCRATCH"` | the configuration files with `Optimization.yaml` (its seed), the fork path, the scene files | yes, 2026-10-24 (byte-identical to the committed `Data/Optimized/Program_Optimized.yaml`: `test/Example/Program/test_optimize_program.py`; one machine and platform) |
 | `models/cell_scene.xml` | `.venv/bin/python Example/Scene/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
 
-The report is the contract: a refactor of the physics path is proven by an empty diff against the
-baseline report, plus the acceptance checks.
+The physics reports are the contract: a refactor of the physics path is proven by an empty diff against both programs'
+baseline reports on the same machine (stricter than the regression's drift tolerances), plus the acceptance checks. (Until
+step 6 the legacy cycle report was: git tag legacy-cycle-reference.)
 
 ## Normalisation filter for printed output
 
@@ -24,7 +25,6 @@ an output path; compare stdout only. MuJoCo's attach warning goes to stderr.
 ## Never touched
 
 - `models/scene.xml` (except decided changes), `models/aubo_i5/` (vendored), `models/robot_tool/`.
-- `Data/Reference/cell_plan.npz` (the regression input, design-decisions), until step 6.
 - The baseline files in `test/Simulation/data/` and `test/Scene/data/`.
 
 ## Reached without a grep hit

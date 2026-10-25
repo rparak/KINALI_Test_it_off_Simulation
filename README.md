@@ -27,7 +27,6 @@ An internal research project of JIC Smart Factory, part of its internal research
 
 ```bash
 ./install.sh                                                    # install: .venv with Python 3.11 and the pinned requirements
-.venv/bin/python Example/Simulation/run_cycle.py                           # headless physics run of the cycle + report (Data/Generated/Reports/report.txt)
 .venv/bin/python Example/Scene/export_cell_scene.py                   # write models/cell_scene.xml
 .venv/bin/python -m mujoco.viewer --mjcf=models/cell_scene.xml  # interactive viewer
 .venv/bin/python Example/Program/build_program.py               # default program -> trajectory + check report (Data/Generated/)

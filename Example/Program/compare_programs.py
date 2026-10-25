@@ -33,8 +33,6 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
-# Math (Mathematical functions)
-import math
 # Typing (Support for type hints)
 import typing as tp
 # Numpy (Array computing) [pip3 install numpy]
@@ -42,7 +40,7 @@ import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs, the folders
 from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_REPORTS,
-                                CONST_IMAGES, CONST_REFERENCE_PLAN)
+                                CONST_IMAGES)
 #   ../Configuration/Program_Parser - the two programs and the optimizer's settings
 from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program, Load_Optimization, CONST_OPTIMIZED_PROGRAM_YAML
 #   ../Scene/Core - the cell's errors
@@ -54,8 +52,6 @@ from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Program.Core import Build_Program, Program_Error_Cls
 #   ../Optimizer/Core - the FREE transfers, the stale check, the metrics
 from Optimizer.Core import Free_Transfers, Stale_Inputs, Measure, Program_Metrics_Str
-#   ../Simulation/Core - the reference plan
-from Simulation.Core import Read_Legacy_Plan, Simulation_Error_Cls
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 
@@ -218,16 +214,16 @@ def Figure(default: Trajectory_Str, optimized: Trajectory_Str, metrics: tp.Dict[
 def main():
     """
     Description:
-        Compare the taught program, the optimized one (FEATURES.md F9) and the legacy reference plan: both programs built
-        afresh (the optimized one refused when stale); the cycle time, the robot's joint travel per joint and the TCP's path,
-        the PCB's path, the loader's travel, the robot's stops; per part of the process both durations. A text table (stdout
-        and Data/Generated/Reports/compare_programs.txt) and a figure (Data/Generated/Images/compare_programs.png). Exit 0,
-        1 when a program cannot be built.
+        Compare the taught program and the optimized one (FEATURES.md F9; the legacy reference plan's column until step 6:
+        git tag legacy-cycle-reference): both programs built afresh (the optimized one refused when stale); the cycle time,
+        the robot's joint travel per joint and the TCP's path, the PCB's path, the loader's travel, the robot's stops; per part
+        of the process both durations. A text table (stdout and Data/Generated/Reports/compare_programs.txt) and a figure
+        (Data/Generated/Images/compare_programs.png). Exit 0, 1 when a program cannot be built.
 
             .venv/bin/python Example/Program/compare_programs.py [--out DIR]
     """
 
-    parser = argparse.ArgumentParser(description='Compare the taught, the optimized and the legacy program.')
+    parser = argparse.ArgumentParser(description='Compare the taught and the optimized program.')
     parser.add_argument('--out', help='the folder for the table and the figure (default: Data/Generated/Reports and Images)')
     args = parser.parse_args()
 
@@ -248,41 +244,32 @@ def main():
         default, _ = Build_Program(taught, cell, meta, kinematics, {})
         fast, _ = Build_Program(optimized, cell, meta, kinematics, {})
         transfers = Free_Transfers(taught, Load_Optimization(taught), default)
-        plan = Read_Legacy_Plan(CONST_REFERENCE_PLAN)
-    except (Configuration_Error_Cls, Scene_Error_Cls, Program_Error_Cls, Simulation_Error_Cls, OSError) as error:
+    except (Configuration_Error_Cls, Scene_Error_Cls, Program_Error_Cls, OSError) as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()
         return 1
     metrics = {'taught': Measure(default.Robot_Q, CONST_DT, kinematics, default.Loader_Y, default.Loader_Z, default.PCB_Pose[:, :3]),
                'optimized': Measure(fast.Robot_Q, CONST_DT, kinematics, fast.Loader_Y, fast.Loader_Z, fast.PCB_Pose[:, :3])}
-    home = constants.Loader['L_HOME']
-    q = np.vstack([np.array(constants.Points[simulation.Start_Robot].Joints), plan.Q])
-    legacy = Measure(q, plan.Dt, kinematics, np.zeros(len(q)), np.zeros(len(q)))
-    legacy.Loader_Travel = float(sum(abs(target - previous) for channel, start in (('y', home.Y), ('z', home.Z))
-                                     for previous, target in zip([start] + [m[2] for m in plan.Loader[channel]][:-1],
-                                                                 [m[2] for m in plan.Loader[channel]])))
-    legacy.Cycle_Time = plan.T_End
-    columns = (('legacy', legacy), ('taught', metrics['taught']), ('optimized', metrics['optimized']))
-    lines = ['compare: the legacy reference plan (Data/Reference/cell_plan.npz), the taught program (Configuration/Program.yaml) and the '
-             'optimized one (Data/Optimized/Program_Optimized.yaml)',
-             '%-28s %12s %12s %12s %12s' % ('metric', 'legacy', 'taught', 'optimized', 'opt / taught')]
+    columns = (('taught', metrics['taught']), ('optimized', metrics['optimized']))
+    lines = ['compare: the taught program (Configuration/Program.yaml) and the optimized one (Data/Optimized/Program_Optimized.yaml)',
+             '%-28s %12s %12s %12s' % ('metric', 'taught', 'optimized', 'opt / taught')]
 
     def Row(name: str, values: tp.List[float], form: str) -> str:
         """
         Description:
-            One metric row: the three values and the optimized one's ratio to the taught one.
+            One metric row: the two values and the optimized one's ratio to the taught one.
 
         Args:
             (1) name [string]: The metric.
-            (2) values [List<float>]: Legacy, taught, optimized (NaN when not known).
+            (2) values [List<float>]: Taught, optimized.
             (3) form [string]: The number format.
 
         Returns:
             (1) parameter [string]: The row.
         """
 
-        cells = ['%12s' % ('n/a' if math.isnan(v) else form % v) for v in values]
-        return '%-28s %s %11.1f%%' % (name, ' '.join(cells), 100.0 * values[2] / values[1])
+        cells = ['%12s' % (form % v) for v in values]
+        return '%-28s %s %11.1f%%' % (name, ' '.join(cells), 100.0 * values[1] / values[0])
 
     lines.append(Row('cycle time [s]', [c.Cycle_Time for _, c in columns], '%.3f'))
     lines.append(Row('robot joint travel [rad]', [float(c.Joint_Travel.sum()) for _, c in columns], '%.3f'))
@@ -296,9 +283,8 @@ def main():
     lines.append('per part of the process (s): taught, optimized, difference')
     for name, a, b in Part_Rows(default, fast, default.Step_Names, transfers):
         lines.append('  %-58s %8.3f %8.3f %+8.3f' % (name, a, b, b - a))
-    lines.append('a stop: every joint speed below 1e-3 rad/s (joint change per sample over 4 ms) for at least 0.1 s, after a motion. The '
-                 'legacy plan\'s PCB path is not recorded (n/a); its loader travel is summed from its moves. Simulation results only: not '
-                 'validated for the real cell.')
+    lines.append('a stop: every joint speed below 1e-3 rad/s (joint change per sample over 4 ms) for at least 0.1 s, after a motion. '
+                 'Simulation results only: not validated for the real cell.')
     table = os.path.join(args.out or CONST_REPORTS, 'compare_programs.txt')
     os.makedirs(os.path.dirname(table), exist_ok=True)
     with open(table, 'w', encoding='utf-8') as handle:

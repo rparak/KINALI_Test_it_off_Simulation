@@ -280,17 +280,14 @@ CONST_LOADER_BODIES = {'y_carriage', 'z_carriage', 'jaw_L', 'jaw_R'}
 # The MG06 parts the PCB must never touch.
 #   Unit [Set<string>]
 CONST_MG06_UPPER_BODIES = {'mg06_lid', 'mg06_press', 'mg06_handle'}
-# The fork touches the handle bar on purpose only in these phases of a run.
-#   Unit [Tuple<string>]
-CONST_FORK_PHASES = ('robot: close MG06', 'robot: open MG06')
 
 
 class Contact_Classifier_Cls(object):
     """
     Description:
         Sorts a run's contacts into the categories of CONST_COLLISION_CHECKS (or None: an expected
-        contact) by the bodies of the two geoms; the fork on the handle counts only outside the closing
-        and opening phases. Also names geoms and groups the PCB's penetrations.
+        contact) by the bodies of the two geoms; the fork on the handle counts only where the step does not
+        allow it (its Allow_Contact has no handle_bar). Also names geoms and groups the PCB's penetrations.
 
     Initialization of the Class:
         Args:
@@ -302,8 +299,8 @@ class Contact_Classifier_Cls(object):
                 Cls = Contact_Classifier_Cls(model)
 
             Features:
-                # The category of a contact in the current phase.
-                category = Cls.Classify(contact.geom1, contact.geom2, phase)
+                # The category of a contact in the current step.
+                category = Cls.Classify(contact.geom1, contact.geom2, fork_allowed)
     """
 
     def __init__(self, model: mujoco.MjModel) -> None:
@@ -341,16 +338,14 @@ class Contact_Classifier_Cls(object):
 
         return self.__body_name[geom]
 
-    def Classify(self, geom_1: int, geom_2: int, phase: str, fork_allowed: tp.Optional[bool] = None) -> tp.Optional[str]:
+    def Classify(self, geom_1: int, geom_2: int, fork_allowed: bool) -> tp.Optional[str]:
         """
         Description:
-            The category of a contact between two geoms in a phase of the run.
+            The category of a contact between two geoms in a step of the run.
 
         Args:
             (1 - 2) geom_1, geom_2 [int]: The geom ids.
-            (3) phase [string]: The run's current phase label.
-            (4) fork_allowed [bool]: Whether the fork may touch the handle now (a program's step, F11); None: by the phase
-                (CONST_FORK_PHASES).
+            (3) fork_allowed [bool]: Whether the fork may touch the handle now (the step's Allow_Contact has handle_bar).
 
         Returns:
             (1) parameter [string]: A CONST_COLLISION_CHECKS entry, or None for an expected contact.
@@ -375,8 +370,7 @@ class Contact_Classifier_Cls(object):
             self.__cache[key] = k
         k = self.__cache[key]
         if k == 'fork':
-            allowed = phase.startswith(CONST_FORK_PHASES) if fork_allowed is None else fork_allowed
-            k = None if allowed else 'robot tool <-> handle (outside closing / opening)'
+            k = None if fork_allowed else 'robot tool <-> handle (outside closing / opening)'
         return k
 
 

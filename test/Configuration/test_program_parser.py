@@ -183,20 +183,18 @@ def test_the_commands_are_resolved(program, constants, cell_configuration):
     assert program.Segments[1].Allow_Contact == ['cups_pcb', 'pcb_crate'] and program.Segments[0].Allow_Contact == []
 
 
-def test_the_points_are_the_spec_table_and_the_reference_plans_rows(constants, root):
+def test_the_points_are_the_spec_table(constants):
     """
     Description:
-        Every point's joints are within the SPEC §4.8 table's rounding (1e-4 rad) and a stationary row of
-        Data/Reference/cell_plan.npz to the file's rounding (1e-6 deg) - except P_INPUT_CLEAR, the default program's own point,
-        P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11).
+        Every point's joints are within the SPEC §4.8 table's rounding (1e-4 rad) - except P_INPUT_CLEAR, the default program's
+        own point, P_LOADER_WAIT, the optimized program's waiting point, and P_LOADER_TAKE_TOUCH, the take's touch point (F11).
+        (They were also rows of the legacy plan Data/Reference/cell_plan.npz to 1e-6 deg, checked until step 6 retired it:
+        git tag legacy-cycle-reference.)
     """
 
-    plan = np.load(os.path.join(root, 'Data', 'Reference', 'cell_plan.npz'))
     for name, table in CONST_SPEC_TABLE.items():
         joints = np.array(constants.Points[name].Joints)
         assert np.max(np.abs(joints - table)) <= 1e-4, name
-        nearest = plan['q_home'] if name == 'P_HOME' else plan['q'][np.argmin(np.max(np.abs(plan['q'] - joints), axis=1))]
-        assert np.max(np.abs(nearest - joints)) <= math.radians(0.5e-6) + 1e-12, name
     assert set(constants.Points) - set(CONST_SPEC_TABLE) == {'P_INPUT_CLEAR', 'P_LOADER_WAIT', 'P_LOADER_TAKE_TOUCH'}
 
 

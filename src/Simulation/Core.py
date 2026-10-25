@@ -21,8 +21,6 @@
 # File Name: ../Simulation/Core.py
 ## =========================================================================== ##
 
-# JSON (JSON encoder and decoder)
-import json
 # Regular expressions (Default)
 import re
 # Typing (Support for type hints)
@@ -35,13 +33,13 @@ import numpy as np
 import mujoco
 # Custom Lib.: the files, the cell, the contact categories
 #   ../Configuration/Core
-from Configuration.Core import CONST_REFERENCE_PLAN, CONST_PCB_LOCATIONS, PCB_Meta_Str, Cell_Configuration_Str
+from Configuration.Core import CONST_PCB_LOCATIONS, PCB_Meta_Str, Cell_Configuration_Str
 #   ../Configuration/Program_Parser - a loader position
-from Configuration.Program_Parser import Loader_Position_Str, Program_Str
+from Configuration.Program_Parser import Program_Str
 #   ../Scene/Core
 from Scene.Core import CONST_ROBOT_JOINTS, CONST_CUP_N, CONST_CRATE_FLOOR, Crate_Center, PCB_In_Crate
 #   ../Collision/Core
-from Collision.Core import (CONST_COLLISION_CHECKS, CONST_LOADER_BODIES, CONST_FORK_PHASES, Contact_Classifier_Cls, Penetration_Group, Cup_Contacts,
+from Collision.Core import (CONST_COLLISION_CHECKS, CONST_LOADER_BODIES, Contact_Classifier_Cls, Penetration_Group, Cup_Contacts,
                             Robot_Collision_Cls)
 #   ../Trajectory/Core - a program's trajectory (F11)
 from Trajectory.Core import Trajectory_Str, CONST_DT
@@ -50,10 +48,10 @@ from Trajectory.Core import Trajectory_Str, CONST_DT
 Description:
     Initialization of constants.
 
-    The physics run of a plan (SPEC §7.6): servo set-points with velocity feed-forward, min-jerk loader
-    profiles, vacuum events, the instability guard; the measured values, the report of SPEC §4.6 and the
-    acceptance checks of SPEC §10.1. Ported from legacy/test_cell_cycle.py (git tag legacy-planner-reference;
-    design-decisions): the report and every measured value were identical to that run's. It prints nothing.
+    The physics run of a program's trajectory (SPEC §7.6): servo set-points with velocity feed-forward, the loader's and the
+    gripper's commands, vacuum events, the instability guard; the measured values, the reports and the acceptance checks of
+    SPEC §10.1. Ported from legacy/test_cell_cycle.py (git tag legacy-planner-reference); the legacy plan's run and its
+    baseline were retired in step 6 (git tag legacy-cycle-reference). It prints nothing.
 """
 # The PCB starts 0.3 mm above the input crate's floor, so it settles onto it.
 #   Unit [float] (m)
@@ -91,37 +89,6 @@ class Simulation_Error_Cls(RuntimeError):
         The simulation cannot run or became unstable (MuJoCo reset the state). The message says when and
         what to check; a script prints it verbatim as an [ERROR] line and exits 2.
     """
-
-
-@dataclass
-class Legacy_Plan_Str:
-    """
-    Description:
-        A plan in the format of the legacy IK planner (cell_plan.npz; the planner is legacy/plan_cell.py at git tag
-        legacy-planner-reference). Built by Read_Legacy_Plan.
-    """
-
-    # Sample time of the robot trajectory.
-    #   Unit [float] (s)
-    Dt: float = 0.004
-    # The robot joint trajectory, one row per sample.
-    #   Unit [Matrix<float> Nx6] (rad)
-    Q: np.ndarray = field(default_factory=lambda: np.zeros((0, 6)))
-    # The cycle time.
-    #   Unit [float] (s)
-    T_End: float = 0.0
-    # Loader moves per channel ('y', 'z', 'jaw'): [start time, duration, target].
-    #   Unit [Dict<string, List<List<float>>>] (s, s, m)
-    Loader: tp.Dict[str, tp.List[tp.List[float]]] = field(default_factory=dict)
-    # Vacuum events: [time, 'suction_on' or 'suction_off'].
-    #   Unit [List<List>] (s, -)
-    Events: tp.List[tp.List] = field(default_factory=list)
-    # Phase labels: [start time, label].
-    #   Unit [List<List>] (s, -)
-    Phases: tp.List[tp.List] = field(default_factory=list)
-    # The jaw opening at the start.
-    #   Unit [float] (m)
-    Jaw_Open: float = 0.0
 
 
 @dataclass
@@ -163,7 +130,7 @@ class Hold_Str:
 class Cycle_Result_Str:
     """
     Description:
-        What a cycle run measured (SPEC §4.6), in SI units. Built by Run_Cycle; formatted by Format_Report.
+        What a cycle run measured (SPEC §4.6), in SI units. Built by Physics_Run_Cls; formatted by Format_Report.
     """
 
     # The cycle time.
@@ -220,7 +187,7 @@ class Cycle_Result_Str:
     #   Unit [float] (rad)
     Lid_End: float = 0.0
     Handle_End: float = 0.0
-    # The run's steps (a program's steps or a legacy plan's phases), in order (F11).
+    # The run's steps (a program's steps), in order (F11).
     #   Unit [List<Step_Physics_Str>]
     Steps: tp.List['Step_Physics_Str'] = field(default_factory=list)
     # Why the run stopped before its end ('PCB lost at ...', 'vacuum not OK at ...'), or None, and its kind ('lost', 'input')
@@ -249,309 +216,6 @@ class Acceptance_Check_Str:
     # The measured value(s), for the report.
     #   Unit [string]
     Detail: str = ''
-
-
-def Read_Legacy_Plan(path: str = CONST_REFERENCE_PLAN) -> Legacy_Plan_Str:
-    """
-    Description:
-        Read a legacy plan (cell_plan.npz), the only reader of the format in src/.
-
-    Args:
-        (1) path [string]: The file (default Data/Reference/cell_plan.npz).
-
-    Returns:
-        (1) parameter [Legacy_Plan_Str(object)]: The plan.
-    """
-
-    try:
-        plan = np.load(path)
-        return Legacy_Plan_Str(Dt=float(plan['dt']), Q=plan['q'], T_End=float(plan['T']), Loader=json.loads(str(plan['loader'])),
-                               Events=json.loads(str(plan['events'])), Phases=json.loads(str(plan['phases'])),
-                               Jaw_Open=float(plan['J_OPEN']))
-    except (OSError, KeyError, ValueError) as error:
-        raise Simulation_Error_Cls('The plan %s cannot be read (%s). Use Data/Reference/cell_plan.npz or a plan in its format.'
-                                   % (path, error)) from error
-
-
-def Min_Jerk(s: float) -> float:
-    """
-    Description:
-        The min-jerk profile 10 s^3 - 15 s^4 + 6 s^5 of a normalised time, clipped to [0, 1].
-
-    Args:
-        (1) s [float]: Normalised time.
-
-    Returns:
-        (1) parameter [float]: The fraction of the move done.
-    """
-
-    s = np.clip(s, 0, 1)
-    return s**3 * (10 - 15 * s + 6 * s * s)
-
-
-def Loader_Target(plan: Legacy_Plan_Str, start: tp.Dict[str, float], channel: str, t: float) -> float:
-    """
-    Description:
-        The loader command of one channel at time t: every move started so far, min-jerk, in order.
-
-    Args:
-        (1) plan [Legacy_Plan_Str(object)]: The plan.
-        (2) start [Dict<string, float>]: The start value per channel (m).
-        (3) channel [string]: 'y', 'z' or 'jaw'.
-        (4) t [float]: The time (s).
-
-    Returns:
-        (1) parameter [float]: The command (m).
-    """
-
-    v = start[channel]
-    for t0, T, x in plan.Loader[channel]:
-        if t >= t0:
-            v = v + (x - v) * Min_Jerk((t - t0) / T)
-    return v
-
-
-def Robot_Target(plan: Legacy_Plan_Str, v_plan: np.ndarray, kv_kp: np.ndarray, t: float) -> tp.Tuple[np.ndarray, np.ndarray]:
-    """
-    Description:
-        The servo set-point at time t: the planned position, linearly interpolated, plus velocity
-        feed-forward kv/kp * v_ref (SPEC §4.3).
-
-    Args:
-        (1) plan [Legacy_Plan_Str(object)]: The plan.
-        (2) v_plan [Matrix<float> Nx6]: The planned joint velocities (rad/s).
-        (3) kv_kp [Vector<float> 1x6]: kv / kp of each servo (s).
-        (4) t [float]: The time (s).
-
-    Returns:
-        (1) parameter [Vector<float> 1x6]: The servo command (rad).
-        (2) parameter [Vector<float> 1x6]: The planned position q_ref (rad).
-    """
-
-    n = len(plan.Q)
-    x = min(t / plan.Dt, n - 1.001)
-    i = int(x)
-    w = x - i
-    j = min(i + 1, n - 1)
-    q = (1 - w) * plan.Q[i] + w * plan.Q[j]
-    v = (1 - w) * v_plan[i] + w * v_plan[j]
-    return q + kv_kp * v, q
-
-
-def Phase_At(plan: Legacy_Plan_Str, t: float) -> str:
-    """
-    Description:
-        The label of the last phase started at or before t ('' before the first).
-
-    Args:
-        (1) plan [Legacy_Plan_Str(object)]: The plan.
-        (2) t [float]: The time (s).
-
-    Returns:
-        (1) parameter [string]: The phase label.
-    """
-
-    ph = [p for t0, p in plan.Phases if t >= t0]
-    return ph[-1] if ph else ''
-
-
-class Legacy_Drive_Cls(object):
-    """
-    Description:
-        The drive of a physics run from a legacy plan (cell_plan.npz): the servo set-points of the plan's joints with the
-        feed-forward of their np.gradient, the loader's min-jerk moves, the plan's vacuum events and phase labels; the fork
-        may touch the handle in the closing and opening phases; the PCB is placed when the loader goes up to park, MG06 is
-        closed with the robot away in the phase that says so. Run_Cycle's run, unchanged (its report is the old baseline).
-
-    Initialization of the Class:
-        Args:
-            (1) plan [Legacy_Plan_Str(object)]: The plan.
-            (2) loader_home [Loader_Position_Str(object)]: The loader's home (Constants.yaml L_HOME), where it starts.
-
-        Example:
-            Initialization:
-                # Assignment of the variables.
-                drive = Legacy_Drive_Cls(plan, constants.Loader['L_HOME'])
-
-            Features:
-                # Functions of the class (Physics_Run_Cls calls them).
-                drive.Robot(t), drive.Loader(t), drive.Label(t)
-    """
-
-    def __init__(self, plan: Legacy_Plan_Str, loader_home: Loader_Position_Str) -> None:
-        self.Plan, self.T_End = plan, plan.T_End
-        # A plan has no WaitDI lines (F11's vacuum switch).
-        self.Inputs: tp.List[tp.Tuple[float, str, str, float, int, float]] = []
-        self.__start = {'y': loader_home.Y, 'z': 0.0, 'jaw': plan.Jaw_Open}
-        self.__v_plan = np.gradient(plan.Q, plan.Dt, axis=0)
-        self.__kv_kp = np.zeros(6)
-        self.Events = [(float(t0), name == 'suction_on') for t0, name in plan.Events]
-
-    def Bind(self, kv_kp: np.ndarray) -> None:
-        """
-        Description:
-            The servos' kv / kp, for the feed-forward.
-
-        Args:
-            (1) kv_kp [Vector<float> 1x6]: kv / kp of each servo (s).
-        """
-
-        self.__kv_kp = kv_kp
-
-    def Start(self) -> tp.Tuple[np.ndarray, float, float, float]:
-        """
-        Description:
-            The start: the robot joints, the loader's y and z, the jaws.
-
-        Returns:
-            (1) parameter [Vector<float> 1x6]: The joints (rad).
-            (2 - 4) parameter [float]: y, z, jaw (m).
-        """
-
-        return self.Plan.Q[0], self.__start['y'], self.__start['z'], self.__start['jaw']
-
-    def Robot(self, t: float) -> tp.Tuple[np.ndarray, np.ndarray]:
-        """
-        Description:
-            The servo command and the reference joints at t (Robot_Target).
-
-        Args:
-            (1) t [float]: The time (s).
-
-        Returns:
-            (1 - 2) parameter [Vector<float> 1x6]: The command, q_ref (rad).
-        """
-
-        return Robot_Target(self.Plan, self.__v_plan, self.__kv_kp, t)
-
-    def Loader(self, t: float) -> tp.List[float]:
-        """
-        Description:
-            The loader's y, z and jaw commands at t (Loader_Target).
-
-        Args:
-            (1) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [List<float>]: y, z, jaw (m).
-        """
-
-        return [Loader_Target(self.Plan, self.__start, 'y', t), Loader_Target(self.Plan, self.__start, 'z', t),
-                Loader_Target(self.Plan, self.__start, 'jaw', t)]
-
-    def Label(self, t: float) -> str:
-        """
-        Description:
-            The phase at t (Phase_At).
-
-        Args:
-            (1) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [string]: The label.
-        """
-
-        return Phase_At(self.Plan, t)
-
-    def Command(self, t: float) -> str:
-        """
-        Description:
-            The line at t: a plan has no lines, so its phase.
-
-        Args:
-            (1) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [string]: The phase.
-        """
-
-        return Phase_At(self.Plan, t)
-
-    def PCB_Location(self, t: float) -> str:
-        """
-        Description:
-            Where the plan has the PCB at t: a plan does not say ('').
-
-        Args:
-            (1) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [string]: ''.
-        """
-
-        return ''
-
-    def Fork_Allowed(self, label: str) -> bool:
-        """
-        Description:
-            Whether the fork may touch the handle in this phase (the closing and opening ones).
-
-        Args:
-            (1) label [string]: The phase.
-
-        Returns:
-            (1) parameter [bool]: True when allowed.
-        """
-
-        return label.startswith(CONST_FORK_PHASES)
-
-    def Placed(self, label: str, t: float) -> bool:
-        """
-        Description:
-            Whether the PCB is placed in MG06: the loader goes up to park.
-
-        Args:
-            (1) label [string]: The phase.
-            (2) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [bool]: True from then on.
-        """
-
-        return label.startswith('loader: up, to park')
-
-    def Closed(self, label: str, t: float) -> bool:
-        """
-        Description:
-            Whether MG06 is closed with the robot away (the phase that says so).
-
-        Args:
-            (1) label [string]: The phase.
-            (2) t [float]: The time (s).
-
-        Returns:
-            (1) parameter [bool]: True in it.
-        """
-
-        return 'away, MG06 closed' in label
-
-    def Free(self, label: str) -> bool:
-        """
-        Description:
-            Whether the step is a FREE transfer (a legacy plan has none).
-
-        Args:
-            (1) label [string]: The step.
-
-        Returns:
-            (1) parameter [bool]: False.
-        """
-
-        return False
-
-    def Parallel(self, label: str) -> bool:
-        """
-        Description:
-            Whether the robot and the loader may move together in the step (never in a legacy plan's phases).
-
-        Args:
-            (1) label [string]: The step.
-
-        Returns:
-            (1) parameter [bool]: False.
-        """
-
-        return False
 
 
 class Trajectory_Drive_Cls(object):
@@ -593,10 +257,12 @@ class Trajectory_Drive_Cls(object):
         self.__free = set(free_steps) if free_steps is not None else {name for name, texts in lines.items()
                                                                       if any(text.startswith('Robot.MoveSpline') for text in texts)}
         self.__parallel = {name for name, texts in lines.items() if any(text.startswith('Loader.Start') for text in texts)}
-        park = next(k for k, text in enumerate(tr.Segment_Command) if text == 'Loader.Start(J_PARK)' or text.startswith('Loader.Run(J_PARK) >'))
-        test = next(k for k, name in enumerate(tr.Step_Names) if name.endswith('_Test'))
-        self.Placed_Time = float(tr.T[min(int(tr.Segment_Start[park]), self.N - 1)])
-        self.Closed_Time = float(tr.T[int(np.flatnonzero(tr.Step_Index == test)[0])])
+        park = next((k for k, text in enumerate(tr.Segment_Command) if text == 'Loader.Start(J_PARK)' or text.startswith('Loader.Run(J_PARK) >')),
+                    None)
+        test = next((k for k, name in enumerate(tr.Step_Names) if name.endswith('_Test')), None)
+        # A trajectory without J_PARK or a Test step (a short probe) never places the PCB or closes MG06.
+        self.Placed_Time = float(tr.T[min(int(tr.Segment_Start[park]), self.N - 1)]) if park is not None else float('inf')
+        self.Closed_Time = float(tr.T[int(np.flatnonzero(tr.Step_Index == test)[0])]) if test is not None else float('inf')
         # The vacuum switch's checks (F11): each WaitDI on DI_VACUUM_OK - when its wait ends, its step, its line, the input's
         # response time, the cups it needs, the WaitDI's timeout.
         sim = program.Simulation
@@ -798,7 +464,7 @@ class Trajectory_Drive_Cls(object):
 class Step_Physics_Str:
     """
     Description:
-        One step of a physics run (a program's step or a legacy plan's phase): its time span, the largest tracking error, the
+        One step of a physics run (a program's step): its time span, the largest tracking error, the
         PCB's slip in the cups with the tool's tilt and the TCP's acceleration where it was largest and their maxima, the
         deepest contact per category, the closest robot-loader distance in a parallel step.
     """
@@ -838,7 +504,7 @@ class Step_Physics_Str:
 class Physics_Run_Cls(object):
     """
     Description:
-        The physics run of a drive (a legacy plan or a program's trajectory) from the PCB in the input crate to the end of the
+        The physics run of a drive (a program's trajectory) from the PCB in the input crate to the end of the
         cycle, one step at a time (Step), with the measurements of SPEC §4.6 (Result) and, per step, Step_Physics_Str. MuJoCo
         resets the state on instability; the run detects the time going backwards and raises instead of continuing (SPEC
         §4.7). The physics is the model's: the timestep and the solver as compiled.
@@ -846,7 +512,7 @@ class Physics_Run_Cls(object):
     Initialization of the Class:
         Args:
             (1) model [mujoco.MjModel]: The compiled cell (Scene.Core.Build_Cell_Model).
-            (2) drive [Legacy_Drive_Cls or Trajectory_Drive_Cls (object)]: What drives it.
+            (2) drive [Trajectory_Drive_Cls(object)]: What drives it.
             (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
             (4) cell [Cell_Configuration_Str(object)]: The cell configuration (the phase period, the cup touch).
             (5) progress [function]: Called with (time [s], label) every CONST_PROGRESS_STEPS steps, or None.
@@ -994,7 +660,7 @@ class Physics_Run_Cls(object):
         ff, net, normals = 0.0, np.zeros(3), np.zeros(3)
         record = self.steps.setdefault(ph, Step_Physics_Str(Name=ph, Start=t, Free=drive.Free(ph), Parallel=drive.Parallel(ph)))
         for i, c in enumerate(d.contact[:d.ncon]):
-            k = self.classifier.Classify(c.geom1, c.geom2, ph, drive.Fork_Allowed(ph))
+            k = self.classifier.Classify(c.geom1, c.geom2, drive.Fork_Allowed(ph))
             if k and c.dist < self.worst.get(k, (0,))[0]:
                 self.worst[k] = (c.dist, self.classifier.Geom_Name(c.geom1), self.classifier.Geom_Name(c.geom2), round(d.time, 2))
             if k and c.dist < record.Contacts.get(k, (0,))[0]:
@@ -1158,7 +824,7 @@ def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, ce
 
     Args:
         (1) model [mujoco.MjModel]: The compiled cell.
-        (2) drive [Legacy_Drive_Cls or Trajectory_Drive_Cls (object)]: What drives it.
+        (2) drive [Trajectory_Drive_Cls(object)]: What drives it.
         (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
         (4) cell [Cell_Configuration_Str(object)]: The cell configuration.
         (5) progress [function]: Called with (time [s], label) every CONST_PROGRESS_STEPS steps, or None.
@@ -1173,31 +839,10 @@ def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, ce
     return run.Result()
 
 
-def Run_Cycle(model: mujoco.MjModel, plan: Legacy_Plan_Str, pcb_meta: PCB_Meta_Str, cell: Cell_Configuration_Str,
-              loader_home: Loader_Position_Str, progress: tp.Optional[tp.Callable[[float, str], None]] = None) -> 'Cycle_Result_Str':
-    """
-    Description:
-        The physics run of a legacy plan (Run_Physics with Legacy_Drive_Cls): the run of the old baseline report.
-
-    Args:
-        (1) model [mujoco.MjModel]: The compiled cell (Scene.Core.Build_Cell_Model).
-        (2) plan [Legacy_Plan_Str(object)]: The plan.
-        (3) pcb_meta [PCB_Meta_Str(object)]: The PCB poses.
-        (4) cell [Cell_Configuration_Str(object)]: The cell configuration (the phase period, the cup touch).
-        (5) loader_home [Loader_Position_Str(object)]: The loader's home (Constants.yaml L_HOME), where it starts.
-        (6) progress [function]: Called with (time [s], phase) every CONST_PROGRESS_STEPS steps, or None.
-
-    Returns:
-        (1) parameter [Cycle_Result_Str(object)]: The measured values.
-    """
-
-    return Run_Physics(model, Legacy_Drive_Cls(plan, loader_home), pcb_meta, cell, progress)
-
-
 def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
     """
     Description:
-        The report lines of SPEC §4.6 (mm and deg), identical to the legacy run's (SPEC §10.2).
+        The report lines of SPEC §4.6 (mm and deg), as the legacy run printed them (git tag legacy-cycle-reference).
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A run's values.
@@ -1233,7 +878,7 @@ def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
 def Check_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> tp.List[Acceptance_Check_Str]:
     """
     Description:
-        The acceptance criteria of SPEC §10.1 (items 1-5 and 7; item 6, no instability, is Run_Cycle
+        The acceptance criteria of SPEC §10.1 (items 1-5 and 7; item 6, no instability, is Run_Physics
         returning at all) on a run's values.
 
     Args:
