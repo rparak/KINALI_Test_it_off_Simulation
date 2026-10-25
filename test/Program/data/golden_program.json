@@ -1,5 +1,5 @@
 {
- "source": "J_FETCH at L_FETCH; the re-grip check (item 5)",
+ "source": "Jaw_Actual 17.54 mm, the descent's height check (item 3)",
  "cycle_time": 70.404,
  "samples": 17602,
  "arrays": {
@@ -84,7 +84,7 @@
    ]
   },
   "jaw": {
-   "sha256": "23d3a3fa900b210e7a8c1079f61129151b880d653b5c8c705d775dc80d9d16b5",
+   "sha256": "a8176670695ecfa0a5da578f763a7e3ecbd1fa7a21439bfb42212a45ce0c6e29",
    "dtype": "float64",
    "shape": [
     17602
