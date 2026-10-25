@@ -56,7 +56,7 @@ CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/
 CONST_DOMAIN_MODULES = {'Configuration': {'Core.py', 'Const.py', 'Program_Parser.py'}, 'Scene': {'Core.py'}, 'Kinematics': {'Core.py'},
                         'Collision': {'Core.py'}, 'Render': {'Core.py'}, 'Simulation': {'Core.py', 'Const.py', 'Report.py'},
                         'Keypoints': {'Core.py'}, 'Trajectory': {'Core.py'}, 'Program': {'Core.py', 'Const.py', 'Check.py'},
-                        'Planner': {'Core.py'}, 'Optimizer': {'Core.py', 'Measure.py'}}
+                        'Planner': {'Core.py'}, 'Optimizer': {'Core.py', 'Measure.py'}, 'Report': {'Core.py', 'Media.py'}}
 
 
 def _Tracked(root):

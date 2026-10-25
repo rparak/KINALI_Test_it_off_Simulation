@@ -254,6 +254,72 @@ Python.
 
 Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
+## The media are encoded with Pillow and imageio-ffmpeg's pinned ffmpeg
+
+**Decision.** `pillow==13.0.0` (already installed with matplotlib, now a direct dependency) writes the GIF previews, the
+step labels and the contact sheet; `imageio-ffmpeg==0.6.0` provides a pinned ffmpeg 7.1 binary that `src/Report/Media.py`
+runs as a separate process for the H.264 videos (owner, 2026-10-25). Both are tool dependencies of the media scripts only:
+no simulation, check or physics result depends on them.
+
+**Licences** (checked 2026-10-25 on the installed wheels): Pillow is MIT-CMU (HPND); imageio-ffmpeg is BSD-2-Clause; its
+bundled binary `imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1` reports `--enable-gpl` (with libx264 and libx265), so the
+binary is GPL-2.0-or-later. The project runs it as a program (raw frames piped in, an MP4 out); it neither links nor
+redistributes it (pip installs it from PyPI into `.venv`), so the project's MIT licence is unaffected, and the videos it
+writes are the project's output, not covered by the encoder's licence. The README's third-party notes say this when the
+README is written (step 7).
+
+**Alternatives.** A system ffmpeg (`brew install ffmpeg`): not installed by `install.sh`, so not reproducible. Pillow only (GIFs,
+no MP4): rejected by the owner, the full videos are wanted in high resolution. PyAV or OpenCV's writer: larger, and their
+wheels bundle the same GPL/LGPL codecs.
+
+**Revisit if** the project starts to redistribute the binary (a bundled installer, a container image): then the GPL's source
+offer applies, or an LGPL build without libx264 is used.
+
+Pinned by `test/Report/test_media.py` (an MP4 and a GIF written and read back).
+
+## The comparison is generated, measured from the runs, every number with its source
+
+**Decision.** `Example/Report/compare_report.py` writes `Data/Generated/Report/Comparison.md` whole (git-ignored), its prose
+fixed and every number computed and tagged with its source ([K] the trajectory, [P] the physics run, [C] the configuration,
+[M] the model); `src/Report/` holds the measurements (owner, 2026-10-25: a new `Report` domain at the top of the layer order).
+The physics side is read from the run by stepping `Physics_Run_Cls` as `Run_Physics` does and reading its data every 4 ms
+(`Record_Physics`); `src/Simulation` is not changed.
+
+**Why.** A report edited by hand would drift from the code that measures; a number without its source cannot be checked. A
+recorder inside the physics run would change the verified run's code; reading its data between steps cannot change it, and the
+run's report proves it (byte-identical to `run_program.py`'s for both programs, 2026-10-25, tested).
+
+**Choices inside.** Exact distances every 20 ms, refined to 4 ms around each pair's minimum, cut at 100 mm (a third of the
+distance calls of a 200 mm cut: 71 s for the whole report on the Apple M2 Pro, five processes); zone occupancy from the
+collision geoms' points (a mesh's vertices), not their bounding boxes, which make a robot link occupy a zone it only passes
+near; the zones are boxes (owner): the MG06 zone's box reaches into the loader's home, which the report states.
+
+**Alternatives.** A hand-written report around generated tables: rejected (drift). A per-step recorder hook in `src/Simulation`:
+rejected (it changes the verified run's code for an analysis).
+
+**Revisit if** the report should be committed (then its numbers would need a regression pin) or the run's code changes (the
+recorder relies on `Physics_Run_Cls.Step`, `Done`, `Data`, `Result`).
+
+Pinned by `test/Report/test_core.py` (`test_the_recording_does_not_change_the_run`, slow, and the measurements) and
+`test/Example/Report/test_compare_report.py` (slow).
+
+## The media use one fixed camera; the GIFs stay under 10 MB
+
+**Decision.** Every medium of `Example/Report/make_media.py` - the videos, the GIF previews, the point images, the collision
+image - uses one free camera (`CONST_CAMERA`: looking at (0.10, -0.34, 0.40) m from 2.0 m, azimuth 78 deg, elevation -34 deg,
+chosen from rendered candidates so MG06, the loader, both crates and the robot's highest pose are in view). The videos: H.264,
+CRF 18, preset slow, 60 fps, real time, 1920 x 1080 (2560 x 1440 on request), the step and the line running on a label; the
+previews: 960 px, 4 x speed, 15 fps on average (GIF frame times are 10 ms steps: 70, 70, 60 ms), one palette from all frames
+without dithering, kept under 10 MB by fewer colours, then every other frame (owner, 2026-10-25).
+
+**Why.** One view makes the programs and the points comparable side by side. One palette avoids GIF flicker.
+
+**Alternatives.** The model's `cam_tool` / `cam_pcb` (they follow a body: no common view). A per-frame palette (flicker).
+
+**Revisit if** a part of the cell must be seen that this view hides (the camera post covers part of MG06 in some frames).
+
+Pinned by `test/Report/test_media.py` and `test/Example/Report/test_make_media.py` (slow).
+
 ## The MG06 lock has 1.5 mm radial play
 
 **Decision.** The lock's hook and pin in `models/scene.xml` have 1.5 mm radial play instead of the 0.5 mm of

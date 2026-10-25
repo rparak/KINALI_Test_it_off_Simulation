@@ -202,6 +202,23 @@ The acceptance bounds on the fork are regression bounds derived from the simulat
   low level) active, or measured with a force sensor or the controller's force estimate; OnRobot's force and moment ratings
   of the VGC10 interface and AUBO's of the i5's flange and joints, the bounds then replaced by them or by a margin under them.
 
+## The optimized take relies on the loader's timing: Wait(1.648)
+
+`S11_To_Take` of the optimized program starts `Loader.Start(J_RETURN)`, waits a fixed `Wait(1.648)` and moves the robot from
+`P_LOADER_WAIT` to `P_LOADER_ABOVE`; the wait was planned against the loader's modelled timing, and the robot crosses the
+loader's Y path just behind its Z carriage. Measured 2026-10-25 (`Example/Report/compare_report.py`, `Report.Core.Stretched_Distance`:
+J_RETURN slowed, the robot's lines as programmed, I8's exact distance on the loader's actuator model): as programmed 19.39 mm;
+`J_RETURN` +2.2 % slower falls below Loader_Free + Tracking_Margin (14 mm), +3.7 % below Loader_Free (10 mm), +7.2 % below the
+acceptance floor (1 mm), +7.6 % the tool meets the Z carriage; +25 % or more -18.5 mm. J_INSERT, J_PARK and J_FETCH are
+insensitive (the robot waits for them or moves away). No other part of either program relies on a time.
+
+- **Impact:** the optimized program is not robust to a real loader a few percent slower than its model (or to a late start,
+  latency, a stall); in the simulation it passes because the loader is the model.
+- **What would close it:** start `W_TO_TAKE` on a condition - `Loader.WaitDone` of a split `J_RETURN_Y` (MoveZ L_TRAVEL, MoveY
+  L_HOME) or a loader input "Y at home" - since with the loader's Y at home the whole spline keeps more than 50 mm at any Z
+  (`Report.Core.Clear_Height`); expected cycle cost 0.000 s (the spline still ends before the loader's last move). Proposed in
+  `Comparison.md` section 4, not implemented (owner's decision).
+
 ## Real-cell transfer: a controller waits for "in position" before a LOCKED operation
 
 The optimized program's splines end where a LOCKED operation begins (the crate pick, the handover, the place) with up to

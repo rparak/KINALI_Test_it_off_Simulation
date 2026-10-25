@@ -13,6 +13,11 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
+- [~] F14: the comparison of the taught and the optimized program (`src/Report/`, `Example/Report/compare_report.py`,
+      `make_media.py`; SPEC §7.12) - built, awaiting the owner's acceptance; the full MP4s become v1.0 release assets only with
+      the owner's approval.
+- [ ] Candidate follow-up (F14, proposed): the optimized take's spline starts on a condition, not `Wait(1.648)` (split
+      `J_RETURN` or a "Y at home" input; KNOWN_ISSUES.md), with an interlock I9 and the stretch check showing no failure.
 
 ## Done
 

@@ -10,8 +10,10 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
 
 Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for the JIC Smart Factory logo in the README header - its source
 file (`Media/Original/jic-smart-factory.svg`, byte-identical to the skill's asset) and its logo rules, with one departure
-(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and the figures use neither its palette nor its
-fonts (`compare_programs.py` uses the dataviz palette).
+(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its chart rules are not ported - they are
+written for QPainter and give no categorical palette for matplotlib (owner, 2026-10-25). The figures use the dataviz palette
+(`compare_programs.py`, `compare_report.py`) and matplotlib's default font, no vendored fonts; the one brand colour in a figure
+is the JIC purple `#640ABA` as the optimized program's series accent (`Example/Report/compare_report.py`).
 
 ## Header and checker
 
@@ -28,12 +30,14 @@ fonts (`compare_programs.py` uses the dataviz palette).
 
 ```
 src/<Domain>/Core.py   the domain's primary module: Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints,
-                       Trajectory, Program, Planner, Optimizer
+                       Trajectory, Program, Planner, Optimizer, Report
 src/<Domain>/<Topic>.py  a second concern of a domain: Configuration/Program_Parser.py (the cell program's reader),
                        Program/Check.py (the trajectory check), Simulation/Report.py (a run's acceptance and report),
-                       Optimizer/Measure.py (what the optimized program is measured by)
+                       Optimizer/Measure.py (what the optimized program is measured by), Report/Media.py (the
+                       comparison's frames, videos, GIFs)
 src/<Domain>/Const.py  only where more than one module of the domain uses a constant: Configuration, Program, Simulation
-Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Media, Keypoints, Program, Simulation
+Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Media, Keypoints, Program, Simulation,
+                       Report
 test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is tested through its readers);
                        test/Example/<Domain>/test_<script>.py; test/Install/test_install.py; test/Docs/test_layout.py;
                        reference data (the baselines) in test/<Domain>/data/
@@ -42,7 +46,8 @@ Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimi
                        Experiments/<name>/ (a not-adopted experiment: its .patch, script, README.md)
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by
-                       Example/Media/make_logo_variants.py; Original/ the owner's files
+                       Example/Media/make_logo_variants.py; Cycle_<Taught|Optimized>.gif and Key_Points.png, written by
+                       Example/Report/make_media.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -70,6 +75,7 @@ Simulation                → Configuration, Scene, Collision, Trajectory
 Keypoints                 → Configuration, Scene, Kinematics, Collision
 Program                   → Configuration, Scene, Kinematics, Collision, Keypoints, Trajectory, Planner
 Optimizer                 → Configuration, Kinematics, Collision, Keypoints, Planner, Program, Trajectory
+Report                    → Configuration, Kinematics, Collision, Simulation, Program, Optimizer, Trajectory, Render
 Example/                  → any of src/
 ```
 
@@ -100,6 +106,8 @@ that differ only in letter case (macOS's file system is case-insensitive: a case
 | a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
+| the comparison `Data/Generated/Report/` (Comparison.md, figures, videos, point and collision images) | `Example/Report/compare_report.py`, `make_media.py` (through `Report.Core`, `Report.Media`); never read |
+| the previews `Media/Cycle_<Taught|Optimized>.gif`, `Media/Key_Points.png` | `Example/Report/make_media.py` (`Report.Media.Write_Gif`, `Contact_Sheet`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
