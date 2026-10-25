@@ -17,8 +17,8 @@ gripper and fork picks a PCB from the input crate and hands it to a two-axis loa
 fixture. The robot closes and opens MG06, and the PCB goes back to the output crate. The physics is verified against
 a regression baseline. A default robot program, taught from named robot points, is built into a trajectory and checked
 kinematically (clearance, limits). An optimized version plans its free-space moves and runs the loader in parallel, with
-the same checks (57.7 s cycle against 69.4 s in the simulation). Both programs run with full physics and meet the acceptance
-criteria there (the PCB held on all four cups, never lost, room around the loader). A full README follows in Phase 1 step 7.
+the same checks (58.7 s cycle against 70.4 s in the simulation). Both programs run with full physics and meet the acceptance
+criteria there (the PCB held on all four cups, never lost, room around the loader). A full README follows in step 7.
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA).
 
@@ -35,7 +35,7 @@ An internal research project of JIC Smart Factory, part of its internal research
 .venv/bin/python Example/Program/optimize_program.py            # optimized program -> Data/Optimized/Program_Optimized.yaml + report
 .venv/bin/python Example/Program/build_program.py --program Data/Optimized/Program_Optimized.yaml   # its trajectory + check
 .venv/bin/mjpython Example/Program/show_program.py --version optimized   # play the optimized program
-.venv/bin/python Example/Program/compare_programs.py            # legacy vs default vs optimized: table + figure (Data/Generated/)
+.venv/bin/python Example/Program/compare_programs.py            # taught vs optimized: table + figure (Data/Generated/)
 .venv/bin/python Example/Simulation/run_program.py --program taught       # physics run of a program + report (Data/Generated/Reports/)
 .venv/bin/mjpython Example/Simulation/show_physics.py --program optimized   # its physics in the viewer, real time (--speed 0.25: slower)
 ```
