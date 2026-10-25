@@ -39,7 +39,8 @@ Example/<Domain>/<script>.py   Simulation/run_program.py, Scene/export_cell_scen
 test/<Domain>/test_core.py   mirroring src/; test/Example/<Domain>/test_<script>.py; test/Install/test_install.py;
                        test/Docs/test_layout.py; reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
-Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml
+Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml,
+                       Experiments/<name>/ (a not-adopted experiment: its .patch, script, README.md)
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml (F10); Optimization.yaml (F9)
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by Example/Media/make_logo_variants.py; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts

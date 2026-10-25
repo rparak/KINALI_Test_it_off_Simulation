@@ -1,0 +1,268 @@
+diff --git a/Configuration/Constants.yaml b/Configuration/Constants.yaml
+index 0d384a5..b16fd5c 100644
+--- a/Configuration/Constants.yaml
++++ b/Configuration/Constants.yaml
+@@ -258,7 +258,9 @@ Gripper_Commands:
+ 
+ # The recorded flange paths (SPEC §4.9): File (repository-relative), Phase (CLOSE: the rows from 1 to the last
+ # CLOSE row; OPEN: the OPEN rows after the join - the first with the handle below Cell.yaml MG06.Closed_Handle
+-# minus MG06.Open_Join_Margin), the points they start and end at.
++# minus MG06.Open_Join_Margin), the points they start and end at, Bar_Retraction [m]: where the recorded fork overlaps
++# the handle bar, each row is moved this far off the bar along the fork-bar normal (fading out where the recorded gap
++# reaches 0.2 mm; 0: as recorded; F11). The recording stays the source.
+ Paths:
+   PATH_FORK_CLOSE:
+     Description: "Close MG06: lid down, handle to 29 deg, the bar on the fork slot's bottom."
+@@ -266,12 +268,14 @@ Paths:
+     Phase: CLOSE
+     Start: P_MG06_FORK_START
+     End: P_MG06_CLOSE_END
++    Bar_Retraction: 0.0
+   PATH_FORK_OPEN:
+     Description: "Open MG06: the handle up, the lid up, the fork off the handle."
+     File: Data/Paths/fork_close_open_path.npz
+     Phase: OPEN
+     Start: P_MG06_OPEN_JOIN
+     End: P_MG06_FORK_START
++    Bar_Retraction: 0.0
+ 
+ # The digital signals. Port: a PLACEHOLDER - the real cell's I/O map is not defined (KNOWN_ISSUES.md).
+ Signals:
+diff --git a/Example/Simulation/fork_retraction_sweep.py b/Example/Simulation/fork_retraction_sweep.py
+new file mode 100644
+index 0000000..b235688
+--- /dev/null
++++ b/Example/Simulation/fork_retraction_sweep.py
+@@ -0,0 +1,54 @@
++# Option 2 experiment (F11, 2026-10-25; not adopted, design-decisions): the closing path moved off the handle bar.
++# Run from the repository root: .venv/bin/python Example/Simulation/fork_retraction_sweep.py R_MM taught|optimized DX_UM WAIT_S
++# One line per run; the table in design-decisions is 0 / 0.55 / 0.60 / 0.65 / 0.70 mm x dx -5 -1 0 1 5 um (wait 0) and
++# waits 0.004 / 0.1 s (dx 0), both programs.
++import os, sys, math, tempfile; sys.path.append('src'); import numpy as np, mujoco
++from Configuration.Core import Load_Cell_Configuration, Read_PCB_Meta, Configure_MuJoCo_Log
++from Configuration.Program_Parser import Load_Constants, Load_Simulation, Load_Program, Load_Optimization, Free_Steps, CONST_PROGRAM_YAML, CONST_OPTIMIZED_PROGRAM_YAML
++from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
++from Kinematics.Core import Robot_Kinematics_Cls
++import Program.Core as pc
++from Program.Core import Build_Program, Pose_Sample, Bar_Gap, Bar_Gaps
++from Scene.Core import Build_Cell_Model
++from Simulation.Core import Trajectory_Drive_Cls, Physics_Run_Cls, Check_Program_Acceptance
++Configure_MuJoCo_Log()
++r, which, dx, wait = float(sys.argv[1]) / 1000, sys.argv[2], float(sys.argv[3]), float(sys.argv[4])
++cell, meta, c = Load_Cell_Configuration(), Read_PCB_Meta(), Load_Constants(); s = Load_Simulation(c)
++c.Paths['PATH_FORK_CLOSE'].Bar_Retraction = r
++taught = Load_Program(c, s, cell, CONST_PROGRAM_YAML)
++path = CONST_PROGRAM_YAML if which == 'taught' else CONST_OPTIMIZED_PROGRAM_YAML
++if wait > 0:
++    text = open(path).read()
++    old = '    - Robot.MoveJ(P_MG06_FORK_START)                      # legacy: joint_move(q_f0, \'-> fork start pose\')\n' if which == 'taught' else '    - Loader.WaitDone(J_PARK)\n'
++    assert text.count(old) == 1
++    path = os.path.join(tempfile.mkdtemp(), 'var_%s_%g_%g_%g.yaml' % (which, r, dx, wait))
++    open(path, 'w').write(text.replace(old, old + '    - Wait(%g)\n' % wait))
++prog = Load_Program(c, s, cell, path)
++# The end point follows the retracted end (as P_MG06_CLOSE_END re-taught there would).
++snap = pc._Builder_Cls.Snap
++pc._Builder_Cls.Snap = lambda self, last, target, step, text: last if target == 'P_MG06_CLOSE_END' and r > 0 else snap(self, last, target, step, text)
++pm = Build_Planning_Model(cell); kin = Robot_Kinematics_Cls(pm, Robot_Collision_Cls(pm).Data)
++tr, _ = Build_Program(prog, cell, meta, kin, {})
++seg = tr.Segment_Command.index('Robot.MovePath(PATH_FORK_CLOSE)'); a, b = int(tr.Segment_Start[seg]), int(tr.Segment_End[seg])
++overlap = 1.0
++for i in range(a, b):
++    Pose_Sample(kin, tr, i); overlap = min(overlap, Bar_Gap(pm, kin.Data))
++free = Free_Steps(prog) if prog.Optimized is not None else Free_Steps(prog, Load_Optimization(taught))
++m = Build_Cell_Model(cell); drive = Trajectory_Drive_Cls(tr, prog, free); run = Physics_Run_Cls(m, drive, meta, cell); d = run.Data
++d.qpos[run.qpcb] += dx * 1e-6; mujoco.mj_forward(m, d)
++t0, t1 = float(tr.T[a]), float(tr.T[b - 1]); fc = np.zeros(6); peak = (0, 0, 0, 0); hinge = 0.0; hd = m.jnt_dofadr[m.joint('handle_hinge').id]
++while not run.Done:
++    run.Step()
++    if t0 <= d.time <= t1 + 0.5:
++        f, n, fv = 0.0, 0, np.zeros(3)
++        for i, ct in enumerate(d.contact[:d.ncon]):
++            if {m.body(m.geom_bodyid[ct.geom1]).name, m.body(m.geom_bodyid[ct.geom2]).name} == {'aubo/tool/ee_tool', 'mg06_handle'}:
++                mujoco.mj_contactForce(m, d, i, fc); f += fc[0]; n += 1; fv += ct.frame.reshape(3, 3).T @ fc[:3]
++        if f > peak[0]: peak = (f, n, np.linalg.norm(fv), d.time - t0)
++        hinge = max(hinge, abs(d.qfrc_constraint[hd]))
++res = run.Result(); checks = Check_Program_Acceptance(res, cell)
++closed = res.Closed
++print('r %.2f mm %-9s dx %+3g um wait %5.3f s | min gap %+.3f mm | force %.0f N (%d pts, net-at-peak %.0f N) at +%.3f s, hinge-own %.1f N m | NET %.1f N HINGE %.2f N m SQUEEZE %.0f N | closed lid %.2f deg handle %.2f deg | end lid %.1f handle %.1f | %d/%d PASS%s | cycle %.3f'
++      % (1000 * r, which, dx, wait, 1000 * overlap, peak[0], peak[1], peak[2], peak[3], hinge, res.Fork_Net_Force, res.Handle_Load, res.Fork_Squeeze, math.degrees(closed[0]) if closed else float('nan'),
++         math.degrees(closed[1]) if closed else float('nan'), math.degrees(res.Lid_End), math.degrees(res.Handle_End), sum(x.Passed for x in checks), len(checks),
++         '' if all(x.Passed for x in checks) else ' FAIL: ' + '; '.join(x.Name for x in checks if not x.Passed), tr.T[-1]))
+diff --git a/src/Configuration/Program_Parser.py b/src/Configuration/Program_Parser.py
+index 4440726..2b30d2a 100644
+--- a/src/Configuration/Program_Parser.py
++++ b/src/Configuration/Program_Parser.py
+@@ -210,6 +210,9 @@ class Path_Str:
+     Phase: str = ''
+     Start: str = ''
+     End: str = ''
++    # How far the fork is moved off the handle bar where the recording overlaps it (0: as recorded; F11).
++    #   Unit [float] (m)
++    Bar_Retraction: float = 0.0
+ 
+ 
+ @dataclass
+@@ -374,6 +377,9 @@ class Command_Str:
+     Path_Start: str = ''
+     Path_End: str = ''
+     End_Joints: tp.List[float] = field(default_factory=list)
++    # MovePath: the path's Bar_Retraction.
++    #   Unit [float] (m)
++    Bar_Retraction: float = 0.0
+     # Run, Start, WaitDone: the job's commands.
+     #   Unit [List<Command_Str>]
+     Job: tp.List['Command_Str'] = field(default_factory=list)
+@@ -725,7 +731,7 @@ def Load_Constants(path: str = CONST_CONSTANTS_YAML) -> Constants_Str:
+             seen[name] = (section, line)
+     known = {'Tools': ('Description', 'Flange_Offset'), 'Points': ('Description', 'Tool', 'Reference', 'Offset', 'Joints', 'Pose'),
+              'Loader_Positions': ('Description', 'Y', 'Z'), 'Gripper_Commands': ('Description', 'Jaw'),
+-             'Paths': ('Description', 'File', 'Phase', 'Start', 'End'), 'Signals': ('Description', 'Port')}
++             'Paths': ('Description', 'File', 'Phase', 'Start', 'End', 'Bar_Retraction'), 'Signals': ('Description', 'Port')}
+     entries = {}
+     for section in CONST_SECTIONS:
+         for name in sections[section]:
+@@ -768,7 +774,9 @@ def Load_Constants(path: str = CONST_CONSTANTS_YAML) -> Constants_Str:
+                                                   Jaw=_Number(p, tree.get('Jaw', 0.0), where + '.Jaw', _Line(tree, 'Jaw', line), 0.0, 0.05))
+         elif section == 'Paths':
+             path_ = Path_Str(Name=name, Description=description, Line=line, File=os.path.join(CONST_ROOT, str(tree.get('File', ''))),
+-                             Phase=str(tree.get('Phase', '')), Start=str(tree.get('Start', '')), End=str(tree.get('End', '')))
++                             Phase=str(tree.get('Phase', '')), Start=str(tree.get('Start', '')), End=str(tree.get('End', '')),
++                             Bar_Retraction=_Number(p, tree.get('Bar_Retraction', 0.0), where + '.Bar_Retraction', _Line(tree, 'Bar_Retraction', line),
++                                                    0.0, 0.005))
+             if 'File' in tree and not os.path.isfile(path_.File):
+                 p.Add(_Line(tree, 'File', line), where + '.File', '%r does not exist (a repository-relative file)' % (tree['File'],))
+             if 'Phase' in tree and path_.Phase not in CONST_PHASES:
+@@ -1164,7 +1172,7 @@ class _Program_Parser_Cls(object):
+         elif command.Kind == 'MovePath':
+             path = c.Paths[values[0]]
+             command.Target, command.Path_File, command.Phase = path.Name, path.File, path.Phase
+-            command.Path_Start, command.Path_End = path.Start, path.End
++            command.Path_Start, command.Path_End, command.Bar_Retraction = path.Start, path.End, path.Bar_Retraction
+             command.End_Joints = list(c.Points[path.End].Joints) if path.End in c.Points else []
+             self.Used.update((path.Start, path.End))
+         elif command.Kind == 'SetDO':
+diff --git a/src/Program/Core.py b/src/Program/Core.py
+index d4d5cdb..288b616 100644
+--- a/src/Program/Core.py
++++ b/src/Program/Core.py
+@@ -115,6 +115,11 @@ CONST_INPUT_CAUSE = {'DI_VACUUM_OK': 'DO_VACUUM'}
+ # robot-loader pair is measured (Robot_Loader_Distance).
+ #   Unit [Tuple<Tuple<string>>], [float] (m)
+ CONST_LOADER_AXES, CONST_LOADER_CUT = (('y_axis', 'y_servo'), ('z_axis', 'z_servo')), 0.05
++# A path's Bar_Retraction fades out where the recorded fork is this far from the handle bar (F11): full where it overlaps,
++# none beyond; the recorded closing path's fork changes the bar face it presses (slot side to slot bottom) where the gap is
++# about 0.3 mm, so the retraction is zero there and its direction never jumps.
++#   Unit [float] (m)
++CONST_BAR_WINDOW = 0.0002
+ # The step the simulation appends after the program's last segment (Simulation.yaml End_Settle).
+ #   Unit [string]
+ CONST_END_SETTLE = 'End_Settle'
+@@ -748,6 +753,8 @@ class _Builder_Cls(object):
+             if not ok:
+                 self.Fail(step_name, command.Text, 'flange IK did not converge at recorded row %d.' % i)
+             qs.append(q.copy())
++        if command.Bar_Retraction > 0:
++            qs = self.Retract(command, step_name, log, rows, qs)
+         qs[-1] = self.Snap(qs[-1], last_keypoint, step_name, command.Text)
+         times = log[np.r_[rows[0] - 1, rows], 0] - before[0]
+         lids, handles = log[np.r_[rows[0] - 1, rows], 1], log[np.r_[rows[0] - 1, rows], 3]
+@@ -764,6 +771,52 @@ class _Builder_Cls(object):
+             self.lid, self.handle = float(np.interp(t, times, lids)), float(np.interp(t, times, handles))
+             self.Append(qs[-1] if i == n else np.array([np.interp(t, times, qs[:, j]) for j in range(6)]), np.zeros(6), step, segment)
+ 
++    def Retract(self, command: Command_Str, step_name: str, log: np.ndarray, rows: tp.Sequence[int], qs: tp.List[np.ndarray]) -> tp.List[np.ndarray]:
++        """
++        Description:
++            A path's Bar_Retraction (F11): each recorded row posed with its MG06 state; every fork geom near the handle bar asks
++            to be Bar_Retraction off the bar along its fork-bar direction, fading out (cosine) to none where its recorded gap
++            reaches CONST_BAR_WINDOW; the row moves by the smallest sum that meets each (a geom's deficit added in turn, the
++            largest first: two faces of the slot both retract, two pieces of one face do not add); the moved rows solved by
++            flange IK again, seeded from the previous row.
++
++        Args:
++            (1) command [Command_Str(object)]: The MovePath.
++            (2) step_name [string]: The step.
++            (3) log [Matrix<float> nx11]: The recording.
++            (4) rows [List<int>]: Its rows.
++            (5) qs [List<Vector<float> 1x6>]: The start joints and each row's joints (rad).
++
++        Returns:
++            (1) parameter [List<Vector<float> 1x6>]: The joints with the moved rows solved again (rad).
++        """
++
++        kinematics = self.__kinematics
++        model, data = kinematics.Model, kinematics.Data
++        out, q = [qs[0]], qs[0]
++        for i, q_row in zip(rows, qs[1:]):
++            handle = float(log[i, 3])
++            kinematics.Set_Scene(data, lid=float(log[i, 1]), handle=handle, press=Press_For_Handle(model, handle))
++            data.qpos[kinematics.Q_Address] = q_row
++            mujoco.mj_kinematics(model, data)
++            asks = []
++            for gap, direction in Bar_Gaps(model, data):
++                weight = 1.0 if gap <= 0.0 else 0.0 if gap >= CONST_BAR_WINDOW else 0.5 * (1.0 + math.cos(math.pi * gap / CONST_BAR_WINDOW))
++                if weight > 0.0:
++                    asks.append((command.Bar_Retraction * weight, direction))
++            move = np.zeros(3)
++            for amount, direction in sorted(asks, key=lambda a: -a[0]):
++                move -= max(0.0, amount - float(move @ -direction)) * direction
++            if not asks:
++                q = q_row
++            else:
++                q, ok = kinematics.Solve_IK(log[i, 4:7] + move, Quaternion_To_Matrix(log[i, 7:11]), q, site=kinematics.Site_Flange, tol=CONST_IK_TOL,
++                                            w_null=0.0)
++                if not ok:
++                    self.Fail(step_name, command.Text, 'flange IK did not converge at recorded row %d moved off the bar.' % i)
++            out.append(q.copy())
++        return out
++
+     def Hold(self, duration: float, step: int, segment: int) -> None:
+         """
+         Description:
+@@ -1063,6 +1116,46 @@ def Pose_Sample(kinematics: Robot_Kinematics_Cls, trajectory: Trajectory_Str, i:
+     mujoco.mj_kinematics(model, d)
+ 
+ 
++def Bar_Gaps(model: mujoco.MjModel, data: mujoco.MjData) -> tp.List[tp.Tuple[float, np.ndarray]]:
++    """
++    Description:
++        Each fork geom's exact distance to the MG06 handle bar in the data's current kinematics (negative: an overlap) and the
++        unit direction from the fork to the bar there, for the geoms within CONST_REPORT_CUT, by geom (F11).
++
++    Args:
++        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed data.
++
++    Returns:
++        (1) parameter [List<Tuple<float, Vector<float> 1x3>>]: (distance (m), direction (world)) per fork geom near the bar.
++    """
++
++    bar = model.geom('handle_bar').id
++    fork = model.body('aubo/tool/ee_tool').id
++    out, ft = [], np.zeros(6)
++    for g in (g for g in range(model.ngeom) if model.geom_bodyid[g] == fork and model.geom_contype[g]):
++        x = mujoco.mj_geomDistance(model, data, g, bar, CONST_REPORT_CUT, ft)
++        if x < CONST_REPORT_CUT:
++            # The witness points run from the fork to the bar; an overlap reverses them, so the sign of x restores the side.
++            v = math.copysign(1.0, x) * (ft[3:] - ft[:3])
++            out.append((float(x), v / (np.linalg.norm(v) or 1.0)))
++    return out
++
++
++def Bar_Gap(model: mujoco.MjModel, data: mujoco.MjData) -> float:
++    """
++    Description:
++        The fork's smallest exact distance to the MG06 handle bar (Bar_Gaps; CONST_REPORT_CUT when farther).
++
++    Args:
++        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its posed data.
++
++    Returns:
++        (1) parameter [float]: The distance (m).
++    """
++
++    return min([x for x, _ in Bar_Gaps(model, data)] + [CONST_REPORT_CUT])
++
++
+ def Loader_Actual(trajectory: Trajectory_Str, model: mujoco.MjModel) -> tp.Tuple[np.ndarray, np.ndarray]:
+     """
+     Description:
