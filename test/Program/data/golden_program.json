@@ -1,5 +1,5 @@
 {
- "source": "the gripper ramps at 0.6 s (item 3)",
+ "source": "J_FETCH at L_FETCH; the re-grip check (item 5)",
  "cycle_time": 70.404,
  "samples": 17602,
  "arrays": {
@@ -34,7 +34,7 @@
    ]
   },
   "loader_z": {
-   "sha256": "11bdc2a4e249673d514868e422298b5ee1771dcae438759d174dcb054d8ca8b9",
+   "sha256": "c72d4d5af99bb440aa7de90e212c00e5be07e1e62a12432f6177afab9dc690a6",
    "dtype": "float64",
    "shape": [
     17602
@@ -62,7 +62,7 @@
    ]
   },
   "pcb_pose": {
-   "sha256": "5f7ed3eb7b7bfdf0c65bc59c24a112e9504c53a66fbccc37fe6bb64ffdaaaee6",
+   "sha256": "f3108b8db7b1b1da23d9952c81e3b1e198c5260d6418ea0372821e4009149a50",
    "dtype": "float64",
    "shape": [
     17602,
@@ -207,7 +207,7 @@
   "Robot.MoveJ(P_HOME)",
   "Loader.Run(J_FETCH) > MoveZ(L_TRAVEL, t=0.6)",
   "Loader.Run(J_FETCH) > MoveY(L_TRAVEL, t=2.2)",
-  "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)",
+  "Loader.Run(J_FETCH) > MoveZ(L_FETCH, t=0.6)",
   "Loader.Run(J_FETCH) > Wait(0.1)",
   "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.6)",
   "Loader.Run(J_FETCH) > Wait(0.2)",
@@ -953,14 +953,14 @@
   {
    "step": "S15_Loader_Fetch",
    "kind": "MoveZ",
-   "text": "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)",
-   "target": "L_PLACE",
+   "text": "Loader.Run(J_FETCH) > MoveZ(L_FETCH, t=0.6)",
+   "target": "L_FETCH",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
    "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "Z",
-   "position": "0x1.14d66e81d6235p-4",
+   "position": "0x1.137728a121423p-4",
    "jaw": "0x0.0p+0"
   },
   {
