@@ -121,7 +121,8 @@ Program:
 
   # The loader brings the PCB home to the take position.
   S16_Loader_Return:
-    - Loader.Run(J_RETURN)
+    - Loader.Run(J_RETURN_Y)
+    - Loader.Run(J_RETURN_Z)
 
   # From home to 160 mm above the PCB in the jaws, along the plate normal.
   S17_To_Take:
@@ -191,10 +192,14 @@ Loader_Jobs:
     - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.2)                                           # legacy: hold(0.2)
 
-  # Lift the PCB out of MG06 and bring it home to the take position.
-  J_RETURN:
+  # Lift the PCB out of MG06 and bring it back along Y to above its home (F15: J_RETURN split in two, the same motion and
+  # timing; the loader's Y at home is what frees the robot's way to the take, design-decisions).
+  J_RETURN_Y:
     - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
     - MoveY(L_HOME, t=2.0)                                # legacy: loader_move('y', Y0, 2.0)
+
+  # Down to the take position (home).
+  J_RETURN_Z:
     - MoveZ(L_HOME, t=0.8)                                # legacy: loader_move('z', 0.0, 0.8)
     - Wait(0.2)                                           # legacy: hold(0.2)
 

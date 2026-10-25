@@ -82,6 +82,9 @@ CONST_HANDOVER_KEYPOINT = 'P_LOADER_PLACE'
 # robot-loader pair is measured (Robot_Loader_Distance).
 #   Unit [Tuple<Tuple<string>>], [float] (m)
 CONST_LOADER_AXES, CONST_LOADER_CUT = (('y_axis', 'y_servo'), ('z_axis', 'z_servo')), 0.05
+# The gating rule's sampling of the robot's motion and the loader's job: every 5th sample (20 ms) and the last.
+#   Unit [int] (samples)
+CONST_GATING_STRIDE = 5
 
 
 def Pose_Sample(kinematics: Robot_Kinematics_Cls, trajectory: Trajectory_Str, i: int, data: tp.Optional[mujoco.MjData] = None) -> None:
@@ -265,6 +268,160 @@ def Robot_Loader_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinemati
             if distance < best[0]:
                 best = (distance, i, '%s / %s' % (body_1, body_2))
     return best
+
+
+def _Boxes(model: mujoco.MjModel, data: mujoco.MjData, geoms: np.ndarray) -> np.ndarray:
+    """
+    Description:
+        The world-aligned boxes of geoms in the data's kinematics (each geom's own box, geom_aabb, rotated).
+
+    Args:
+        (1) model [mujoco.MjModel]: The model.
+        (2) data [mujoco.MjData]: Its data, after mj_kinematics.
+        (3) geoms [Vector<int> k]: The geoms.
+
+    Returns:
+        (1) parameter [Matrix<float> kx2x3]: Per geom its lower and upper corner (m).
+    """
+
+    R = data.geom_xmat[geoms].reshape(-1, 3, 3)
+    centre = data.geom_xpos[geoms] + np.einsum('kij,kj->ki', R, model.geom_aabb[geoms, :3])
+    half = np.einsum('kij,kj->ki', np.abs(R), model.geom_aabb[geoms, 3:])
+    return np.stack([centre - half, centre + half], axis=1)
+
+
+def Swept_Distance(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, robot_samples: tp.Sequence[int],
+                   loader_samples: tp.Sequence[int], cut: float) -> tp.Tuple[np.ndarray, np.ndarray, tp.List[str]]:
+    """
+    Description:
+        For each robot sample, the smallest exact distance between the robot (with the PCB its cups carry) there and the loader
+        (with the PCB in its jaws) at any of loader_samples - the robot against the volume the loader sweeps, whatever the
+        timing between them (the gating rule, F15) - and the first loader sample that comes within cut. A pair of samples is
+        measured only where a robot geom's box comes within cut of a loader geom's box.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory (Loader_Actual_Trajectory for the loader's real position).
+        (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
+        (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (4) robot_samples [List<int>]: The robot's samples.
+        (5) loader_samples [List<int>]: The loader's samples, ascending.
+        (6) cut [float]: The distance up to which pairs are measured (m).
+
+    Returns:
+        (1) parameter [Vector<float> R]: Per robot sample the distance (m; cut when nothing is closer).
+        (2) parameter [Vector<int> R]: Per robot sample the first loader sample within cut (-1 when none).
+        (3) parameter [List<string>]: Per robot sample the closest pair ('' when none).
+    """
+
+    tr, model, data = trajectory, kinematics.Model, kinematics.Data
+    address = kinematics.Scene_Address
+    pcb = model.body('pcb').id
+    robot, loader = collision.Robot_Bodies, {model.body(name).id for name in CONST_LOADER_BODIES}
+    collidable = (model.geom_contype > 0) | (model.geom_conaffinity > 0)
+    geoms = lambda bodies: np.flatnonzero(collidable & np.isin(model.geom_bodyid, list(bodies)))
+    jaws, cups = CONST_PCB_LOCATIONS.index('jaws'), CONST_PCB_LOCATIONS.index('cups')
+    loader_boxes = []
+    for j in loader_samples:
+        Pose_Sample(kinematics, tr, int(j))
+        loader_boxes.append(_Boxes(model, data, geoms(loader | ({pcb} if tr.PCB_Location[j] == jaws else set()))))
+    distances, firsts, pairs = np.full(len(robot_samples), cut), np.full(len(robot_samples), -1), [''] * len(robot_samples)
+    for r, i in enumerate(robot_samples):
+        Pose_Sample(kinematics, tr, int(i))
+        mine = robot | ({pcb} if tr.PCB_Location[i] == cups else set())
+        boxes = _Boxes(model, data, geoms(mine))
+        for j, theirs_boxes in zip(loader_samples, loader_boxes):
+            near = np.all((boxes[:, None, 0] - cut <= theirs_boxes[None, :, 1]) & (boxes[:, None, 1] + cut >= theirs_boxes[None, :, 0]), axis=2)
+            if not near.any():
+                continue
+            Pose_Sample(kinematics, tr, int(i))
+            data.qpos[address['y_axis']], data.qpos[address['z_axis']] = tr.Loader_Y[j], tr.Loader_Z[j]
+            data.qpos[address['jaw_L']] = data.qpos[address['jaw_R']] = tr.Jaw[j]
+            if tr.PCB_Location[j] == jaws:
+                data.qpos[address['pcb_free']:address['pcb_free'] + 7] = tr.PCB_Pose[j]
+            mujoco.mj_kinematics(model, data)
+            theirs = loader | ({pcb} if tr.PCB_Location[j] == jaws else set())
+            for distance, body_1, body_2, _, _ in collision.Close_Pairs(mine, cut, data, exclude=set(range(model.nbody)) - theirs)[:1]:
+                firsts[r] = int(j) if firsts[r] < 0 else firsts[r]
+                if distance < distances[r]:
+                    distances[r], pairs[r] = distance, '%s / %s' % (body_1, body_2)
+    return distances, firsts, pairs
+
+
+@dataclass
+class Gating_Fault_Str:
+    """
+    Description:
+        A robot motion inside the volume a loader job sweeps while the job may run (the gating rule, F15): after the job's
+        Loader.Start, before its Loader.WaitDone, closer than Clearance.Loader_Free to a pose the job sweeps. It 'enters' the
+        volume (a fault: its separation from the loader rests on timing) or only 'leaves' it from where it starts (reported
+        with the time it leaves ahead of the loader).
+    """
+
+    # The step, the motion's line, the job, 'enters' or 'leaves'.
+    #   Unit [string]
+    Step: str = ''
+    Motion: str = ''
+    Job: str = ''
+    Kind: str = ''
+    # The closest distance, the robot's and the loader's times then, the pair; for 'leaves' the smallest lead of the robot's
+    # sample in the volume over the loader's first sample near it.
+    #   Unit [float] (m), [float] (s), [float] (s), [string], [float] (s)
+    Distance: float = 0.0
+    Robot_T: float = 0.0
+    Loader_T: float = 0.0
+    Pair: str = ''
+    Lead: float = math.nan
+
+
+def Gating_Faults(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls,
+                  cell: Cell_Configuration_Str) -> tp.List[Gating_Fault_Str]:
+    """
+    Description:
+        The gating rule (owner 2026-10-25, F15): a robot motion that runs while a parallel loader job may run (after its
+        Loader.Start, before its Loader.WaitDone) must not come into the volume the job sweeps - within Clearance.Loader_Free of
+        any of its poses, the loader where its actuators put it, every CONST_GATING_STRIDE samples and its last
+        (Swept_Distance) - or its separation from the loader rests on timing (a Wait, the loader's speed): it must be gated by the
+        job's Loader.WaitDone (or an input from the loader) instead. A motion that starts inside the volume and only leaves
+        it is reported as 'leaves', with its lead over the loader; one that comes in is 'enters', a fault.
+
+    Args:
+        (1) trajectory [Trajectory_Str(object)]: The trajectory.
+        (2) kinematics [Robot_Kinematics_Cls(object)]: On the planning model.
+        (3) collision [Robot_Collision_Cls(object)]: On the same model and data.
+        (4) cell [Cell_Configuration_Str(object)]: Clearance.Loader_Free.
+
+    Returns:
+        (1) parameter [List<Gating_Fault_Str(object)>]: The motions inside a job's volume ('enters' are the faults).
+    """
+
+    tr = trajectory
+    texts = tr.Segment_Command
+    starts = [(k, text[len('Loader.Start('):-1]) for k, text in enumerate(texts) if text.startswith('Loader.Start(')]
+    if not starts:
+        return []
+    actual = Loader_Actual_Trajectory(tr, kinematics.Model)
+    out = []
+    for k, job in starts:
+        done = texts.index('Loader.WaitDone(%s)' % job, k)
+        first, last = int(tr.Segment_Start[k]), int(tr.Segment_End[done]) - 1
+        loader_samples = sorted(set(range(first, last + 1, CONST_GATING_STRIDE)) | {last})
+        for m in range(k + 1, done):
+            if not texts[m].startswith('Robot.Move'):
+                continue
+            a, b = int(tr.Segment_Start[m]), int(tr.Segment_End[m]) - 1
+            robot_samples = sorted(set(range(a, b + 1, CONST_GATING_STRIDE)) | {b})
+            distances, firsts, pairs = Swept_Distance(actual, kinematics, collision, robot_samples, loader_samples, cell.Loader_Free)
+            inside = distances < cell.Loader_Free
+            if not inside.any():
+                continue
+            r = int(np.argmin(distances))
+            runs = np.flatnonzero(np.diff(np.r_[0, inside.astype(np.int8)]) == 1)
+            leaving = bool(inside[0]) and len(runs) == 1
+            lead = min(float(tr.T[firsts[q]] - tr.T[robot_samples[q]]) for q in np.flatnonzero(inside)) if leaving else math.nan
+            out.append(Gating_Fault_Str(Step=tr.Step_Names[tr.Segment_Step[m]], Motion=texts[m], Job=job, Kind='leaves' if leaving else 'enters',
+                                        Distance=float(distances[r]), Robot_T=float(tr.T[robot_samples[r]]), Loader_T=float(tr.T[firsts[r]]),
+                                        Pair=pairs[r], Lead=lead))
+    return out
 
 
 @dataclass

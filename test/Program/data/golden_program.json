@@ -1,5 +1,5 @@
 {
- "source": "Jaw_Actual 17.54 mm, the descent's height check (item 3)",
+ "source": "F15 (2026-10-25): J_RETURN split into J_RETURN_Y and J_RETURN_Z; only the four Loader.Run labels of commands 47-50 changed, every array and value identical",
  "cycle_time": 70.404,
  "samples": 17602,
  "arrays": {
@@ -211,10 +211,10 @@
   "Loader.Run(J_FETCH) > Wait(0.1)",
   "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.6)",
   "Loader.Run(J_FETCH) > Wait(0.2)",
-  "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)",
-  "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)",
-  "Loader.Run(J_RETURN) > MoveZ(L_HOME, t=0.8)",
-  "Loader.Run(J_RETURN) > Wait(0.2)",
+  "Loader.Run(J_RETURN_Y) > MoveZ(L_TRAVEL, t=0.6)",
+  "Loader.Run(J_RETURN_Y) > MoveY(L_HOME, t=2.0)",
+  "Loader.Run(J_RETURN_Z) > MoveZ(L_HOME, t=0.8)",
+  "Loader.Run(J_RETURN_Z) > Wait(0.2)",
   "Robot.MoveJ(P_LOADER_ABOVE)",
   "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
   "Robot.MoveL(P_LOADER_PICK, v=0.03)",
@@ -1005,7 +1005,7 @@
   {
    "step": "S16_Loader_Return",
    "kind": "MoveZ",
-   "text": "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)",
+   "text": "Loader.Run(J_RETURN_Y) > MoveZ(L_TRAVEL, t=0.6)",
    "target": "L_TRAVEL",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
@@ -1018,7 +1018,7 @@
   {
    "step": "S16_Loader_Return",
    "kind": "MoveY",
-   "text": "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)",
+   "text": "Loader.Run(J_RETURN_Y) > MoveY(L_HOME, t=2.0)",
    "target": "L_HOME",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
@@ -1031,7 +1031,7 @@
   {
    "step": "S16_Loader_Return",
    "kind": "MoveZ",
-   "text": "Loader.Run(J_RETURN) > MoveZ(L_HOME, t=0.8)",
+   "text": "Loader.Run(J_RETURN_Z) > MoveZ(L_HOME, t=0.8)",
    "target": "L_HOME",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
@@ -1044,7 +1044,7 @@
   {
    "step": "S16_Loader_Return",
    "kind": "Wait",
-   "text": "Loader.Run(J_RETURN) > Wait(0.2)",
+   "text": "Loader.Run(J_RETURN_Z) > Wait(0.2)",
    "target": "",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",

@@ -48,14 +48,14 @@ def test_the_free_transfers_merge_across_the_loader_jobs(optimized_built, progra
     """
     Description:
         The eight FREE segments make six transfers; S5 + S8 (the loader's insert and park between) and S14 + S17 (fetch and
-        return between) are one each, with those jobs in parallel; the cups carry the PCB in To_Loader and To_Output.
+        the return's two parts between, F15) are one each, with those jobs in parallel; the cups carry the PCB in To_Loader and To_Output.
     """
 
     transfers = Free_Transfers(program, optimized_built['optimization'], optimized_built['default'])
     assert [(t.Name, t.Start, t.End, t.Jobs, t.Carrying) for t in transfers] == [
         ('Approach_Input', 'P_HOME', 'P_INPUT_ABOVE', [], False), ('To_Loader', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', [], True),
         ('To_MG06', 'P_LOADER_ABOVE', 'P_MG06_FORK_START', ['J_INSERT', 'J_PARK'], False),
-        ('To_Take', 'P_MG06_FORK_START', 'P_LOADER_ABOVE', ['J_FETCH', 'J_RETURN'], False),
+        ('To_Take', 'P_MG06_FORK_START', 'P_LOADER_ABOVE', ['J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z'], False),
         ('To_Output', 'P_LOADER_ABOVE', 'P_OUTPUT_ABOVE', [], True), ('Home_End', 'P_OUTPUT_ABOVE', 'P_HOME', [], False)]
     assert transfers[2].Keys == ['S5_Home_After_Handover', 'S8_To_MG06'] and transfers[2].Job_Keys == ['S6_Loader_Insert', 'S7_Loader_Park']
     assert [t.Wait for t in transfers] == [None, None, None, 'P_LOADER_WAIT', None, None]
@@ -160,8 +160,9 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(optimized_buil
         G (F9.8): To_Take's first leg starts in the sample after Open_MG06 ends, together with J_FETCH (I6 still holds), so the
         robot never waits above MG06; it waits at P_LOADER_WAIT, which keeps more than Clearance.Loader_Free + Tracking_Margin
         (14 mm) from the loader and the PCB in its jaws - posed where its actuators put them (F11) - at every sample of J_FETCH and
-        J_RETURN with the robot standing there (29.64 mm, measured 2026-10-25);
-        its last leg ends at P_LOADER_ABOVE before the loader is home, so Take_From_Loader starts when J_RETURN ends.
+        J_RETURN_Y and J_RETURN_Z with the robot standing there (29.68 mm, measured 2026-10-25); its last leg starts once
+        J_RETURN_Y is done (F15: after its Loader.WaitDone, the loader's Y at home) and ends at P_LOADER_ABOVE before the loader
+        is home, so Take_From_Loader starts when J_RETURN_Z ends.
     """
 
     from Optimizer.Measure import Job_Bounds
@@ -172,7 +173,7 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(optimized_buil
     _, opened = Step_Bounds(tr, 'Open_MG06')
     assert int(tr.Segment_Start[leg]) == opened + 1 == Job_Bounds(tr, 'J_FETCH')[0]
     wait = np.array(optimized_built['optimized'].Constants.Points['P_LOADER_WAIT'].Joints)
-    first, last = Job_Bounds(tr, 'J_FETCH')[0], Job_Bounds(tr, 'J_RETURN')[1]
+    first, last = Job_Bounds(tr, 'J_FETCH')[0], Job_Bounds(tr, 'J_RETURN_Z')[1]
     standing = Loader_Actual_Trajectory(tr, kinematics.Model)
     standing.Robot_Q = np.array(tr.Robot_Q)
     standing.Robot_Q[first:last + 1] = wait
@@ -180,4 +181,27 @@ def test_the_robot_leaves_mg06_at_once_and_waits_at_p_loader_wait(optimized_buil
     assert distance >= cell_configuration.Loader_Free + cell_configuration.Tracking_Margin and round(1000 * distance, 2) == 29.68
     final = texts.index('Robot.MoveSpline(W_TO_TAKE, v=0.6)')
     take, _ = Step_Bounds(tr, 'Take_From_Loader')
-    assert int(tr.Segment_End[final]) <= Job_Bounds(tr, 'J_RETURN')[1] and take == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN)')])
+    assert int(tr.Segment_Start[final]) == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN_Y)')])
+    assert texts[final - 1] == 'Loader.Start(J_RETURN_Z)' and 'Wait(' not in ' '.join(texts[leg:final])
+    assert int(tr.Segment_End[final]) <= Job_Bounds(tr, 'J_RETURN_Z')[1] and take == int(tr.Segment_End[texts.index('Loader.WaitDone(J_RETURN_Z)')])
+
+
+def test_a_spline_that_comes_into_a_running_job_s_volume_waits_for_the_job(timed_take, optimized_built, cell_configuration, program):
+    """
+    Description:
+        F15's optimizer rule: a spline that comes into the volume of a job it does not wait for runs after the next job's start
+        - here W_TO_TAKE from slot 2 (after Loader.Start(J_RETURN_Y), the timer's) to slot 3 (after Loader.Start(J_RETURN_Z),
+        so after Loader.WaitDone(J_RETURN_Y)), never after a Wait; past the last job's start it fails, naming the remedies.
+    """
+
+    from Optimizer.Core import Gate, Optimizer_Error_Cls
+    from Program.Check import Gating_Faults
+    tr = timed_take[0]
+    fault = next(f for f in Gating_Faults(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration) if f.Kind == 'enters')
+    take = next(t for t in Free_Transfers(program, optimized_built['optimization'], optimized_built['default']) if t.Name == 'To_Take')
+    assert take.Jobs == ['J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z']
+    step = fault.Step
+    assert Gate(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration, step, take, 2, fault) == 3
+    with pytest.raises(Optimizer_Error_Cls, match='split the job .* or gate it on an input from the loader'):
+        Gate(tr, optimized_built['kinematics'], optimized_built['collision'], cell_configuration, step, take, 3, fault)
+

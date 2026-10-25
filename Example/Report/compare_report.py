@@ -60,7 +60,7 @@ from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Keypoints/Core - the IK family
 from Keypoints.Core import Family
 #   ../Program/Check - the loader where its actuators put it
-from Program.Check import Loader_Actual
+from Program.Check import Gating_Faults
 #   ../Simulation/Core, ../Simulation/Report - the drive, the report and its acceptance
 from Simulation.Core import Trajectory_Drive_Cls, Simulation_Error_Cls
 from Simulation.Report import Format_Program_Report, Check_Program_Acceptance, Free_Loader_Distance
@@ -91,11 +91,8 @@ CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
 # The loader slow-downs tried against I8 (owner, 2026-10-25: +10 / +25 / +50 %; faster ones and a finer step around the
 # first failure too), and the bisection's resolution for each bound's first failure.
 #   Unit [List<float>] (-), [float] (-)
-CONST_FACTORS = [0.5, 0.75, 0.9, 1.0, 1.01, 1.02, 1.03, 1.05, 1.1, 1.25, 1.5, 2.0]
+CONST_FACTORS = [0.5, 0.75, 0.9, 1.0, 1.02, 1.05, 1.1, 1.25, 1.5, 2.0]
 CONST_FACTOR_RESOLUTION = 0.001
-# The loader's in-position window for the proposed "Y at home" input (an assumption: the real PLC's window is not known).
-#   Unit [float] (m)
-CONST_IN_POSITION = 0.0005
 # The PCB's acceleration is also given smoothed over this window (contact transients are single samples).
 #   Unit [int] (samples)
 CONST_SMOOTH = 5
@@ -257,6 +254,7 @@ def Analyse_Planned(job: tp.Tuple[str, tp.Dict[str, tp.Tuple[np.ndarray, np.ndar
             overhang[name] = Overhang(planning, kinematics.Data, supports)
     metrics = Measure(tr.Robot_Q, CONST_DT, kinematics, tr.Loader_Y, tr.Loader_Z, tr.PCB_Pose[:, :3])
     return {'planned': planned, 'overhang': overhang, 'metrics': metrics, 'interlocks': Interlocks(tr, kinematics, collision, cell, program),
+            'gating': Gating_Faults(tr, kinematics, collision, cell),
             'planned_time': time.perf_counter() - began}
 
 
@@ -266,8 +264,8 @@ def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.An
         The interlock I8 with the loader slowed (a pool job): for every parallel loader job of the program (Loader.Start) and
         every factor of CONST_FACTORS the closest robot - loader distance (Report.Core.Stretched_Distance); for the job that
         comes closest, the first factor at which it falls below each bound (Loader_Free + Tracking_Margin, Loader_Free, the
-        acceptance's hard floor, contact), bisected to CONST_FACTOR_RESOLUTION; and the proposal's data: the loader height
-        that frees the take's spline at home Y (Report.Core.Clear_Height) and when the loader's Y is in position.
+        acceptance's hard floor, contact), bisected to CONST_FACTOR_RESOLUTION; and the take's gate (F15): the loader heights
+        at home Y that keep the take's spline clear (Report.Core.Clear_Height), the spline's start against J_RETURN_Y's end.
 
     Args:
         (1) job [Tuple<string, string>]: (the program, the trajectories' folder or None).
@@ -302,19 +300,12 @@ def Stretch_Analysis(job: tp.Tuple[str, tp.Optional[str]]) -> tp.Dict[str, tp.An
         out['first'][name] = (hi, Stretched_Distance(tr, worst, hi, kinematics, collision))
     take = next((t for t in tr.Segment_Command if t.startswith('Robot.MoveSpline(W_TO_TAKE,')), None)
     if take is not None:
-        start, wait, last = Job_Window(tr, 'J_RETURN')
-        need = cell.Loader_Free + cell.Tracking_Margin
-        travel = float(np.max(tr.Loader_Z[start:last + 1]))
-        out['clear'] = Clear_Height(tr, take, kinematics, collision, np.linspace(0.0, travel, 9), need)
-        y, _ = Loader_Actual(tr, model)
-        home = tr.Loader_Y[last]
-        far = np.flatnonzero(np.abs(y[start:last + 1] - home) > CONST_IN_POSITION)
         k = tr.Segment_Command.index(take)
-        y_moves = np.flatnonzero(Moving(tr.Loader_Y[start:last + 1]))
-        out['proposal'] = {'job_start': float(tr.T[start]), 'command_y_home': float(tr.T[start + y_moves[-1]]),
-                           'actual_y_home': float(tr.T[start + far[-1] + 1]), 'job_end': float(tr.T[last]),
-                           'spline_start': float(tr.T[tr.Segment_Start[k]]), 'spline': float(tr.Segment_End[k] - tr.Segment_Start[k]) * CONST_DT,
-                           'waitdone_end': float(tr.T[tr.Segment_End[tr.Segment_Command.index('Loader.WaitDone(J_RETURN)')] - 1]), 'need': need}
+        start, _, last = Job_Window(tr, 'J_RETURN_Z')
+        travel = float(np.max(tr.Loader_Z[Job_Window(tr, 'J_RETURN_Y')[0]:last + 1]))
+        out['clear'] = Clear_Height(tr, take, kinematics, collision, np.linspace(0.0, travel, 9), cell.Loader_Free + cell.Tracking_Margin)
+        out['take'] = {'spline_start': float(tr.T[tr.Segment_Start[k]]), 'spline': float(tr.Segment_End[k] - tr.Segment_Start[k]) * CONST_DT,
+                       'y_done': float(tr.T[Job_Window(tr, 'J_RETURN_Y')[2]]), 'z_done': float(tr.T[last])}
     return out
 
 
@@ -590,7 +581,8 @@ def Section_Conditions(c: Context_Cls) -> tp.List[str]:
         rows.append([name, ('holds' if ok_a else 'FAILS') + ': ' + text_a, ('holds' if ok_b else 'FAILS') + ': ' + text_b])
     lines += _Table(['interlock', 'taught', 'optimized'], rows)
     lines += ['', 'What differs: the timing method of the FREE transfers (MoveJ through taught vias against planned splines), the loader '
-              'handshake (sequential Run against parallel Start / WaitDone) and the timed wait. The model, the limits, the tools, the '
+              'handshake (sequential Run against parallel Start / WaitDone, every robot motion gated by a WaitDone, F15). The model, '
+              'the limits, the tools, the '
               'payload, the LOCKED motions and the signals are the same.']
     return lines
 
@@ -806,7 +798,7 @@ def _Spans_Text(spans: tp.List[tp.Tuple[float, float]]) -> str:
 def Section_Stretch(c: Context_Cls) -> tp.List[str]:
     """
     Description:
-        The loader slowed against I8 (Stretch_Analysis) and the proposal that replaces the timed wait.
+        The loader slowed against I8 (Stretch_Analysis) and the gate of the take (F15: the gating rule, I9, the clear height).
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -828,51 +820,33 @@ def Section_Stretch(c: Context_Cls) -> tp.List[str]:
         rows.append(['%.2f (%+.0f %%)' % (f, 100 * (f - 1))] + [_Distance_Text((r[1], r[2], r[3]), 0.05) if r[1] < 0.05 else '> 50 mm'
                                                                for r in (s['rows'][j][k] for j in s['jobs'])])
     lines += _Table(header, rows)
-    lines += ['', 'The first slow-down of %s at which the distance falls below each bound (bisected to %.1f %%) [K, C]:' % (s['worst'],
-              100 * CONST_FACTOR_RESOLUTION), '']
+    lines += ['', 'The first slow-down of %s (the job that comes closest) at which the distance falls below each bound, up to %.0f x '
+              '(bisected to %.1f %%) [K, C]:' % (s['worst'], CONST_FACTORS[-1], 100 * CONST_FACTOR_RESOLUTION), '']
     rows = []
     for name, bound in s['bounds'].items():
         first = s['first'].get(name)
-        rows.append([name, '%.1f mm' % (1000 * bound), '-' if first is None else '%+.1f %%: %.2f mm (%s)' % (100 * (first[0] - 1), 1000 * first[1][0],
-                                                                                                            first[1][2])])
+        rows.append([name, '%.1f mm' % (1000 * bound), 'none' if first is None else '%+.1f %%: %.2f mm (%s)' % (
+            100 * (first[0] - 1), 1000 * first[1][0], first[1][2])])
     lines += _Table(['bound', 'value', 'first failing slow-down'], rows)
-    p = s.get('proposal')
-    if p is not None:
+    lines += ['', '### The gate of the take (F15)', '', 'The gating rule (`Program.Check.Gating_Faults`): a robot motion that runs while a '
+              'parallel loader job may run (after its Loader.Start, before its Loader.WaitDone) must not come within Loader_Free of a '
+              'pose the job sweeps (the loader where its actuators put it); a motion that starts inside such a volume and only leaves '
+              'it is listed with its lead over the loader [K]:', '']
+    rows = [[v, '`%s`' % f.Motion, f.Job, f.Kind, '%.2f mm (%s)' % (1000 * f.Distance, f.Pair), '%.2f s' % f.Lead if f.Kind == 'leaves'
+             else 'FAULT'] for v in CONST_VERSIONS for f in c.Analyses[v]['gating']]
+    lines += _Table(['program', 'motion', 'job', 'kind', 'closest to the volume', 'lead / verdict'], rows) if rows else ['none']
+    t = s.get('take')
+    if t is not None:
         best, found = s['clear']
-        robot_now = p['spline_start'] - p['job_start']
-        arrive_now = robot_now + p['spline']
-        end = p['waitdone_end'] - p['job_start']
-        cost = {}
-        for key, at in (('command', p['command_y_home']), ('actual', p['actual_y_home'])):
-            start = at - p['job_start']
-            cost[key] = (start, max(start + p['spline'], end) - max(arrive_now, end))
-        lines += ['', '**Why.** `S11_To_Take` starts `Loader.Start(J_RETURN)`, waits a fixed `Wait(1.648)` and then moves the robot from '
-                  'P_LOADER_WAIT to P_LOADER_ABOVE (`W_TO_TAKE`, %.3f s). The wait was planned against the loader\'s modelled timing: the '
-                  'robot crosses the loader\'s Y path just behind its Z carriage. A real loader a few percent slower is still in that path '
-                  'when the robot arrives. At P_LOADER_WAIT the robot stays %s from the passing loader at every slow-down (the J_FETCH column) '
-                  '[K].' % (p['spline'], _Distance_Text((min(r[1] for r in s['rows']['J_FETCH']), 0, ''), 0.05).split(' at')[0]), '',
-                  '**Proposal (not implemented): start the take\'s spline on a condition, not a time.** With the loader at its home Y, the '
-                  'whole `W_TO_TAKE` spline keeps %s from the loader at every Z from home to the travel height (%s; `Report.Core.Clear_Height`, '
-                  'static loader, exact) [K] - so "Y at home" is enough, whatever Z does. Two equivalent forms:' % (
-                      'more than %.0f mm' % (1000 * min(d for _, d in found)) if min(d for _, d in found) >= 0.05 else '%.1f mm' % (
-                          1000 * min(d for _, d in found)), ', '.join('z %.0f mm: %s' % (1000 * z, '> 50 mm' if d >= 0.05 else '%.1f mm' % (1000 * d))
-                                                                       for z, d in found)), '',
-                  '1. Split `J_RETURN` into `J_RETURN_Y` (MoveZ L_TRAVEL, MoveY L_HOME) and `J_RETURN_Z` (MoveZ L_HOME, Wait 0.2); the robot '
-                  'runs `Loader.Start(J_RETURN_Y)`, `Loader.WaitDone(J_RETURN_Y)`, `Loader.Start(J_RETURN_Z)`, `Robot.MoveSpline(W_TO_TAKE)`, '
-                  '`Loader.WaitDone(J_RETURN_Z)`. The robot then relies on the loader\'s done, as everywhere else.',
-                  '2. Or a loader PLC output `DI_LOADER_Y_HOME` (Y in position at L_HOME) and `Robot.WaitDI(DI_LOADER_Y_HOME)` in place of '
-                  'the `Wait(1.648)`.', '',
-                  'Expected cycle cost (the trajectory\'s timing [K]): the job starts at %.3f s; today the spline starts %.3f s after it and '
-                  'the take may start at %.3f s (the loader\'s last move). With the condition the spline starts when Y is home: %.3f s after '
-                  'the start by the command, %.3f s by the actuator model within %.1f mm [K]; the take then starts %+.3f s / %+.3f s later '
-                  'than today (the spline still ends before the loader\'s last move when the cost is 0). The robot waits at P_LOADER_WAIT '
-                  'instead, %s from the passing loader.' % (p['job_start'], robot_now, end, cost['command'][0], cost['actual'][0],
-                                                              1000 * CONST_IN_POSITION, cost['command'][1], cost['actual'][1],
-                                                              _Distance_Text((min(r[1] for r in s['rows']['J_FETCH']), 0, ''), 0.05).split(' at')[0]),
-                  '', 'How it would be checked: the optimizer writes the condition instead of the wait; the program check and I8 hold as now; '
-                  'this stretch table must then show no failure at any factor for the take (the robot moves only with the loader\'s Y home); '
-                  'a new interlock I9 ("W_TO_TAKE starts after J_RETURN\'s Y is home") verified like I7; the physics baseline re-captured; on '
-                  'the real cell the signal is tested with the loader alone first.']
+        lines += ['', 'The take: `Loader.Start(J_RETURN_Y)`, `Loader.WaitDone(J_RETURN_Y)`, `Loader.Start(J_RETURN_Z)`, '
+                  '`Robot.MoveSpline(W_TO_TAKE)` (%.3f s), `Loader.WaitDone(J_RETURN_Z)`: the spline starts at %.3f s, after J_RETURN_Y\'s '
+                  'last loader move at %.3f s (I9, section 2), and ends before J_RETURN_Z\'s at %.3f s [K]. With the loader at its home Y '
+                  'the whole spline keeps %s from it at every Z from home to the travel height (`Report.Core.Clear_Height`, a static '
+                  'loader, exact) [K], so the loader\'s Y at home is all it waits for; the robot waits at P_LOADER_WAIT meanwhile, %s '
+                  'from the passing loader at any slow-down (the J_RETURN_Y column).' % (
+                      t['spline'], t['spline_start'], t['y_done'], t['z_done'], 'more than 50 mm' if min(d for _, d in found) >= 0.05 else
+                      '%.1f mm' % (1000 * min(d for _, d in found)),
+                      _Distance_Text((min(r[1] for r in s['rows']['J_RETURN_Y']), 0, ''), 0.05).split(' at')[0])]
     return lines
 
 
@@ -1018,8 +992,9 @@ def Section_Not_Modelled(c: Context_Cls) -> tp.List[str]:
             'test is a %.1f s placeholder, KNOWN_ISSUES.md) | add to both programs alike where sequential; where the optimized program '
             'runs in parallel they move the meeting point of robot and loader (section 4) |' % c.Cell.Test_Duration,
             '| cables and hoses on the robot | could limit the splines\' wrist turns; not checked |',
-            '| signal latency (loader PLC, I/O) | adds to every handshake in both; the optimized program\'s timed wait does not see it at '
-            'all (section 4) |',
+            '| signal latency (loader PLC, I/O) | adds to every handshake in both; the optimized program waits for the loader\'s done '
+            'everywhere (F15), so a latency costs time, not clearance - except the robot leaving the loader\'s way at a job\'s start '
+            '(section 4) |',
             '| model error (CAD deviations compensated, estimated masses and torque limits, the loader\'s actuator model) | the closest '
             'robot - loader distance in a free transfer is %s taught, %s optimized [P]: a model error eats the smaller margin first |' % (
                 free(fa), free(fb)),
@@ -1056,6 +1031,9 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
         tilt[v] = math.degrees(float(np.max(Tilt(rec.Qpos[:, q0 + 3:q0 + 7])[cups])))
     i8 = s['first'].get('Loader_Free + Tracking_Margin (I8)')
     hit = s['first'].get('contact')
+    gone = [f for f in c.Analyses['optimized']['gating'] if f.Kind == 'leaves']
+    leaves = '; '.join('`%s` starts in %s\'s way and leaves it %.2f s ahead of the loader [K]: it rests on the robot starting promptly '
+                       'after Loader.Start (a controller latency of that size would meet the loader)' % (f.Motion, f.Job, f.Lead) for f in gone)
     rows = [['cycle time [K]', '%.3f s' % ta.T[-1], '%.3f s' % tb.T[-1], 'optimized, %.3f s (%.1f %%) shorter' % (ta.T[-1] - tb.T[-1],
                                                                                                              100 * (1 - tb.T[-1] / ta.T[-1]))],
             ['robot joint travel [K]', '%.1f rad' % ma.Joint_Travel.sum(), '%.1f rad' % mb.Joint_Travel.sum(), 'optimized, %.0f %% less' % (
@@ -1066,8 +1044,9 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
             ['closest robot - loader overall (the take, LOCKED) [P]', _Distance_Text(ra, CONST_CUT), _Distance_Text(rb, CONST_CUT), 'equal'],
             ['largest carried PCB tilt [P]', '%.1f deg' % tilt['taught'], '%.1f deg' % tilt['optimized'], 'taught' if tilt['taught'] <
              tilt['optimized'] else 'optimized'],
-            ['tolerance to a slower loader [K]', 'any (sequential)', '%s before I8, %s before contact' % (
-                '-' if i8 is None else '%+.1f %%' % (100 * (i8[0] - 1)), '-' if hit is None else '%+.1f %%' % (100 * (hit[0] - 1))), 'taught'],
+            ['tolerance to a slower loader [K]', 'any (sequential)', ('any up to %.0f x (gated, F15)' % CONST_FACTORS[-1]) if i8 is None else
+             '%+.1f %% before I8, %s before contact' % (100 * (i8[0] - 1), '-' if hit is None else '%+.1f %%' % (100 * (hit[0] - 1))),
+             'equal' if i8 is None else 'taught'],
             ['acceptance checks (SPEC §10.1) [P]', '%d/%d pass' % (sum(1 for x in c.Analyses['taught']['acceptance'] if x[1]),
                                                                             len(c.Analyses['taught']['acceptance'])),
              '%d/%d pass' % (sum(1 for x in c.Analyses['optimized']['acceptance'] if x[1]), len(c.Analyses['optimized']['acceptance'])), 'equal'],
@@ -1077,11 +1056,7 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
     lines += ['', '**Gain.** The optimized program is %.1f s (%.1f %%) shorter per cycle; the whole gain is in the FREE transfers and the '
               'parallel loader (section 6); the LOCKED process parts are identical.' % (ta.T[-1] - tb.T[-1], 100 * (1 - tb.T[-1] / ta.T[-1])), '',
               '**Risks, highest first.**', '',
-              '1. **The timed `Wait(1.648)` in `S11_To_Take`.** A loader `J_RETURN` only %s slower breaks I8 (%.0f mm) and %s slower makes the '
-              'robot touch the loader\'s Z carriage (section 4). The robot relies on the loader\'s timing there and nowhere else. Fix: the '
-              'condition of section 4 (proposed, not implemented).' % ('-' if i8 is None else '%.1f %%' % (100 * (i8[0] - 1)),
-                                                                      1000 * s['bounds']['Loader_Free + Tracking_Margin (I8)'],
-                                                                      '-' if hit is None else '%.1f %%' % (100 * (hit[0] - 1))),
+              '1. **%s**' % (leaves if leaves else 'No robot motion relies on the loader\'s timing (the gating rule holds, section 4).'),
               '2. **A smaller margin to the loader in the free transfers**: %s against %s in the taught program [P]; a model error or a '
               'tracking lag on the real cell eats it first.' % (free(fb), free(fa)),
               '3. **A larger carried tilt**: the PCB on the cups tilts up to %.1f deg in the optimized program against %.1f deg [P] (the '
@@ -1096,7 +1071,7 @@ def Section_Verdict(c: Context_Cls) -> tp.List[str]:
               '**On the real cell.** %s Simulation is not proof of safety. Before any run: the real-cell validation procedure (not defined '
               'yet, KNOWN_ISSUES.md); reduced speed first with the controller\'s own safety limits active; one moving object at a time where '
               'possible - the loader jobs alone, then the robot\'s transfers alone with the loader parked, then the LOCKED parts, then the '
-              'parallel parts last; the timed wait replaced by a condition before the optimized program runs in parallel at all.'
+              'parallel parts last, with the loader\'s Loader.Start / WaitDone handshake tested on its own first.'
               % CONST_DISCLAIMER]
     return lines
 
@@ -1443,9 +1418,11 @@ def main():
     summary.append('- Acceptance: taught %d/%d, optimized %d/%d checks pass [P].' % (
         sum(1 for x in analyses['taught']['acceptance'] if x[1]), len(analyses['taught']['acceptance']),
         sum(1 for x in analyses['optimized']['acceptance'] if x[1]), len(analyses['optimized']['acceptance'])))
-    summary.append('- Top risk: the optimized program\'s timed `Wait(1.648)`: a loader `%s` %s slower breaks I8, %s slower is a contact [K].' % (
-        context.Stretch.get('worst', '-'), '-' if first is None else '%.1f %%' % (100 * (first[0] - 1)), '-' if hit is None else
-        '%.1f %%' % (100 * (hit[0] - 1))))
+    summary.append('- A slower loader: %s [K].' % ('no failure of I8 for any job up to %.0f x as long (the take gated by '
+                                                   'Loader.WaitDone(J_RETURN_Y), F15)' % CONST_FACTORS[-1] if first is None else
+                                                   '`%s` %.1f %% slower breaks I8, %s slower is a contact' % (
+                                                       context.Stretch.get('worst', '-'), 100 * (first[0] - 1),
+                                                       '-' if hit is None else '%.1f %%' % (100 * (hit[0] - 1)))))
     summary.append('')
     body = (sources + summary + Section_Same_Task(context) + [''] + Section_Conditions(context) + [''] + Section_Objects(context) +
             Section_Interactions(context) + [''] + Section_PCB(context) + [''] + Section_Cycle(context) + ['', '## 7. Figures', ''] +

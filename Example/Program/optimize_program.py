@@ -49,7 +49,7 @@ from Kinematics.Core import Robot_Kinematics_Cls
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Program/Core, ../Program/Check - the taught program's build, the check report
 from Program.Core import Build_Program, Program_Error_Cls
-from Program.Check import Format_Check_Report
+from Program.Check import Format_Check_Report, Gating_Faults
 #   ../Planner/Core - the planner's errors
 from Planner.Core import Planner_Error_Cls
 #   ../Optimizer/Core - the optimization
@@ -111,12 +111,12 @@ def main():
         first, last = Step_Bounds(tr, t.Name)
         tilt = '%.2f deg (limit %.1f)' % (math.degrees(Carried_Tilt(tr, first, last)),
                                           math.degrees(optimization.Carry_Max_Tilt)) if t.Carrying else '-'
-        slot, wait = result.Delays.get(t.Name, (1, 0.0))
+        slot = result.Slots.get(t.Name, 1)
         lines.append('  %-20s %s -> %s: margin %.1f mm; %d / %d; %d -> %d -> %d, %d refits; %d checks; %.3f / %.3f s; %.3f / %.3f; tilt %s'
                      % (p.Set, p.Start, p.End, 1000 * p.Margin, p.Iterations, p.Nodes, p.Rrt_Points, p.Short_Points, len(p.Waypoints), p.Refits,
                         p.Checks, p.Optimal_Time, p.Duration, p.Peak_Speed, p.Peak_Acceleration, tilt))
         if t.Jobs and p.End == t.End:
-            later = ', %.3f s later' % wait if wait else ''
+            later = ' (after Loader.WaitDone(%s))' % t.Jobs[slot - 2] if slot > 1 else ''
             waits = '; the robot waits at %s' % t.Wait if t.Wait else ''
             lines.append('  %-20s %s replaces %s; parallel jobs %s%s; the last spline after the start of %s%s'
                          % ('', t.Name, ', '.join(t.Keys + t.Job_Keys), ', '.join(t.Jobs), waits, t.Jobs[slot - 1], later))
@@ -124,6 +124,12 @@ def main():
     lines.append('schedule: %s' % ', '.join('%s %.3f s' % (k, v) for k, v in result.Program.Optimized.Schedule.items()))
     interlocks = Interlocks(tr, kinematics, collision, cell, result.Program)
     lines += ['interlock %s %s: %s' % (name, 'holds' if ok else 'FAILS', text) for name, ok, text in interlocks]
+    gating = Gating_Faults(tr, kinematics, collision, cell)
+    lines += ['gating rule: %s %s %s\'s volume (%.2f mm, %s)%s' % (f.Motion, 'COMES INTO' if f.Kind == 'enters' else 'leaves', f.Job,
+                                                                 1000 * f.Distance, f.Pair, ', %.2f s ahead of the loader' % f.Lead
+                                                                 if f.Kind == 'leaves' else '') for f in gating]
+    lines.append('gating rule: %s' % ('no robot motion comes into the volume of a loader job it does not wait for' if not
+                                       [f for f in gating if f.Kind == 'enters'] else 'FAILS'))
     transfers = Free_Transfers(taught, optimization, default)
     compared = Compare_Locked(default, tr, taught, transfers)
     lines.append('LOCKED parts against the taught program, from each part\'s start (byte-identical: the same bytes on the compared channels):')
@@ -132,7 +138,8 @@ def main():
     if not all(c.Identical for c in compared):
         lines.append('[ERROR] LOCKED parts that are not byte-identical: %s' % ', '.join(c.Name for c in compared if not c.Identical))
     lines += Format_Check_Report(result.Check, tr, cell)
-    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks) and all(c.Identical for c in compared)
+    ok = result.Check.Verdict == 'PASS' and all(ok for _, ok, _ in interlocks) and all(c.Identical for c in compared) and \
+        not [f for f in gating if f.Kind == 'enters']
     report = os.path.join(args.out or CONST_REPORTS, 'optimize_program.txt')
     os.makedirs(os.path.dirname(report), exist_ok=True)
     with open(report, 'w', encoding='utf-8') as handle:

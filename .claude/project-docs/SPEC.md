@@ -644,14 +644,16 @@ ones merged across segments that only run loader jobs (those jobs then run in pa
 validity in the transfer's scene (the taught program's at its start) - exact distances (`Close_Pairs`) of the robot and a
 carried PCB (hung at the cup face) at least the clearance plus a margin from everything and `Loader_Free` + `Tracking_Margin`
 plus the margin from the loader and the PCB in its jaws (F11), the carried PCB's tilt at most `Carry_Max_Tilt` (B4). A transfer with a waiting point (`Optimization.yaml Waiting_Points`) has two legs: to the waiting point
-at once (after its first job's start), and on to its end at the slot and wait the search finds. `Plan_Transfer`: RRT-Connect
+at once (after its first job's start), and on to its end at the slot the search finds (after a job's start, so after the
+WaitDone of the job before it; never after a Wait, F15). `Plan_Transfer`: RRT-Connect
 (seed `Seed` + the transfer's index + 1000 x the leg) and the shortcut at the planner
 margin, the prune, the spline at `Spline.Margin`. `Optimize_Program`: plans every transfer at the first margin it can be
 planned with, writes the program (`Optimized_Text`: LOCKED segments verbatim from `Program.yaml`, renumbered; a transfer as
 `Loader.Start` / `Robot.MoveSpline` / `Loader.WaitDone` lines), loads, builds and checks it; a transfer that meets the loader
-(I8: closer than `Loader_Free` + `Tracking_Margin` to the loader at its actuator model's position, F11) moves its spline after a
-later job's start or waits longer (`Delay`: by the length of the meeting window), any other
-failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I8 with their times), `Compare_Locked` (each
+(I8: closer than `Loader_Free` + `Tracking_Margin` to the loader at its actuator model's position, F11) or that breaks the gating
+rule (below) moves its spline after the next job's start (`Gate`; past the last job's start it fails, naming the remedies: split
+the job or gate on a loader input), any other failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I9
+with their times), `Compare_Locked` (each
 LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
 planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
 
@@ -689,11 +691,22 @@ MoveL is FREE, so no MoveL crosses the family switch.
 | I4 | `S11_Test` starts after `S10_Leave_MG06` ends (MG06 closed, the fork out of the bar) | the tester runs closed, the robot away |
 | I5 | `S12_Return_MG06` starts after `S11_Test` ends | no motion at MG06 during the test |
 | I6 | `J_FETCH`'s first sample after `S13_Open_MG06` ends (MG06 open, the fork off the handle) | the loader enters MG06 only when it is open and the fork is gone |
-| I7 | `S18_Take_From_Loader` starts after `J_RETURN`'s last loader move (the loader at `L_HOME`, the PCB clamped) | the robot enters the jaw zone only when the loader is home |
+| I7 | `S18_Take_From_Loader` starts after `J_RETURN_Z`'s last loader move (the loader at `L_HOME`, the PCB clamped) | the robot enters the jaw zone only when the loader is home |
 | I8 | the robot (with a carried PCB) at least `Clearance.Loader_Free` + `Tracking_Margin` from the loader (with the PCB in its jaws, posed where its actuators put it) at every sample of the parts where both may move | parallel motion is safe only where checked |
+| I9 | the robot's motion to the take (its last before `S18_Take_From_Loader`) starts after `J_RETURN_Y` is done: after its `Loader.WaitDone` (or `Loader.Run`) and after its last loader move (F15, owner 2026-10-25) | the robot enters the loader's way home only when the loader's Y is home, whatever the loader's speed |
 
-I1-I7 hold by program order (`Loader.Start` / `Loader.WaitDone` lines); I8 is the exact robot-loader check, whose failure
-moves a spline's slot or wait (`Delay`).
+I1-I7 and I9 hold by program order (`Loader.Start` / `Loader.WaitDone` lines); I8 is the exact robot-loader check, whose failure
+moves a spline's slot (`Gate`).
+
+**The gating rule** (F15, owner 2026-10-25; `Program.Check.Gating_Faults`): a robot motion that runs while a parallel loader job
+may run (after its `Loader.Start`, before its `Loader.WaitDone`) must not come within `Clearance.Loader_Free` of any pose the job
+sweeps (the loader where its actuators put it, every 20 ms; `Swept_Distance`, exact) - otherwise its separation rests on timing
+and it must be gated by the job's `Loader.WaitDone` (or an input from the loader), never by a `Wait`. The optimizer moves such a
+spline to the next slot and refuses a program that still breaks it; `optimize_program.py` reports it. A motion that starts
+inside a job's volume and only leaves it (To_MG06's spline from `P_LOADER_ABOVE` during `J_INSERT`: 1.52 s ahead of the loader)
+is reported with its lead, not refused. `J_RETURN` is two jobs for it: `J_RETURN_Y` (up to the travel height and home along Y)
+and `J_RETURN_Z` (down home, the hold), the same motion and timing; the taught program runs both with `Loader.Run` (its
+trajectory byte-identical, the golden's labels re-captured).
 
 ### 7.12 Report
 

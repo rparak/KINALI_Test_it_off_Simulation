@@ -440,3 +440,33 @@ def test_the_loader_actuator_model_matches_the_physics(program_built, program, c
             errors.append((abs(run.Data.qpos[run.qy] - y[i]), abs(run.Data.qpos[run.qz] - z[i]), abs(run.Data.qpos[run.qy] - tr.Loader_Y[i])))
     e = np.array(errors)
     assert e[:, 0].max() < 0.0005 and e[:, 1].max() < 0.0011 and e[:, 2].max() > 0.02, e.max(axis=0)
+
+
+def test_the_optimized_program_keeps_the_gating_rule(optimized_built, cell_configuration):
+    """
+    Description:
+        F15: no robot motion of the optimized program comes into the volume a loader job it does not wait for sweeps; the one
+        motion inside such a volume is W_TO_MG06, which starts at P_LOADER_ABOVE in J_INSERT's way and leaves it 1.52 s ahead
+        of the loader (measured 2026-10-25); the taught program runs no job in parallel.
+    """
+
+    from Program.Check import Gating_Faults
+    found = Gating_Faults(optimized_built['trajectory'], optimized_built['kinematics'], optimized_built['collision'], cell_configuration)
+    assert [(f.Motion, f.Job, f.Kind) for f in found] == [('Robot.MoveSpline(W_TO_MG06, v=0.6)', 'J_INSERT', 'leaves')]
+    assert found[0].Lead == pytest.approx(1.52, abs=0.01)
+    assert Gating_Faults(optimized_built['default'], optimized_built['kinematics'], optimized_built['collision'], cell_configuration) == []
+
+
+def test_a_take_gated_by_a_timer_breaks_the_gating_rule(timed_take, optimized_built, cell_configuration):
+    """
+    Description:
+        The forced failure: with the take's spline after Loader.Start(J_RETURN_Y) and Wait(1.648) (F14's schedule), W_TO_TAKE
+        comes into the volume J_RETURN_Y sweeps - the robot's tool into the Z carriage's way (-18.47 mm, the poses overlap).
+    """
+
+    from Program.Check import Gating_Faults
+    found = [f for f in Gating_Faults(timed_take[0], optimized_built['kinematics'], optimized_built['collision'], cell_configuration)
+             if f.Kind == 'enters']
+    assert [(f.Motion, f.Job) for f in found] == [('Robot.MoveSpline(W_TO_TAKE, v=0.6)', 'J_RETURN_Y')]
+    assert found[0].Distance < 0 and found[0].Pair == 'aubo/tool/ee_tool / z_carriage'
+

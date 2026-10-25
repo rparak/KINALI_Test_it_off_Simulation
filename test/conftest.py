@@ -203,6 +203,40 @@ def optimized_built(cell_configuration, program, constants, simulation):
             'trajectory': trajectory, 'notes': notes, 'optimization': Load_Optimization(program)}
 
 
+CONST_TIMED_TAKE = """    - Loader.Start(J_RETURN_Y)
+    - Wait(1.648)
+    - Robot.MoveSpline(W_TO_TAKE, v=0.6)
+    - Loader.WaitDone(J_RETURN_Y)
+    - Loader.Start(J_RETURN_Z)
+    - Loader.WaitDone(J_RETURN_Z)
+"""
+
+
+@pytest.fixture(scope='session')
+def timed_take(optimized_built, cell_configuration, constants, simulation, tmp_path_factory):
+    """
+    Description:
+        The forced failure of F15: the optimized program with its take gated by the old timer - W_TO_TAKE after
+        Loader.Start(J_RETURN_Y) and a Wait(1.648), as F14's program ran it - built in process: (trajectory, program).
+    """
+
+    from Configuration.Program_Parser import Load_Program, CONST_OPTIMIZED_PROGRAM_YAML
+    from Program.Core import Build_Program
+    text = open(CONST_OPTIMIZED_PROGRAM_YAML, encoding='utf-8').read()
+    gated = """    - Loader.Start(J_RETURN_Y)
+    - Loader.WaitDone(J_RETURN_Y)
+    - Loader.Start(J_RETURN_Z)
+    - Robot.MoveSpline(W_TO_TAKE, v=0.6)
+    - Loader.WaitDone(J_RETURN_Z)
+"""
+    assert text.count(gated) == 1
+    path = tmp_path_factory.mktemp('timed_take') / 'Program_Optimized.yaml'
+    path.write_text(text.replace(gated, CONST_TIMED_TAKE), encoding='utf-8')
+    program = Load_Program(constants, simulation, cell_configuration, str(path))
+    trajectory, _ = Build_Program(program, cell_configuration, optimized_built['meta'], optimized_built['kinematics'], {})
+    return trajectory, program
+
+
 def _Failed_Criteria(result):
     """
     Description:

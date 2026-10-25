@@ -869,15 +869,17 @@ Pinned by `test/Optimizer/test_core.py::test_the_free_space_keeps_the_clearance_
 ## A transfer's place among its parallel jobs comes from the exact robot-loader check
 
 **Decision.** A FREE transfer with loader jobs between its taught segments starts the first job, runs its spline, then
-waits for each job and starts the next. When the build's check finds the robot within the clearance of the loader (I8), the
-spline moves after the start of the next job if the meeting happens while a later job runs (the robot would stand at its end
-point then), otherwise it waits longer before the spline by the length of the meeting window; a meeting while the robot waits
-at its start fails, naming the transfer. Shipped (`Data/Optimized/Program_Optimized.yaml`): To_MG06 runs its spline during
-`J_INSERT`; To_Take goes to its waiting point `P_LOADER_WAIT` during `J_FETCH` and on to `P_LOADER_ABOVE` during `J_RETURN`
-after its wait (below).
+waits for each job and starts the next. When the build's check finds the robot within the clearance of the loader (I8), or
+the spline comes into the volume of a job it does not wait for (the gating rule, F15), the spline moves after the start of the
+next job - so after the WaitDone of the job it met; a meeting while the robot waits at its start, or one past the last job's
+start, fails, naming the remedies. No spline is ever gated by a Wait (F15; until F15 the spline could also wait longer by the
+meeting window, which put `Wait(1.648)` into the take). Shipped (`Data/Optimized/Program_Optimized.yaml`): To_MG06 runs its
+spline during `J_INSERT`; To_Take goes to its waiting point `P_LOADER_WAIT` during `J_FETCH` and on to `P_LOADER_ABOVE` after
+`Loader.WaitDone(J_RETURN_Y)`, during `J_RETURN_Z`.
 
 **Why.** In the taught program the robot is at home while the loader fetches and returns; `P_LOADER_ABOVE` is in the
-loader's travel height path. Waiting longer could not help there (the meeting moved with the wait); a later slot does.
+loader's travel height path. A later slot keeps the robot out of the loader's way whatever the loader's speed; a wait only
+keeps it out at the loader's modelled speed (F14: 2.2 % slower broke I8).
 
 **Alternatives.** Planning the robot against the loader's swept volume (the design's conservative variant): it would forbid
 `P_LOADER_ABOVE` as an end point outright. A waiting point between: a second spline and a stop.
@@ -885,6 +887,39 @@ loader's travel height path. Waiting longer could not help there (the meeting mo
 **Revisit if** the loader's positions or jobs change (the optimizer finds the slot again).
 
 Pinned by `test/Optimizer/test_measure.py::test_the_interlocks_hold`, `test/Example/Program/test_optimize_program.py`.
+
+## The robot waits for the loader's done, never for a time (F15)
+
+**Decision.** `J_RETURN` is split into `J_RETURN_Y` (MoveZ L_TRAVEL, MoveY L_HOME) and `J_RETURN_Z` (MoveZ L_HOME, Wait 0.2), the
+same motion and timing (owner, 2026-10-25). The optimized take runs `Loader.Start(J_RETURN_Y)`, `Loader.WaitDone(J_RETURN_Y)`,
+`Loader.Start(J_RETURN_Z)`, `Robot.MoveSpline(W_TO_TAKE)`, `Loader.WaitDone(J_RETURN_Z)`; interlock I9 and the gating rule
+(`Program.Check.Gating_Faults`, SPEC §7.11) are checked; the optimizer gates a spline only by a later slot, never by a Wait.
+
+**Why.** F14 measured the old `Wait(1.648)`: J_RETURN 2.2 % slower broke I8, 7.6 % slower was a contact with the Z carriage.
+With the loader's Y at home the whole `W_TO_TAKE` spline keeps more than 50 mm from the loader at any Z (`Report.Core.Clear_Height`),
+so waiting for `J_RETURN_Y` is enough. Measured 2026-10-25: the cycle stays 58.716 s (the spline still ends before
+`J_RETURN_Z` does); every loader job slowed up to 2 x keeps the robot at least 29.68 mm from the loader (I8 nominal 19.39 ->
+29.68 mm kinematic, 19.40 -> 29.02 mm in physics, S11); the taught trajectory is byte-identical (only four `Loader.Run` labels
+of the golden changed); the forced failure - the old timer schedule on the split jobs - breaks I9 and the gating rule while I8
+still holds at the nominal timing (19.39 mm), which is why a distance check alone could not catch it.
+
+**Choice inside.** The gating rule measures the robot against every pose the job sweeps (its swept volume), not the pose at the
+same time; a motion that starts inside the volume and leaves it (To_MG06 from `P_LOADER_ABOVE` during `J_INSERT`) is reported
+with its lead over the loader (1.52 s), not refused: owner's rule is about entering; leaving rests on the robot starting
+promptly after `Loader.Start` (open question to the owner).
+
+**Alternatives.** A loader input "Y at home" (`DI_LOADER_Y_HOME`, a WaitDI): the same timing, but a new signal and a PLC change;
+the split job uses the existing handshake. Keeping the wait with a margin (a longer Wait): still timing; it only moves the
+failing slow-down.
+
+**Revisit if** the loader's positions or job contents change (the clear height and the gating rule are measured again), or a
+loader input is added (then it can gate instead of the split).
+
+Pinned by `test/Program/test_check.py::test_the_optimized_program_keeps_the_gating_rule`,
+`::test_a_take_gated_by_a_timer_breaks_the_gating_rule`, `test/Optimizer/test_measure.py::test_i9_fails_for_a_take_gated_by_a_timer`,
+`test/Optimizer/test_core.py::test_a_spline_that_comes_into_a_running_job_s_volume_waits_for_the_job`,
+`test/Report/test_core.py::test_a_slower_loader_only_delays_the_take`, the golden (`test/Program/test_golden.py`) and the physics
+baselines.
 
 ## The optimized program is generated data, committed and reproducible
 
@@ -972,8 +1007,8 @@ Pinned by `test/Optimizer/test_measure.py::test_a_stop_is_a_tenth_of_a_second_at
 
 **Decision.** In the optimized program the robot leaves `P_MG06_FORK_START` at once after Open_MG06 (with `J_FETCH`), waits at
 `P_LOADER_WAIT` (50 mm beyond `P_LOADER_ABOVE` along the plate normal, `Optimization.yaml Waiting_Points`) and moves on to
-`P_LOADER_ABOVE` at the earliest moment the exact robot-loader check allows (`Wait(1.648)` after `J_RETURN` starts). Interlock
-I7 stays: the take starts when `J_RETURN` has ended.
+`P_LOADER_ABOVE` once the loader's Y is home (`Loader.WaitDone(J_RETURN_Y)`, F15; until F15 a `Wait(1.648)` after `J_RETURN`
+started). Interlock I7 stays: the take starts when `J_RETURN_Z` has ended; I9: the motion to the take after `J_RETURN_Y`.
 
 **Why.** Owner's observation (2026-10-24): the robot waited 4.05 s above MG06. The loader is the critical path - the robot was
 already at `P_LOADER_ABOVE` before the loader was home - so leaving earlier gains no time; it removes the robot's wait above

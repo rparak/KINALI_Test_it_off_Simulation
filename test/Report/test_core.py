@@ -103,28 +103,31 @@ def test_the_critical_path_adds_up_to_each_cycle(optimized_built):
     """
     Description:
         The robot's timeline covers the cycle: the kinds sum to the last sample's time in both programs (taught 70.404 s,
-        optimized 58.716 s); only the optimized program has the timed wait, 1.648 s.
+        optimized 58.716 s); neither has a timed wait since F15 (the timer program, the forced failure, has 1.648 s).
     """
 
     for trajectory, cycle in ((_Taught(optimized_built), 70.404), (_Optimized(optimized_built), 58.716)):
         path = Critical_Path(trajectory)
         assert sum(path.values()) == pytest.approx(trajectory.T[-1], abs=1e-9) and trajectory.T[-1] == pytest.approx(cycle, abs=1e-9)
-    assert 'loader (timed wait)' not in Critical_Path(_Taught(optimized_built))
-    assert Critical_Path(_Optimized(optimized_built))['loader (timed wait)'] == pytest.approx(1.648, abs=1e-9)
+        assert 'loader (timed wait)' not in path
 
 
-def test_the_waits_and_the_handshake_of_the_optimized_program(optimized_built):
+def test_the_waits_and_the_handshake_of_the_optimized_program(optimized_built, timed_take):
     """
     Description:
-        Robot_Waits lists the timed Wait(1.648) after Loader.Start(J_RETURN) at 41.864 s; Signal_Order has the job's start
-        before its WaitDone.
+        F15: Robot_Waits lists the robot waiting for J_RETURN_Y (from 41.864 s, 2.600 s) and no Wait inside the take; the
+        handshake starts J_RETURN_Z only after J_RETURN_Y is done. The timer program (the forced failure) waits Wait(1.648) for
+        the loader by its time.
     """
 
     tr = _Optimized(optimized_built)
     waits = {text: (t, d, kind) for t, d, kind, text in Robot_Waits(tr)}
-    assert waits['Wait(1.648)'][1:] == (pytest.approx(1.648), 'loader (timed wait)') and waits['Wait(1.648)'][0] == pytest.approx(41.864)
+    assert waits['Loader.WaitDone(J_RETURN_Y)'][2] == 'loader' and waits['Loader.WaitDone(J_RETURN_Y)'][0] == pytest.approx(41.864)
+    assert waits['Loader.WaitDone(J_RETURN_Y)'][1] == pytest.approx(2.6) and 'Wait(1.648)' not in waits
     lines = [text for _, text in Signal_Order(tr)]
-    assert lines.index('Loader.Start(J_RETURN)') < lines.index('Loader.WaitDone(J_RETURN)')
+    assert lines.index('Loader.Start(J_RETURN_Y)') < lines.index('Loader.WaitDone(J_RETURN_Y)') < lines.index('Loader.Start(J_RETURN_Z)')
+    timed = {text: kind for _, _, kind, text in Robot_Waits(timed_take[0])}
+    assert timed['Wait(1.648)'] == 'loader (timed wait)'
 
 
 def test_the_wrist_singularity_is_met_only_in_the_family_switch(optimized_built):
@@ -149,7 +152,7 @@ def test_a_job_slowed_by_one_is_the_trajectory_itself(optimized_built):
     """
 
     tr = _Optimized(optimized_built)
-    stretched, window = Stretch_Job(tr, 'J_RETURN', 1.0)
+    stretched, window = Stretch_Job(tr, 'J_RETURN_Y', 1.0)
     n = window.stop
     for name in ('T', 'Robot_Q', 'Loader_Y', 'Loader_Z', 'Gripper', 'Jaw', 'PCB_Location', 'PCB_Pose', 'MG06_Lid', 'MG06_Handle'):
         assert np.array_equal(getattr(stretched, name), getattr(tr, name)[:n]), name
@@ -158,14 +161,15 @@ def test_a_job_slowed_by_one_is_the_trajectory_itself(optimized_built):
 def test_a_slowed_job_holds_the_robot_at_its_waitdone(optimized_built):
     """
     Description:
-        At factor 1.5 the job's window is 1.5 times its loader part; the robot runs its own lines as programmed and then holds
+        J_FETCH at factor 1.5: the job's window is 1.5 times its loader part; the robot runs its own lines as programmed (its leg
+        to P_LOADER_WAIT) and then holds
         its WaitDone's joints to the window's end; the loader's channels are the job's at 1 / 1.5 of the time since its start
-        (linear between samples), so its Y reaches home 50 % later.
+        (linear between samples), so its Y reaches MG06 50 % later.
     """
 
     tr = _Optimized(optimized_built)
-    a, w, last = Job_Window(tr, 'J_RETURN')
-    stretched, window = Stretch_Job(tr, 'J_RETURN', 1.5)
+    a, w, last = Job_Window(tr, 'J_FETCH')
+    stretched, window = Stretch_Job(tr, 'J_FETCH', 1.5)
     assert len(window) == int(math.ceil(1.5 * (last - a))) + 1
     assert np.array_equal(stretched.Robot_Q[a:w + 1], tr.Robot_Q[a:w + 1]) and np.all(stretched.Robot_Q[w:] == tr.Robot_Q[w])
     z = tr.Loader_Z
@@ -174,23 +178,36 @@ def test_a_slowed_job_holds_the_robot_at_its_waitdone(optimized_built):
     assert home == pytest.approx(1.5 * (np.flatnonzero(tr.Loader_Y[a:] == tr.Loader_Y[last])[0]), abs=2)
 
 
-def test_the_slowed_return_breaks_i8_within_three_percent(optimized_built, cell_configuration):
+def test_a_slower_loader_only_delays_the_take(optimized_built, cell_configuration):
     """
     Description:
-        The optimized program's timed Wait(1.648): as programmed, the closest robot - loader distance over J_RETURN is the
-        interlock check's own (19.39 mm, the same function on the same samples); with J_RETURN 3 % slower it falls below
-        Loader_Free + Tracking_Margin (14 mm), 10 % slower the robot meets the Z carriage (measured 2026-10-25: 11.78 mm,
-        -4.95 mm).
+        F15: with the take gated by Loader.WaitDone(J_RETURN_Y), a slower J_RETURN_Y or J_RETURN_Z never brings the robot
+        closer to the loader than as programmed (29.68 mm and > 50 mm, the robot waiting at P_LOADER_WAIT), at 1.5 and 2 times
+        as long; as programmed the distance is the interlock check's own (the same function on the same samples).
     """
 
     tr, kinematics, collision = _Optimized(optimized_built), optimized_built['kinematics'], optimized_built['collision']
-    a, _, _ = Job_Window(tr, 'J_RETURN')
-    as_is = Stretched_Distance(tr, 'J_RETURN', 1.0, kinematics, collision)
-    stretched, window = Stretch_Job(tr, 'J_RETURN', 1.0)
+    as_is = Stretched_Distance(tr, 'J_RETURN_Y', 1.0, kinematics, collision)
+    stretched, window = Stretch_Job(tr, 'J_RETURN_Y', 1.0)
     direct = Robot_Loader_Distance(Loader_Actual_Trajectory(stretched, kinematics.Model), kinematics, collision, window)
-    assert as_is[0] == direct[0] and as_is[0] == pytest.approx(0.01939, abs=1e-4) and as_is[2] == 'aubo/tool/ee_tool / z_carriage'
-    assert Stretched_Distance(tr, 'J_RETURN', 1.03, kinematics, collision)[0] < cell_configuration.Loader_Free + cell_configuration.Tracking_Margin
-    assert Stretched_Distance(tr, 'J_RETURN', 1.10, kinematics, collision)[0] < 0.0
+    assert as_is[0] == direct[0] and as_is[0] == pytest.approx(0.02968, abs=1e-4)
+    for job in ('J_RETURN_Y', 'J_RETURN_Z'):
+        for factor in (1.5, 2.0):
+            assert Stretched_Distance(tr, job, factor, kinematics, collision)[0] >= as_is[0] - 1e-9, (job, factor)
+
+
+def test_the_timed_take_breaks_i8_within_three_percent(timed_take, optimized_built, cell_configuration):
+    """
+    Description:
+        The forced failure (F14's finding, kept as its regression): the take gated by Wait(1.648) - as programmed 19.39 mm from
+        the loader, J_RETURN_Y 3 % slower below Loader_Free + Tracking_Margin (14 mm), 10 % slower the robot meets the Z
+        carriage (measured 2026-10-25: 11.78 mm, -4.95 mm, as with the unsplit J_RETURN).
+    """
+
+    tr, kinematics, collision = timed_take[0], optimized_built['kinematics'], optimized_built['collision']
+    assert Stretched_Distance(tr, 'J_RETURN_Y', 1.0, kinematics, collision)[0] == pytest.approx(0.01939, abs=1e-4)
+    assert Stretched_Distance(tr, 'J_RETURN_Y', 1.03, kinematics, collision)[0] < cell_configuration.Loader_Free + cell_configuration.Tracking_Margin
+    assert Stretched_Distance(tr, 'J_RETURN_Y', 1.10, kinematics, collision)[0] < 0.0
 
 
 def test_the_take_spline_is_clear_with_the_loader_y_at_home(optimized_built, cell_configuration):

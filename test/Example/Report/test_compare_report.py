@@ -38,9 +38,9 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
     """
     Description:
         F14: exit 0; DIR holds Comparison.md, its five figures and both physics reports, nothing in the working directory. The
-        report gives the cycles (70.404 s, 58.716 s), the identical task, 28 of 28 checks in both, the timed wait breaking I8 at
-        +2.2 % and contact at +7.6 %, and the not-validated sentence; the optimized program's physics report is byte for byte
-        the one run_program.py writes (the recording does not change the run).
+        report gives the cycles (70.404 s, 58.716 s), the identical task, 28 of 28 checks in both, no loader slow-down up to 2 x
+        breaking I8 (F15: the take gated by Loader.WaitDone(J_RETURN_Y)), and the not-validated sentence; the optimized
+        program's physics report is byte for byte the one run_program.py writes (the recording does not change the run).
     """
 
     folder = os.path.dirname(str(built_trajectory('taught')))
@@ -55,7 +55,8 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
     assert '- Cycle: taught 70.404 s, optimized 58.716 s [K] (16.6 % shorter).' in text
     assert 'taught 29, optimized 29 lines, identical in text and order' in text and 'their lines identical [C]' in text
     assert '- Acceptance: taught 28/28, optimized 28/28 checks pass [P].' in text
-    assert '| Loader_Free + Tracking_Margin (I8) | 14.0 mm | +2.2 %' in text and '| contact | 0.0 mm | +7.6 %' in text
+    assert '| Loader_Free + Tracking_Margin (I8) | 14.0 mm | none |' in text and '| contact | 0.0 mm | none |' in text
+    assert '- A slower loader: no failure of I8 for any job up to 2 x as long' in text
     assert 'are simulation results and are NOT validated for driving the real cell.' in text
     check = tmp_path / 'check'
     run = run_script('Simulation/run_program.py', ['--program', 'optimized', '--trajectory', str(built_trajectory('optimized')), '--out',

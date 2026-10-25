@@ -78,16 +78,17 @@ Program:
     - Robot.MovePath(PATH_FORK_OPEN)                      # legacy: replay(i_open[i_open > k], 'open MG06')
 
   # FREE (planned, F9): P_MG06_FORK_START to P_LOADER_ABOVE, replacing the taught S14_Home_After_MG06,
-  # S15_Loader_Fetch, S16_Loader_Return, S17_To_Take. The loader runs J_FETCH, J_RETURN in parallel. The robot waits
-  # at P_LOADER_WAIT meanwhile.
+  # S15_Loader_Fetch, S16_Loader_Return, S17_To_Take. The loader runs J_FETCH, J_RETURN_Y, J_RETURN_Z in parallel. The
+  # robot waits at P_LOADER_WAIT meanwhile.
   S11_To_Take:
     - Loader.Start(J_FETCH)
     - Robot.MoveSpline(W_TO_TAKE_WAIT, v=0.6)
     - Loader.WaitDone(J_FETCH)
-    - Loader.Start(J_RETURN)
-    - Wait(1.648)
+    - Loader.Start(J_RETURN_Y)
+    - Loader.WaitDone(J_RETURN_Y)
+    - Loader.Start(J_RETURN_Z)
     - Robot.MoveSpline(W_TO_TAKE, v=0.6)
-    - Loader.WaitDone(J_RETURN)
+    - Loader.WaitDone(J_RETURN_Z)
 
   # Down along the plate normal, the last 15 mm at 30 mm/s until the cups are pressed 1.5 mm onto the PCB in the
   # jaws, vacuum on, back to touch (the press relieved, SPEC §4.7), the jaws open, the vacuum still OK, slowly out
@@ -152,10 +153,14 @@ Loader_Jobs:
     - Gripper(G_CLAMP, t=0.6)                             # legacy: loader_move('jaw', J_CLAMP, 0.35); 0.6 s: the EGI's 100 mm/s (Cell.yaml Jaw_Speed_Max)
     - Wait(0.2)                                           # legacy: hold(0.2)
 
-  # Lift the PCB out of MG06 and bring it home to the take position.
-  J_RETURN:
+  # Lift the PCB out of MG06 and bring it back along Y to above its home (F15: J_RETURN split in two, the same motion and
+  # timing; the loader's Y at home is what frees the robot's way to the take, design-decisions).
+  J_RETURN_Y:
     - MoveZ(L_TRAVEL, t=0.6)                              # legacy: loader_move('z', Z_TRAVEL, 0.6)
     - MoveY(L_HOME, t=2.0)                                # legacy: loader_move('y', Y0, 2.0)
+
+  # Down to the take position (home).
+  J_RETURN_Z:
     - MoveZ(L_HOME, t=0.8)                                # legacy: loader_move('z', 0.0, 0.8)
     - Wait(0.2)                                           # legacy: hold(0.2)
 
@@ -216,7 +221,7 @@ Waypoints:
 # was made with, each segment's start time (compared at a build), the TOPP grid.
 Optimized:
   Inputs:
-    program: "e150986c7ecd583de222866dec486e3be4b208c0088259d1e0ad3bc979ebcc93"
+    program: "ddf8a647117e8b20032569f041c7919d80cd87a3651b0516305804410bc8982d"
     constants: "942ed70a3da3bc92c477c55759547ec31d6b06ab1c30a011838d11709d23b804"
     simulation: "b951462c85ea1c5b12be1233ded01acd37c2ef1983ac5e92daa6350cd09d8540"
     cell: "c94fd92cfd4a36be74f5b0f8374523d423e5b0b34423feadb6b29e90804dd514"

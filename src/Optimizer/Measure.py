@@ -51,7 +51,7 @@ Description:
     Initialization of constants.
 
     What the optimized program is measured by (SPEC §7.11): each LOCKED part against the taught program byte by byte, the
-    interlocks I1-I8 on the built trajectory, the carried PCB's tilt, the schedule's differences, and the comparison's
+    interlocks I1-I9 on the built trajectory, the carried PCB's tilt, the schedule's differences, and the comparison's
     metrics. It prints nothing.
 """
 # A stop of the robot (the comparison's metric): every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME,
@@ -111,8 +111,8 @@ def Compare_Locked(default: Trajectory_Str, optimized: Trajectory_Str, taught: P
     Description:
         Every LOCKED part of the taught program against the optimized one, from each part's start (B5's companion: LOCKED is
         byte-identical, only its start time moves): each robot segment that is not FREE nor a loader-only segment of a
-        transfer, on every channel (CONST_ROBOT_CHANNELS); each job run in parallel, on the loader's channels
-        (CONST_LOADER_CHANNELS) from the sample after its Loader.Start.
+        transfer, on every channel (CONST_ROBOT_CHANNELS); each job run in parallel (each of a segment's Loader.Run jobs), on the
+        loader's channels (CONST_LOADER_CHANNELS) from the sample after its Loader.Start.
 
     Args:
         (1) default [Trajectory_Str(object)]: The taught program's trajectory.
@@ -125,26 +125,38 @@ def Compare_Locked(default: Trajectory_Str, optimized: Trajectory_Str, taught: P
     """
 
     replaced = {key for t in transfers for key in t.Keys + t.Job_Keys}
-    jobs = {key: t.Jobs[t.Job_Keys.index(key)] for t in transfers for key in t.Job_Keys}
+    job_keys = {key for t in transfers for key in t.Job_Keys}
     names = [n.split('_', 1)[1] if n.startswith('S') else n for n in optimized.Step_Names]
     out = []
     for index, name in enumerate(default.Step_Names):
-        a = np.flatnonzero(default.Step_Index == index)
-        if name in jobs:
-            start = next(k for k, text in enumerate(optimized.Segment_Command) if text == 'Loader.Start(%s)' % jobs[name])
-            b = np.arange(int(optimized.Segment_Start[start]), int(optimized.Segment_Start[start]) + len(a))
-            channels = CONST_LOADER_CHANNELS
+        if name in job_keys:
+            # Each job its segment runs (F15: S16_Loader_Return runs J_RETURN_Y and J_RETURN_Z), from its Loader.Run lines.
+            parts = []
+            for k, text in enumerate(default.Segment_Command):
+                if default.Segment_Step[k] == index and text.startswith('Loader.Run('):
+                    job = text[len('Loader.Run('):text.index(')')]
+                    if not parts or parts[-1][0] != job:
+                        parts.append((job, []))
+                    parts[-1][1].extend(range(int(default.Segment_Start[k]), int(default.Segment_End[k])))
         elif name in replaced:
             continue
         else:
-            short = name.split('_', 1)[1] if name.startswith('S') else name
-            b = np.flatnonzero(optimized.Step_Index == names.index(short))
-            channels = CONST_ROBOT_CHANNELS
-        same = len(a) == len(b) and all(np.asarray(getattr(default, c))[a].tobytes() == np.asarray(getattr(optimized,
-                                                                                                           c))[b].tobytes() for c in channels)
-        out.append(Locked_Comparison_Str(Name=jobs.get(name, name), Channels='loader' if channels is CONST_LOADER_CHANNELS else 'all', Samples=len(a),
-                                         Start_Default=float(default.T[a[0]]), Start_Optimized=float(optimized.T[b[0]]) if len(b) else math.nan,
-                                         Identical=bool(same)))
+            parts = [(name, list(np.flatnonzero(default.Step_Index == index)))]
+        for part, samples in parts:
+            a = np.array(samples, int)
+            if name in job_keys:
+                start = next(k for k, text in enumerate(optimized.Segment_Command) if text == 'Loader.Start(%s)' % part)
+                b = np.arange(int(optimized.Segment_Start[start]), int(optimized.Segment_Start[start]) + len(a))
+                channels = CONST_LOADER_CHANNELS
+            else:
+                short = name.split('_', 1)[1] if name.startswith('S') else name
+                b = np.flatnonzero(optimized.Step_Index == names.index(short))
+                channels = CONST_ROBOT_CHANNELS
+            same = len(a) == len(b) and all(np.asarray(getattr(default, c))[a].tobytes() == np.asarray(getattr(optimized,
+                                                                                                               c))[b].tobytes() for c in channels)
+            out.append(Locked_Comparison_Str(Name=part, Channels='loader' if channels is CONST_LOADER_CHANNELS else 'all', Samples=len(a),
+                                             Start_Default=float(default.T[a[0]]), Start_Optimized=float(optimized.T[b[0]]) if len(b) else math.nan,
+                                             Identical=bool(same)))
     return out
 
 
@@ -197,12 +209,12 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
                program: Program_Str) -> tp.List[tp.Tuple[str, bool, str]]:
     """
     Description:
-        The interlocks I1-I8 of SPEC §7.11 verified on a built trajectory, each with the times that prove it: I1 the
+        The interlocks I1-I9 of SPEC §7.11 verified on a built trajectory, each with the times that prove it: I1 the
         handover starts with the loader home and the gripper open; I2 the loader's first move after the handover ends; I3
         MG06 is closed only after the park; I4-I5 the test between the leave and the return; I6 the fetch after MG06 is
         open; I7 the take only after the return; I8 the robot (with a carried PCB) at least Clearance.Loader_Free +
         Tracking_Margin from the loader (with the PCB in its jaws, posed where its actuators put it; F11) at every sample of the
-        parts where both may move.
+        parts where both may move; I9 the robot's motion to the take only after J_RETURN_Y is done (F15).
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The trajectory.
@@ -238,11 +250,11 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
     fetch = Job_Bounds(tr, 'J_FETCH')
     out.append(('I6', T[fetch[0]] > T[o1], 'Open_MG06 ends %.3f s (MG06 open, fork off the handle); J_FETCH\'s first sample %.3f s' % (T[o1],
                                                                                                                                        T[fetch[0]])))
-    ret = Job_Bounds(tr, 'J_RETURN')
+    ret = Job_Bounds(tr, 'J_RETURN_Z')
     k0, _ = Step_Bounds(tr, 'Take_From_Loader')
     i = k0 - 1
     ok = T[k0] > T[ret[1]] and tr.Loader_Y[i] == home.Y and tr.Loader_Z[i] == home.Z and CONST_PCB_LOCATIONS[tr.PCB_Location[i]] == 'jaws'
-    out.append(('I7', bool(ok), 'J_RETURN\'s last loader move %.3f s (loader at L_HOME, PCB %s); Take_From_Loader starts %.3f s'
+    out.append(('I7', bool(ok), 'J_RETURN_Z\'s last loader move %.3f s (loader at L_HOME, PCB %s); Take_From_Loader starts %.3f s'
                 % (T[ret[1]], CONST_PCB_LOCATIONS[tr.PCB_Location[i]], T[k0])))
     windows = [(insert[0], park[1]), (fetch[0], ret[1])]
     actual = Loader_Actual_Trajectory(tr, kinematics.Model)
@@ -254,6 +266,16 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
                 'robot (and a carried PCB) to loader (and the PCB in its jaws, at its actuator model\'s position) over %s: closest %s; '
                 'Loader_Free %.1f mm + Tracking_Margin %.1f mm' % (', '.join('%.3f-%.3f s' % (T[a], T[b]) for a, b in windows), closest,
                                                                    1000 * cell.Loader_Free, 1000 * cell.Tracking_Margin)))
+    # I9 (F15): the robot's motion to the take (its last one before Take_From_Loader) starts only after J_RETURN_Y is done -
+    # in program order (after the job's WaitDone or Run) and in time (after its last loader move).
+    y_last = Job_Bounds(tr, 'J_RETURN_Y')[1]
+    texts = tr.Segment_Command
+    take = int(np.flatnonzero(tr.Segment_Start == k0)[0])
+    motion = max(k for k in range(take) if texts[k].startswith('Robot.Move'))
+    gate = max(k for k in range(take) if texts[k] == 'Loader.WaitDone(J_RETURN_Y)' or texts[k].startswith('Loader.Run(J_RETURN_Y) >'))
+    m0 = int(tr.Segment_Start[motion])
+    out.append(('I9', bool(motion > gate and m0 > y_last), 'J_RETURN_Y done at %.3f s (its last loader move; `%s`); the robot\'s motion to the '
+                'take `%s` starts %.3f s' % (T[y_last], texts[gate], texts[motion], T[m0])))
     return out
 
 

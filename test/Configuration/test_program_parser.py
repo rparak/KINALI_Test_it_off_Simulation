@@ -144,14 +144,15 @@ def test_the_shipped_files_load(program, constants, simulation):
     """
     Description:
         The three shipped files load without notes: 2 tools, 25 points, 4 loader positions, 2 gripper commands, 2 paths, 2
-        signals; the 21 segments in order with 54 lines; the loader's 6 jobs and the tester's one; the start state.
+        signals; the 21 segments in order with 55 lines; the loader's 7 jobs (J_RETURN in two parts, F15) and the tester's
+        one; the start state.
     """
 
     assert program.Notes == []
     assert [len(t) for t in (constants.Tools, constants.Points, constants.Loader, constants.Gripper, constants.Paths,
                              constants.Signals)] == [2, 25, 5, 2, 2, 2]
-    assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 54
-    assert list(program.Loader_Jobs) == ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN',
+    assert [s.Key for s in program.Segments] == CONST_SEGMENTS and sum(len(s.Commands) for s in program.Segments) == 55
+    assert list(program.Loader_Jobs) == ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z',
                                          'J_RELEASE'] and list(program.Tester_Jobs) == ['J_TEST']
     assert (simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper, simulation.Start_Vacuum, simulation.Start_PCB,
             simulation.Start_MG06) == ('P_HOME', 'L_HOME', 'G_OPEN', False, 'input_crate', 'Open')
@@ -282,7 +283,7 @@ def test_invalid_simulation_data_is_named_with_its_file_and_line(tmp_path, const
     ('Loader.Run(J_INSERT)', 'Loader.Start(J_INSERT)', 'Loader.Start is only in an optimized program (Data/Optimized/Program_Optimized.yaml'),
     ('Tester.Run(J_TEST)', 'Tester.WaitDone(J_TEST)', "Tester.WaitDone is reserved (the tester's job runs as a whole)"),
     ('Loader.Run(J_INSERT)', 'Loader.Run(J_NOPE)',
-     "Loader.Run takes a job of Loader_Jobs (J_CLAMP, J_INSERT, J_PARK, J_FETCH, J_RETURN, J_RELEASE), not 'J_NOPE'"),
+     "Loader.Run takes a job of Loader_Jobs (J_CLAMP, J_INSERT, J_PARK, J_FETCH, J_RETURN_Y, J_RETURN_Z, J_RELEASE), not 'J_NOPE'"),
     ('Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)', 'Robot.WaitDI(DI_VACUUM_OK)', 'Robot.WaitDI needs timeout= (REQUIRED)'),
     ('Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)', 'Robot.WaitDI(DI_VACUUM_OK, timeout=0.2)',
      'the simulated response of DI_VACUUM_OK (0.3 s) exceeds the timeout 0.2 s: the wait would fail'),
@@ -423,7 +424,7 @@ CONST_OPTIMIZED_ERRORS = [
     ('    - Loader.WaitDone(J_INSERT)\n    - Loader.Start(J_PARK)', '    - Loader.Start(J_PARK)',
      "Loader.Start(J_PARK)': Start while J_INSERT runs: wait for it first (Loader.WaitDone(J_INSERT))"),
     ('    - Loader.Start(J_INSERT)\n', '', "Loader.WaitDone(J_INSERT)': WaitDone(J_INSERT) without its Start (no job runs)"),
-    ('    - Loader.WaitDone(J_RETURN)\n', '', 'J_RETURN is started but never waited for (Loader.WaitDone(J_RETURN))'),
+    ('    - Loader.WaitDone(J_RETURN_Z)\n', '', 'J_RETURN_Z is started but never waited for (Loader.WaitDone(J_RETURN_Z))'),
     ('    From: P_HOME\n', '    From: P_INPUT_CLEAR\n', 'W_APPROACH_INPUT starts at P_INPUT_CLEAR, but the robot stands at P_HOME'),
     ('Robot.MoveSpline(W_TO_LOADER, v=0.6)', 'Robot.MoveSpline(W_NOWHERE, v=0.6)',
      'Robot.MoveSpline takes a W_ waypoint set of the Waypoints section'),

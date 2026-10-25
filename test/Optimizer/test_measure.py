@@ -42,14 +42,32 @@ Description:
 def test_the_interlocks_hold(optimized_built, cell_configuration):
     """
     Description:
-        I1-I8 hold on the optimized trajectory, each with its times (I8: the robot at least the clearance from the loader
-        wherever both may move).
+        I1-I9 hold on the optimized trajectory, each with its times (I8: the robot at least the clearance from the loader
+        wherever both may move; I9: the take's spline after J_RETURN_Y is done).
     """
 
     found = Interlocks(optimized_built['trajectory'], optimized_built['kinematics'], optimized_built['collision'], cell_configuration,
                        optimized_built['optimized'])
-    assert [name for name, _, _ in found] == ['I%d' % k for k in range(1, 9)]
+    assert [name for name, _, _ in found] == ['I%d' % k for k in range(1, 10)]
     assert all(ok for _, ok, _ in found), [text for _, ok, text in found if not ok]
+
+
+def test_i9_fails_for_a_take_gated_by_a_timer(timed_take, optimized_built, cell_configuration, program):
+    """
+    Description:
+        The forced failure of F15: with the take's spline after Loader.Start(J_RETURN_Y) and Wait(1.648), I9 fails - the motion
+        to the take comes before the job's WaitDone and starts before its last loader move - while I8 still holds at the
+        nominal timing (19.39 mm): the timer passes the distance check, only I9 and the gating rule see that it rests on the
+        loader's timing. The taught program keeps I9 by its Loader.Run lines.
+    """
+
+    found = {name: (ok, text) for name, ok, text in Interlocks(timed_take[0], optimized_built['kinematics'], optimized_built['collision'],
+                                                               cell_configuration, timed_take[1])}
+    assert not found['I9'][0] and '`Robot.MoveSpline(W_TO_TAKE, v=0.6)`' in found['I9'][1]
+    assert found['I8'][0] and 'closest 19.39 mm' in found['I8'][1]
+    taught = {name: ok for name, ok, _ in Interlocks(optimized_built['default'], optimized_built['kinematics'], optimized_built['collision'],
+                                                     cell_configuration, program)}
+    assert taught['I9']
 
 
 def _Locked(optimized_built, program):
@@ -58,8 +76,8 @@ def _Locked(optimized_built, program):
 
 
 @pytest.mark.parametrize('part', ['S2_Pick_Input', 'S4_Handover', 'J_INSERT', 'J_PARK', 'S9_Close_MG06', 'S10_Leave_MG06', 'S11_Test',
-                                  'S12_Return_MG06', 'S13_Open_MG06', 'J_FETCH', 'J_RETURN', 'S18_Take_From_Loader', 'S20_Place_Output',
-                                  'End_Settle'])
+                                  'S12_Return_MG06', 'S13_Open_MG06', 'J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z', 'S18_Take_From_Loader',
+                                  'S20_Place_Output', 'End_Settle'])
 def test_a_locked_part_is_byte_identical_from_its_start(optimized_built, program, part):
     """
     Description:

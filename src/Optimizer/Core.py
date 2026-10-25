@@ -56,7 +56,7 @@ from Planner.Core import Rrt_Connect, Shortcut, Prune, Smooth, Time_Path, Planne
 #   ../Program/Core - the build, its notes, the file hashes
 from Program.Core import Input_Hash, Build_Program, Build_Note_Str
 #   ../Program/Check - the build's check, posing at a sample, the loader's actual position and its distance to the robot
-from Program.Check import Pose_Sample, Check_Trajectory, Program_Check_Str, Robot_Loader_Distance, Loader_Actual_Trajectory
+from Program.Check import Pose_Sample, Check_Trajectory, Program_Check_Str, Robot_Loader_Distance, Loader_Actual_Trajectory, Gating_Faults
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 
@@ -75,11 +75,9 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_INPUTS = {'program': CONST_PROGRAM_YAML, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
                 'optimization': CONST_OPTIMIZATION_YAML, 'fork_path': CONST_FORK_PATH}
-# A transfer whose exact check fails on a pair with the loader (I8) waits longer before its spline - by the length of
-# the window in which the robot meets the loader, at most CONST_DELAY_TRIES times; any other failure takes the next
-# planner margin.
-#   Unit [int]
-CONST_DELAY_TRIES = 20
+# A transfer whose spline meets the loader (I8) or comes into the volume a parallel job sweeps (the gating rule, F15) runs its
+# spline after the next job's start - after the WaitDone of the job it met, never after a Wait (owner, 2026-10-25); any
+# other failure takes the next planner margin.
 
 
 class Optimizer_Error_Cls(ValueError):
@@ -516,7 +514,7 @@ def _Degrees(q: np.ndarray) -> str:
 
 
 def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transfer_Str]], optimization: Optimization_Str,
-                   delays: tp.Dict[str, tp.Any],
+                   slots: tp.Dict[str, int],
                    inputs: tp.Dict[str, str], record: tp.Dict[str, str], schedule: tp.Dict[str, float]) -> str:
     """
     Description:
@@ -524,16 +522,16 @@ def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transf
         the taught program in order, renumbered - a LOCKED segment copied verbatim, a FREE transfer as one segment named
         after its last FREE segment: its parallel jobs in order, each started when the one before is done (Loader.WaitDone,
         Loader.Start), a leg to its waiting point (W_<NAME>_WAIT) right after the first job's start, its last leg
-        Robot.MoveSpline(W_<NAME>, v=...) right after the start of its slot's job (after a Wait when it is delayed), the last
-        job waited for at the end (the interlocks I1-I7 as program order);
+        Robot.MoveSpline(W_<NAME>, v=...) right after the start of its slot's job - so after the WaitDone of the job before it,
+        never after a Wait (F15) - the last job waited for at the end (the interlocks I1-I7, I9 as program order);
         the jobs copied verbatim; the Waypoints; the Optimized record (inputs, platform, schedule, TOPP grid).
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
         (2) planned [List<List<Planned_Transfer_Str>>]: The planned transfers, each its legs (a leg to its waiting point first).
         (3) optimization [Optimization_Str(object)]: The settings.
-        (4) delays [Dict<string, Tuple<int, float>>]: A transfer's spline slot (it runs after Loader.Start of its slot-th parallel job,
-            from 1) and its wait before the spline (s), by name.
+        (4) slots [Dict<string, int>]: A transfer's spline slot (it runs after Loader.Start of its slot-th parallel job, from 1),
+            by name.
         (5) inputs [Dict<string, string>]: The inputs' hashes.
         (6) record [Dict<string, string>]: The platform.
         (7) schedule [Dict<string, float>]: Each segment's start time, by its new key ({} before the first build).
@@ -579,9 +577,9 @@ def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transf
         comment = 'FREE (planned, F9): %s to %s, replacing the taught %s.%s' % (t.Start, t.End, ', '.join(order), parallel)
         out += textwrap.wrap(comment, width=118, initial_indent='  # ', subsequent_indent='  # ')
         out.append('  %s:' % key)
-        slot, wait = delays.get(t.Name, (1, 0.0))
+        slot = slots.get(t.Name, 1)
         early = ['Robot.MoveSpline(%s, v=%g)' % (leg.Set, optimization.Speed_Fraction) for leg in legs[:-1]]
-        spline = (['Wait(%.3f)' % wait] if wait > 0 else []) + ['Robot.MoveSpline(%s, v=%g)' % (legs[-1].Set, optimization.Speed_Fraction)]
+        spline = ['Robot.MoveSpline(%s, v=%g)' % (legs[-1].Set, optimization.Speed_Fraction)]
         lines = [] if t.Jobs else early + spline
         for i, job in enumerate(t.Jobs, start=1):
             lines += (['Loader.WaitDone(%s)' % t.Jobs[i - 2]] if i > 1 else []) + ['Loader.Start(%s)' % job] + (early if i == 1 else []) \
@@ -637,16 +635,16 @@ class Optimization_Result_Str:
     #   Unit [string], [Program_Str(object)]
     Text: str = ''
     Program: tp.Optional[Program_Str] = None
-    # The planned transfers; each spline's slot among the transfer's parallel jobs (from 1) and its wait (I8), by name.
-    #   Unit [List<Planned_Transfer_Str>], [Dict<string, Tuple<int, float>>] (-, s)
+    # The planned transfers; each spline's slot among the transfer's parallel jobs (from 1; I8 and the gating rule), by name.
+    #   Unit [List<Planned_Transfer_Str>], [Dict<string, int>] (-)
     Planned: tp.List[Planned_Transfer_Str] = field(default_factory=list)
-    Delays: tp.Dict[str, tp.Tuple[int, float]] = field(default_factory=dict)
+    Slots: tp.Dict[str, int] = field(default_factory=dict)
     # Its trajectory, the build's notes and the check.
     #   Unit [Trajectory_Str(object)], [List<Build_Note_Str>], [Program_Check_Str(object)]
     Trajectory: tp.Optional[Trajectory_Str] = None
     Notes: tp.List[Build_Note_Str] = field(default_factory=list)
     Check: tp.Optional[Program_Check_Str] = None
-    # The attempts (margins and delays tried), as lines.
+    # The attempts (margins and slots tried), as lines.
     #   Unit [List<string>]
     Attempts: tp.List[str] = field(default_factory=list)
 
@@ -658,10 +656,11 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     Description:
         The optimized program of a taught one: each FREE transfer planned at the first planner margin it can be planned with
         (Plan_Transfer); the program written to path (Optimized_Text), loaded, built and checked (the F8 check, every sample
-        on the planning model, the loader moving in parallel); a transfer whose check fails on a pair with the loader waits
-        CONST_DELAY_STEP longer before its spline (I8), any other failing transfer is planned again with the next margin;
-        then the schedule is written and the file loaded and built once more. Fails, naming the transfer, when the margins
-        or the delays run out.
+        on the planning model, the loader moving in parallel) and its gating rule (Gating_Faults: no robot motion comes into
+        the volume a job it does not wait for sweeps); a transfer whose check fails on a pair with the loader (I8), or whose
+        spline comes into a running job's volume, runs its spline after the next job's start (Gate: after the WaitDone of
+        the job it met), any other failing transfer is planned again with the next margin; then the schedule is written and
+        the file loaded and built once more. Fails, naming the transfer, when the margins or the slots run out.
 
     Args:
         (1) program [Program_Str(object)]: The taught program.
@@ -681,7 +680,7 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     lower, upper = kinematics.Limits
     progress = progress or (lambda line: None)
     transfers = Free_Transfers(program, optimization, default)
-    result = Optimization_Result_Str(Delays={t.Name: (1, 0.0) for t in transfers})
+    result = Optimization_Result_Str(Slots={t.Name: 1 for t in transfers})
     level = {t.Name: 0 for t in transfers}
 
     def Plan(transfer: Free_Transfer_Str) -> tp.List[Planned_Transfer_Str]:
@@ -719,11 +718,10 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
                                      '; '.join(a for a in result.Attempts if a.startswith(transfer.Name))))
 
     planned = {t.Name: Plan(t) for t in transfers}
-    tries = {t.Name: 0 for t in transfers}
     inputs, record = Input_Hashes(kinematics.Model), Platform_Record()
     loader = set(CONST_LOADER_BODIES) | {'pcb'}
-    for _ in range((CONST_DELAY_TRIES + len(optimization.Margins)) * len(transfers)):
-        text = Optimized_Text(program, list(planned.values()), optimization, result.Delays, inputs, record, {})
+    for _ in range(sum(len(t.Jobs) + len(optimization.Margins) for t in transfers) + 1):
+        text = Optimized_Text(program, list(planned.values()), optimization, result.Slots, inputs, record, {})
         with open(path, 'w', encoding='utf-8') as handle:
             handle.write(text)
         optimized = Load_Program(program.Constants, program.Simulation, cell, path)
@@ -732,7 +730,14 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
         failing = [s for s in check.Steps if s.Failures and s.Name.split('_', 1)[1] in planned]
         progress('built and checked: cycle %.3f s, %s; %s' % (trajectory.T[-1], check.Verdict, '; '.join('%s: %s' % (s.Name, f) for s in check.Steps
                                                                                                       for f in s.Failures) or 'no failure'))
-        if not failing:
+        gated = {} if failing else {f.Step: f for f in Gating_Faults(trajectory, kinematics, collision, cell) if f.Kind == 'enters'}
+        for name_key, fault in gated.items():
+            name = name_key.split('_', 1)[1]
+            result.Slots[name] = Gate(trajectory, kinematics, collision, cell, name_key, planned[name][0].Transfer, result.Slots[name], fault)
+            result.Attempts.append('%s: %s comes into the volume %s sweeps (%.2f mm, %s; the gating rule): the spline after the start of %s'
+                                   % (name, fault.Motion, fault.Job, 1000 * fault.Distance, fault.Pair,
+                                      planned[name][0].Transfer.Jobs[result.Slots[name] - 1]))
+        if not failing and not gated:
             break
         for step in failing:
             name = step.Name.split('_', 1)[1]
@@ -742,14 +747,9 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
             if step.Loader is not None and step.Loader.Distance < cell.Loader_Free + cell.Tracking_Margin:
                 near, pair, step.Closest = True, step.Loader.Pair, step.Loader
             if near and planned[name][0].Transfer.Jobs:
-                result.Delays[name] = Delay(trajectory, kinematics, collision, cell, step.Name, planned[name][0].Transfer, *result.Delays[name])
-                result.Attempts.append('%s: %s %.2f mm at %.3f s (I8): the spline after the start of %s, %.3f s later' % (
-                    name, pair, 1000 * step.Closest.Distance, step.Closest.Time, planned[name][0].Transfer.Jobs[result.Delays[name][0] - 1],
-                    result.Delays[name][1]))
-                tries[name] += 1
-                if tries[name] > CONST_DELAY_TRIES:
-                    raise Optimizer_Error_Cls('The FREE transfer %s still meets the loader after %d longer waits: %s' % (name, CONST_DELAY_TRIES,
-                                                                                                                      '; '.join(step.Failures)))
+                result.Slots[name] = Gate(trajectory, kinematics, collision, cell, step.Name, planned[name][0].Transfer, result.Slots[name])
+                result.Attempts.append('%s: %s %.2f mm at %.3f s (I8): the spline after the start of %s' % (
+                    name, pair, 1000 * step.Closest.Distance, step.Closest.Time, planned[name][0].Transfer.Jobs[result.Slots[name] - 1]))
             else:
                 result.Attempts.append('%s: margin %.1f mm fails the exact check: %s'
                                        % (name, 1000 * planned[name][0].Margin, '; '.join(step.Failures)))
@@ -759,8 +759,8 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
                                               % (name, '; '.join(step.Failures)))
                 planned[name] = Plan(planned[name][0].Transfer)
     else:
-        raise Optimizer_Error_Cls('The optimized program does not pass its check after every margin and delay was tried.')
-    text = Optimized_Text(program, list(planned.values()), optimization, result.Delays, inputs, record, Schedule(trajectory))
+        raise Optimizer_Error_Cls('The optimized program does not pass its check after every margin and slot was tried.')
+    text = Optimized_Text(program, list(planned.values()), optimization, result.Slots, inputs, record, Schedule(trajectory))
     with open(path, 'w', encoding='utf-8') as handle:
         handle.write(text)
     result.Program = Load_Program(program.Constants, program.Simulation, cell, path)
@@ -771,17 +771,16 @@ def Optimize_Program(program: Program_Str, optimization: Optimization_Str, cell:
     return result
 
 
-def Delay(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, cell: Cell_Configuration_Str,
-          step: str, transfer: Free_Transfer_Str, slot: int, delay: float) -> tp.Tuple[int, float]:
+def Gate(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collision: Robot_Collision_Cls, cell: Cell_Configuration_Str,
+         step: str, transfer: Free_Transfer_Str, slot: int, fault: tp.Optional[tp.Any] = None) -> int:
     """
     Description:
-        The spline's slot and wait that move the robot past the window in which it meets the loader (I8): every sample of
-        the step measured (Robot_Loader_Distance, the loader where its actuators put it), the window from the first to the last
-        sample closer than Clearance.Loader_Free + Tracking_Margin (F11).
-        When the robot meets the loader while a job that starts after its spline runs (it stands at its end point then),
-        the spline moves after the next job's start (the next slot, no wait); otherwise its wait grows by the window's length
-        (rounded to whole samples), so the robot arrives after the loader has passed. A meeting before the spline starts -
-        the robot waiting at its start point - cannot be solved by waiting: an Optimizer_Error_Cls names it.
+        The spline's next slot when it meets the loader (I8: every sample of the step measured, Robot_Loader_Distance, the loader
+        where its actuators put it) or comes into the volume of a job it does not wait for (fault, the gating rule): the
+        spline runs after the next job's start, so after the WaitDone of the job it met - never after a Wait, whose
+        separation rests on the loader's timing (F15). A meeting before the spline starts - the robot waiting at its start
+        point - cannot be solved by gating, and a spline already after the last job's start has no later slot: an
+        Optimizer_Error_Cls names either.
 
     Args:
         (1) trajectory [Trajectory_Str(object)]: The optimized program's trajectory.
@@ -790,29 +789,28 @@ def Delay(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, collisio
         (4) cell [Cell_Configuration_Str(object)]: The clearance.
         (5) step [string]: The transfer's segment key.
         (6) transfer [Free_Transfer_Str(object)]: The transfer (its jobs).
-        (7 - 8) slot, delay [int, float]: The spline's slot and wait now (s).
+        (7) slot [int]: The spline's slot now.
+        (8) fault [Gating_Fault_Str(object)]: The gating rule's fault that moves it, or None for I8.
 
     Returns:
         (1) parameter [int]: The new slot.
-        (2) parameter [float]: The new wait (s).
     """
 
-    index = trajectory.Step_Names.index(step)
-    samples = np.flatnonzero(trajectory.Step_Index == index)
-    # The transfer's last spline (a leg to a waiting point comes before it).
-    spline = [k for k, text in enumerate(trajectory.Segment_Command)
-              if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
-    actual, need = Loader_Actual_Trajectory(trajectory, kinematics.Model), cell.Loader_Free + cell.Tracking_Margin
-    meeting = [int(i) for i in samples if Robot_Loader_Distance(actual, kinematics, collision, [int(i)])[0] < need]
-    if not meeting:
-        return slot, delay
-    if meeting[0] < int(trajectory.Segment_Start[spline]):
-        raise Optimizer_Error_Cls('In %s the robot meets the loader at %.3f s while it waits at the start of its spline: waiting longer cannot '
-                                  'help (the loader comes to the robot); the transfer needs another waiting point.' % (step,
-                                                                                                                       trajectory.T[meeting[0]]))
-    later = ['Loader.WaitDone(%s)' % job for job in transfer.Jobs[slot:]]
-    if any(trajectory.Segment_Command[trajectory.Segment_Id[i]] in later for i in meeting):
-        return slot + 1, 0.0
-    return slot, round(delay + (meeting[-1] - meeting[0] + 1) * CONST_DT, 3)
-
-
+    if fault is None:
+        index = trajectory.Step_Names.index(step)
+        samples = np.flatnonzero(trajectory.Step_Index == index)
+        # The transfer's last spline (a leg to a waiting point comes before it).
+        spline = [k for k, text in enumerate(trajectory.Segment_Command)
+                  if text.startswith('Robot.MoveSpline') and trajectory.Segment_Step[k] == index][-1]
+        actual, need = Loader_Actual_Trajectory(trajectory, kinematics.Model), cell.Loader_Free + cell.Tracking_Margin
+        meeting = [int(i) for i in samples if Robot_Loader_Distance(actual, kinematics, collision, [int(i)])[0] < need]
+        if not meeting:
+            return slot
+        if meeting[0] < int(trajectory.Segment_Start[spline]):
+            raise Optimizer_Error_Cls('In %s the robot meets the loader at %.3f s while it waits at the start of its spline: gating cannot help '
+                                      '(the loader comes to the robot); the transfer needs another waiting point.' % (step, trajectory.T[meeting[0]]))
+    if slot >= len(transfer.Jobs):
+        raise Optimizer_Error_Cls('In %s the spline after the start of the last parallel job %s still meets the loader or its volume: split the '
+                                  'job so the robot can wait for the part it crosses (Loader.WaitDone), or gate it on an input from the loader.'
+                                  % (step, transfer.Jobs[-1]))
+    return slot + 1
