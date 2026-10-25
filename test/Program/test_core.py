@@ -34,13 +34,15 @@ import pytest
 #   ../Program/Core
 from Program.Core import (Build_Program, Check_Trajectory, Format_Check_Report, Jaw_Posing_Faults, Movej_Duration, Program_Error_Cls, Pose_Sample,
                           Validate_Constants, Loader_Actual, Loader_Actual_Trajectory)
-#   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core
+#   ../Configuration/Core, ../Configuration/Program_Parser, ../Collision/Core, ../Kinematics/Core, ../Trajectory/Core,
+#   ../Keypoints/Core
 from Configuration.Core import Read_PCB_Meta, CONST_PCB_LOCATIONS, CONST_FORK_PATH
 from Configuration.Program_Parser import (Program_Str, Segment_Str, Parse_Commands, Load_Constants, Load_Simulation, Load_Optimization, Free_Steps,
                                           CONST_CONSTANTS_YAML)
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP
 from Trajectory.Core import Write_Trajectory
+from Keypoints.Core import Resolve_Keypoint
 
 """
 Description:
@@ -455,6 +457,70 @@ def test_a_press_at_the_handover_is_reported(constants, simulation, cell_configu
     assert result.Verdict == 'FAIL'
 
 
+def _Lateral_Handover(constants, simulation, cell, tools, dx, lines=None):
+    """
+    Description:
+        A handover probe with P_LOADER_PLACE taught dx along its tool x (the jaw axis): its PCB_Hold offset [dx, 0, 0] resolved
+        by IK, the points derived from it detached; checked.
+    """
+
+    kinematics, meta, _ = tools
+    moved, moved_simulation = copy.deepcopy(constants), copy.deepcopy(simulation)
+    moved_simulation.Points['P_LOADER_PLACE'].Hold_Offset = [dx, 0.0, 0.0]
+    joints, pose = Resolve_Keypoint('P_LOADER_PLACE', kinematics, moved, moved_simulation, meta, cell)
+    moved.Points['P_LOADER_PLACE'].Joints, moved.Points['P_LOADER_PLACE'].Pose = list(joints), list(pose)
+    for point in moved.Points.values():
+        if point.Reference == 'P_LOADER_PLACE':
+            point.Reference, point.Offset = None, None
+    lines = lines or ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_APPROACH, v=0.2)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)',
+                      'Loader.Run(J_CLAMP)']
+    probe = _Probe(lines, moved, moved_simulation, cell, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+    return _Check(probe, cell, tools)
+
+
+def test_the_descent_measures_the_height_above_the_ledges_only(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        Item 1 (owner, 2026-10-25): a handover taught 0.4 mm along the jaw axis (the re-teach's size) passes - along the
+        descent the jaws are centred on the PCB, so the gap is its height above the finger ledges (with the jaws at grip about
+        the uncentred PCB it was -0.186 mm, the board in a jaw's pad corner); the lateral offset is reported, 0.400 mm.
+    """
+
+    result = _Lateral_Handover(constants, simulation, cell_configuration, tools, 0.0004)
+    h = result.Handover
+    assert h.Failures == [] and h.Lateral == pytest.approx(0.0004, abs=2e-6)
+    assert h.Line_Min == pytest.approx(h.At_Handover, abs=2e-6) and h.At_Handover == pytest.approx(0.000318, abs=0.00002)
+
+
+def test_a_dip_below_the_ledges_along_the_descent_is_reported(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        Item 1, forced failure: a descent that goes 1.5 mm deeper (P_LOADER_PICK) and back up to P_LOADER_PLACE still fails
+        along the line with the jaws centred: the gap falls below 0.2 mm, '(a press)'.
+    """
+
+    lines = ['Robot.MoveJ(P_LOADER_ABOVE)', 'Robot.MoveL(P_LOADER_PICK, v=0.03)', 'Robot.MoveL(P_LOADER_PLACE, v=0.03)', 'Loader.Run(J_CLAMP)']
+    probe = _Probe(lines, constants, simulation, cell_configuration, pcb='cups', allow=('cups_pcb', 'pcb_jaws'),
+                   loader_jobs={'J_CLAMP': ['Gripper(G_CLAMP, t=0.35)']})
+    h = _Check(probe, cell_configuration, tools).Handover
+    assert any(f.startswith('the PCB-ledge gap falls to') and f.endswith('(a press)') for f in h.Failures), h.Failures
+
+
+def test_a_handover_off_the_jaw_centreline_is_reported(constants, simulation, cell_configuration, tools):
+    """
+    Description:
+        Item 1, forced failure: P_LOADER_PLACE taught 0.6 mm along the jaw axis is more than Handover.Lateral_Max (0.5 mm) from the
+        jaw centreline and fails, naming the offset.
+    """
+
+    h = _Lateral_Handover(constants, simulation, cell_configuration, tools, 0.0006).Handover
+    assert h.Lateral == pytest.approx(0.0006, abs=2e-6)
+    found = [f for f in h.Failures if 'jaw centreline' in f]
+    assert len(found) == 1 and found[0] == ('the PCB centre is %.3f mm from the jaw centreline at P_LOADER_PLACE, more than Handover.Lateral_Max '
+                                            '0.5 mm: the jaws would pull it off the cups as they centre it' % (1000 * abs(h.Lateral)))
+
+
 def test_a_colliding_step_is_reported_with_its_pair_and_time(constants, simulation, cell_configuration, tools):
     """
     Description:
@@ -516,7 +582,8 @@ def test_the_report_lists_steps_groups_handover_and_failures(checked, built, cel
     assert lines[0].startswith('program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s;')
     assert any(line.startswith('S2_Pick_Input ') and line.endswith('PASS') for line in lines)
     assert '    cups_pcb     -1.48 mm at ' in text and '    not allowed  ' in text
-    assert 'handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE min 0.318 mm' in text
+    assert ('handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the '
+            'PCB) min 0.318 mm') in text and 'mm from the jaw centreline (<= 0.5 mm): PASS' in text
     assert 'stretched MoveLs: none' in text and 'note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving' in text
     assert 'events: 3.276 s vacuum_on, ' in text and 'keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS;' in text
     assert lines[-1] == 'Program: the program check passed. Simulation results only: not validated for the real cell.'

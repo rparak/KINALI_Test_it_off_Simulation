@@ -97,6 +97,10 @@ Handover:
   # The gap may differ from Ledge_Gap by at most this; a smaller gap is a press and fails. Source: the
   # owner, 2026-10-24 (B1). [m] REQUIRED.
   Ledge_Tolerance: 0.0001
+  # The PCB centre's largest lateral offset from the jaw centreline at P_LOADER_PLACE (along the jaw axis, the
+  # kinematic PCB on the cups): the jaws centre the PCB as they clamp, so a larger offset pulls it off the cups.
+  # Source: the owner, 2026-10-25 (B work, item 1). [m] REQUIRED.
+  Lateral_Max: 0.0005
 
 # The robot's motion limits for the program's MoveJ and MoveL (SPEC §4.4, §4.10).
 Motion:

@@ -1264,7 +1264,8 @@ class Handover_Check_Str:
     """
     Description:
         The no-press check of the handover (owner's B1, SPEC §4.7): the PCB-ledge gap with the jaws at grip over the MoveL into
-        P_LOADER_PLACE (its minimum), at P_LOADER_PLACE, and while the jaws clamp the PCB on the cups (min, max).
+        P_LOADER_PLACE (its minimum; the jaws centred on the PCB across them, so only its height counts), at P_LOADER_PLACE, and
+        while the jaws clamp the PCB on the cups (min, max); the PCB centre's lateral offset from the jaw centreline there.
     """
 
     # The gaps.
@@ -1273,6 +1274,9 @@ class Handover_Check_Str:
     At_Handover: float = 0.0
     Clamped_Min: float = 0.0
     Clamped_Max: float = 0.0
+    # The PCB centre's offset from the jaw centreline along the jaw axis at P_LOADER_PLACE (item 1).
+    #   Unit [float] (m)
+    Lateral: float = 0.0
     # The failures; empty when it passes.
     #   Unit [List<string>]
     Failures: tp.List[str] = field(default_factory=list)
@@ -1484,14 +1488,22 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
             continue
         first, end = int(tr.Segment_Start[segment]), int(tr.Segment_End[segment])
         grip = max(program.Simulation.Jaw_Actual.values())
-        line = []
+        home = program.Constants.Loader[CONST_LOADER_HOME]
+        line, lateral = [], 0.0
         for i in range(first, end):
             Pose_Sample(kinematics, tr, i)
+            axis = data.xaxis[model.joint('jaw_R').id].copy()
+            hold = np.array(pcb_meta.Hold_Pos) + [0.0, tr.Loader_Y[i] - home.Y, tr.Loader_Z[i] - home.Z]
+            # Item 1: the jaws centred on the PCB across them - the PCB moved onto the jaw centreline along the jaw axis -, so
+            # the descent's gap is the height above the finger ledges only.
+            lateral = float((tr.PCB_Pose[i][:3] - hold) @ axis)
+            centred = np.r_[tr.PCB_Pose[i][:3] - lateral * axis, tr.PCB_Pose[i][3:]]
             handle = float(tr.MG06_Handle[i])
-            kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[i]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[i]),
-                                 z=float(tr.Loader_Z[i]), jaw=grip, pcb=tr.PCB_Pose[i])
-            mujoco.mj_kinematics(model, data)
-            line.append(_Ledge_Gap(model, data))
+            for pcb in (centred, tr.PCB_Pose[i]) if i == end - 1 else (centred,):
+                kinematics.Set_Scene(data, lid=float(tr.MG06_Lid[i]), handle=handle, press=Press_For_Handle(model, handle), y=float(tr.Loader_Y[i]),
+                                     z=float(tr.Loader_Z[i]), jaw=grip, pcb=pcb)
+                mujoco.mj_kinematics(model, data)
+                line.append(_Ledge_Gap(model, data))
         clamped = []
         for i in range(end, len(tr.T)):
             if CONST_PCB_LOCATIONS[tr.PCB_Location[i]] != 'cups':
@@ -1499,8 +1511,9 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
             if tr.Jaw[i] == grip:
                 Pose_Sample(kinematics, tr, i)
                 clamped.append(_Ledge_Gap(model, data))
+        # The gap at the point itself is measured on the PCB as it is (the last entry), as while clamped.
         handover = Handover_Check_Str(Line_Min=min(line), At_Handover=line[-1], Clamped_Min=min(clamped) if clamped else math.nan,
-                                      Clamped_Max=max(clamped) if clamped else math.nan)
+                                      Clamped_Max=max(clamped) if clamped else math.nan, Lateral=lateral)
         low, high = cell.Ledge_Gap - cell.Ledge_Tolerance, cell.Ledge_Gap + cell.Ledge_Tolerance
         if not low <= handover.At_Handover <= high:
             handover.Failures.append('the PCB-ledge gap at %s is %.3f mm, not %.1f +- %.1f mm%s' % (
@@ -1512,6 +1525,10 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
             handover.Failures.append('the PCB-ledge gap while the jaws clamp is %s, not %.1f +- %.1f mm' % (
                 'never measured (the jaws never reach grip with the PCB on the cups)' if not clamped else
                 '%.3f .. %.3f mm' % (1000 * handover.Clamped_Min, 1000 * handover.Clamped_Max), 1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance))
+        if abs(handover.Lateral) > cell.Lateral_Max:
+            handover.Failures.append('the PCB centre is %.3f mm from the jaw centreline at %s, more than Handover.Lateral_Max %.1f mm: the '
+                                     'jaws would pull it off the cups as they centre it' % (1000 * abs(handover.Lateral), CONST_HANDOVER_KEYPOINT,
+                                                                                            1000 * cell.Lateral_Max))
         result.Handover = handover
     # The posed jaws (the command limited by the part): their rule, in the step of each fault.
     for i, fault in Jaw_Posing_Faults(tr, max(program.Simulation.Jaw_Actual.values())):
@@ -1597,10 +1614,11 @@ def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, c
             lines.append('    %-12s %s' % ('loader', _Distance_Text(s.Loader if s.Loader.Sample >= 0 else None, CONST_LOADER_CUT)))
     if result.Handover is not None:
         h = result.Handover
-        lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s min %.3f mm, at it '
-                     '%.3f mm, while clamped %.3f .. %.3f mm: %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT,
-                                                                   1000 * h.Line_Min, 1000 * h.At_Handover, 1000 * h.Clamped_Min,
-                                                                   1000 * h.Clamped_Max, 'FAIL' if h.Failures else 'PASS'))
+        lines.append('handover (no press, %.1f +- %.1f mm): PCB-ledge gap with the jaws at grip - along the MoveL into %s (jaws centred on '
+                     'the PCB) min %.3f mm, at it %.3f mm, while clamped %.3f .. %.3f mm; PCB centre %.3f mm from the jaw centreline (<= %.1f '
+                     'mm): %s' % (1000 * cell.Ledge_Gap, 1000 * cell.Ledge_Tolerance, CONST_HANDOVER_KEYPOINT, 1000 * h.Line_Min,
+                                  1000 * h.At_Handover, 1000 * h.Clamped_Min, 1000 * h.Clamped_Max, 1000 * abs(h.Lateral), 1000 * cell.Lateral_Max,
+                                  'FAIL' if h.Failures else 'PASS'))
     stretched = [n for n in result.Notes if n.Text.startswith('stretched')]
     lines.append('stretched MoveLs: %s' % ('none' if not stretched else '; '.join('%s %s %s' % (n.Step, n.Command, n.Text) for n in stretched)))
     lines += ['note: %s, %s: %s' % (n.Step, n.Command, n.Text) for n in result.Notes if n not in stretched]

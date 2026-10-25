@@ -341,6 +341,9 @@ class Cell_Configuration_Str:
     #   Unit [float] (m)
     Ledge_Gap: float = 0.0
     Ledge_Tolerance: float = 0.0
+    # The handover's largest lateral offset of the PCB from the jaw centreline (item 1).
+    #   Unit [float] (m)
+    Lateral_Max: float = 0.0
     # The loader's notes: (level, message) for each unknown key.
     #   Unit [List<Tuple<string>>]
     Notes: tp.List[tp.Tuple[str, str]] = field(default_factory=list)
@@ -654,7 +657,7 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
     mg06 = r.Mapping(root, ('MG06',), ('Closed_Lid', 'Closed_Handle', 'Open_Join_Margin'))
     clearance = r.Mapping(root, ('Clearance',), ('Robot', 'Allowed_Depth', 'Stale_Position', 'Stale_Angle', 'Family_Margin',
                                                  'Check_Step', 'Loader_Free', 'Tracking_Margin'))
-    handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance'))
+    handover = r.Mapping(root, ('Handover',), ('Ledge_Gap', 'Ledge_Tolerance', 'Lateral_Max'))
     motion = r.Mapping(root, ('Motion',), ('Speed_Fraction', 'Datasheet_Speeds', 'Acceleration_Limits', 'Movej_Min_Duration', 'Movel_Min_Duration'))
     process = r.Mapping(root, ('Process',), CONST_PROCESS_KEYS)
     acceptance = r.Mapping(root, ('Acceptance',), ('Place_Error', 'Place_Tilt', 'Crate_Distance', 'Open_Tolerance', 'Penetration', 'Loader_Distance',
@@ -699,7 +702,8 @@ def Load_Cell_Configuration(path: str = CONST_CELL_YAML) -> Cell_Configuration_S
         Loader_Free=r.Number(clearance, ('Clearance', 'Loader_Free'), 1e-4, 0.1),
         Tracking_Margin=r.Number(clearance, ('Clearance', 'Tracking_Margin'), 0.0, 0.05),
         Ledge_Gap=r.Number(handover, ('Handover', 'Ledge_Gap'), 0.0, 0.005),
-        Ledge_Tolerance=r.Number(handover, ('Handover', 'Ledge_Tolerance'), 1e-6, 0.005))
+        Ledge_Tolerance=r.Number(handover, ('Handover', 'Ledge_Tolerance'), 1e-6, 0.005),
+        Lateral_Max=r.Number(handover, ('Handover', 'Lateral_Max'), 1e-6, 0.005))
     _Finish(r, path)
     cell.Notes = r.Notes
     return cell
