@@ -1,4 +1,4 @@
-program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10714 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
+program Program: 22 steps, 17602 samples (4 ms), cycle time 70.404 s; 10718 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
 free transfers to the loader (every sample, the loader at its actuator model's position): at least Loader_Free 10.0 mm + Tracking_Margin 4.0 mm, pairs up to 50 mm
 step                  start s   dur s    peak v / a (recorded path) verdict
 S1_Approach_Input       0.000   1.264  0.642 / 1.000                 PASS
@@ -12,62 +12,62 @@ S3_To_Loader            5.188   1.836  0.534 / 1.002                 PASS
     cups_pcb     0.00 mm at 1306 (5.224 s) aubo/tool/cup0 / pcb_comp
     not allowed  10.00 mm at 1306 (5.224 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       20.59 mm at 1399 (5.596 s) pcb / z_carriage
-S4_Handover             7.024   4.592  0.252 / 0.377                 PASS
-    cups_pcb     -0.00 mm at 2528 (10.112 s) aubo/tool/cup3 / pcb_comp
-    pcb_jaws     -0.20 mm at 2416 (9.664 s) pcb_board / jaw_R
-    not allowed  8.72 mm at 2416 (9.664 s) aubo/tool/ee_tool / jaw_L
-S5_Home_After_Handover   11.616   1.496  0.632 / 0.999                 PASS
-    not allowed  10.00 mm at 2916 (11.664 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S4_Handover             7.024   4.844  0.252 / 0.377                 PASS
+    cups_pcb     -0.00 mm at 2591 (10.364 s) aubo/tool/cup3 / pcb_comp
+    pcb_jaws     -0.20 mm at 2479 (9.916 s) pcb_board / jaw_R
+    not allowed  8.72 mm at 2479 (9.916 s) aubo/tool/ee_tool / jaw_L
+S5_Home_After_Handover   11.868   1.496  0.632 / 0.999                 PASS
+    not allowed  10.00 mm at 2979 (11.916 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
-S6_Loader_Insert       13.112   3.948  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 3300 (13.200 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S7_Loader_Park         17.060   3.252  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 4294 (17.176 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S8_To_MG06             20.312   3.448  0.991 / 0.999                 PASS
-    not allowed  10.00 mm at 5087 (20.348 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S6_Loader_Insert       13.364   4.200  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 3363 (13.452 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S7_Loader_Park         17.564   3.252  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 4420 (17.680 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S8_To_MG06             20.816   3.448  0.991 / 0.999                 PASS
+    not allowed  10.00 mm at 5213 (20.852 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
-S9_Close_MG06          23.760   7.072  0.034 / 0.056   (0.26 / 2.03) PASS
-    handle_bar   -0.54 mm at 6504 (26.016 s) aubo/tool/ee_tool / handle_bar
-    not allowed  10.00 mm at 6078 (24.312 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S10_Leave_MG06         30.832   2.308  0.347 / 0.602                 PASS
-    not allowed  3.94 mm at 7726 (30.904 s) aubo/tool/ee_tool / handle_bar
-S11_Test               33.140   2.000  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 8784 (35.136 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S12_Return_MG06        35.140   2.308  0.347 / 0.602                 PASS
-    not allowed  3.93 mm at 9361 (37.444 s) aubo/tool/ee_tool / handle_bar
-S13_Open_MG06          37.448   5.424  0.011 / 0.045   (0.26 / 2.03) PASS
-    handle_bar   0.02 mm at 9536 (38.144 s) aubo/tool/ee_tool / handle_bar
-    not allowed  10.00 mm at 9387 (37.548 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S14_Home_After_MG06    42.872   3.448  0.991 / 0.999                 PASS
-    not allowed  10.00 mm at 10726 (42.904 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S9_Close_MG06          24.264   7.072  0.034 / 0.056   (0.26 / 2.03) PASS
+    handle_bar   -0.54 mm at 6630 (26.520 s) aubo/tool/ee_tool / handle_bar
+    not allowed  10.00 mm at 6204 (24.816 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S10_Leave_MG06         31.336   2.308  0.347 / 0.602                 PASS
+    not allowed  3.94 mm at 7852 (31.408 s) aubo/tool/ee_tool / handle_bar
+S11_Test               33.644   2.000  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 8910 (35.640 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S12_Return_MG06        35.644   2.308  0.347 / 0.602                 PASS
+    not allowed  3.93 mm at 9487 (37.948 s) aubo/tool/ee_tool / handle_bar
+S13_Open_MG06          37.952   5.424  0.011 / 0.045   (0.26 / 2.03) PASS
+    handle_bar   0.02 mm at 9662 (38.648 s) aubo/tool/ee_tool / handle_bar
+    not allowed  10.00 mm at 9513 (38.052 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S14_Home_After_MG06    43.376   3.448  0.991 / 0.999                 PASS
+    not allowed  10.00 mm at 10852 (43.408 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
-S15_Loader_Fetch       46.320   4.048  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 11599 (46.396 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S16_Loader_Return      50.368   3.600  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 12626 (50.504 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
-S17_To_Take            53.968   1.496  0.632 / 0.999                 PASS
-    not allowed  10.00 mm at 13504 (54.016 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S15_Loader_Fetch       46.824   4.300  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 11725 (46.900 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S16_Loader_Return      51.124   3.600  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 12815 (51.260 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S17_To_Take            54.724   1.496  0.632 / 0.999                 PASS
+    not allowed  10.00 mm at 13693 (54.772 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
-S18_Take_From_Loader   55.464   6.136  0.250 / 0.421                 PASS
-    cups_pcb     -1.50 mm at 14463 (57.852 s) aubo/tool/cup3 / pcb_comp
-    pcb_jaws     -0.20 mm at 14538 (58.152 s) pcb_board / jaw_R
-    not allowed  8.26 mm at 14463 (57.852 s) aubo/tool/ee_tool / jaw_L
-S19_To_Output          61.600   2.556  0.780 / 0.999                 PASS
-    cups_pcb     0.00 mm at 15412 (61.648 s) aubo/tool/cup0 / pcb_comp
-    not allowed  8.13 mm at 15971 (63.884 s) pcb_board / crate_place_1
+S18_Take_From_Loader   56.220   6.388  0.250 / 0.421                 PASS
+    cups_pcb     -1.50 mm at 14652 (58.608 s) aubo/tool/cup3 / pcb_comp
+    pcb_jaws     -0.20 mm at 14727 (58.908 s) pcb_board / jaw_R
+    not allowed  8.26 mm at 14652 (58.608 s) aubo/tool/ee_tool / jaw_L
+S19_To_Output          62.608   2.556  0.780 / 0.999                 PASS
+    cups_pcb     0.00 mm at 15664 (62.656 s) aubo/tool/cup0 / pcb_comp
+    not allowed  8.13 mm at 16223 (64.892 s) pcb_board / crate_place_1
     loader       > 50 mm
-S20_Place_Output       64.156   3.344  0.307 / 0.538                 PASS
-    cups_pcb     0.00 mm at 16053 (64.212 s) aubo/tool/cup0 / pcb_comp
-    pcb_crate    1.02 mm at 16518 (66.072 s) pcb_board / crate_place_0
-    not allowed  9.42 mm at 16518 (66.072 s) aubo/tool/cup1 / crate_place_0
-S21_Home_End           67.500   1.100  0.739 / 1.002                 PASS
-    not allowed  10.00 mm at 16885 (67.540 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+S20_Place_Output       65.164   3.344  0.307 / 0.538                 PASS
+    cups_pcb     0.00 mm at 16305 (65.220 s) aubo/tool/cup0 / pcb_comp
+    pcb_crate    1.02 mm at 16770 (67.080 s) pcb_board / crate_place_0
+    not allowed  9.42 mm at 16770 (67.080 s) aubo/tool/cup1 / crate_place_0
+S21_Home_End           68.508   1.100  0.739 / 1.002                 PASS
+    not allowed  10.00 mm at 17137 (68.548 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
     loader       > 50 mm
-End_Settle             68.600   0.800  0.000 / 0.000                 PASS
-    not allowed  10.00 mm at 17349 (69.396 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
+End_Settle             69.608   0.800  0.000 / 0.000                 PASS
+    not allowed  10.00 mm at 17601 (70.404 s) aubo/base_link / ws_col_Profile_8_240x160_8EN_L_150_V_choz__06
 handover (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip - along the MoveL into P_LOADER_PLACE (jaws centred on the PCB) min 0.299 mm, at it 0.299 mm, while clamped 0.299 .. 0.299 mm; PCB centre 0.399 mm from the jaw centreline (<= 0.5 mm): PASS
 stretched MoveLs: none
 note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving: the flange at 39.1 mm/s at its first row (a velocity step from rest; step 5 reports the tracking error and the force on the bar)
-events: 3.276 s vacuum_on, 9.316 s gripper_clamp, 9.912 s vacuum_off, 16.608 s gripper_open, 49.816 s gripper_clamp, 57.852 s vacuum_on, 58.752 s gripper_open, 66.072 s vacuum_off
+events: 3.276 s vacuum_on, 9.316 s gripper_clamp, 10.164 s vacuum_off, 16.860 s gripper_open, 50.320 s gripper_clamp, 58.608 s vacuum_on, 59.508 s gripper_open, 67.080 s vacuum_off
 keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS; Example/Keypoints/check_keypoints.py shows each)
 Program: the program check passed. Simulation results only: not validated for the real cell.

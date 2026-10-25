@@ -1,107 +1,107 @@
 {
- "source": "the L_PLACE raise +0.37 mm (item 2)",
- "cycle_time": 69.396,
- "samples": 17350,
+ "source": "the gripper ramps at 0.6 s (item 3)",
+ "cycle_time": 70.404,
+ "samples": 17602,
  "arrays": {
   "t": {
-   "sha256": "c6b515d5d03830e9062a9c551725f43fe2a6ea88d9c3e34cdaa94ddea6bb9edb",
+   "sha256": "657b91fa9d82e634d2c53b6256e9465bf78a94c5d467a9277cf83cf5296cbabb",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "robot_q": {
-   "sha256": "3fb73dac7c687eadee2e04c943b0a6e5b38e78f249ff947b4786255346e2e4a0",
+   "sha256": "4b9a63fb2321a767865021e0e7b6605604856a9f6650e66dca4797e7dcdb481a",
    "dtype": "float64",
    "shape": [
-    17350,
+    17602,
     6
    ]
   },
   "robot_qd": {
-   "sha256": "d0c4daf2a87cfaf3c04a0f5ba1c49da1be7c09dbce849def88fb3aa5a98c9dc5",
+   "sha256": "6dec0924ee4ca013eb72b97dab46d5162eaaffca8879fba50bd70c27da6ae0fc",
    "dtype": "float64",
    "shape": [
-    17350,
+    17602,
     6
    ]
   },
   "loader_y": {
-   "sha256": "fedfae73203888325aad426b360e2a7f041970a390c3c762131c475a303df43c",
+   "sha256": "50bec63835808715859641fb5644f847feacf6a5ebb227c830bb564efbd5f190",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "loader_z": {
-   "sha256": "10fe3adeaf98be786450c8ac6319205df4ab47f583661aa1159665c1f172d121",
+   "sha256": "11bdc2a4e249673d514868e422298b5ee1771dcae438759d174dcb054d8ca8b9",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "gripper": {
-   "sha256": "cd5f9a30a947e0747636cf3d0602ae14ec24ca4ecc16e056cd2e4d634594fb86",
+   "sha256": "b718c649a93761b7bbf65e709c4b0e8a1fc010ef690b6f1627d0b00e77907b2b",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "vacuum": {
-   "sha256": "1f8353787715109de159dafff8c203d829f3cf30e81a3a0c1678ac2f165585ec",
+   "sha256": "647b3dfe7071fa099c4c2133fdd9541ad21e6b04f41ead06f8cd433cd30b6876",
    "dtype": "int8",
    "shape": [
-    17350
+    17602
    ]
   },
   "pcb_location": {
-   "sha256": "046ffd47bd90cefe3c84ecba182687071f6f38a43172a2c29aa4441c1a57da01",
+   "sha256": "734147418a2f1977efed1dcbf23f6b3824260419e68827d68073bf6bb79e6448",
    "dtype": "int8",
    "shape": [
-    17350
+    17602
    ]
   },
   "pcb_pose": {
-   "sha256": "87db1e83c51963ea36f71948a0d8a306075105694fb5d5e5ed4c9058d516074d",
+   "sha256": "5f7ed3eb7b7bfdf0c65bc59c24a112e9504c53a66fbccc37fe6bb64ffdaaaee6",
    "dtype": "float64",
    "shape": [
-    17350,
+    17602,
     7
    ]
   },
   "mg06_lid": {
-   "sha256": "8eae6c689b7cb721b1dce31fc041ec4ea851817a8774a60630a657127bbdbc2c",
+   "sha256": "b87ec4daa7aed5d8080d9b229f1e5c7b3761fc6002aa054c7f26674331fb0bc3",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "mg06_handle": {
-   "sha256": "60bc0992403aabad464a18215e8e7e34f040e7511eea2cee3e57a64c9fbf967b",
+   "sha256": "06d674e59f67af8e9f495fa7883de4b2ca788a85fb9921fa1c9e9e4336b23f95",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "jaw": {
-   "sha256": "0844643b804555235691f500fc4ac76309925252ceb504bb76fe784144366e18",
+   "sha256": "23d3a3fa900b210e7a8c1079f61129151b880d653b5c8c705d775dc80d9d16b5",
    "dtype": "float64",
    "shape": [
-    17350
+    17602
    ]
   },
   "step_index": {
-   "sha256": "466b4d8b694cd427b09cab8ac00e5514586a496be08f9d526ca61fcc41b340c6",
+   "sha256": "62937e14b7a31051801a36768ae7ef4d450cab260965ae5d02f1b34bb61340d9",
    "dtype": "int32",
    "shape": [
-    17350
+    17602
    ]
   },
   "segment_id": {
-   "sha256": "dcd9d31004cd568a76bd7bfbfdd64ecacf4063c7f4bae5539a0d35fad763b10f",
+   "sha256": "6cb49f446576400621d63a152302b0e64444e23af9bf5e033cb408b1c1c91329",
    "dtype": "int32",
    "shape": [
-    17350
+    17602
    ]
   }
  },
@@ -115,27 +115,27 @@
    "gripper_clamp"
   ],
   [
-   "0x1.3d2f1a9fbe76dp+3",
+   "0x1.453f7ced91687p+3",
    "vacuum_off"
   ],
   [
-   "0x1.09ba5e353f7cfp+4",
+   "0x1.0dc28f5c28f5cp+4",
    "gripper_open"
   ],
   [
-   "0x1.8e872b020c49cp+5",
+   "0x1.928f5c28f5c29p+5",
    "gripper_clamp"
   ],
   [
-   "0x1.ced0e56041893p+5",
+   "0x1.d4dd2f1a9fbe7p+5",
    "vacuum_on"
   ],
   [
-   "0x1.d604189374bc7p+5",
+   "0x1.dc10624dd2f1bp+5",
    "gripper_open"
   ],
   [
-   "0x1.0849ba5e353f8p+6",
+   "0x1.0c51eb851eb85p+6",
    "vacuum_off"
   ]
  ],
@@ -174,7 +174,7 @@
   "Robot.MoveJ(P_LOADER_ABOVE)",
   "Robot.MoveL(P_LOADER_APPROACH, v=0.20)",
   "Robot.MoveL(P_LOADER_PLACE, v=0.03)",
-  "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)",
+  "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.6)",
   "Wait(0.25)",
   "Robot.SetDO(DO_VACUUM, OFF)",
   "Wait(0.2)",
@@ -184,7 +184,7 @@
   "Loader.Run(J_INSERT) > MoveY(L_TRAVEL, t=2.0)",
   "Loader.Run(J_INSERT) > MoveZ(L_PLACE, t=0.6)",
   "Loader.Run(J_INSERT) > Wait(0.1)",
-  "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.35)",
+  "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.6)",
   "Loader.Run(J_INSERT) > Wait(0.1)",
   "Loader.Run(J_PARK) > MoveZ(L_TRAVEL, t=0.5)",
   "Loader.Run(J_PARK) > MoveY(L_PARK, t=1.8)",
@@ -209,7 +209,7 @@
   "Loader.Run(J_FETCH) > MoveY(L_TRAVEL, t=2.2)",
   "Loader.Run(J_FETCH) > MoveZ(L_PLACE, t=0.6)",
   "Loader.Run(J_FETCH) > Wait(0.1)",
-  "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.35)",
+  "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.6)",
   "Loader.Run(J_FETCH) > Wait(0.2)",
   "Loader.Run(J_RETURN) > MoveZ(L_TRAVEL, t=0.6)",
   "Loader.Run(J_RETURN) > MoveY(L_HOME, t=2.0)",
@@ -221,7 +221,7 @@
   "Robot.SetDO(DO_VACUUM, ON)",
   "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
   "Robot.MoveL(P_LOADER_TAKE_TOUCH, v=0.01)",
-  "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)",
+  "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.6)",
   "Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)",
   "Wait(0.15)",
   "Robot.MoveL(P_LOADER_EXIT, v=0.05)",
@@ -426,11 +426,11 @@
   {
    "step": "S4_Handover",
    "kind": "Gripper",
-   "text": "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.35)",
+   "text": "Loader.Run(J_CLAMP) > Gripper(G_CLAMP, t=0.6)",
    "target": "G_CLAMP",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
-   "duration": "0x1.6666666666666p-2",
+   "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "",
    "position": "0x0.0p+0",
@@ -570,11 +570,11 @@
   {
    "step": "S6_Loader_Insert",
    "kind": "Gripper",
-   "text": "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.35)",
+   "text": "Loader.Run(J_INSERT) > Gripper(G_OPEN, t=0.6)",
    "target": "G_OPEN",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
-   "duration": "0x1.6666666666666p-2",
+   "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "",
    "position": "0x0.0p+0",
@@ -979,11 +979,11 @@
   {
    "step": "S15_Loader_Fetch",
    "kind": "Gripper",
-   "text": "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.35)",
+   "text": "Loader.Run(J_FETCH) > Gripper(G_CLAMP, t=0.6)",
    "target": "G_CLAMP",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
-   "duration": "0x1.6666666666666p-2",
+   "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "",
    "position": "0x0.0p+0",
@@ -1163,11 +1163,11 @@
   {
    "step": "S18_Take_From_Loader",
    "kind": "Gripper",
-   "text": "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.35)",
+   "text": "Loader.Run(J_RELEASE) > Gripper(G_OPEN, t=0.6)",
    "target": "G_OPEN",
    "joints_rad_hex": [],
    "speed": "0x0.0p+0",
-   "duration": "0x1.6666666666666p-2",
+   "duration": "0x1.3333333333333p-1",
    "timeout": "0x0.0p+0",
    "axis": "",
    "position": "0x0.0p+0",
