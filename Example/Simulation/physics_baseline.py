@@ -41,6 +41,8 @@ import functools
 import importlib.util
 # JSON (JSON encoder and decoder)
 import json
+# Multiprocessing (Process-based parallelism)
+import multiprocessing
 # Subprocess (Subprocess management)
 import subprocess
 # Tempfile (Temporary files)
@@ -113,6 +115,11 @@ CONST_ENVELOPE_MARGIN = 0.10
 CONST_PERTURBATIONS = [(0.0, 0.0, 0.0), (-5e-6, 0.0, 0.0), (-1e-6, 0.0, 0.0), (1e-6, 0.0, 0.0), (5e-6, 0.0, 0.0), (-5e-6, 0.1, 0.0),
                        (0.0, 0.1, 0.0), (5e-6, 0.1, 0.0), (0.0, 0.0, 1e-6), (0.0, 0.0, -1e-6)]
 CONST_WAIT_AFTER = {'taught': '- Robot.MoveJ(P_MG06_FORK_START)', 'optimized': '- Loader.WaitDone(J_PARK)'}
+# The physics runs are independent, so they run in a pool of processes, at most this many at once; the results come back in
+# the runs' order, so every report, metric and printed line is the sequential run's byte for byte (2026-10-25, Apple M2 Pro:
+# the 20 runs of --out 369.5 s -> 63.0 s, the compare of both programs 37.6 s -> 19.8 s; identical sha256).
+#   Unit [int]
+CONST_WORKERS = os.cpu_count() or 1
 
 @functools.lru_cache(maxsize=None)
 def _Script(name: str) -> tp.Any:
@@ -252,6 +259,44 @@ def Capture(program: str, trajectories: tp.Optional[str] = None,
     result = run.Result()
     return {'report': Format_Program_Report(result, cell, prog.Name), 'metrics': Metrics(result), 'perturbation': list(perturbation),
             'acceptance': [(c.Name, c.Passed, c.Detail) for c in Check_Program_Acceptance(result, cell)]}
+
+
+def _Capture_Job(job: tp.Tuple[str, tp.Optional[str], tp.Tuple[float, float, float]]) -> tp.Tuple[bool, tp.Any]:
+    """
+    Description:
+        One Capture in a pool process. A run that cannot run comes back as its sentence: the scripts' error classes are loaded
+        from a file path, so they cannot be unpickled in the parent.
+
+    Args:
+        (1) job [Tuple]: (program, trajectories, perturbation), as Capture takes them.
+
+    Returns:
+        (1) parameter [Tuple<bool, Any>]: (True, the capture) or (False, the error's sentence).
+    """
+
+    try:
+        return True, Capture(*job)
+    except (_Script('Simulation/run_program.py').Run_Error_Cls, Simulation_Error_Cls) as error:
+        return False, str(error)
+
+
+def Capture_All(jobs: tp.List[tp.Tuple[str, tp.Optional[str], tp.Tuple[float, float, float]]]) -> tp.List[tp.Tuple[bool, tp.Any]]:
+    """
+    Description:
+        Capture every job, in a pool of up to CONST_WORKERS processes (spawned: each a fresh interpreter, MuJoCo's log routed
+        to logger/), the results in the jobs' order. For this script run as a program (a spawned process imports it by path).
+
+    Args:
+        (1) jobs [List<Tuple>]: (program, trajectories, perturbation) each.
+
+    Returns:
+        (1) parameter [List<Tuple<bool, Any>>]: _Capture_Job's result per job.
+    """
+
+    if len(jobs) == 1:
+        return [_Capture_Job(jobs[0])]
+    with multiprocessing.get_context('spawn').Pool(min(len(jobs), CONST_WORKERS), initializer=Configure_MuJoCo_Log) as pool:
+        return pool.map(_Capture_Job, jobs, chunksize=1)
 
 
 def Environment() -> tp.Dict[str, str]:
@@ -405,7 +450,8 @@ def main():
         Run each program's physics and compare it with its baseline in test/Simulation/data/ (default): exit 1 when a SPEC §10.1
         criterion fails or a metric drifts beyond CONST_TOLERANCES (CONST_ENVELOPE's beyond the envelope); the report's diff is
         printed for information. --out DIR writes the baselines (a re-capture, in its own commit with the reason): each program run
-        over CONST_PERTURBATIONS, refused when one fails SPEC §10.1.
+        over CONST_PERTURBATIONS, refused when one fails SPEC §10.1. Every run first, in parallel (Capture_All); then each
+        program's in order, as one after the other would print and write them.
 
             .venv/bin/python Example/Simulation/physics_baseline.py [--program taught|optimized] [--trajectories DIR] [--compare DIR | --out DIR]
     """
@@ -420,16 +466,20 @@ def main():
 
     Configure_MuJoCo_Log()
     log = Script_Log_Cls('physics_baseline')
-    failed, run_program = False, _Script('Simulation/run_program.py')
-    for program in [args.program] if args.program else CONST_PROGRAMS:
-        try:
-            now = Capture(program, args.trajectories)
-        except (run_program.Run_Error_Cls, Simulation_Error_Cls) as error:
-            print(log.Line('[ERROR] %s: the physics run cannot run: %s' % (program, error)))
+    failed, programs = False, [args.program] if args.program else CONST_PROGRAMS
+    perturbations = CONST_PERTURBATIONS if args.out is not None else CONST_PERTURBATIONS[:1]
+    results = iter(Capture_All([(program, args.trajectories, x) for program in programs for x in perturbations]))
+    for program in programs:
+        runs = [next(results) for _ in perturbations]
+        ran, now = runs[0]
+        if not ran:
+            print(log.Line('[ERROR] %s: the physics run cannot run: %s' % (program, now)))
             log.Close()
             return 2
         if args.out is not None:
-            captures = [now] + [Capture(program, args.trajectories, x) for x in CONST_PERTURBATIONS[1:]]
+            if not all(ran for ran, _ in runs):
+                raise Simulation_Error_Cls('; '.join(message for ran, message in runs if not ran))
+            captures = [capture for _, capture in runs]
             failing = [(c['perturbation'], [name for name, ok, _ in c['acceptance'] if not ok]) for c in captures
                        if not all(ok for _, ok, _ in c['acceptance'])]
             if failing:
