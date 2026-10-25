@@ -136,7 +136,7 @@ impratio 10, noslip iterations 5, solver Newton, integrator Euler (the scene's; 
 |---|---|
 | 0 / 1 / 2 | `lid_hinge` (0 closed, −0.6974 open), `press_slide`, `handle_hinge` (0 up, about 0.50 = 29° closed) |
 | 3 / 4 | loader `y_axis` (−0.1995 … 0.2205), `z_axis` (−0.0035 … 0.2965) |
-| 5 / 6 | `jaw_L`, `jaw_R` (0 … 0.040, coupled by an equality) |
+| 5 / 6 | `jaw_L`, `jaw_R` (0 … 0.040, synchronized by a stiff equality: solref 0.001, solimp 0.99 / 0.999 - the EGI's toothed belt) |
 | 7–13 | `pcb_free` (position + quaternion) |
 | 14–19 | `aubo/shoulder_pan_joint` … `aubo/wrist_3_joint` (limits ±3.04) |
 | 20–23 | `aubo/tool/cup0..3_bellows` (passive springs of the suction cups) |
@@ -144,7 +144,7 @@ impratio 10, noslip iterations 5, solver Newton, integrator Euler (the scene's; 
 | ctrl | name | meaning |
 |---|---|---|
 | 0, 1 | `y_servo`, `z_servo` | loader axis position [m]; first-order lag τ = 30 ms (`filterexact`; its `act` state starts at the start position) |
-| 2 | `gripper` | jaw target [m], force-limited to 40 N per jaw; clamp = 12 mm behind the part (`jaw_grip − 0.012`), open = 0.035 |
+| 2 | `gripper` | jaw target [m], force-limited to 70 N, the gripping force as SCHUNK states it (the sum of both jaws: 35 N per jaw; EGI 040-EI 25-70 N); clamp = 12 mm behind the part (`jaw_grip − 0.012`), open = 0.035 |
 | 3–8 | `robot_*` | joint position servos, kp 5000/5000/4000/2000/2000/1500, kv 150/150/100/25/25/15, armature, gravity compensation; driven with velocity feed-forward `ctrl = q_ref + (kv/kp)·v_ref` |
 | 9–12 | `vacuum0..3` | adhesion on the 4 cups, ctrl 0/1, 7 N each (40 kPa × D15); holds only where a cup touches |
 
@@ -425,7 +425,10 @@ contact bits, radial play 1.5 mm (design-decisions). The robot therefore really 
 294 N between the fork and the handle bar (§4.6).
 
 **Loader.** Axis ranges `y_axis` −199.5 … +220.5 mm (QF12 S420, towards MG06), `z_axis` −3.5 … +296.5 mm
-(QF12 S300, vertical), jaws 0 … 40 mm each (SCHUNK EGI 040-EI, coupled, 40 N per jaw); 0 is the CAD
+(QF12 S300, vertical), jaws 0 … 40 mm each (SCHUNK EGI 040-EI, ID 1474382: stroke 40 mm per jaw, gripping force 25-70 N as
+the sum of both jaws, jaws synchronized by a toothed belt, max. speed 100 mm/s, closing time 1.0 s - schunk.com product page and
+data sheet, read 2026-10-25; modelled at 70 N, 35 N per jaw, synchronized stiffly - until 2026-10-25 80 N, 40 N per jaw, with a
+soft coupling that let the PCB sit 0.37 mm off-centre, design-decisions); 0 is the CAD
 position. Home y −100 mm, z 0 (the gripper where the CAD has it); jaws open 35 mm at the start (the robot
 brings the PCB). Fingers KS0010175 with a ledge and front stop KS0010278, tilted 8.94° like the cassette:
 the PCB lies on the ledges by its edges and is clamped over its front ~38 mm. Masses are **estimates**:

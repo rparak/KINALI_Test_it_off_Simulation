@@ -1160,13 +1160,13 @@
 
   <equality>
     <joint name="press_coupling" joint1="press_slide" joint2="handle_hinge" polycoef="0 0 0 0.0104554 0" solref="0.004" solimp="0.99 0.999" />
-    <joint name="jaw_sync" joint1="jaw_R" joint2="jaw_L" solref="0.004" />
+    <joint name="jaw_sync" joint1="jaw_R" joint2="jaw_L" solref="0.001" solimp="0.99 0.999" />
   </equality>
 
   <actuator>
     <general name="y_servo" joint="y_axis" ctrlrange="-0.1995 0.2205" forcerange="-800 800" dyntype="filterexact" dynprm="0.03" input="pos" biastype="affine" gainprm="40000" biasprm="0 -40000 -965.816" />
     <general name="z_servo" joint="z_axis" ctrlrange="-0.0035 0.2965" forcerange="-800 800" dyntype="filterexact" dynprm="0.03" input="pos" biastype="affine" gainprm="40000" biasprm="0 -40000 -541.11" />
-    <general name="gripper" joint="jaw_L" ctrlrange="-0.01 0.04" forcerange="-80 80" input="pos" biastype="affine" gainprm="8000" biasprm="0 -8000 -60" />
+    <general name="gripper" joint="jaw_L" ctrlrange="-0.01 0.04" forcerange="-70 70" input="pos" biastype="affine" gainprm="8000" biasprm="0 -8000 -60" />
     <general name="robot_shoulder_pan_joint" joint="aubo/shoulder_pan_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-180 180" input="pos" biastype="affine" gainprm="5000" biasprm="0 -5000 -150" />
     <general name="robot_shoulder_lift_joint" joint="aubo/shoulder_lift_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-180 180" input="pos" biastype="affine" gainprm="5000" biasprm="0 -5000 -150" />
     <general name="robot_elbow_joint" joint="aubo/elbow_joint" ctrlrange="-3.04 3.04" ctrllimited="true" forcelimited="true" forcerange="-150 150" input="pos" biastype="affine" gainprm="4000" biasprm="0 -4000 -100" />

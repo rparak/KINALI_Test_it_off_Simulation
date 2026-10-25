@@ -247,7 +247,7 @@ Loader_Positions:
     Z: 0.02
 
 # The gripper commands (SCHUNK EGI 040-EI), the jaw set-point per jaw [m]. Source: the former pcb_meta.json
-# jaw_open; the clamp command 12 mm behind the part, held by the 40 N force limit (SPEC §4.3, §4.4).
+# jaw_open; the clamp command 12 mm behind the part, held by the 70 N force limit (35 N per jaw; SPEC §4.3, §4.4).
 Gripper_Commands:
   G_OPEN:
     Description: "Fully open."

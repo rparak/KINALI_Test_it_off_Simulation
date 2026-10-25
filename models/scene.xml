@@ -894,12 +894,14 @@
     </spatial>
   </tendon>
   <equality><joint name="press_coupling" joint1="press_slide" joint2="handle_hinge" polycoef="0 0 0 0.0104554 0" solref="0.004 1" solimp="0.99 0.999 0.001" />
-  <joint name="jaw_sync" joint1="jaw_R" joint2="jaw_L" polycoef="0 1 0 0 0" solref="0.004 1" />
+  <!-- The SCHUNK EGI 040-EI synchronizes its jaws by a toothed belt: a stiff coupling (solref at 2 x timestep, solimp as
+       the PCB contacts). The gripping force is the sum of both jaws' (SCHUNK: 25-70 N): the servo's limit is that sum. -->
+  <joint name="jaw_sync" joint1="jaw_R" joint2="jaw_L" polycoef="0 1 0 0 0" solref="0.001 1" solimp="0.99 0.999 0.001" />
   </equality>
   <actuator><position name="y_servo" joint="y_axis" kp="40000" dampratio="1" forcerange="-800 800" ctrlrange="-0.1995 0.2205" />
     <position name="z_servo" joint="z_axis" kp="40000" dampratio="1" forcerange="-800 800" ctrlrange="-0.0035 0.2965" />
     
-    <position name="gripper" joint="jaw_L" kp="8000" kv="60" forcerange="-80 80" ctrlrange="-0.01 0.04" />
+    <position name="gripper" joint="jaw_L" kp="8000" kv="60" forcerange="-70 70" ctrlrange="-0.01 0.04" />
   </actuator>
   <keyframe>
     <!-- qpos: lid, press, handle, y, z, jaw_L, jaw_R, pcb(7) -->

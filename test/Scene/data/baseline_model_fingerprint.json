@@ -9,7 +9,7 @@
    "actuator_dynprm": "e9938b243b24419d",
    "actuator_dyntype": "b6589fc6ab0dc82c",
    "actuator_forcelimited": "88b33e4e12f75ac8",
-   "actuator_forcerange": "6273fc5b817899a2",
+   "actuator_forcerange": "a331eecc37d26817",
    "actuator_gainprm": "28d20ea1865653d6",
    "actuator_gaintype": "b6589fc6ab0dc82c",
    "actuator_gear": "4e37714fce28e34b",
@@ -467,8 +467,8 @@
    "data": "52acc96c3a3b3aa3",
    "obj1": "#6",
    "obj2": "#5",
-   "solimp": "6d4c9d0cbea1c1f6",
-   "solref": "368ce26455e5c946",
+   "solimp": "61464c2c9e835730",
+   "solref": "b4d6eff68d8bf538",
    "type": 2
   },
   "press_coupling": {
