@@ -178,6 +178,31 @@ def _Check_Program(program, cell, program_tools):
     return Check_Trajectory(trajectory, program, notes, kinematics, collision, cell, meta)
 
 
+@pytest.fixture(scope='session')
+def optimized_built(cell_configuration, program, constants, simulation):
+    """
+    Description:
+        Both programs built in process on the planning model, with what the optimizer's checks need: the model, collision,
+        kinematics, PCB poses, the taught trajectory ('default'), the optimized program and its trajectory and notes, the
+        optimization settings.
+    """
+
+    from Configuration.Core import Read_PCB_Meta
+    from Configuration.Program_Parser import Load_Program, Load_Optimization, CONST_OPTIMIZED_PROGRAM_YAML
+    from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
+    from Kinematics.Core import Robot_Kinematics_Cls
+    from Program.Core import Build_Program
+    model = Build_Planning_Model(cell_configuration)
+    collision = Robot_Collision_Cls(model)
+    kinematics = Robot_Kinematics_Cls(model, collision.Data)
+    meta = Read_PCB_Meta()
+    default, _ = Build_Program(program, cell_configuration, meta, kinematics, {})
+    optimized = Load_Program(constants, simulation, cell_configuration, CONST_OPTIMIZED_PROGRAM_YAML)
+    trajectory, notes = Build_Program(optimized, cell_configuration, meta, kinematics, {})
+    return {'model': model, 'collision': collision, 'kinematics': kinematics, 'meta': meta, 'default': default, 'optimized': optimized,
+            'trajectory': trajectory, 'notes': notes, 'optimization': Load_Optimization(program)}
+
+
 def _Failed_Criteria(result):
     """
     Description:

@@ -60,8 +60,10 @@ from Program.Core import Build_Program, File_Hash, Program_Error_Cls
 from Program.Check import Check_Trajectory, Format_Check_Report
 #   ../Trajectory/Core - the trajectory file
 from Trajectory.Core import Write_Trajectory
-#   ../Optimizer/Core - an optimized program's inputs and schedule
-from Optimizer.Core import Stale_Inputs, Schedule_Differences
+#   ../Optimizer/Core - an optimized program's inputs
+from Optimizer.Core import Stale_Inputs
+#   ../Optimizer/Measure - the schedule's differences
+from Optimizer.Measure import Schedule_Differences
 
 
 def Git_State() -> tp.Tuple[str, bool]:

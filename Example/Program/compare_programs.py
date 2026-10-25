@@ -50,8 +50,10 @@ from Kinematics.Core import Robot_Kinematics_Cls
 from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 #   ../Program/Core - the builds
 from Program.Core import Build_Program, Program_Error_Cls
-#   ../Optimizer/Core - the FREE transfers, the stale check, the metrics
-from Optimizer.Core import Free_Transfers, Stale_Inputs, Measure, Program_Metrics_Str
+#   ../Optimizer/Core - the FREE transfers, the stale check
+from Optimizer.Core import Free_Transfers, Stale_Inputs
+#   ../Optimizer/Measure - the metrics
+from Optimizer.Measure import Measure, Program_Metrics_Str
 #   ../Trajectory/Core - the trajectory format
 from Trajectory.Core import Trajectory_Str, CONST_DT
 

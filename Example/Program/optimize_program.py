@@ -52,8 +52,10 @@ from Program.Core import Build_Program, Program_Error_Cls
 from Program.Check import Format_Check_Report
 #   ../Planner/Core - the planner's errors
 from Planner.Core import Planner_Error_Cls
-#   ../Optimizer/Core - the optimization and its verification
-from Optimizer.Core import (Optimize_Program, Free_Transfers, Compare_Locked, Interlocks, Carried_Tilt, Step_Bounds, Optimizer_Error_Cls)
+#   ../Optimizer/Core - the optimization
+from Optimizer.Core import Optimize_Program, Free_Transfers, Optimizer_Error_Cls
+#   ../Optimizer/Measure - its verification: the LOCKED parts, the interlocks, the tilt
+from Optimizer.Measure import Compare_Locked, Interlocks, Carried_Tilt, Step_Bounds
 
 
 def main():
