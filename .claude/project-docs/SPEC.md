@@ -804,6 +804,46 @@ failure takes the next margin; finally writes the schedule. `Interlocks` (I1-I8 
 LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
 planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
 
+**LOCKED and FREE.** `Optimization.yaml Free_Segments` lists the FREE segments by name; every other segment is LOCKED. A
+LOCKED segment's samples relative to its own start are byte-identical in both programs (its start time may move); a FREE
+segment's motion is planned. Consecutive FREE segments with only loader jobs between them are one transfer, from the end
+of the previous LOCKED robot segment to the start of the next; their intermediate points (`P_HOME`, the vias) are dropped.
+
+| Transfer / part | From → to | Taught segments | Carries the PCB | Family |
+|---|---|---|---|---|
+| FREE | `P_HOME` → `P_INPUT_ABOVE` | `S1_Approach_Input` | no | up |
+| LOCKED | the crate pick: approach, press 1.5 mm, vacuum, lift | `S2_Pick_Input` | from vacuum on | up |
+| FREE | `P_INPUT_ABOVE` → `P_LOADER_ABOVE` | `S3_To_Loader` | yes | up |
+| LOCKED | the handover: no press, clamp, vacuum off, up | `S4_Handover` | until vacuum off | up |
+| FREE | `P_LOADER_ABOVE` → `P_MG06_FORK_START` (`P_HOME` dropped) | `S5_Home_After_Handover`, `S8_To_MG06` | no | up → down (the switch in free space) |
+| LOCKED | `PATH_FORK_CLOSE` and the bar centred, the leave, the test, the return, the open join and `PATH_FORK_OPEN` | `S9_Close_MG06` … `S13_Open_MG06` | no | down |
+| FREE | `P_MG06_FORK_START` → `P_LOADER_ABOVE` (`P_HOME` dropped; via the waiting point `P_LOADER_WAIT`) | `S14_Home_After_MG06`, `S17_To_Take` | no | down → up |
+| LOCKED | the take: approach, press 1.5 mm, vacuum, gripper open, out of the jaws, up | `S18_Take_From_Loader` | from vacuum on | up |
+| FREE | `P_LOADER_ABOVE` → `P_OUTPUT_ABOVE` | `S19_To_Output` | yes | up |
+| LOCKED | the place: approach, the last 15 mm at 30 mm/s, vacuum off, up | `S20_Place_Output` | until vacuum off | up |
+| FREE | `P_OUTPUT_ABOVE` → `P_HOME` | `S21_Home_End` | no | up |
+| LOCKED | the loader jobs (shape and durations; their start times move) | `S6_Loader_Insert`, `S7_Loader_Park`, `S15_Loader_Fetch`, `S16_Loader_Return` | - | - |
+| LOCKED | the end settle (`Simulation.yaml End_Settle`) | - | - | - |
+
+Every MoveL near contact, both fork paths and their joins and the MG06 closed-state rules sit inside LOCKED segments; no
+MoveL is FREE, so no MoveL crosses the family switch.
+
+**Interlocks** (`Interlocks` verifies each on the built trajectory, with the times that prove it):
+
+| # | Interlock | Why |
+|---|---|---|
+| I1 | `S4_Handover` starts with the loader at `L_HOME` and the gripper at `G_OPEN` | the PCB enters open jaws |
+| I2 | `J_INSERT`'s first loader move after `S4_Handover` ends | the loader moves only after the robot left the jaw zone |
+| I3 | `S9_Close_MG06` starts after `J_PARK`'s last loader move (parked, gripper open) | MG06 is closed only with the PCB released and the loader parked |
+| I4 | `S11_Test` starts after `S10_Leave_MG06` ends (MG06 closed, the fork out of the bar) | the tester runs closed, the robot away |
+| I5 | `S12_Return_MG06` starts after `S11_Test` ends | no motion at MG06 during the test |
+| I6 | `J_FETCH`'s first sample after `S13_Open_MG06` ends (MG06 open, the fork off the handle) | the loader enters MG06 only when it is open and the fork is gone |
+| I7 | `S18_Take_From_Loader` starts after `J_RETURN`'s last loader move (the loader at `L_HOME`, the PCB clamped) | the robot enters the jaw zone only when the loader is home |
+| I8 | the robot (with a carried PCB) at least `Clearance.Loader_Free` + `Tracking_Margin` from the loader (with the PCB in its jaws, posed where its actuators put it) at every sample of the parts where both may move | parallel motion is safe only where checked |
+
+I1-I7 hold by program order (`Loader.Start` / `Loader.WaitDone` lines); I8 is the exact robot-loader check, whose failure
+moves a spline's slot or wait (`Delay`).
+
 ## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
 
 Four hand-written files, split by who uses each value (F10, design-decisions): `Cell.yaml` the cell's physical description;
@@ -902,7 +942,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 |---|---|---|---|
 | `Speed_Fraction` | - | equal to `Cell.yaml Motion.Speed_Fraction` (a fair comparison) | the splines' `v=` |
 | `Seed` | - | any fixed value (B5) | RRT-Connect, the shortcut |
-| `Free_Segments` | segment keys | the approved LOCKED / FREE table (FEATURES.md F9); MoveJ lines only | `Free_Transfers` |
+| `Free_Segments` | segment keys | the approved LOCKED / FREE table (§7.11); MoveJ lines only | `Free_Transfers` |
 | `Rrt.Max_Iterations`, `Extend_Step`, `Edge_Step`, `Goal_Bias` | -, deg, deg, - | chosen 2026-10-24 | `Rrt_Connect` |
 | `Shortcut_Iterations` | - | chosen | `Shortcut` |
 | `Spline.Check_Step`, `Margin`, `Max_Refits` | deg, m, - | chosen; measured | `Smooth` |

@@ -197,7 +197,7 @@ def Interlocks(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, col
                program: Program_Str) -> tp.List[tp.Tuple[str, bool, str]]:
     """
     Description:
-        The interlocks I1-I8 of FEATURES.md F9 verified on a built trajectory, each with the times that prove it: I1 the
+        The interlocks I1-I8 of SPEC §7.11 verified on a built trajectory, each with the times that prove it: I1 the
         handover starts with the loader home and the gripper open; I2 the loader's first move after the handover ends; I3
         MG06 is closed only after the park; I4-I5 the test between the leave and the return; I6 the fetch after MG06 is
         open; I7 the take only after the return; I8 the robot (with a carried PCB) at least Clearance.Loader_Free +
