@@ -37,14 +37,14 @@ Vacuum:
 # The MG06 fixture's settled closed state (the open state is the lid's stop in models/scene.xml).
 MG06:
   # The lid after closing, risen in the lock's play. Source: measured in the cell simulation, the
-  # legacy planner's LID_CLOSED (git tag legacy-planner-reference), SPEC §4.7. [deg] REQUIRED.
+  # legacy planner's LID_CLOSED (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f), SPEC §4.7. [deg] REQUIRED.
   Closed_Lid: -0.5
   # The handle after closing, the robot away. Source: as above, H_CLOSED, SPEC §4.7. [deg] REQUIRED.
   Closed_Handle: 28.65
   # PATH_FORK_OPEN joins the recorded opening path at its first row whose handle is this far below
   # Closed_Handle (28.45 deg), so the fork's slot wall meets the bar moving up and the handle is never
-  # pushed down (SPEC §4.7, §4.9). Source: the legacy planner (H_CLOSED - 0.2; git tag
-  # legacy-planner-reference). [deg] REQUIRED.
+  # pushed down (SPEC §4.7, §4.9). Source: the legacy planner (H_CLOSED - 0.2; commit
+  # f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [deg] REQUIRED.
   Open_Join_Margin: 0.2
 
 # The keypoint check (SPEC §2 item 3).
@@ -105,7 +105,7 @@ Handover:
 # The robot's motion limits for the program's MoveJ and MoveL (SPEC §4.4, §4.10).
 Motion:
   # The fraction of the datasheet joint speeds the program runs at. Source: the reference plan (the
-  # legacy planner's SPEED, git tag legacy-planner-reference), SPEC §4.4. [-] REQUIRED.
+  # legacy planner's SPEED, commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f), SPEC §4.4. [-] REQUIRED.
   Speed_Fraction: 0.6
   # The joint speeds, shoulder_pan .. wrist_3. Source: AUBO i5 datasheet (J1-J4 220 deg/s, J5-J6
   # 230 deg/s), SPEC §4.4. [deg/s] REQUIRED.
@@ -147,7 +147,7 @@ Acceptance:
   # transfer (closer than Clearance.Loader_Free is a WARNING). Source: the owner, 2026-10-24 (F11). [m] REQUIRED.
   Loader_Distance: 0.001
   # A program's physics run fails (and warns) above these: the PCB's slip in the cups and the robot's joint
-  # tracking error, 1.5 x the legacy run's 1.32 mm and 0.0126 rad (git tag legacy-cycle-reference). Source: the
+  # tracking error, 1.5 x the legacy run's 1.32 mm and 0.0126 rad (commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d). Source: the
   # owner, 2026-10-24 (F11: warnings), 2026-10-25 (step 6: bounds). [m], [rad] REQUIRED.
   Slip_Max: 0.00198
   Tracking_Max: 0.0189
@@ -181,7 +181,7 @@ Acceptance:
 # step 6 with the keypoint program, owner 2026-10-24).
 Simulation:
   # The phase label is refreshed every this many steps. It changes no output of the reference plan
-  # (FEATURES.md F3.5). Source: legacy/test_cell_cycle.py (git tag legacy-planner-reference). [-] REQUIRED.
+  # (FEATURES.md F3.5). Source: legacy/test_cell_cycle.py (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [-] REQUIRED.
   Phase_Steps: 20
   # A cup counts as touching the PCB below this contact distance. A 0.1 mm threshold changes no output of
   # the reference plan (F3.5). Source: as above. [m] REQUIRED.

@@ -37,7 +37,7 @@ Actuators:
 
 # How long a digital input takes to come after its cause; the simulated WaitDI waits what is left of it (nothing
 # once it has come) and fails when it exceeds the program's timeout. DI_VACUUM_OK: the legacy planner's 0.3 s hold
-# after vacuum on (git tag legacy-planner-reference). [s] REQUIRED for every DI.
+# after vacuum on (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f). [s] REQUIRED for every DI.
 Signal_Response:
   DI_VACUUM_OK: 0.3
 

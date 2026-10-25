@@ -19,7 +19,7 @@ the whole process - PCB from the input crate, through the MG06 tester, to the ou
 written, checked and played back before it is run anywhere else.
 
 The physics and the realism of the cell are finished and verified (§4.6). The robot motion is today
-produced by an IK-based planner (`legacy/plan_cell.py`, kept in git tag `legacy-planner-reference`;
+produced by an IK-based planner (`legacy/plan_cell.py`, kept in commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`;
 its plan is `Data/Reference/cell_plan.npz`). **Phase 1 replaces it with a keypoint-based
 robot program** (named poses in a configuration file, a program read top to bottom, a trajectory file,
 a viewer); Phase 2 adds a PyQt6 application on the same core. Phase 1 is done when the default program
@@ -50,9 +50,8 @@ Phase 1 (brief §7, in this order):
 5. **Simulation, checks, playback**: the physics run of a trajectory with the report of §4.6, a
    real-time viewer playback, a headless run.
 6. **Regression**: the default program reproduces §4.6 within §10.1; then it replaces `Data/Reference/cell_plan.npz`
-   as the regression input. (The legacy planner and cycle test were removed in F4; git tag `legacy-planner-reference`.)
-   Done 2026-10-25: the two programs' physics baselines (§10.2); the legacy plan, its run and its baseline retired (git tag
-   `legacy-cycle-reference`).
+   as the regression input. (The legacy planner and cycle test were removed in F4; commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`.)
+   Done 2026-10-25: the two programs' physics baselines (§10.2); the legacy plan, its run and its baseline retired (commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`).
 7. **Docs**: the README (readme-writer) and `CLAUDE.md`.
 
 Phase 2 (later): a PyQt5 or PyQt6 window (open, see design-decisions: *Phase 2 GUI toolkit*) rendering MuJoCo through
@@ -157,7 +156,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 - Loader: home y −0.1000 / z 0; place y +0.19666 / z +0.06722; travel height z +0.07922; park
   y −0.1995 / z +0.020; jaws open 0.035, grip 0.01754 (the physics grip with the synchronized jaws; 0.01775 until 2026-10-25; clamp command 0.00575). Source: now
   `Configuration/Constants.yaml` (`Loader_Positions`, `Gripper_Commands`; formerly `pcb_meta.json`), `legacy/plan_cell.py` (git
-  tag `legacy-planner-reference`).
+  commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`).
 - PCB in the loader jaws (loader home): position (0.0057, −0.30829, 0.14961), quaternion
   (0.99696, 0.07794, 0, 0) (8.94° tilt); placed in MG06: (0.0057, −0.011636, 0.216826), same quaternion.
 - PCB in a crate: flat, board centre at the crate centre, z = 0.004 + 0.0009. Input crate centre
@@ -177,7 +176,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 5. Loader: back → down → close (pick) → up → home.
 6. The robot takes the PCB (vacuum on, loader opens), puts it into the right (output) crate, goes home.
 
-### 4.6 Reference result (*measured*, `test/Simulation/data/baseline_report.txt`; retired in step 6, git tag `legacy-cycle-reference`)
+### 4.6 Reference result (*measured*, `test/Simulation/data/baseline_report.txt`; retired in step 6, commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`)
 
 The reference plan `Data/Reference/cell_plan.npz` (written by the legacy planner) run with physics, 2026-10-24, on macOS 26.6.2, Apple M2 Pro.
 Baseline environment: Python 3.11.2, numpy 2.4.6, scipy 1.17.1, MuJoCo 3.16.0 (`install.sh`). First
@@ -262,7 +261,7 @@ Kinematics and Collision code; F3.4).
   (wrist_2 < 0); the switch happens only in free space (via `P_VIA_HOME_MG06`, §4.8).
 - **MG06 fork path**: the recorded close/open path is tight (bar on the slot bottom). Leaving and
   returning use a separately planned path with the bar centred in the slot (5 mm play), from the closed
-  handle angle 28.65° and lid −0.5° (`H_CLOSED`, `LID_CLOSED` in `legacy/plan_cell.py`, git tag `legacy-planner-reference`). The opening path is joined where its recorded handle angle is
+  handle angle 28.65° and lid −0.5° (`H_CLOSED`, `LID_CLOSED` in `legacy/plan_cell.py`, commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`). The opening path is joined where its recorded handle angle is
   already below the real closed angle, so the handle is never pushed down before opening.
 - **MuJoCo 3.16**: `gap` is not applied to `includemargin`, so no `margin`/`gap` on the PCB or the cups
   (parts would float 2–4 mm apart). PCB and cup contacts use `solref 0.002`, `solimp 0.99 0.999`,
@@ -277,8 +276,7 @@ Kinematics and Collision code; F3.4).
 
 In `Configuration/Constants.yaml` (`Points`, renamed in F10: §4.8.1) at full precision: each keypoint's joints are the reference plan's stationary
 segment end (joint speed 0; `q_home` for home), rounded to 1e-6 deg; within 9.3e-5 rad of this table, FK
-within 0.081 mm of its positions (measured 2026-10-24; `test/Configuration/test_program_parser.py::test_the_points_are_the_spec_table_and_the_reference_plans_rows`). Their source, the planner, is `legacy/plan_cell.py` at git tag
-`legacy-planner-reference` (`SEED`, the `solve` calls of its `main`).
+within 0.081 mm of its positions (measured 2026-10-24; `test/Configuration/test_program_parser.py::test_the_points_are_the_spec_table_and_the_reference_plans_rows`). Their source, the planner, is `legacy/plan_cell.py` at commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (`SEED`, the `solve` calls of its `main`).
 
 Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP = `aubo/tool/suction_tcp` in m.
 
@@ -384,7 +382,7 @@ the brief's names verbatim; everything else uses the new ones. The F6 / F8 field
 `fork_close_open_path.npz` is now `Data/Paths/fork_close_open_path.npz`, and
 `tools/plan_cell.py` became `legacy/plan_cell.py`, removed in F4 and kept in git: the fork-path joins,
 the leave / return path around the closed handle and the other special moves are looked up with
-`git show legacy-planner-reference:legacy/plan_cell.py` (step 4 builds the `path` command from them; since F10 `Robot.MovePath(PATH_FORK_CLOSE)` /
+`git show f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py` (step 4 builds the `path` command from them; since F10 `Robot.MovePath(PATH_FORK_CLOSE)` /
 `Robot.MovePath(PATH_FORK_OPEN)`, §4.8.1).
 
 
@@ -650,7 +648,7 @@ its physics run there, at most 50 ms of wall time per frame, and only copies the
 Runs a program's trajectory with physics (servo set-point with velocity feed-forward, the loader's and the gripper's commands,
 vacuum events); fails with `Simulation_Error_Cls` when MuJoCo resets the state; returns the measured values; formats the
 report of §4.6 and the program report; checks §10.1. (Until step 6 it also ran the legacy plan `Data/Reference/cell_plan.npz`,
-`Legacy_Drive_Cls` / `Run_Cycle`, its report byte-identical to the legacy baseline: git tag `legacy-cycle-reference`.)
+`Legacy_Drive_Cls` / `Run_Cycle`, its report byte-identical to the legacy baseline: commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`.)
 
 The physics run (`Physics_Run_Cls`, `Run_Physics`) takes the drive `Trajectory_Drive_Cls` (a program's 4 ms trajectory: set-points linear
 between samples with the stored `robot_qd` as feed-forward, the loader and gripper commands, the vacuum events, the steps as
@@ -1007,7 +1005,7 @@ commands, editing keypoints and program, the file formats.
 - The compiled model's fingerprint equals `test/Scene/data/baseline_model_fingerprint.json` except
   `geoms/pcb_vis/geom_rgba` (the green PCB).
 - Pinned by `test/Scene/test_core.py` (fingerprint). (Until step 6 the legacy cycle run's report diffed empty against
-  `test/Simulation/data/baseline_report.txt`: git tag `legacy-cycle-reference`.)
+  `test/Simulation/data/baseline_report.txt`: commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`.)
 - **Golden data of the taught program** (`test/Program/data/`: the trajectory arrays' sha256, the cycle time, the events, the
   segments, every command's values as float hex, the check report, the point table), written and compared by
   `Example/Program/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
@@ -1030,7 +1028,7 @@ commands, editing keypoints and program, the file formats.
   envelope ± 10 %, and always within §10.1 (the fork's 290 N / 13.5 N m, the actuators below 99.9 %). The contact count
   (`fork_points`) is reported only.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment;
-  the legacy run's baseline was retired with it in step 6 (git tag `legacy-cycle-reference`).
+  the legacy run's baseline was retired with it in step 6 (commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`).
 - **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one
   machine and platform (`test/Program/test_core.py::test_the_build_is_deterministic`); across platforms results agree
   within numeric tolerance only. The trajectory's metadata records the platform and the versions.
@@ -1063,7 +1061,7 @@ this project's reference in `.claude/skills/<skill>/references/project.md` (proj
 | 2 | A restructure silently changes the physics result | the report diffs empty against the baseline (§10.2); the slow regression (§10.1) |
 | 3 | Instability hidden by MuJoCo's state reset | `d.time` going backwards fails the run (exit 2) |
 | 4 | Platform drift of the numbers (Python / numpy version) | pinned requirements; re-baseline in the pinned environment (`KNOWN_ISSUES.md`) |
-| 5 | The physics loop drifts | the programs' physics baselines: SPEC §10.1 and the metrics' drift tolerances (§10.2); a refactor proven by an empty report diff on one machine; the legacy run is in git tags `legacy-planner-reference` and `legacy-cycle-reference` |
+| 5 | The physics loop drifts | the programs' physics baselines: SPEC §10.1 and the metrics' drift tolerances (§10.2); a refactor proven by an empty report diff on one machine; the legacy run is in git tags `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` and `7a8560c8c16806739a02da8e989c2a2f65d1e41d` |
 
 ## 14. Open questions
 
@@ -1076,7 +1074,7 @@ coacd stay pinned as *planned*; the F3 decisions (`FEATURES.md`).
 
 - Owner's project brief (every section mapped in `FEATURES.md` > Brief coverage) "KINALI Test-it-off – Automated PCBA Testing Cell (MuJoCo)", git
   `427e076:docs/PROJECT_BRIEF.md` (2026-10-24).
-- The previous Czech description of the cell (git `legacy-planner-reference:docs/README_cs_mg06_cell.md`,
+- The previous Czech description of the cell (git `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:docs/README_cs_mg06_cell.md`,
   originally `5e5ee62:README.md`); its content is in §4.10, KNOWN_ISSUES and design-decisions (F4.2).
 - AUBO i5 datasheet (joint speeds, payload 5 kg, reach 886.5 mm), as quoted in `src/Scene/Core.py`.
 - OnRobot VGC10 datasheet (20–60 % vacuum recommended), as quoted in `src/Scene/Core.py`.

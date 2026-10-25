@@ -215,7 +215,7 @@ def main():
     """
     Description:
         Compare the taught program and the optimized one (FEATURES.md F9; the legacy reference plan's column until step 6:
-        git tag legacy-cycle-reference): both programs built afresh (the optimized one refused when stale); the cycle time,
+        commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d): both programs built afresh (the optimized one refused when stale); the cycle time,
         the robot's joint travel per joint and the TCP's path, the PCB's path, the loader's travel, the robot's stops; per part
         of the process both durations. A text table (stdout and Data/Generated/Reports/compare_programs.txt) and a figure
         (Data/Generated/Images/compare_programs.png). Exit 0, 1 when a program cannot be built.

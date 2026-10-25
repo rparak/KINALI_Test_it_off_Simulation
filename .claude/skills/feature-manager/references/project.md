@@ -33,8 +33,8 @@ Language: English in every file, report and commit; the owner's notes may be in 
 ## Real data for reproducing a premise
 
 The two programs and their physics runs (`Example/Simulation/run_program.py`; their baselines and the kinematic golden in
-`test/<Domain>/data/`; the legacy planner in git tag `legacy-planner-reference`, the legacy cycle run in
-`legacy-cycle-reference`), the fingerprint, the scene files. Walk the chain: the
+`test/<Domain>/data/`; the legacy planner in commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`, the legacy cycle run in
+`7a8560c8c16806739a02da8e989c2a2f65d1e41d`), the fingerprint, the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
 

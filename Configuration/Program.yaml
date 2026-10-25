@@ -27,7 +27,7 @@
 #                  jaw command in t [s]; Wait(t) [s].
 #     Tester job:  Test(Process.Test_Duration) the MG06 test for Cell.yaml's duration.
 #   Sources: every speed, duration and wait is the legacy planner's (git show
-#     legacy-planner-reference:legacy/plan_cell.py, main), named per line as "legacy: <its call>", or the owner's
+#     f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py, main), named per line as "legacy: <its call>", or the owner's
 #     decision with its date and feature.
 ## =========================================================================== ##
 

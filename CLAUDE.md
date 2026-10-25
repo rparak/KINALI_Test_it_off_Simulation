@@ -14,16 +14,17 @@ trailer (`.claude/settings.json`).
 The verified physics is never changed without an explicit request (SPEC §3, the style project page
 `mjcf.md`). Regression baselines: the programs' physics, `test/Simulation/data/baseline_report_<taught|optimized>.txt`
 with their metrics (bounds and drift tolerances, SPEC §10.2); the kinematic golden, `test/Program/data/`; the model,
-`test/Scene/data/baseline_model_fingerprint.json`. The legacy plan's run and baseline are retired (git tag
-`legacy-cycle-reference`).
+`test/Scene/data/baseline_model_fingerprint.json`. The legacy plan's run and baseline are retired (commit
+`7a8560c8c16806739a02da8e989c2a2f65d1e41d`).
 
 ## Branches
 
 Work directly on main. Commit only after the usual checks pass: the fingerprint (`model_fingerprint.py`, 1 difference),
 the kinematic golden (`golden_program.py`, 0 differences), both physics baselines (`physics_baseline.py`, 0 failures), the
 point table, the fast tests, the style checker. Push after each accepted feature. A failed experiment is undone with git
-revert, never with force-push or history rewrite. The tags `legacy-planner-reference`, `pre-F9` (the state before F9) and
-`legacy-cycle-reference` (the last commit with the legacy cycle regression) stay.
+revert, never with force-push or history rewrite. Restore points are referenced by commit hash: `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (the last commit with
+the legacy planner), `4110010eeec0377c4e1801f7a2311994f79ab038` (the state before F9), `7a8560c8c16806739a02da8e989c2a2f65d1e41d` (the last commit with the legacy cycle
+regression). Tags are used only for releases (`vMAJOR.MINOR`, annotated).
 
 ## Skills
 
@@ -76,6 +77,6 @@ tool writes them). `Data/Optimized/Program_Optimized.yaml` is written only by `E
 re-run it when an input changes - a build refuses it stale).
 
 History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
-`git log --follow -M20% <file>`. The legacy planner and cycle test: git tag `legacy-planner-reference`.
+`git log --follow -M20% <file>`. The legacy planner and cycle test: commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`.
 
 Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).

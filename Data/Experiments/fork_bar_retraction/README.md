@@ -12,8 +12,8 @@ fading out where the recorded gap reaches 0.2 mm, and runs the physics with it. 
 | `bar_retraction.patch` | `git diff 92d1943 cb69907`: `Bar_Retraction` in `Configuration/Constants.yaml` `Paths`, its parsing in `src/Configuration/Program_Parser.py`, the retraction in `src/Program/Core.py`, and the sweep script |
 | `fork_retraction_sweep.py` | the sweep script on its own (the patch adds it as `Example/Simulation/fork_retraction_sweep.py`) |
 
-Base commit: `92d1943` (the state the experiment ran on). Its commit was `cb69907` (formerly tagged
-`experiment-fork-bar-retraction`; not on main).
+Base commit: `92d1943` (the state the experiment ran on). The experiment's own commit was `cb69907` (not on main; this
+folder replaces it).
 
 ## Result (2026-10-25, 14 runs per retraction: start offsets -5 / -1 / 0 / +1 / +5 µm, waits 0 / 4 ms / 0.1 s, both programs)
 

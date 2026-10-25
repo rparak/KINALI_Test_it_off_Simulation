@@ -52,8 +52,8 @@ Description:
 
     The physics run of a program's trajectory (SPEC §7.6): servo set-points with velocity feed-forward, the loader's and the
     gripper's commands, vacuum events, the instability guard; the measured values, the reports and the acceptance checks of
-    SPEC §10.1. Ported from legacy/test_cell_cycle.py (git tag legacy-planner-reference); the legacy plan's run and its
-    baseline were retired in step 6 (git tag legacy-cycle-reference). It prints nothing.
+    SPEC §10.1. Ported from legacy/test_cell_cycle.py (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f); the legacy plan's run and its
+    baseline were retired in step 6 (commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d). It prints nothing.
 """
 # The PCB starts 0.3 mm above the input crate's floor, so it settles onto it.
 #   Unit [float] (m)
@@ -1039,7 +1039,7 @@ def Run_Physics(model: mujoco.MjModel, drive: tp.Any, pcb_meta: PCB_Meta_Str, ce
 def Format_Report(result: Cycle_Result_Str) -> tp.List[str]:
     """
     Description:
-        The report lines of SPEC §4.6 (mm and deg), as the legacy run printed them (git tag legacy-cycle-reference).
+        The report lines of SPEC §4.6 (mm and deg), as the legacy run printed them (commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d).
 
     Args:
         (1) result [Cycle_Result_Str(object)]: A run's values.

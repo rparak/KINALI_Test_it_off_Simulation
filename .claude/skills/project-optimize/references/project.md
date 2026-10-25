@@ -15,7 +15,7 @@ file overrides it where they differ. No `SKILL.md` is tracked here.
 
 The physics reports are the contract: a refactor of the physics path is proven by an empty diff against both programs'
 baseline reports on the same machine (stricter than the regression's drift tolerances), plus the acceptance checks. (Until
-step 6 the legacy cycle report was: git tag legacy-cycle-reference.)
+step 6 the legacy cycle report was: commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d.)
 
 ## Normalisation filter for printed output
 

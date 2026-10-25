@@ -303,7 +303,7 @@ plan (every phase starts on a 20-step boundary; the cups sit deeper than 0.1 mm)
 
 Requirements:
 
-1. Annotated tag `legacy-planner-reference` on the last commit with the legacy planner; recorded in
+1. The last commit with the legacy planner (`f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`) kept as the restore point; recorded in
    design-decisions and in SPEC (fork path, keypoints).
 2. `legacy/cell_plan.npz` kept as the regression input under `Data/`; the planner, the legacy cycle test and
    the shims deleted; the ported run still diffs empty against the baseline report.
@@ -708,7 +708,7 @@ classification (below), not used by F8.
 | 21 | `home_end` | R | FREE | Movej home | [] |
 | 22 | `settle` | R | LOCKED | Wait 0.8 | [] |
 
-Every speed, duration and wait is the legacy planner's (git tag `legacy-planner-reference`, `main`); the step
+Every speed, duration and wait is the legacy planner's (commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`, `main`); the step
 boundaries follow its phases, so step 5 can map the fork steps onto the physics classifier's closing / opening
 exemption (`Collision.CONST_FORK_PHASES`): a step whose `Allow_Contact` holds `handle_bar` is a fork step. The
 return from MG06 goes `above_handle` → `home` directly, as the legacy plan does (question 10).
@@ -1181,7 +1181,7 @@ F9.1 `Optimization.yaml`, `Load_Optimization`, the optimized program format in `
 `optimize_program.py`, `Data/Optimized/Program_Optimized.yaml`, the optimized build and playback; F9.5
 `compare_programs.py`; F9.6 docs (SPEC, design-decisions, KNOWN_ISSUES, README, references).
 
-### Status (built 2026-10-24, on main; restore point: tag `pre-F9`)
+### Status (built 2026-10-24, on main; restore point: commit `4110010eeec0377c4e1801f7a2311994f79ab038`)
 
 Approved (owner, 2026-10-24): Part A + B3, B4, B5 on the F10 format; `Optimization.yaml` with `Carry_Max_Tilt` 30 deg ("real-cell
 practice, assumed"); MoveSpline / Loader.Start / WaitDone only in `Data/Optimized/Program_Optimized.yaml`.
@@ -1433,7 +1433,7 @@ TCP acceleration then, and their maxima.
 - [x] F12.2 The acceptance bounds, SPEC §10.1 items 12-17 (`f6c5e47`): slip 1.98 mm, tracking 0.0189 rad, fork net force 290 N,
       hinge load 13.5 N m, free transfers >= Loader_Free 10 mm, no actuator saturated.
 - [x] F12.3 The physics baselines of both programs and their drift tolerances (`7a8560c`); the report diff informational.
-- [x] F12.4 The legacy cycle run retired behind git tag `legacy-cycle-reference`; the usual checks updated.
+- [x] F12.4 The legacy cycle run retired (its last commit `7a8560c8c16806739a02da8e989c2a2f65d1e41d`); the usual checks updated.
 
 ## F13 - The loader gripper and the place into MG06 (B work, owner 2026-10-25) - built on main, not pushed, awaiting acceptance
 

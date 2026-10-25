@@ -257,14 +257,14 @@ Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 **Decision.** `Data/Reference/cell_plan.npz` (the verified IK plan) stays the regression input of the cycle run
 (`Example/Simulation/run_cycle.py`, `test/Simulation`) until the keypoint program reproduces it (brief §7 step 6).
 The legacy planner `legacy/plan_cell.py`, the legacy cycle test `legacy/test_cell_cycle.py` and their shims were
-removed (owner, 2026-10-24, F4) after the annotated tag **`legacy-planner-reference`** (commit `f754e2d`) was set
-on the last commit holding them. *Corrected 2026-10-24: until F4 the planner and the cycle test stayed in
+removed (owner, 2026-10-24, F4) after the last commit holding them, **`f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`**, was recorded as the
+restore point (referenced by its hash since 2026-10-25: tags are for releases only). *Corrected 2026-10-24: until F4 the planner and the cycle test stayed in
 `legacy/`, frozen.*
 
 **Why.** The plan is the only verified end-to-end cycle, so every change before step 6 is measured against
 it. The planner is not product code; step 4 needs it only as a reference for the fork-path joins, the
 leave / return path around the closed handle and the keypoints, which `git show
-legacy-planner-reference:legacy/plan_cell.py` gives. The port of the loop into `src/Simulation` was proven
+f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py` gives. The port of the loop into `src/Simulation` was proven
 before the removal: the same report and every measured value the same float as the legacy run (F3.5); the
 planner regenerated the plan through the ported Kinematics and Collision code to 1.24e-14 rad (F3.4).
 
@@ -1050,8 +1050,8 @@ The owner's rule adopts a retraction only when 0.55-0.65 mm all pass; 0.65 mm do
 (0.55-0.60 mm) is too narrow and the recording stays. (A first attempt with the summed force as the criterion, and with a
 retraction along the closest face only, is superseded: the summed force adds the squeeze between the slot's walls.)
 
-**How to repeat it.** The experiment is the commit `cb69907`, tag `experiment-fork-bar-retraction` (on top of `92d1943`, the
-state it ran on; not on main). It adds `Bar_Retraction` [m] to `Constants.yaml` `Paths` (range 0-5 mm, 0: as recorded) and
+**How to repeat it.** The experiment is exported to `Data/Experiments/fork_bar_retraction/` (its patch against `92d1943`, the
+state it ran on, the sweep script and a README; the experiment commit `cb69907` is not on main). It adds `Bar_Retraction` [m] to `Constants.yaml` `Paths` (range 0-5 mm, 0: as recorded) and
 `Example/Simulation/fork_retraction_sweep.py R_MM taught|optimized DX_UM WAIT_S`, one run per line: the retraction of
 `PATH_FORK_CLOSE` (`PATH_FORK_OPEN` stays 0), the PCB's start offset along x before the run (the mode's trigger), a `Wait`
 before the path (taught: after `MoveJ(P_MG06_FORK_START)`; optimized: after `Loader.WaitDone(J_PARK)`); `P_MG06_CLOSE_END`
@@ -1080,7 +1080,7 @@ Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_
 
 **Decision.** `Example/Simulation/run_cycle.py`, `Data/Reference/cell_plan.npz`, `test/Simulation/data/baseline_report.txt`,
 `Simulation.Legacy_Drive_Cls` / `Run_Cycle` / `Read_Legacy_Plan` and their tests are removed (owner, 2026-10-25); the last
-commit with them is git tag `legacy-cycle-reference`. No test needed `Legacy_Drive_Cls` any more: the lost-PCB and instability
+commit with them is `7a8560c8c16806739a02da8e989c2a2f65d1e41d`. No test needed `Legacy_Drive_Cls` any more: the lost-PCB and instability
 tests drive a short program trajectory (`_Hold_Trajectory`), the broad-phase test samples the taught program's trajectory, the
 points' provenance check (rows of the plan) and the first MoveJ's plan comparison went with the plan, `build_program.py
 --compare-legacy` and the legacy column of `compare_programs.py` likewise. Two KNOWN_ISSUES entries of the legacy run are closed

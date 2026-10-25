@@ -49,8 +49,8 @@ Description:
     Initialization of constants.
 
     The program build and check (FEATURES.md F8, F10): the motion laws, the recorded fork path, the world state, the check,
-    the constants against the model. Expected values come from the legacy planner's rules (git tag
-    legacy-planner-reference), the reference plan and SPEC §4, written out here.
+    the constants against the model. Expected values come from the legacy planner's rules (commit
+    f754e2d0379b06ffb43286f4fb7aabf88e25ca5f), the reference plan and SPEC §4, written out here.
 """
 # The legacy MoveJ rule's numbers: 60 % of 220 / 230 deg/s, 3 / 6 rad/s^2, at least 0.5 s (SPEC §4.4, §4.10).
 #   Unit [Vector<float> 1x6] (rad/s), (rad/s^2), [float] (s)
@@ -112,7 +112,7 @@ def test_movej_follows_the_legacy_rule(built, constants, cell_configuration):
     Description:
         MoveJ P_HOME -> P_INPUT_ABOVE: T = max(0.5, max 1.875 |dq| / v_max, max sqrt(5.774 |dq| / a_max)) with the legacy
         numbers, round(T / 4 ms) samples; min-jerk: at rest at both ends, the analytic speed's peak 1.875 dq / T. (Its samples
-        were the legacy plan's first ones to 1.7e-8 rad, checked until step 6 retired the plan: git tag legacy-cycle-reference.)
+        were the legacy plan's first ones to 1.7e-8 rad, checked until step 6 retired the plan: commit 7a8560c8c16806739a02da8e989c2a2f65d1e41d.)
     """
 
     q0, q1 = np.array(constants.Points['P_HOME'].Joints), np.array(constants.Points['P_INPUT_ABOVE'].Joints)
