@@ -1,5 +1,5 @@
 {
- "source": "Example/Program/golden_program.py, 2026-10-25: F11's take fix (P_LOADER_TAKE_TOUCH, the second WaitDI), then the free transfers' loader clearance in the check report (the arrays, commands and point table unchanged); in the current names (F10's name map retired)",
+ "source": "ea41e5c: the kinematic jaw posing at the release in MG06 (item 10)",
  "cycle_time": 69.396,
  "samples": 17350,
  "arrays": {
@@ -84,7 +84,7 @@
    ]
   },
   "jaw": {
-   "sha256": "73ecd4f7ae7279e0232971b7f6a9150140587907710dbbe37d604d016fe8f789",
+   "sha256": "0844643b804555235691f500fc4ac76309925252ceb504bb76fe784144366e18",
    "dtype": "float64",
    "shape": [
     17350

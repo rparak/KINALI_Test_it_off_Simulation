@@ -1,4 +1,4 @@
-program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10729 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
+program Program: 22 steps, 17350 samples (4 ms), cycle time 69.396 s; 10718 samples measured exactly (clearance 3.0 mm, pairs reported up to 10 mm)
 free transfers to the loader (every sample, the loader at its actuator model's position): at least Loader_Free 10.0 mm + Tracking_Margin 4.0 mm, pairs up to 50 mm
 step                  start s   dur s    peak v / a (recorded path) verdict
 S1_Approach_Input       0.000   1.264  0.642 / 1.000                 PASS
