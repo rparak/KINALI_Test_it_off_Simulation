@@ -44,6 +44,14 @@ their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `
 - `project-optimize` — behaviour-preserving work; the outputs compared in `references/project.md`.
 - `readme-writer` — every README change; `references/project.md`.
 
+## Development setup
+
+The agent conventions come from the personal skills repository `rparak/rp-claude-skills` (private), installed at
+`~/.claude/skills/`. This repository holds only their project layer (`.claude/skills/*/references/`), never a `SKILL.md`.
+Without those skills the simulation, the tests and the `Example/` scripts still work: nothing in `src/`, `test/` or
+`Example/` reads `~/.claude/` (verified 2026-10-26: the fast tests pass with `HOME` set to an empty directory). Only the style
+checker (`check_style.py`) and the README checker (`check_readme.py`) need the skills.
+
 ## Commands
 
 Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python` (Python 3.11).
