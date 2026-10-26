@@ -36,9 +36,10 @@ Description:
     declared modules, its constants with their readers (style project reference > Layout; design-decisions: the module
     layout); written out here, never read from the README or the filesystem.
 """
-# The entries git tracks at the root. Exception with its reason: pytest.ini (the runner reads it at the root).
+# The entries git tracks at the root. Exceptions with their reasons: pytest.ini (the runner reads it at the root); CITATION.cff
+# (GitHub reads it at the root; owner, 2026-10-26).
 #   Unit [Set<string>]
-CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
+CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
                       'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration'}
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]

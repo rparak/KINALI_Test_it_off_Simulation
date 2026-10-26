@@ -375,6 +375,7 @@ The RPX layout:
 README.md                 the public page
 CLAUDE.md                 short: where the internal docs and the skills are, the commands, the language
 LICENSE                   MIT, Copyright (c) 2026 JIC Smart Factory (headers: Author Roman Parak)
+CITATION.cff              the citation metadata, CFF 1.2.0 (root exception; owner, 2026-10-26)
 install.sh                macOS (verified) + Ubuntu (unverified), OS detection, Python 3.11
 requirements.txt          pinned
 pytest.ini                import mode and the slow marker (root exception)

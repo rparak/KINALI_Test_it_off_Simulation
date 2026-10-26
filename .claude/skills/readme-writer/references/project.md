@@ -4,7 +4,8 @@ The README decisions of this repository. The generic skill is personal (`~/.clau
 they differ. No `SKILL.md` is tracked here.
 
 **Status:** the full README (brief §7 step 7), written 2026-10-26 from the owner's outline (the owner gave the sections, their
-content and the Authors HTML in full: that outline stood in for the bootstrap proposal). Maintenance mode from here.
+content and the Authors HTML in full: that outline stood in for the bootstrap proposal); accepted by the owner 2026-10-26.
+Maintenance mode from here.
 
 ## Readers
 
@@ -31,7 +32,8 @@ content and the Authors HTML in full: that outline stood in for the bootstrap pr
 | A physics baseline | the cycle times, 28/28 | `test/Docs/test_readme.py` |
 | A command or option of an `Example/` script or `install.sh` | Quick start, Usage | the command as documented, from a fresh clone |
 | An acceptance check | Verification (the 28 checks) | - |
-| A KNOWN_ISSUES item | How the model was built > Main limitations | - |
+| A KNOWN_ISSUES item (the real-cell items above all) | How the model was built > Main limitations, the first-run order | - |
+| The release (version, date) | `CITATION.cff` `version`, `date-released`; the README's release link | `test/Docs/test_citation.py` |
 | The interpreter or a pin | badges, Requirements and platform | - |
 
 ## Statuses
@@ -59,8 +61,12 @@ themes. The charts are a `<picture>` (dark for the dark theme, light for the lig
 budgets (400 KB, 6 MB) warn on every render and on the total; those warnings are accepted. The full MP4 videos are v1.0 release
 assets, uploaded at the release step (owner, 2026-10-26), linked from the README by the release page.
 
+The summary chart carries no title inside the image; Figure 6's caption does (owner, 2026-10-26; pinned by
+`test/Example/Report/test_compare_report.py`).
+
 The header's logos and the Authors table's avatars carry no "Figure N:" caption (owner, 2026-10-24 and 2026-10-26), configured in
-`check_readme.json` beside this file. The avatars' alt text is the person's name, as the owner's HTML gives it.
+`check_readme.json` beside this file. The avatars' alt text is a sentence of at least 12 words (owner, 2026-10-26: only the two
+alt attributes of the owner's Authors HTML lengthened).
 
 ## Rules
 
@@ -72,15 +78,16 @@ The header's logos and the Authors table's avatars carry no "Figure N:" caption 
   `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
 - The project context in the introduction uses only the owner's sentence (SPEC §1).
 - The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening.
-- The Authors section is the owner's HTML, unchanged (owner, 2026-10-26).
+- The Authors section is the owner's HTML, unchanged but for the two avatars' alt text (owner, 2026-10-26). No contact section.
+- A Citation section points at `CITATION.cff` (CFF 1.2.0, at the root; owner, 2026-10-26).
 - The third-party notes name the AUBO i5 model (MIT), imageio-ffmpeg and its GPL ffmpeg build (design-decisions: the media are
   encoded with Pillow and imageio-ffmpeg), the datasheets cited.
 
 ## README tests
 
 `test/Docs/test_readme.py` (fast): the cycle times and throughputs against the physics baselines, 28/28 in both, every image
-shown exists, every README medium in `Media/` is shown, the rules above. Also `check_readme.py README.md` (0 errors expected
-except the avatars' alt text, an open question to the owner) and `render_readme.py` (0 leftover Markdown).
+shown exists, every README medium in `Media/` is shown, the rules above. `test/Docs/test_citation.py`: `CITATION.cff` against the
+CFF 1.2.0 schema and the repository. Also `check_readme.py README.md` (0 errors) and `render_readme.py` (0 leftover Markdown).
 
 ## Pointers
 

@@ -92,9 +92,10 @@ of the cell either.
 
 ## Root ✅
 
-The root holds only `README.md`, `LICENSE`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
+The root holds only `README.md`, `LICENSE`, `CITATION.cff`, `CLAUDE.md`, `install.sh`, `requirements.txt`,
 `pytest.ini`, `.gitignore`, `.claude`, `src`, `test`, `Example`, `models`, `Data`, `Media`, `Configuration`.
-Exception, with its reason: **`pytest.ini`** (the test runner reads it at the root). `logger/` exists on disk
+Exceptions, with their reasons: **`pytest.ini`** (the test runner reads it at the root); **`CITATION.cff`** (GitHub reads it at
+the root for *Cite this repository*; owner, 2026-10-26; checked by `test/Docs/test_citation.py`). `logger/` exists on disk
 but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`, which also refuses two tracked paths
 that differ only in letter case (macOS's file system is case-insensitive: a case-only rename goes through a temporary name).
 

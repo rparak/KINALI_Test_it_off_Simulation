@@ -35,7 +35,7 @@ The Optimized program finishes after 59.148 s against 70.404 s. Simulation resul
 [Collision structure](#collision-structure) · [Architecture](#architecture) · [Quick start](#quick-start) ·
 [Usage](#usage) · [Default vs Optimized program](#default-vs-optimized-program) · [Verification](#verification) ·
 [Repository layout](#repository-layout) · [Requirements and platform](#requirements-and-platform) ·
-[License](#license) · [Authors](#authors)
+[Citation](#citation) · [License](#license) · [Authors](#authors)
 
 ## About
 
@@ -122,15 +122,25 @@ by the model's fingerprint and the physics baselines (see [Verification](#verifi
 
 **Main limitations.** What the simulation does not model or has not verified:
 
-- No real-cell validation exists yet, and the robot's real joint conventions, TCP setting and base pose are not compared
-  with the controller.
-- The vacuum is a constant force per touching cup: no leaks, no build-up, no holding range.
-- The fork-handle contact is stiff and its force is chaotic (4 or 6 contact points). The fork's bounds are regression
-  bounds from the simulation, not vendor ratings.
+- **No real-cell validation exists yet.** The pose convention (roll, pitch, yaw), the pendant's TCP setting, each joint's
+  zero, direction and order, and the robot base pose are not compared with the AUBO controller. A point copied to the
+  controller could command a different pose.
+- **`MoveSpline`**, which the Optimized program uses, is not verified on the AUBO controller (streamed joint targets or
+  blended MoveJ differ in path, timing and limits).
+- **The loader gripper** is modelled from the datasheet (70 N, synchronized jaws, 100 mm/s). The real gripper's force and
+  speed settings, its centring and the real release and re-grip heights are not verified.
+- **The vacuum** is a constant force per touching cup: no leaks, no build-up, no holding range.
+- **The fork closes MG06 through a stiff contact** whose force is chaotic (4 or 6 contact points, up to 247 N on the
+  handle bar and a flange wrench of 239 N and 16.1 N m). The fork's bounds are regression bounds from the simulation. No
+  force or moment rating of the VGC10 interface or the AUBO i5's flange and joints is known, so the real robot may deflect,
+  trip its collision detection or overload the VGC10 although the run passes here.
 - The acceleration limits are assumed, and the recorded MG06 fork paths exceed them.
-- `MoveSpline`, which the Optimized program uses, is not verified on the AUBO controller.
 - The MG06 test time is a 2.0 s placeholder, and the program's I/O ports are placeholders.
 - The carried PCB's 20° tilt limit is an assumption. Cables are not modelled.
+
+A first run on the real cell would go at reduced speed with the controller's own safety limits active, one moving object
+at a time where possible: the loader jobs alone, then the robot's transfers alone with the loader parked, then the LOCKED
+parts, then the parallel parts last, with the loader's `Loader.Start` / `Loader.WaitDone` handshake tested on its own first.
 
 ## Collision structure
 
@@ -406,8 +416,8 @@ Throughput = 3600 s / cycle time. The joint-space arc length sums the norm of th
   </picture>
 </p>
 
-**Figure 6:** The Optimized program relative to the Default program (100 %), with each value and its change. All values from
-the kinematic trajectories. Simulation results.
+**Figure 6:** Default vs Optimized: the Optimized program relative to the Default program (100 %), with each value and its
+change. Throughput = 3600 s / cycle time. All values from the kinematic trajectories [K]. Simulation results.
 
 <p align="center">
   <picture>
@@ -546,6 +556,11 @@ install.sh       creates .venv with Python 3.11 and the pinned requirements
 - Results are byte-identical for the same inputs on one machine and platform. Across platforms they agree within numeric
   tolerance only.
 
+## Citation
+
+If you use this project, cite it with the metadata in [CITATION.cff](CITATION.cff). GitHub shows it as *Cite this repository*
+on the repository page.
+
 ## License
 
 MIT License, Copyright (c) 2026 JIC Smart Factory. See [LICENSE](LICENSE).
@@ -563,4 +578,4 @@ Third party:
 
 ## Authors
 
-<table><tr><td align="center"><a href="https://github.com/rparak"><img src="https://avatars.githubusercontent.com/rparak" width="120px;" alt="Roman Parak"/><br /><strong>Roman Parak</strong></a><br />Author</td><td align="center"><a href="https://github.com/LukasMoravansky"><img src="https://avatars.githubusercontent.com/LukasMoravansky" width="120px;" alt="Lukas Moravansky"/><br /><strong>Lukas Moravansky</strong></a><br />Contributor</td></tr></table>
+<table><tr><td align="center"><a href="https://github.com/rparak"><img src="https://avatars.githubusercontent.com/rparak" width="120px;" alt="GitHub avatar of Roman Parak, author of the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Roman Parak</strong></a><br />Author</td><td align="center"><a href="https://github.com/LukasMoravansky"><img src="https://avatars.githubusercontent.com/LukasMoravansky" width="120px;" alt="GitHub avatar of Lukas Moravansky, contributor to the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Lukas Moravansky</strong></a><br />Contributor</td></tr></table>
