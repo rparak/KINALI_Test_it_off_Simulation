@@ -99,9 +99,10 @@ CONST_TRAJECTORY_FILES = {'taught': 'Program.npz', 'optimized': 'Program_Optimiz
 #   Unit [List<string>], [Dict<string, Tuple<string, string>>]
 CONST_SWEPT_JOBS = ['J_CLAMP', 'J_INSERT', 'J_PARK', 'J_FETCH', 'J_RETURN_Y', 'J_RETURN_Z', 'J_RELEASE']
 CONST_SWEPT_PARTS = {'jaw': ('jaw zone', 'L_HOME'), 'corridor': ('MG06 corridor', CONST_MG06_LOADER)}
-# The summary chart's name in --media (the README's).
-#   Unit [string]
+# The names of the summary chart and the timeline in --media (the README's).
+#   Unit [string], [string]
 CONST_MEDIA_SUMMARY = 'Default_vs_Optimized'
+CONST_MEDIA_TIMELINE = 'Timeline'
 # The default folder of the report and its figures.
 #   Unit [string]
 CONST_OUT = os.path.join(CONST_REPORTS, 'Comparison')
@@ -1568,7 +1569,8 @@ def main():
     parser = argparse.ArgumentParser(description='Compare the taught and the optimized program: Comparison.md and its figures.')
     parser.add_argument('--out', default=CONST_OUT, help='the folder (default: %s)' % os.path.relpath(CONST_OUT, CONST_ROOT))
     parser.add_argument('--trajectories', help='the folder of Program.npz and Program_Optimized.npz (default: Data/Generated/Trajectories)')
-    parser.add_argument('--media', help='also copy the summary chart (both themes, PNG and SVG) into this folder for the README (e.g. Media)')
+    parser.add_argument('--media', help='also write the summary chart and the timeline (both themes, PNG and SVG) into this folder for the '
+                                        'README (e.g. Media)')
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
@@ -1597,8 +1599,9 @@ def main():
         with open(os.path.join(args.out, analyses[v]['name'] + '_physics.txt'), 'w', encoding='utf-8') as handle:
             handle.write('\n'.join(analyses[v]['report']) + '\n')
     if args.media:
-        for path in _Themed(Figure_Summary, context, args.media, CONST_MEDIA_SUMMARY):
-            note('[INFO] %s (%.0f kB)' % (path, os.path.getsize(path) / 1e3))
+        for stem, make in ((CONST_MEDIA_SUMMARY, Figure_Summary), (CONST_MEDIA_TIMELINE, Figure_Timeline)):
+            for path in _Themed(make, context, args.media, stem):
+                note('[INFO] %s (%.0f kB)' % (path, os.path.getsize(path) / 1e3))
     figures = {stem: _Themed(make, context, args.out, stem) for stem, make in (
         ('summary', Figure_Summary), ('timeline', Figure_Timeline), ('joints', Figure_Joints), ('paths', Figure_Paths),
         ('clearance', Figure_Clearance), ('critical_path', Figure_Critical_Path), ('stretch', Figure_Stretch))}

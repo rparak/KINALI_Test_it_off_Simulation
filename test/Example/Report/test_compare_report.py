@@ -42,19 +42,25 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
         Default and the Optimized program, the identical task, 28 of 28 checks in both, no loader slow-down up to 2 x and no
         robot override down to 10 % breaking I8 (F15, F16: no parallel part rests on timing), the jaw zone and the MG06 corridor
         (no part at MG06 row), and the not-validated sentence; the optimized program's physics report
-        is byte for byte the one run_program.py writes (the recording does not change the run).
+        is byte for byte the one run_program.py writes (the recording does not change the run). --media gets the README's summary
+        chart and timeline (both themes, PNG and SVG), the same images as DIR's.
     """
 
     folder = os.path.dirname(str(built_trajectory('taught')))
     assert os.path.dirname(str(built_trajectory('optimized'))) == folder
-    out, work = tmp_path / 'out', tmp_path / 'work'
+    out, work, media = tmp_path / 'out', tmp_path / 'work', tmp_path / 'media'
     work.mkdir()
-    result = run_script('Report/compare_report.py', ['--out', str(out), '--trajectories', folder], work)
+    result = run_script('Report/compare_report.py', ['--out', str(out), '--trajectories', folder, '--media', str(media)], work)
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
     figures = ['%s_%s.%s' % (n, t, e) for n in ('clearance', 'critical_path', 'joints', 'paths', 'stretch', 'summary', 'timeline')
                for t in ('dark', 'light') for e in ('png', 'svg')]
     assert sorted(os.listdir(out)) == sorted(['Comparison.md', 'Program_Optimized_physics.txt', 'Program_physics.txt'] + figures)
     assert os.listdir(work) == []
+    assert sorted(os.listdir(media)) == sorted('%s_%s.%s' % (n, t, e) for n in ('Default_vs_Optimized', 'Timeline') for t in ('dark', 'light')
+                                               for e in ('png', 'svg'))
+    for name, stem in (('Default_vs_Optimized', 'summary'), ('Timeline', 'timeline')):
+        for theme in ('dark', 'light'):
+            assert (media / ('%s_%s.png' % (name, theme))).read_bytes() == (out / ('%s_%s.png' % (stem, theme))).read_bytes()
     text = (out / 'Comparison.md').read_text(encoding='utf-8')
     assert '- Cycle: Default 70.404 s, Optimized 59.148 s [K] (16.0 % shorter); throughput 51.1 and 60.9 PCB/h.' in text
     assert '| throughput = 3600 s / cycle [K] | 51.1 PCB/h | 60.9 PCB/h | Optimized, +19.0 % |' in text

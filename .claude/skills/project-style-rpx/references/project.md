@@ -54,7 +54,8 @@ Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimi
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by
                        Example/Media/make_logo_variants.py; Cycle_<Side_by_Side|Optimized>.gif, View_*.png, Collision_*.png,
-                       Key_Points.png, written by Example/Report/make_media.py; Original/ the owner's files
+                       Key_Points.png, written by Example/Report/make_media.py; Default_vs_Optimized_* and Timeline_* (dark,
+                       light; PNG, SVG), written by Example/Report/compare_report.py --media Media; Original/ the owner's files
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -115,6 +116,7 @@ that differ only in letter case (macOS's file system is case-insensitive: a case
 | the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
 | the comparison `Data/Generated/Reports/Comparison/` (Comparison.md, figures, videos, view, point and collision images) | `Example/Report/compare_report.py`, `make_media.py` (through `Report.Core`, `Report.Media`); never read |
 | the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png` | `Example/Report/make_media.py` (`Report.Media.Write_Gif`, `Write_Png`, `Contact_Sheet`); read by the README |
+| the README charts `Media/Default_vs_Optimized_<dark|light>.<png|svg>`, `Media/Timeline_<dark|light>.<png|svg>` | `Example/Report/compare_report.py --media Media` (`Report.Style.Save_Figure`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 

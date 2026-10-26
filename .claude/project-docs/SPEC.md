@@ -757,7 +757,7 @@ changes no program, point, model or limit; it measures.
 `Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` (every number tagged with its source: [K] the
 trajectory, [P] the physics run, [C] the configuration, [M] the model), seven figures (summary "Default vs Optimized",
 timeline, joints, paths, clearance, critical path, the I8 stretch; `src/Report/Style.py`: two themes, PNG at 300 dpi and SVG each)
-and both physics reports; `--media DIR` copies the summary chart (both themes) for the README. The programs are shown as
+and both physics reports; `--media DIR` writes the summary chart and the timeline (both themes) for the README. The programs are shown as
 "Default program" (the taught one) and "Optimized program".
 `Example/Report/make_media.py` writes into `Data/Generated/Reports/Comparison/` (60 fps, real time, H.264): per program the main
 video in Overview_Right (1920 x 1080 and 2560 x 1440), the 2 x 2 mosaic of Overview_Right, Loader_Handover, MG06_Insert and
