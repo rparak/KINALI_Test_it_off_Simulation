@@ -1,0 +1,15 @@
+# The citation metadata of this repository (Citation File Format 1.2.0). Roles (CFF 1.2.0 has no role field): Roman Parak,
+# author; Lukas Moravansky, contributor. date-released is the v1.0 release's date. Checked by test/Docs/test_citation.py.
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo"
+authors:
+  - given-names: Roman
+    family-names: Parak
+  - given-names: Lukas
+    family-names: Moravansky
+version: "1.0"
+date-released: 2026-10-26
+license: MIT
+repository-code: "https://github.com/rparak/KINALI_Test_it_off_Simulation"

@@ -1261,7 +1261,8 @@ def Figure_Summary(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     """
     Description:
         "Default vs Optimized" (owner, 2026-10-25): grouped bars per metric (Summary_Values), the Default program 100 %, the
-        Optimized program relative to it, each bar's absolute value with its unit above it.
+        Optimized program relative to it, each bar's absolute value with its unit above it. No title inside the image: the
+        README's caption and Comparison.md's section 7 carry it (owner, 2026-10-26).
 
     Args:
         (1) c [Context_Cls(object)]: The context.
@@ -1293,7 +1294,6 @@ def Figure_Summary(c: Context_Cls, theme: Theme_Str) -> tp.Any:
     axis.set_ylim(0, 135)
     axis.grid(axis='x', visible=False)
     axis.legend(loc='upper right', ncol=2)
-    axis.set_title('Default vs Optimized (all values from the trajectories [K]; throughput = 3600 s / cycle time)', loc='left')
     return figure
 
 

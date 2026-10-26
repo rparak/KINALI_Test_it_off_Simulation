@@ -43,7 +43,8 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
         robot override down to 10 % breaking I8 (F15, F16: no parallel part rests on timing), the jaw zone and the MG06 corridor
         (no part at MG06 row), and the not-validated sentence; the optimized program's physics report
         is byte for byte the one run_program.py writes (the recording does not change the run). --media gets the README's summary
-        chart and timeline (both themes, PNG and SVG), the same images as DIR's.
+        chart and timeline (both themes, PNG and SVG), the same images as DIR's; the summary chart carries no title (the caption
+        does, owner 2026-10-26).
     """
 
     folder = os.path.dirname(str(built_trajectory('taught')))
@@ -61,6 +62,8 @@ def test_the_comparison_is_written_with_its_figures(tmp_path, run_script, built_
     for name, stem in (('Default_vs_Optimized', 'summary'), ('Timeline', 'timeline')):
         for theme in ('dark', 'light'):
             assert (media / ('%s_%s.png' % (name, theme))).read_bytes() == (out / ('%s_%s.png' % (stem, theme))).read_bytes()
+    for theme in ('dark', 'light'):
+        assert '<!-- Default vs Optimized' not in (media / ('Default_vs_Optimized_%s.svg' % theme)).read_text(encoding='utf-8')
     text = (out / 'Comparison.md').read_text(encoding='utf-8')
     assert '- Cycle: Default 70.404 s, Optimized 59.148 s [K] (16.0 % shorter); throughput 51.1 and 60.9 PCB/h.' in text
     assert '| throughput = 3600 s / cycle [K] | 51.1 PCB/h | 60.9 PCB/h | Optimized, +19.0 % |' in text
