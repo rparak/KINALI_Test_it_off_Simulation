@@ -268,6 +268,17 @@ redistributes it (pip installs it from PyPI into `.venv`), so the project's MIT 
 writes are the project's output, not covered by the encoder's licence. The README's third-party notes say this when the
 README is written (step 7).
 
+**Reproducibility** (measured 2026-10-26: `make_media.py` re-run in a fresh clone against the 2026-10-25 render, Apple M2 Pro). Every
+file in `Media/` came out byte-identical (the GIFs: one palette from a fixed strip, no dithering, Pillow's single-threaded quantizer;
+the PNGs), except the charts' SVGs, which differ only in matplotlib's random clip and marker ids. Of the 182 files in
+`Data/Generated/Reports/Comparison/`, 175 were byte-identical. Three close-view PNGs at the pick moment differed by 1 level on
+10-20 of 3.7 million pixels, and the three videos that contain that moment (`Optimized_Mosaic_1440p.mp4`, the Optimized handover and
+fork-close clips) differed in exactly one group of pictures (250 frames, libx264's keyframe interval): libx264 itself is
+deterministic (the same frames encoded twice give the same bytes), but a 1-level input difference changes its rate-control
+decisions until the next keyframe. The cause of the 1-level render difference is not established (the physics reports are
+identical). Tolerance for a regenerated video: the same frame count, duration and resolution, and every frame at least 40 dB PSNR
+against the previous one (measured: at least 45.9 dB, mean difference at most 0.42 of 255 levels).
+
 **Alternatives.** A system ffmpeg (`brew install ffmpeg`): not installed by `install.sh`, so not reproducible. Pillow only (GIFs,
 no MP4): rejected by the owner, the full videos are wanted in high resolution. PyAV or OpenCV's writer: larger, and their
 wheels bundle the same GPL/LGPL codecs.
