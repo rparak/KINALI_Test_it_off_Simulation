@@ -41,7 +41,7 @@ src/<Domain>/Core.py   the domain's primary module: Configuration, Scene, Kinema
 src/<Domain>/<Topic>.py  a second concern of a domain: Configuration/Program_Parser.py (the cell program's reader),
                        Program/Check.py (the trajectory check), Simulation/Report.py (a run's acceptance and report),
                        Optimizer/Measure.py (what the optimized program is measured by), Report/Media.py (the
-                       comparison's frames, videos, GIFs)
+                       comparison's frames, videos, GIFs), Report/Style.py (the figure style)
 src/<Domain>/Const.py  only where more than one module of the domain uses a constant: Configuration, Program, Simulation
 Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Media, Keypoints, Program, Simulation,
                        Report

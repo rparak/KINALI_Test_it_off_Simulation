@@ -25,10 +25,10 @@ hash: `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (the legacy planner), `4110010e
 
 The checks, in two tiers (Apple M2 Pro times):
 
-- **Per commit** (about 45 s): the fingerprint (`model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic golden
+- **Per commit** (about 1 min): the fingerprint (`model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic golden
   (`golden_program.py`, 0 differences), the point table (`check_keypoints.py`, 0 FAIL), the fast tests
   (`pytest -n 8 -m "not slow"`), the style checker (0 issues).
-- **Per accepted feature, before the push** (about 3.5 min): both physics baselines with their envelopes
+- **Per accepted feature, before the push** (about 5.5 min): both physics baselines with their envelopes
   (`physics_baseline.py`, 0 failures) and the full suite (`pytest -n 8`).
 
 A change on the physics or build path is also proven by its outputs, byte for byte (the project-optimize reference).
@@ -58,8 +58,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 
 ```bash
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
-.venv/bin/python -m pytest -n 8 -m "not slow"    # per commit, about 30 s (serially, -n 0: about 2 min)
-.venv/bin/python -m pytest -n 8                  # per accepted feature, about 3 min (serially: about 7.5 min)
+.venv/bin/python -m pytest -n 8 -m "not slow"    # per commit, about 45 s (serially, -n 0: about 2 min)
+.venv/bin/python -m pytest -n 8                  # per accepted feature, about 5 min (serially: about 7.5 min)
 .venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
 .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~19 s
 .venv/bin/python Example/Simulation/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines (in parallel); exit 0/1/2; ~21 s; --out ~1 min
@@ -81,6 +81,8 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~60 s
 .venv/bin/python Example/Program/compare_programs.py [--out DIR]   # taught vs optimized: table + figure
 .venv/bin/python Example/Program/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
+.venv/bin/python Example/Report/compare_report.py [--trajectories DIR] [--out DIR] [--media Media]   # Comparison.md + 7 figures (dark, light); --media: the README charts
+.venv/bin/python Example/Report/make_media.py [--program P..] [--resolution R..] [--views V..] [--until T] [--clip S] [--skip-videos|mosaic|side|clips|images|points|collision]   # videos, GIFs, views; --media Media
 ```
 
 The viewer scripts (`show_keypoint.py`, `step_keypoints.py`, `show_program.py`, `show_physics.py`) use

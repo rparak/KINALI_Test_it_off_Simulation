@@ -51,7 +51,7 @@ CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/
                      'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
                      'readme-writer/references/check_readme.json'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
-# has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py); Const.py only where more than one of its
+# has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its
 # modules uses a constant.
 #   Unit [Dict<string, Set<string>>]
 CONST_DOMAIN_MODULES = {'Configuration': {'Core.py', 'Const.py', 'Program_Parser.py'}, 'Scene': {'Core.py'}, 'Kinematics': {'Core.py'},

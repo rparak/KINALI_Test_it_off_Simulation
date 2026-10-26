@@ -362,7 +362,7 @@ at 1080p and 1440p, the 2 x 2 mosaics, the event clips, every named view) and th
 .venv/bin/python -m pytest -n 8 -m "not slow"                  # per commit, about 45 s
 .venv/bin/python Example/Scene/model_fingerprint.py           # the compiled model vs its baseline: 1 difference expected (the PCB colour)
 .venv/bin/python Example/Program/golden_program.py            # the Default program vs its golden data: 0 differences
-.venv/bin/python -m pytest -n 8                                # per accepted change: the full suite, about 3.5 min
+.venv/bin/python -m pytest -n 8                                # per accepted change: the full suite, about 5 min
 .venv/bin/python Example/Simulation/physics_baseline.py       # both programs vs their physics baselines: 0 failures
 ```
 

@@ -265,8 +265,8 @@ no simulation, check or physics result depends on them.
 bundled binary `imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1` reports `--enable-gpl` (with libx264 and libx265), so the
 binary is GPL-2.0-or-later. The project runs it as a program (raw frames piped in, an MP4 out); it neither links nor
 redistributes it (pip installs it from PyPI into `.venv`), so the project's MIT licence is unaffected, and the videos it
-writes are the project's output, not covered by the encoder's licence. The README's third-party notes say this when the
-README is written (step 7).
+writes are the project's output, not covered by the encoder's licence. The README's third-party notes say this (README > License,
+written in step 7). *Corrected 2026-10-26: this sentence read "say this when the README is written (step 7)".*
 
 **Reproducibility** (measured 2026-10-26: `make_media.py` re-run in a fresh clone against the 2026-10-25 render, Apple M2 Pro). Every
 file in `Media/` came out byte-identical (the GIFs: one palette from a fixed strip, no dithering, Pillow's single-threaded quantizer;

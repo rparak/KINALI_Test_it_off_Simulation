@@ -54,8 +54,8 @@ Apple M2 Pro, 2026-10-25, three runs each (spread under 3 %):
 | the kinematic golden (`golden_program.py`) | 10.8 s |
 | the optimizer (`optimize_program.py`) | 59.8 s |
 | fingerprint / point table / style checker | 1.2 s / 0.4 s / 0.7 s |
-| test suite `-m "not slow"`, `-n 8` / serial | about 30 s / about 2 min (426 tests) |
-| test suite, full, `-n 8` / serial | about 2.8 min / about 7.4 min (446 tests) |
+| test suite `-m "not slow"`, `-n 8` / serial | 43.8 s (one run, 2026-10-26) / about 2 min (503 tests; serial not re-measured) |
+| test suite, full, `-n 8` / serial | 5.0 min (301.7-303.2 s, three runs, 2026-10-26) / about 7.4 min (526 tests; serial not re-measured) |
 
 ## Interpreter and tools
 
