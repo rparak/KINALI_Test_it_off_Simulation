@@ -1,6 +1,8 @@
 {
   "uncaptioned_figures": [
     {"src": "Media/JIC_Smart_Factory_Black.svg", "reason": "the header's brand mark, not a figure (owner, 2026-10-24)"},
-    {"src": "Media/KINALI_Black.svg", "reason": "the header's brand mark, not a figure (owner, 2026-10-24)"}
+    {"src": "Media/KINALI_Black.svg", "reason": "the header's brand mark, not a figure (owner, 2026-10-24)"},
+    {"src": "https://avatars.githubusercontent.com/rparak", "reason": "an author avatar in the Authors table, the owner's exact HTML (owner, 2026-10-26)"},
+    {"src": "https://avatars.githubusercontent.com/LukasMoravansky", "reason": "an author avatar in the Authors table, the owner's exact HTML (owner, 2026-10-26)"}
   ]
 }

@@ -7,7 +7,8 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 
 ## Open
 
-- [ ] Step 7: the full README (readme-writer bootstrap; its notes are in that skill's project reference).
+- [~] Step 7: the full README (owner, 2026-10-26: the outline given in full; written, awaiting the owner's acceptance), its tests
+      `test/Docs/test_readme.py`, the timeline in `Media/`.
 - [ ] Candidate experiment (owner, 2026-10-24: after step 6, now possible): start `J_INSERT` during the handover's last MoveL
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized

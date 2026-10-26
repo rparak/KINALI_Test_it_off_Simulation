@@ -1,78 +1,86 @@
 # readme-writer: project reference for KINALI_Test_it_off_Simulation
 
-The README decisions of this repository. The generic skill is personal (`~/.claude/skills/`); this
-file overrides it where they differ. No `SKILL.md` is tracked here.
+The README decisions of this repository. The generic skill is personal (`~/.claude/skills/`); this file overrides it where
+they differ. No `SKILL.md` is tracked here.
 
-**Status:** the README is a stub (the logos, the summary, the safety alert, the commands). The full README is brief §7
-step 7, written in this skill's bootstrap procedure (survey, proposal, approval); this file then gains its readers, figures
-and tests.
-
-## Step 7 content (the owner's list, from the previous Czech README)
-
-- An overview: the cell continues `mg06_loader_mujoco`; the AUBO i5 on the pedestal plate with the same end effector as the
-  MG06 project (VGC10 with the fork); the robot model from ian-chuang/Manipulator-Mujoco, MIT
-  (`models/aubo_i5/LICENSE_Manipulator-Mujoco`) - SPEC §4.1, §4.10.
-- The process in six steps as users read it (SPEC §4.5), and what a passing run means: the robot touches nothing but the
-  handle bar while closing and opening; the PCB ends in the right crate within 2 mm of its centre (measured 1.18 / 1.25 mm),
-  flat; an unstable run ends with an error instead of restarting silently (SPEC §10.1).
-- In the MuJoCo viewer, `[` / `]` switch between the cameras `cam_pcb` and `cam_tool`.
-- The simplifications (KNOWN_ISSUES > Simplifications of the model) in user terms.
+**Status:** the full README (brief §7 step 7), written 2026-10-26 from the owner's outline (the owner gave the sections, their
+content and the Authors HTML in full: that outline stood in for the bootstrap proposal). Maintenance mode from here.
 
 ## Readers
 
-- Main reader: an engineer who wants to run the cell simulation and later edit the robot program.
-- Others: a maintainer (tests, layout, baselines).
+- Main reader: an engineer who wants to run the cell simulation, compare the two programs and later edit the robot program.
+- Others: a maintainer (tests, baselines, what to regenerate), a reader evaluating the project (the comparison, the media).
 
 ## Sources of numbers
 
 | What the README shows | Source | Written by | Pinned by |
 |---|---|---|---|
-| (stub) MuJoCo 3.16.0, Python 3.11 | `requirements.txt`, `install.sh` | the owner | `test/Install/test_install.py` |
+| Cycle times 70.404 / 59.148 s, 28/28 checks | `test/Simulation/data/baseline_report_<taught\|optimized>.txt` (first and last line) | `physics_baseline.py --out` | `test/Docs/test_readme.py` |
+| Throughput, TCP / joint-space / PCB arc, clearances, tilt, slip, the critical path (-6.940 / -4.316 s), the stretch tables | `Data/Generated/Reports/Comparison/Comparison.md` (sections 3-7, 9) | `Example/Report/compare_report.py` | throughput: `test/Docs/test_readme.py`; the report: `test/Example/Report/test_compare_report.py` |
+| The gate's cost (+0.432 s, 58.716 -> 59.148 s) | design-decisions (F16, Cost) | the owner's F16 record | `test/Optimizer/test_core.py` (58.716 s before) |
+| The collision legend's counts | `make_media.py`'s output line (`Collision_Only_Overview_Right.png: ... categories`) and the image legend | `Example/Report/make_media.py` | the image |
+| Datasheet values, estimates, CAD deviations, model numbers | SPEC §4.3, §4.4, §4.7, §4.10, `Configuration/Cell.yaml` comments | the owner | the fingerprint, the baselines |
+| MuJoCo 3.16.0, Python 3.11, the pins | `requirements.txt`, `install.sh` | the owner | `test/Install/test_install.py` |
+| Command outputs and times (install about 20 s, run about 20 s) | a fresh clone, 2026-10-26, Apple M2 Pro | - | - |
 
 ## Triggers
 
 | A change to | Updates | Then run |
 |---|---|---|
-| A command or option of an `Example/` script or `install.sh` | the commands in the README | the command as documented |
-| The baseline report | any number the README quotes from it | - |
-| The interpreter or a pin | install text, badges | - |
+| A program, a point, `Cell.yaml`, `Optimization.yaml` or the model | the comparison table, the findings, the stretch tables, Figures 1, 2, 6-13 | `compare_report.py --media Media`, `make_media.py`, `test/Docs/test_readme.py` |
+| A physics baseline | the cycle times, 28/28 | `test/Docs/test_readme.py` |
+| A command or option of an `Example/` script or `install.sh` | Quick start, Usage | the command as documented, from a fresh clone |
+| An acceptance check | Verification (the 28 checks) | - |
+| A KNOWN_ISSUES item | How the model was built > Main limitations | - |
+| The interpreter or a pin | badges, Requirements and platform | - |
 
 ## Statuses
 
-None yet.
+The programs: "Default program" and "Optimized program" in every text, table, figure and caption (owner, 2026-10-26); the
+script options keep `taught` / `default` / `optimized`, explained once in Usage. Every number is labelled a simulation result
+([K] kinematic, [P] physics).
 
 ## Figures
 
-None in the README yet. `Data/Generated/Images/` holds run outputs (proof images), not README figures. The README's images
-are the logos in `Media/`, written by `Example/Media/make_logo_variants.py` (light: `_Black.svg`, dark: `_White.svg`).
-Generated for step 7, not yet used (F14, owner 2026-10-25: media now, the README in its own step):
-`Media/Cycle_Side_by_Side.gif` (Default vs Optimized) and `Media/Cycle_Optimized.gif` (each to link its full MP4, a v1.0
-release asset once the owner approves), the views `Media/View_<view>.png`, the collision overlays
-`Media/Collision_Overview_Right.png` and `Media/Collision_Loader_Handover.png`, and `Media/Key_Points.png`, written by
-`Example/Report/make_media.py`; the summary chart `Media/Default_vs_Optimized_<dark|light>.<png|svg>` by `compare_report.py
---media Media` (dark for the dark theme, light for the light one); the rest in `Data/Generated/Reports/Comparison/`. The README's third-party notes then name imageio-ffmpeg's
-bundled GPL ffmpeg build as a tool dependency (design-decisions: the media are encoded with Pillow and imageio-ffmpeg).
+All generated; none edited by hand.
+
+| Figure | File | Written by |
+|---|---|---|
+| 1, 8 | `Media/Cycle_Side_by_Side.gif`, `Media/Cycle_Optimized.gif` | `Example/Report/make_media.py` |
+| 2, 9-13 | `Media/View_<view>.png` | `make_media.py` |
+| 3 | `Media/Key_Points.png` | `make_media.py` |
+| 4, 5 | `Media/Collision_Overview_Right.png`, `Media/Collision_Loader_Handover.png` | `make_media.py` |
+| 6, 7 | `Media/Default_vs_Optimized_<dark\|light>.png`, `Media/Timeline_<dark\|light>.png` (the SVGs beside them) | `compare_report.py --media Media` |
+
+The renders (GIFs, views, collision images, key points) exist in one version: they are images of the scene, legible on both
+themes. The charts are a `<picture>` (dark for the dark theme, light for the light one).
+
+**Size budget** (deliberate, SPEC §7.12): GIF previews at most 10 MB, PNG renders at most 1.5 MB, so `check_readme.py`'s default
+budgets (400 KB, 6 MB) warn on every render and on the total; those warnings are accepted. The full MP4 videos are v1.0 release
+assets, uploaded at the release step (owner, 2026-10-26), linked from the README by the release page.
+
+The header's logos and the Authors table's avatars carry no "Figure N:" caption (owner, 2026-10-24 and 2026-10-26), configured in
+`check_readme.json` beside this file. The avatars' alt text is the person's name, as the owner's HTML gives it.
 
 ## Rules
 
 - Root layout: `.claude/skills/project-style-rpx/references/project.md` > Root.
-- Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content.
+- Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content, a GUI, a "Phase 2"
+  (`test/Docs/test_readme.py`). The limitations are summarized in the README itself.
 - The title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo" (design-decisions: the name).
-- The logo header at the top: JIC Smart Factory and KINALI (Test-it-off by name only, no logo), each a
-  `<picture>` with `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
-- The project context in the introduction uses only the owner's sentence (SPEC §1); nothing about funding,
-  partners or claims beyond it.
-- The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening
-  (outputs are simulation results, not validated for the real cell; the validation procedure, reduced
-  speed, the controller's safety limits).
-
-The header's logos are a brand mark, not figures: they carry no "Figure N:" caption (owner, 2026-10-24). The
-exception is configured in `check_readme.json` beside this file (`uncaptioned_figures`: each logo's light file and the
-reason); the checker reports them as INFO and exits 0. Every other figure added later is captioned and numbered.
+- The logo header at the top: JIC Smart Factory and KINALI (Test-it-off by name only, no logo), each a `<picture>` with
+  `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
+- The project context in the introduction uses only the owner's sentence (SPEC §1).
+- The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening.
+- The Authors section is the owner's HTML, unchanged (owner, 2026-10-26).
+- The third-party notes name the AUBO i5 model (MIT), imageio-ffmpeg and its GPL ffmpeg build (design-decisions: the media are
+  encoded with Pillow and imageio-ffmpeg), the datasheets cited.
 
 ## README tests
 
-None yet (step 7).
+`test/Docs/test_readme.py` (fast): the cycle times and throughputs against the physics baselines, 28/28 in both, every image
+shown exists, every README medium in `Media/` is shown, the rules above. Also `check_readme.py README.md` (0 errors expected
+except the avatars' alt text, an open question to the owner) and `render_readme.py` (0 leftover Markdown).
 
 ## Pointers
 
