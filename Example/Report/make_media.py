@@ -452,7 +452,7 @@ def Videos(poser: Poser_Cls, runs: tp.Dict[str, tp.Tuple[tp.Any, tp.Any]], args:
             return np.hstack(halves)
 
         times = np.arange(0.0, longest + 1e-9, 1.0 / CONST_FPS)
-        kept = Encode(os.path.join(args.out, 'Default_vs_Optimized_Side_by_Side_1440p.mp4'), (2 * w, h), (Side(float(t)) for t in times), note,
+        kept = Encode(os.path.join(args.out, 'Default_vs_Optimized_Side_by_Side.mp4'), (2 * w, h), (Side(float(t)) for t in times), note,
                       every)
         gif = os.path.join(args.media, 'Cycle_Side_by_Side.gif')
         size_gif, colours, count = Write_Gif(kept, gif, CONST_GIF_FPS, CONST_GIF_WIDTH, CONST_GIF_BYTES)

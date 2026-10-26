@@ -68,7 +68,7 @@ def test_the_media_are_written(tmp_path, run_script, built_trajectory):
         assert _Video(out / ('%s_Overview_Right_1080p.mp4' % stem)) == ((1920, 1080), 61)
         assert _Video(out / ('%s_Overview_Right_1440p.mp4' % stem)) == ((2560, 1440), 61)
         assert _Video(out / ('%s_Mosaic_1440p.mp4' % stem)) == ((2560, 1440), 61)
-    assert _Video(out / 'Default_vs_Optimized_Side_by_Side_1440p.mp4') == ((2560, 720), 61)
+    assert _Video(out / 'Default_vs_Optimized_Side_by_Side.mp4') == ((2560, 720), 61)
     events = ('fetch', 'fork_close', 'fork_open', 'handover', 'insert', 'pick', 'place', 'take')
     assert sorted(os.listdir(out / 'Clips')) == sorted('%s_%s.mp4' % (s, e) for s in ('Default', 'Optimized') for e in events)
     assert _Video(out / 'Clips' / 'Optimized_insert.mp4') == ((1920, 1080), 25)

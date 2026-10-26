@@ -59,7 +59,8 @@ themes. The charts are a `<picture>` (dark for the dark theme, light for the lig
 
 **Size budget** (deliberate, SPEC §7.12): GIF previews at most 10 MB, PNG renders at most 1.5 MB, so `check_readme.py`'s default
 budgets (400 KB, 6 MB) warn on every render and on the total; those warnings are accepted. The full MP4 videos are v1.0 release
-assets, uploaded at the release step (owner, 2026-10-26), linked from the README by the release page.
+assets (owner, 2026-10-26), each linked from the README by its asset URL (`releases/download/v1.0/<file>`) beside the release
+page's link; the side by side is `Default_vs_Optimized_Side_by_Side.mp4` (2560 x 720, no resolution suffix; owner, 2026-10-26).
 
 The summary chart carries no title inside the image; Figure 6's caption does (owner, 2026-10-26; pinned by
 `test/Example/Report/test_compare_report.py`).

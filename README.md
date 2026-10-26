@@ -438,8 +438,11 @@ Optimized program the loader rows overlap the robot's motion. Kinematic trajecto
 
 The full-resolution videos (MP4, H.264, real time) are assets of the
 [v1.0 release](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/tag/v1.0): the two programs side by side
-(`Default_vs_Optimized_Side_by_Side_1440p.mp4`), each program in the Overview_Right view (`Default_Overview_Right_1440p.mp4`,
-`Optimized_Overview_Right_1440p.mp4`) and as a 2 x 2 mosaic (`Default_Mosaic_1440p.mp4`, `Optimized_Mosaic_1440p.mp4`).
+([`Default_vs_Optimized_Side_by_Side.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Default_vs_Optimized_Side_by_Side.mp4)), each program in the Overview_Right view
+([`Default_Overview_Right_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Default_Overview_Right_1440p.mp4),
+[`Optimized_Overview_Right_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Optimized_Overview_Right_1440p.mp4)) and as a 2 x 2 mosaic
+([`Default_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Default_Mosaic_1440p.mp4),
+[`Optimized_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Optimized_Mosaic_1440p.mp4)).
 `make_media.py` writes them locally.
 
 <details>
