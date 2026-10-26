@@ -44,7 +44,8 @@ The Optimized program finishes after 59.148 s against 70.404 s. Simulation resul
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
-Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA).
+[Test-it-off](https://www.testitoff.cz/en/about-test-it-off/) system, an automated workcell for testing assembled printed
+circuit boards (PCBA).
 
 In the Test-it-off cell an AUBO i5 robot with an OnRobot VGC10 vacuum gripper and a fork takes each board from an input
 crate, hands it to a two-axis loader that inserts it into an MG06 test fixture, closes and opens the fixture with the fork,
