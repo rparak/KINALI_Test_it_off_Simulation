@@ -6,14 +6,17 @@
     <img src="Media/JIC_Smart_Factory_Black.svg" alt="The JIC Smart Factory logo: the J, I and C bars and the words Smart Factory, in black or white" height="40">
   </picture>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="Media/KINALI_White.svg">
-    <img src="Media/KINALI_Black.svg" alt="The KINALI logo: the word KINALI between three dots, in black or white for the page theme" height="40">
-  </picture>
+  <a href="https://www.kinali.cz/en/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="Media/KINALI_White.svg">
+      <img src="Media/KINALI_Black.svg" alt="The KINALI logo: the word KINALI between three dots, in black or white for the page theme" height="64">
+    </picture>
+  </a>
 </p>
 
-A MuJoCo simulation of KINALI's Test-it-off PCBA test cell in which a robot program for the whole process can be written,
-checked kinematically, run with full physics and compared before it is run anywhere else.
+A MuJoCo simulation of [KINALI](https://www.kinali.cz/en/)'s [Test-it-off](https://www.testitoff.cz/en/) PCBA test cell
+in which a robot program for the whole process can be written, checked kinematically, run with full physics and compared
+before it is run anywhere else.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
@@ -41,8 +44,7 @@ The Optimized program finishes after 59.148 s against 70.404 s. Simulation resul
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
-[Test-it-off](https://www.testitoff.cz/en/about-test-it-off/) system, an automated workcell for testing assembled printed
-circuit boards (PCBA).
+Test-it-off system, an automated workcell for testing assembled printed circuit boards (PCBA).
 
 In the Test-it-off cell an AUBO i5 robot with an OnRobot VGC10 vacuum gripper and a fork takes each board from an input
 crate, hands it to a two-axis loader that inserts it into an MG06 test fixture, closes and opens the fixture with the fork,
