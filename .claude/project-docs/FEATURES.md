@@ -7,8 +7,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 
 ## Open
 
-- [~] Step 7: the full README (owner, 2026-10-26: the outline given in full; written, awaiting the owner's acceptance), its tests
-      `test/Docs/test_readme.py`, the timeline in `Media/`.
 - [ ] Candidate experiment (owner, 2026-10-24: after step 6, now possible): start `J_INSERT` during the handover's last MoveL
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
@@ -35,3 +33,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F14 | The comparison of the taught and the optimized program: `src/Report/`, `compare_report.py`, `make_media.py`, the timed-wait finding; accepted by the owner 2026-10-25 | `75ea8bc`…`bd09244` |
 | F15 | The optimized take gated by `Loader.WaitDone(J_RETURN_Y)` (`J_RETURN` split), I9 and the gating rule; the F14 follow-ups (the MG06 swept zone, the named views and media, the figure style, the folders); accepted by the owner 2026-10-25 | `3d4418c`…`05556c4` |
 | F16 | The optimized insert gated by the robot's order: To_MG06's leg to the exit point `P_LOADER_WAIT` before `Loader.Start(J_INSERT)` (`Optimization.yaml Exit_Points`), I10, the gating rule symmetric, the robot speed-override table, the shared zones split into the jaw zone and the MG06 corridor; accepted by the owner 2026-10-26 | `3eed5ae`…`2d7cccd` |
+| F17 | Step 7: the full README from the owner's outline, its tests (`test/Docs/test_readme.py`, `test_citation.py`), `CITATION.cff`, the timeline in `Media/`, the summary chart without a title, CLAUDE.md's Development setup, the media's reproducibility; accepted by the owner 2026-10-26 | `004bb92`…`139ab5f` |
