@@ -234,7 +234,7 @@ What the simulation does not model; whoever compares it with the real cell check
 - The loader's masses are estimates (SPEC §4.10).
 - The PCB's components are one box in collision.
 - **Impact:** the comparison with reality is mainly the structure of the cycle; the absolute cycle times (70.4 s taught,
-  58.7 s optimized) depend on the chosen 60 % speed and the assumed accelerations.
+  59.1 s optimized) depend on the chosen 60 % speed and the assumed accelerations.
 - **What would close it:** the real-cell validation procedure (item above), measured joint data.
 
 ## The JIC Smart Factory logo is a recoloured copy, not an official monochrome file

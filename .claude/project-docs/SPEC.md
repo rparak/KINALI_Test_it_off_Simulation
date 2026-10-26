@@ -134,7 +134,7 @@ Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cu
 5. Loader: back → down → close (pick) → up → home.
 6. The robot takes the PCB (vacuum on, loader opens), puts it into the right (output) crate, goes home.
 
-The programs' cycle times: 70.4 s taught, 58.7 s optimized (the physics baselines, §10.2).
+The programs' cycle times: 70.4 s taught, 59.1 s optimized (the physics baselines, §10.2).
 
 ### 4.6 The physics report
 
