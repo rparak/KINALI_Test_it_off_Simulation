@@ -10,23 +10,26 @@ Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, wh
 
 Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for the JIC Smart Factory logo in the README header - its source
 file (`Media/Original/jic-smart-factory.svg`, byte-identical to the skill's asset) and its logo rules, with one departure
-(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its chart rules are not ported - they are
-written for QPainter and give no categorical palette for matplotlib (owner, 2026-10-25).
+(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its figures follow the generic default look
+(references/figures.md).
 
-**Figure style 📄** (owner, 2026-10-25; design-decisions: the figure style): the comparison's figures (`Example/Report/compare_report.py`)
-use `src/Report/Style.py` - one definition, two themes (`dark` #0D1117, `light` white), matplotlib's own Computer Modern
-(mathtext `cm`, serif `cmr10`; no TeX, no vendored fonts; a name with an underscore through `Style.Label`), units in brackets
-with math symbols (`$t$ [s]`), the Okabe-Ito palette for the moving objects, one colour per program in every figure (Default:
-sky blue / blue; Optimized: the JIC purple's 40 % tint on dark, the purple on light - each at least 4.5:1 on its background,
-`test/Report/test_style.py`), panel letters, both a 300 dpi PNG and an SVG per figure and theme (`<name>_dark`,
-`<name>_light`). The programs are shown as "Default program" and "Optimized program" (`Style.CONST_PROGRAM_NAMES`); the code
-keeps taught / optimized. `compare_programs.py`'s figure keeps the dataviz palette (owner: unchanged).
+**Figure style 📄** (owner, 2026-10-25; design-decisions: the figure style): the generic default look (references/figures.md)
+in `src/Report/Style.py`, used by the comparison's figures (`Example/Report/compare_report.py`); the name helper is
+`Style.Label`. The project's choices: one colour per program in every figure (Default: sky blue / blue; Optimized: the JIC
+purple's 40 % tint on dark, the purple on light - each at least 4.5:1 on its background, `test/Report/test_style.py`). The
+programs are shown as "Default program" and "Optimized program" (`Style.CONST_PROGRAM_NAMES`); the code keeps taught /
+optimized. `compare_programs.py`'s figure keeps the dataviz palette (a departure, below).
+
+**Known gap 📄** (owner, 2026-10-27): no test regenerates the README charts and compares them with the committed files in
+`Media/` (references/figures.md > Saving); `test/Example/Report/test_compare_report.py` compares `--media` with `--out` only.
+The figures are checked at release. The SVGs are not byte-stable (matplotlib's random clip and marker ids; design-decisions:
+the media are encoded with Pillow and imageio-ffmpeg), and the `svg.hashsalt` fix is not yet verified.
 
 ## Header and checker
 
 - Holder: **JIC Smart Factory** - `Copyright (c) 2026 JIC Smart Factory` in `LICENSE` and every header (as in
   the template UR_PathGen_SF_1); the `Author   :` line names the author, **Roman Parak**. The checker enforces
-  the copyright line (`check_style.json` `holder`), not the author line. Vendored licences keep their holders
+  the copyright line (`check_style.json` `holder`). Vendored licences keep their holders
   (`models/aubo_i5/LICENSE_Manipulator-Mujoco`). The `#`-comment header form. `File Name:` examples:
   `../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_program.py`, `../test/Scene/test_core.py`.
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
@@ -59,12 +62,9 @@ Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (J
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
-**The module layout ✅** (owner, 2026-10-25; design-decisions: the module layout). `Core.py` is each domain's primary
-module. A second concern gets its own topic module, named for it, that imports the domain's `Core.py` and never the
-other way round. A constant one module uses is defined in that module; a constant more than one module of the domain
-uses is defined in the domain's `Const.py`, which holds nothing else. Another domain imports a name from the module
-that defines it. A `Const.py` that imports nothing carries its description as a `#` comment block (a docstring would
-be its first statement and read as its header). Pinned by `test/Docs/test_layout.py`: the declared modules per domain,
+**The module layout ✅** (owner, 2026-10-25; design-decisions: the module layout): the generic rule (references/structure.md
+> Modules), with the modules listed above. A `Const.py` that imports nothing carries its description as a `#` comment block (a
+docstring would be its first statement and read as its header). Pinned by `test/Docs/test_layout.py`: the declared modules per domain,
 each module's test file, each constant with its readers. The checker's configuration has no layout key.
 
 The scripts folder is `Example/`; a script builds the repository root from `__file__` two folders up. A script may
@@ -97,7 +97,7 @@ The root holds only `README.md`, `LICENSE`, `CITATION.cff`, `CLAUDE.md`, `instal
 Exceptions, with their reasons: **`pytest.ini`** (the test runner reads it at the root); **`CITATION.cff`** (GitHub reads it at
 the root for *Cite this repository*; owner, 2026-10-26; checked by `test/Docs/test_citation.py`). `logger/` exists on disk
 but is git-ignored, so it is not a root entry. Pinned by `test/Docs/test_layout.py`, which also refuses two tracked paths
-that differ only in letter case (macOS's file system is case-insensitive: a case-only rename goes through a temporary name).
+that differ only in letter case.
 
 ## Formats - one reader and writer each 📄 (SPEC §9)
 
@@ -128,13 +128,12 @@ that differ only in letter case (macOS's file system is case-insensitive: a case
   `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml`, read only by `src/Configuration/Program_Parser.py`
   (`Load_Constants`, `Load_Simulation`, `Load_Program` -> `Program_Str`, the typed IR; tested in
   `test/Configuration/test_program_parser.py`: each validation error named with its file and line, on mutated copies of
-  the shipped files). Every YAML file goes through `Configuration.Core.Read_YAML` (duplicate keys rejected, only `true` /
-  `false` booleans, each string with its line).
+  the shipped files). Every YAML file goes through `Configuration.Core.Read_YAML`, the strict reader (references/yaml.md).
 - Keys Pascal_Snake_Case. Constants are UPPERCASE with their section's prefix (`T_`, `P_`, `L_`, `G_`, `PATH_`, `DO_`,
   `DI_`), segments `S<n>_<Name>`, jobs `J_<NAME>`; the contact groups and PCB locations stay lowercase (code constants).
-  No optional fields: `Reference: null`, `Offset: null`, `PCB_Hold: null` and `Contacts: []` are values, not omissions
-  (owner, 2026-10-24). Every declared constant is used.
-- Program lines are calls parsed with `ast`, never evaluated (design-decisions).
+  The fields that may be explicitly empty (references/yaml.md): `Reference: null`, `Offset: null`, `PCB_Hold: null`,
+  `Contacts: []` (owner, 2026-10-24). Every declared constant is used.
+- Program lines: the configuration mini-language (references/yaml.md), parsed with `ast` (design-decisions).
 - Not configured: what the model holds (joint limits, loader ranges, the lid's open stop) - read from the
   compiled model. `ON` / `OFF` / `Open` are text (the loader reads only `true` / `false` as booleans).
 - Single legal value, so a code constant: the number of suction cups (`Scene.CONST_CUP_N`), the PCB
@@ -175,8 +174,7 @@ returned list, printed by the script, exit code 1.
 - Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and write every line
   to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
   to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
-  `test/conftest.py`). `Example/Simulation/run_program.py` prints the report on stdout and its own lines on stderr,
-  so stdout is the report byte for byte.
+  `test/conftest.py`). `Example/Simulation/run_program.py` is a report script (references/python.md: report on stdout).
 - Module-level private helpers: `_Pascal_Snake_Case` (e.g. `Scene.Core._Apply_Look`), like test
   helpers (the generic skill leaves it *Unsettled*; decided 2026-10-24).
 - Stream protocols are not implemented in `src/` (no `write`/`flush` methods, which the naming rule would
@@ -185,11 +183,9 @@ returned list, printed by the script, exit code 1.
 
 ## Departures from the generic skill
 
-- A topic module's own `*_Str` structures live in that module (`Program_Check_Str` in `Program/Check.py`), not in the
-  domain's `Core.py`; a domain's shared constants live in its `Const.py` (design-decisions: the module layout).
-
 - The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
   says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure
   until the official monochrome JIC file (requested from JIC) replaces it (design-decisions: the brand).
-- `.claude/project-docs/FEATURES.md`: a fourth internal document, the feature tracker the owner asked
-  for; the generic skill defines three.
+- `Example/Program/compare_programs.py`'s figure keeps its own palette (the dataviz one) and one light theme, and does not
+  use `Report.Style` (owner: kept, 2026-10-27), although references/figures.md has every figure script use the one style
+  module. Aligning it with `Report.Style` is a possible later task.
