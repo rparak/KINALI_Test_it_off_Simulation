@@ -42,6 +42,7 @@ their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `
   `check_style.json`. Use it for every change.
 - `feature-manager` — how a feature, a behaviour change or a bug fix is made; `references/project.md`.
 - `project-optimize` — behaviour-preserving work; the outputs compared in `references/project.md`.
+- `mujoco-robot-cell` — the MuJoCo simulation method (scenario 3, a cell); `references/project.md`.
 - `readme-writer` — every README change; `references/project.md`.
 
 ## Development setup

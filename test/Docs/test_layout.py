@@ -49,7 +49,7 @@ CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEAT
 CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/references/project.md',
                      'project-style-rpx/references/project.md', 'project-style-rpx/references/check_style.json',
                      'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
-                     'readme-writer/references/check_readme.json'}
+                     'readme-writer/references/check_readme.json', 'mujoco-robot-cell/references/project.md'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its
 # modules uses a constant.
