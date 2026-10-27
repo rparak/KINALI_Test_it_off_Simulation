@@ -4,5 +4,12 @@
     {"src": "Media/KINALI_Black.svg", "reason": "the header's brand mark, not a figure (owner, 2026-10-24)"},
     {"src": "https://avatars.githubusercontent.com/rparak", "reason": "an author avatar in the Authors table, the owner's exact HTML (owner, 2026-10-26)"},
     {"src": "https://avatars.githubusercontent.com/LukasMoravansky", "reason": "an author avatar in the Authors table, the owner's exact HTML (owner, 2026-10-26)"}
-  ]
+  ],
+  "image_budgets": [
+    {"glob": "Media/Cycle_*.gif", "max_kb": 10240, "reason": "the cycle GIF previews: 960 px, 4 x speed, 15 fps, at most 10 MB each (SPEC §7.12)"},
+    {"glob": "Media/View_*.png", "max_kb": 1536, "reason": "the curated view renders, at most 1.5 MB each (SPEC §7.12)"},
+    {"glob": "Media/Collision_*.png", "max_kb": 1536, "reason": "the curated collision renders, at most 1.5 MB each (SPEC §7.12)"},
+    {"glob": "Media/Key_Points.png", "max_kb": 1536, "reason": "the key-points render, at most 1.5 MB (SPEC §7.12)"}
+  ],
+  "media_budget": {"max_mb": 30, "reason": "the owner's total, 2026-10-27; 23.1 MB measured"}
 }
