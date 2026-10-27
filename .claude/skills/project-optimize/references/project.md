@@ -57,6 +57,20 @@ Apple M2 Pro, 2026-10-25, three runs each (spread under 3 %):
 | test suite `-m "not slow"`, `-n 8` / serial | 43.8 s (one run, 2026-10-26) / about 2 min (503 tests; serial not re-measured) |
 | test suite, full, `-n 8` / serial | 5.0 min (301.7-303.2 s, three runs, 2026-10-26) / about 7.4 min (526 tests; serial not re-measured) |
 
+Open (optional, a later measurement; owner, 2026-10-27): the 15 slowest tests (`pytest --durations=15`) and the serial
+suites over three runs.
+
+## Check tiers
+
+Per commit and per accepted feature: `CLAUDE.md` > Branches and checks (commands and times).
+
+## Outputs with a tolerance
+
+The regenerated videos: the same frame count, duration and resolution, and every frame at least 40 dB PSNR against the
+previous render (measured at least 45.9 dB: a 1-level render difference changes libx264's rate control until the next keyframe;
+design-decisions: the media are encoded with Pillow and imageio-ffmpeg, commit `ef7767b`). Every other output, `Media/`'s PNGs and
+GIFs included, stays byte for byte; the charts' SVGs differ only in matplotlib's random clip and marker ids.
+
 ## Interpreter and tools
 
 - Project python: `.venv/bin/python` (Python 3.11); never a bare `python3` (miniforge on this

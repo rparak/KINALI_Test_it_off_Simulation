@@ -19,8 +19,6 @@ results and are NOT validated for driving the real cell."** Before any use on re
 through the real-cell validation procedure (to be defined, `KNOWN_ISSUES.md`), at reduced speed with the
 robot controller's own safety limits active. Formats stay controller-friendly (SPEC §17).
 
-Language: English in every file, report and commit; the owner's notes may be in Czech or Slovak.
-
 ## Always "large" (ask before building)
 
 - The verified physics (SPEC §3, mjcf.md): timestep, solver options, contact parameters, friction,
@@ -33,8 +31,8 @@ Language: English in every file, report and commit; the owner's notes may be in 
 ## Real data for reproducing a premise
 
 The two programs and their physics runs (`Example/Simulation/run_program.py`; their baselines and the kinematic golden in
-`test/<Domain>/data/`; the legacy planner in commit `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f`, the legacy cycle run in
-`7a8560c8c16806739a02da8e989c2a2f65d1e41d`), the fingerprint, the scene files. Walk the chain: the
+`test/<Domain>/data/`; the legacy planner and the legacy cycle run at their restore points, `CLAUDE.md` > Branches and
+checks), the fingerprint, the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
 each mark, the report line.
 
@@ -71,7 +69,6 @@ instead of excluding the pair; failing a run explicitly instead of clamping a va
 **Acceptance**
 
 - [ ] The §10.1 criteria are checked from the run's returned values, not from printed text.
-- [ ] A bound is never widened to let a change pass; a pin reports its numbers.
 
 **Simulation vs reality**
 
@@ -93,8 +90,8 @@ look at what changed.
 ## Commits
 
 - No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
-- Work directly on main, no feature branches (owner, 2026-10-24; `CLAUDE.md` > Branches): commit only after the usual
-  checks pass, push after each accepted feature, undo a failed experiment with `git revert` (never force-push or rewrite).
+- Work directly on main, no feature branches, and push after each accepted feature (owner, 2026-10-24; `CLAUDE.md` >
+  Branches and checks).
 - Never committed: `logger/`, `Data/Generated/` (the trajectories included; owner 2026-10-24), `.venv/`.
   The optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
   `Example/Program/optimize_program.py`; when an input changes, run it again and commit the result as its own change.
@@ -106,3 +103,7 @@ look at what changed.
 - A change to the cell, a criterion or a format updates the SPEC section that states it.
 - The tracker is `.claude/project-docs/FEATURES.md`.
 - README: the triggers are in `.claude/skills/readme-writer/references/project.md` > Triggers.
+
+## Handover
+
+A handover is pasted by the owner into a new session (owner, 2026-10-27); it is not stored in the repository.
