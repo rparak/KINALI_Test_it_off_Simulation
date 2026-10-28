@@ -12,9 +12,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
-- [~] F18 (Revision 1): the four Claude Code skills shipped in the repository, mujoco-robot-cell's project layer removed,
-      the skills' own MIT licence, the README section; `874d19e`…this commit, pushed on the owner's instruction
-      2026-10-28; the owner's acceptance pending.
 
 ## Done
 
@@ -37,3 +34,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F15 | The optimized take gated by `Loader.WaitDone(J_RETURN_Y)` (`J_RETURN` split), I9 and the gating rule; the F14 follow-ups (the MG06 swept zone, the named views and media, the figure style, the folders); accepted by the owner 2026-10-25 | `3d4418c`…`05556c4` |
 | F16 | The optimized insert gated by the robot's order: To_MG06's leg to the exit point `P_LOADER_WAIT` before `Loader.Start(J_INSERT)` (`Optimization.yaml Exit_Points`), I10, the gating rule symmetric, the robot speed-override table, the shared zones split into the jaw zone and the MG06 corridor; accepted by the owner 2026-10-26 | `3eed5ae`…`2d7cccd` |
 | F17 | Step 7: the full README from the owner's outline, its tests (`test/Docs/test_readme.py`, `test_citation.py`), `CITATION.cff`, the timeline in `Media/`, the summary chart without a title, CLAUDE.md's Development setup, the media's reproducibility; accepted by the owner 2026-10-26 | `004bb92`…`139ab5f` |
+| F18 | Revision 1: the four Claude Code skills shipped in the repository (project-style-rpx, feature-manager, project-optimize, readme-writer; from rp-claude-skills `ec7af02`), mujoco-robot-cell's project layer removed, the skills' own licence (`.claude/skills/LICENSE`, MIT, Roman Parak; option (b) confirmed), the README section; accepted by the owner 2026-10-28 | `874d19e`…`7ed0bb1` |
