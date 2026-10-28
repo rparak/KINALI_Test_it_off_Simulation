@@ -1515,7 +1515,8 @@ Pinned by the physics baselines (`test/Simulation/test_baselines.py`), which hol
 
 **Decision.** The repository ships four Claude Code skills in `.claude/skills/<skill>/` - `project-style-rpx`,
 `feature-manager`, `project-optimize`, `readme-writer` - each self-contained (`SKILL.md`, `references/`, and `assets/` or
-`scripts/` where it has them), public with the project (owner, 2026-10-28; Revision 1, F18). Source: the generic versions
+`scripts/` where it has them), public with the project (owner, 2026-10-28; Revision 1, F18). A fifth, `support-brief`,
+since F19 (its own entry below). Source: the generic versions
 of `rparak/rp-claude-skills` at `ec7af027e36d263740161451341fbe93e1a442ea`, read without changing that repository; this
 project's decisions from the former project layers (`references/project.md`) written into each `SKILL.md` where they
 replace a generic sentence, the rest kept in `references/project.md`, each rule in one place. Removed: the bootstrap mode
@@ -1544,9 +1545,41 @@ owner - the project would not be self-contained when public. A git submodule of 
 would ship all skills and need a private repository's access. Ship the skills' project copies under other names:
 not needed - the owner removed the personal copies of the four (a sparse checkout of `~/.claude/skills`).
 
-**Revisit if** a personal skill of one of the four names is installed again (it would take precedence; KNOWN_ISSUES), or
+**Revisit if** a personal skill of a shipped skill's name is installed again (it would take precedence; KNOWN_ISSUES), or
 an upstream change in `rp-claude-skills` should be taken over (a deliberate merge, the scripts compared byte for byte).
 
 Pinned by `test/Docs/test_layout.py` (`test_the_skill_folders_track_only_the_shipped_skills`), `test/Docs/test_skills.py`
 (the frontmatter names, the links, no path into a personal install), `test/Docs/test_readme.py`
+(`test_the_readme_names_the_shipped_skills`).
+
+## The support-brief skill writes the support-chat brief; its SKILL.md stays generic
+
+**Decision.** A fifth shipped skill, `.claude/skills/support-brief/`, creates (CREATE) or refreshes (REFRESH)
+`.claude/project-docs/SUPPORT_CHAT.md`, the brief the owner pastes as the first message into a new Claude chat that acts
+as the project's senior technical support (owner, 2026-10-28; Revision 2, F19). Its `SKILL.md` is the owner's procedure,
+generic: no project name, number or path but the default location, so it is copied into another project unchanged; this
+project's part is in its `references/project.md` (the location, the safety sentence the brief carries, the checks). It
+reports first and stops, unless the owner says "no review": then it writes, runs the checks and commits locally, never
+pushes (owner, 2026-10-28). The rule for when the brief is updated is written once, in
+feature-manager's project reference (> The support-chat brief); support-brief refers to it. The brief names the commit
+it was checked against (a commit cannot name its own hash). Covered by `.claude/skills/LICENSE`. `SUPPORT_CHAT.md` itself
+is the skill's first run, after the owner approves the skill; it is not the session handover (that is pasted, never
+stored; feature-manager > Handing over).
+
+**Why.** A new chat has no access to the repository; one brief, written from the repository's files and kept current in
+the same commits, lets it review and plan without guessing. A generic `SKILL.md` keeps the procedure reusable; the other
+four skills write this project's decisions into their `SKILL.md` (the skills ship in the repository), which this one
+does not need, since all its project content fits in `references/project.md`.
+
+**Alternatives.** The brief written by hand without a skill: rejected - nothing would say how to refresh it or check it
+against the repository. The maintenance rule in support-brief: rejected by the owner - the rule belongs to the change
+workflow, each rule in one place. A `SKILL.md` with the project written in, as the other four: not chosen - the owner
+wants it copyable unchanged.
+
+**Revisit if** the brief is moved, a second chat brief is wanted, or the generic `SKILL.md` needs a project decision
+(it goes to `references/project.md`).
+
+Pinned by `test/Docs/test_layout.py` (`test_the_skill_folders_track_only_the_shipped_skills`), `test/Docs/test_skills.py`
+(`test_each_skill_names_its_folder`, `test_the_support_brief_skill_is_generic`,
+`test_the_brief_maintenance_rule_is_in_feature_manager_only`), `test/Docs/test_readme.py`
 (`test_the_readme_names_the_shipped_skills`).

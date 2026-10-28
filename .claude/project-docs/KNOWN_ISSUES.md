@@ -260,15 +260,16 @@ from JIC.
 ## A personal skill of the same name would hide a shipped skill
 
 Claude Code gives a personal skill (`~/.claude/skills/<name>/`) precedence over a project skill of the same name. The
-four shipped skills keep their names (`project-style-rpx`, `feature-manager`, `project-optimize`, `readme-writer`), so a
+five shipped skills keep their names (`project-style-rpx`, `feature-manager`, `project-optimize`, `readme-writer`,
+`support-brief`), so a
 machine with a personal copy of one uses that copy, not the repository's (design-decisions: the skills ship in the
-repository). On the owner's machine the four personal copies are removed (a sparse checkout of `~/.claude/skills`);
-verified 2026-10-28 in the session's skill list.
+repository). On the owner's machine the four personal copies are removed (a sparse checkout of `~/.claude/skills`) and
+no personal `support-brief` exists; verified 2026-10-28 in the session's skill list.
 
 - **Impact:** a contributor with a personal copy follows its rules, not this project's decisions; the checkers' commands
   in `CLAUDE.md` still run the repository's scripts.
 - **Pinned by:** nothing in the repository (a personal install is outside it).
-- **What would close it:** none of the four installed personally; or Claude Code letting a project skill take precedence.
+- **What would close it:** none of the five installed personally; or Claude Code letting a project skill take precedence.
 
 ## The shipped skills are no longer synced with rp-claude-skills
 

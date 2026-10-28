@@ -382,7 +382,7 @@ pytest.ini                import mode, the slow marker, testpaths: test/ and the
 .gitignore                .venv, caches, .DS_Store, logger/, Data/Generated/
 .claude/settings.json     commit attribution off
 .claude/project-docs/     SPEC.md, KNOWN_ISSUES.md, design-decisions.md, FEATURES.md (the tracker)
-.claude/skills/<skill>/   the four shipped Claude Code skills (SKILL.md, references/, assets/, scripts/; §12);
+.claude/skills/<skill>/   the five shipped Claude Code skills (SKILL.md, references/, assets/, scripts/; §12);
                           .claude/skills/LICENSE (MIT, Copyright (c) 2026 Roman Parak)
 models/scene.xml          the finished scene (workstation, MG06, loader, PCB), from Blender; never regenerated
 models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/Scene/export_cell_scene.py
@@ -1026,11 +1026,13 @@ by `test/Install/test_install.py`.
 
 ## 12. Skills
 
-The repository ships its four Claude Code skills in `.claude/skills/` (owner, 2026-10-28; design-decisions: the skills
+The repository ships its five Claude Code skills in `.claude/skills/` (owner, 2026-10-28; design-decisions: the skills
 ship in the repository): `project-style-rpx` (conventions, the style checker), `feature-manager` (the change procedure),
-`project-optimize` (behaviour-preserving work), `readme-writer` (the README, its checker and renderer). Each is
-self-contained: `SKILL.md` with the generic rules and this project's decisions written in, `references/project.md` with
-what is only about this project. Source: `rparak/rp-claude-skills` at `ec7af02`; maintained here from then on. Licence:
+`project-optimize` (behaviour-preserving work), `readme-writer` (the README, its checker and renderer), `support-brief`
+(the support-chat brief, `.claude/project-docs/SUPPORT_CHAT.md`; F19). Each is self-contained: `SKILL.md` with the generic
+rules and this project's decisions written in, `references/project.md` with what is only about this project; the
+support-brief `SKILL.md` alone stays generic, its project part only in `references/project.md` (design-decisions: the
+support-brief skill). Source of the first four: `rparak/rp-claude-skills` at `ec7af02`; maintained here from then on. Licence:
 `.claude/skills/LICENSE`, MIT, Copyright (c) 2026 Roman Parak. Their own tests run in the suite (`pytest.ini`
 `testpaths`); `test/Docs/test_layout.py` pins their files and `test/Docs/test_skills.py` that they are self-contained. The
 README names them (readme-writer's project reference). The list with their references: `CLAUDE.md` > Skills.
