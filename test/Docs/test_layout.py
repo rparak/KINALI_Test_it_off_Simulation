@@ -61,7 +61,8 @@ CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/ref
                      'readme-writer/references/figures.md', 'readme-writer/references/checklist.md',
                      'readme-writer/scripts/check_readme.py', 'readme-writer/scripts/render_readme.py',
                      'readme-writer/scripts/test_check_readme.py', 'readme-writer/scripts/test_render_readme.py',
-                     'readme-writer/references/check_readme.json'}
+                     'readme-writer/references/check_readme.json', 'support-brief/SKILL.md',
+                     'support-brief/references/project.md'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its
 # modules uses a constant.

@@ -560,7 +560,7 @@ The repository ships the [Claude Code skills](https://code.claude.com/docs/en/sk
 `.claude/skills/`. Claude Code loads them when it is started in this folder.
 
 <details>
-<summary>The four skills, their tools and how to use them</summary>
+<summary>The five skills, their tools and how to use them</summary>
 
 | Skill | What it is for | Its tools |
 |---|---|---|
@@ -568,6 +568,7 @@ The repository ships the [Claude Code skills](https://code.claude.com/docs/en/sk
 | `feature-manager` | how a feature, a behaviour change or a bug fix is made: requirements, the premise checked, a report before building, small commits | - |
 | `project-optimize` | behaviour-preserving work (cleanup, speed, complexity, reliability), proven by byte-identical outputs | - |
 | `readme-writer` | every change to this README: the source of each number, the figures, the statuses | `check_readme.py`, `render_readme.py` |
+| `support-brief` | the brief pasted into a new Claude chat that acts as the project's technical support, created or refreshed from the repository | - |
 
 Claude Code picks a skill by its description, or you name it, for example `/feature-manager <your request>`. The checkers
 run on their own: 0 issues and 0 errors are expected, and `check_readme.py` warns about the README's length.

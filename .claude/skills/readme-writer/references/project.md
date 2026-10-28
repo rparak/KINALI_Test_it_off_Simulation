@@ -75,7 +75,7 @@ alt attributes of the owner's Authors HTML lengthened).
 - Never mentioned in the README: `.claude/project-docs/`, `CLAUDE.md`'s content, a GUI, a "Phase 2"
   (`test/Docs/test_readme.py`). The limitations are summarized in the README itself.
 - The README names the shipped skills (owner, 2026-10-28): the section *Claude Code skills* after Repository layout, one
-  visible sentence, the table of the four skills with their tools and the usage collapsed; `.claude/skills/` is the only
+  visible sentence, the table of the shipped skills with their tools and the usage collapsed; `.claude/skills/` is the only
   `.claude` path it names; the skills' licence in License (`test/Docs/test_readme.py`).
 - The title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo" (design-decisions: the name).
 - The logo header at the top: JIC Smart Factory and KINALI (Test-it-off by name only, no logo), each a `<picture>` with

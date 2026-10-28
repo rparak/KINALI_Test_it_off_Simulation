@@ -76,3 +76,10 @@ report and the fingerprint.
 
 Open the cell in the viewer (`Example/Render/show_cell.py`) or render an image (`Example/Render/render_image.py`) and
 look at what changed.
+
+## The support-chat brief
+
+`.claude/project-docs/SUPPORT_CHAT.md` is the brief the owner pastes into a new Claude chat that acts as the project's
+senior technical support (owner, 2026-10-28; created by the support-brief skill's first run). Every accepted change that
+alters anything stated in it updates it in the same commit, with the date and the commit in its section 9 (the commit it
+was checked against, the support-brief skill > section 2). How: the support-brief skill, REFRESH.

@@ -40,7 +40,7 @@ Description:
 """
 # The shipped skills, each a folder .claude/skills/<name>/ with a SKILL.md.
 #   Unit [Tuple<string>]
-CONST_SKILLS = ('project-style-rpx', 'feature-manager', 'project-optimize', 'readme-writer')
+CONST_SKILLS = ('project-style-rpx', 'feature-manager', 'project-optimize', 'readme-writer', 'support-brief')
 # A description longer than this is cut by Claude Code's skill list.
 #   Unit [int]
 CONST_DESCRIPTION_MAX = 1024
@@ -48,6 +48,15 @@ CONST_DESCRIPTION_MAX = 1024
 #   Unit [List<string>]
 CONST_FORBIDDEN = [r'~/\.claude/skills/[\w-]+/\w', r'bootstrap\.md', r'project_reference_template', r'README_template',
                    r'check_style_template']
+# The generic skill: its SKILL.md is copied into another project unchanged (owner, 2026-10-28).
+#   Unit [string]
+CONST_GENERIC_SKILL = 'support-brief'
+# Never in the generic SKILL.md: this project's names (its decisions are in its references/project.md).
+#   Unit [List<string>]
+CONST_PROJECT_TERMS = [r'Test-it-off', r'KINALI', r'MuJoCo', r'AUBO', r'MG06', r'\bJIC\b', r'Roman Parak', r'SPEC §']
+# The only .claude/ paths the generic SKILL.md names: the folder and the brief's default location.
+#   Unit [Set<string>]
+CONST_GENERIC_PATHS = {'.claude/', '.claude/project-docs/SUPPORT_CHAT.md'}
 
 
 def _Skill_Files(root):
@@ -59,8 +68,8 @@ def _Skill_Files(root):
 def test_each_skill_names_its_folder(root):
     """
     Description:
-        Each shipped SKILL.md opens with a frontmatter whose name is its folder and whose description is set and short
-        enough for the skill list; Claude Code finds a skill by it.
+        Each shipped SKILL.md opens with a frontmatter whose name is its folder and whose description is set, short
+        enough for the skill list and free of angle brackets; Claude Code finds a skill by it.
     """
 
     for name in CONST_SKILLS:
@@ -70,6 +79,7 @@ def test_each_skill_names_its_folder(root):
         meta = yaml.safe_load(text.split('---\n')[1])
         assert meta['name'] == name
         assert 0 < len(meta['description']) <= CONST_DESCRIPTION_MAX, name
+        assert not re.search(r'[<>]', meta['description']), name
 
 
 def test_every_relative_link_in_the_skills_resolves(root):
@@ -103,3 +113,32 @@ def test_no_skill_file_points_outside_the_repository(root):
             text = handle.read()
         for pattern in CONST_FORBIDDEN:
             assert not re.search(pattern, text), (path, pattern)
+
+
+def test_the_support_brief_skill_is_generic(root):
+    """
+    Description:
+        The support-brief SKILL.md names no project (its decisions are in its references/project.md) and no .claude/
+        path but the brief's default location, so it can be copied into another project unchanged.
+    """
+
+    with open(os.path.join(root, '.claude', 'skills', CONST_GENERIC_SKILL, 'SKILL.md'), encoding='utf-8') as handle:
+        text = handle.read()
+    for pattern in CONST_PROJECT_TERMS:
+        assert not re.search(pattern, text, flags=re.I), pattern
+    assert set(re.findall(r'\.claude/[\w./-]*', text)) <= CONST_GENERIC_PATHS
+
+
+def test_the_brief_maintenance_rule_is_in_feature_manager_only(root):
+    """
+    Description:
+        The rule that an accepted change updates SUPPORT_CHAT.md in the same commit is written once, in feature-manager's
+        project reference, which points to support-brief for how; the support-brief SKILL.md refers to the rule and does
+        not restate it.
+    """
+
+    with open(os.path.join(root, '.claude', 'skills', 'feature-manager', 'references', 'project.md'), encoding='utf-8') as handle:
+        rule = handle.read().split('## The support-chat brief', 1)[1].split('\n## ', 1)[0]
+    assert 'SUPPORT_CHAT.md' in rule and 'same commit' in rule and 'support-brief' in rule
+    with open(os.path.join(root, '.claude', 'skills', CONST_GENERIC_SKILL, 'SKILL.md'), encoding='utf-8') as handle:
+        assert 'same commit' not in handle.read()
