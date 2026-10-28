@@ -1,11 +1,9 @@
 # readme-writer: project reference for KINALI_Test_it_off_Simulation
 
-The README decisions of this repository. The generic skill is personal (`~/.claude/skills/`); this file overrides it where
-they differ. No `SKILL.md` is tracked here.
+The README decisions of this repository (`SKILL.md` holds the procedure and the commands).
 
 **Status:** the full README (brief §7 step 7), written 2026-10-26 from the owner's outline (the owner gave the sections, their
-content and the Authors HTML in full: that outline stood in for the bootstrap proposal); accepted by the owner 2026-10-26.
-Maintenance mode from here.
+content and the Authors HTML in full); accepted by the owner 2026-10-26.
 
 ## Readers
 

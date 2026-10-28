@@ -56,7 +56,11 @@ CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/ref
                      'project-style-rpx/assets/header.txt', 'project-style-rpx/assets/module_template.py',
                      'project-style-rpx/assets/script_template.py', 'project-style-rpx/assets/config_template.yaml',
                      'project-style-rpx/scripts/check_style.py', 'project-style-rpx/scripts/test_check_style.py',
-                     'readme-writer/references/project.md',
+                     'readme-writer/SKILL.md', 'readme-writer/references/project.md',
+                     'readme-writer/references/structure.md', 'readme-writer/references/style.md',
+                     'readme-writer/references/figures.md', 'readme-writer/references/checklist.md',
+                     'readme-writer/scripts/check_readme.py', 'readme-writer/scripts/render_readme.py',
+                     'readme-writer/scripts/test_check_readme.py', 'readme-writer/scripts/test_render_readme.py',
                      'readme-writer/references/check_readme.json'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its
