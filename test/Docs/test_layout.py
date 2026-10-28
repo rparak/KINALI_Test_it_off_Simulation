@@ -43,7 +43,7 @@ CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.git
                       'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration'}
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
-CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')
+CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md', 'SUPPORT_CHAT.md')
 # The files of the skills the repository ships (owner, 2026-10-28): the only files tracked under .claude/skills/.
 #   Unit [Set<string>]
 CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/references/project.md',
