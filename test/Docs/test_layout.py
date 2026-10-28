@@ -46,7 +46,8 @@ CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.git
 CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')
 # The files of the skills the repository ships (owner, 2026-10-28): the only files tracked under .claude/skills/.
 #   Unit [Set<string>]
-CONST_SKILL_FILES = {'LICENSE', 'feature-manager/references/project.md', 'project-optimize/references/project.md',
+CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/references/project.md',
+                     'feature-manager/assets/handover_template.md', 'project-optimize/references/project.md',
                      'project-style-rpx/SKILL.md', 'project-style-rpx/references/project.md',
                      'project-style-rpx/references/check_style.json', 'project-style-rpx/references/mjcf.md',
                      'project-style-rpx/references/python.md', 'project-style-rpx/references/structure.md',

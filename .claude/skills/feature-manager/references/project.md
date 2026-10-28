@@ -1,23 +1,13 @@
 # feature-manager: project reference for KINALI_Test_it_off_Simulation
 
-This project's part of the change procedure. The generic skill is personal (`~/.claude/skills/`);
-this file overrides it where they differ. No `SKILL.md` is tracked here (a personal skill wins over a
-project skill of the same name). Style rules come from project-style-rpx and its project reference
-(`.claude/skills/project-style-rpx/references/project.md`, `mjcf.md`).
+This project's part of the change procedure (`SKILL.md` holds the procedure, the safety sentence and the commit rules).
+Style rules come from project-style-rpx (`.claude/skills/project-style-rpx/`, its `references/project.md` and `mjcf.md`).
 
 ## What the output is
 
 Test-it-off Simulation, a MuJoCo simulation of KINALI's Test-it-off cell (SPEC §1): the compiled cell model, the cell
 program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`) and the optimized program, their trajectory files and check
 reports, and the programs' physics runs with their reports and acceptance verdicts. The owner and whoever writes the robot program act on it.
-
-## Physical system and safety
-
-Today the output drives nothing real; a transfer to the real AUBO i5 is planned (SPEC §17,
-design-decisions). Every result carries: **"Outputs (keypoints, programs, trajectories) are simulation
-results and are NOT validated for driving the real cell."** Before any use on real hardware they go
-through the real-cell validation procedure (to be defined, `KNOWN_ISSUES.md`), at reduced speed with the
-robot controller's own safety limits active. Formats stay controller-friendly (SPEC §17).
 
 ## Always "large" (ask before building)
 
@@ -86,24 +76,3 @@ report and the fingerprint.
 
 Open the cell in the viewer (`Example/Render/show_cell.py`) or render an image (`Example/Render/render_image.py`) and
 look at what changed.
-
-## Commits
-
-- No attribution trailer (`.claude/settings.json`, owner 2026-10-24).
-- Work directly on main, no feature branches, and push after each accepted feature (owner, 2026-10-24; `CLAUDE.md` >
-  Branches and checks).
-- Never committed: `logger/`, `Data/Generated/` (the trajectories included; owner 2026-10-24), `.venv/`.
-  The optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed, with its input hashes: written only by
-  `Example/Program/optimize_program.py`; when an input changes, run it again and commit the result as its own change.
-- Only as its own deliberate change, with its report: a regenerated `models/cell_scene.xml` whose
-  source changed, a re-captured physics baseline, golden data or fingerprint.
-
-## Docs
-
-- A change to the cell, a criterion or a format updates the SPEC section that states it.
-- The tracker is `.claude/project-docs/FEATURES.md`.
-- README: the triggers are in `.claude/skills/readme-writer/references/project.md` > Triggers.
-
-## Handover
-
-A handover is pasted by the owner into a new session (owner, 2026-10-27); it is not stored in the repository.
