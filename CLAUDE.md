@@ -5,7 +5,7 @@ Repository `KINALI_Test_it_off_Simulation`; project name **Test-it-off Simulatio
 MuJoCo simulation of KINALI's Test-it-off PCBA test cell (AUBO i5 + VGC10/fork, MG06 tester, two-axis
 loader, crates). The internal docs are in `.claude/project-docs/`: the specification `SPEC.md`, the open
 limitations `KNOWN_ISSUES.md`, the reasons behind choices `design-decisions.md`, and the feature tracker
-`FEATURES.md`. `README.md` is the public page; it does not mention the internal docs or the skills.
+`FEATURES.md`. `README.md` is the public page; it does not mention the internal docs (it names the shipped skills).
 
 Communicate with the owner in English only: reports, questions, summaries, commit messages and every
 file. The owner's notes may be in Czech or Slovak; answer in English anyway. Commits carry no attribution
@@ -35,22 +35,26 @@ A change on the physics or build path is also proven by its outputs, byte for by
 
 ## Skills
 
-The skills are personal (`~/.claude/skills/`, `rparak/rp-claude-skills`); this repository tracks only
-their project layer, `.claude/skills/<skill>/references/` (never a `SKILL.md`; `.gitignore` excludes one).
+The repository ships its four Claude Code skills in `.claude/skills/<skill>/` (`SKILL.md`, `references/`, and
+`assets/` or `scripts/` where a skill has them; owner, 2026-10-28). Each is self-contained: the generic rules in
+`SKILL.md`, this project's decisions in `references/project.md`. Licence: `.claude/skills/LICENSE` (MIT, Roman Parak).
 
 - `project-style-rpx` — code, shell, YAML and Markdown conventions; `references/project.md`, `mjcf.md`,
-  `check_style.json`. Use it for every change.
+  `check_style.json`; the style checker. Use it for every change.
 - `feature-manager` — how a feature, a behaviour change or a bug fix is made; `references/project.md`.
 - `project-optimize` — behaviour-preserving work; the outputs compared in `references/project.md`.
-- `readme-writer` — every README change; `references/project.md`.
+- `readme-writer` — every README change; `references/project.md`, `check_readme.json`; the README checker and renderer.
+
+A personal skill of the same name (`~/.claude/skills/<skill>/`) takes precedence over the project's copy, so none of the
+four is installed personally on this machine (`KNOWN_ISSUES.md`).
 
 ## Development setup
 
-The agent conventions come from the personal skills repository `rparak/rp-claude-skills` (private), installed at
-`~/.claude/skills/`. This repository holds only their project layer (`.claude/skills/*/references/`), never a `SKILL.md`.
-Without those skills the simulation, the tests and the `Example/` scripts still work: nothing in `src/`, `test/` or
-`Example/` reads `~/.claude/` (verified 2026-10-26: the fast tests pass with `HOME` set to an empty directory). Only the style
-checker (`check_style.py`) and the README checker (`check_readme.py`) need the skills.
+Everything the agent conventions need is in the repository: the skills, their checkers and their tests
+(`.claude/skills/`, Skills above). No personal skill is needed; nothing in `src/`, `test/`, `Example/` or `.claude/skills/`
+reads `~/.claude/` (verified 2026-10-26 for `src/`, `test/` and `Example/`: the fast tests pass with `HOME` set to an empty
+directory). The skills came from
+`rparak/rp-claude-skills` at `ec7af02` and are maintained here from then on (design-decisions: the skills in the repository).
 
 ## Commands
 
@@ -60,7 +64,10 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 ./install.sh                                     # .venv (Python 3.11) + requirements.txt; --recreate, --detect-only
 .venv/bin/python -m pytest -n 8 -m "not slow"    # per commit, about 45 s (serially, -n 0: about 2 min)
 .venv/bin/python -m pytest -n 8                  # per accepted feature, about 5 min (serially: about 7.5 min)
-.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
+.venv/bin/python .claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
+.venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md   # 0 errors expected (1 warning: the length)
+/opt/homebrew/bin/python3.11 -m venv "$SCRATCH/gfm" && "$SCRATCH/gfm/bin/pip" install -q cmarkgfm==2025.10.22   # throwaway env, never .venv
+"$SCRATCH/gfm/bin/python" .claude/skills/readme-writer/scripts/render_readme.py README.md --out "$SCRATCH/readme.html"   # 0 leftovers
 .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~19 s
 .venv/bin/python Example/Simulation/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines (in parallel); exit 0/1/2; ~21 s; --out ~1 min
 .venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--time T] [--watchdog S]   # physics in the viewer, real time
