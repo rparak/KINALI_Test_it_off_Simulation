@@ -8,8 +8,3 @@ MUJOCO_LOG.TXT
 # Logs, and generated artefacts (design-decisions), created by install.sh and the scripts
 logger/
 Data/Generated/
-
-# The personal skills live in ~/.claude/skills/; this repository keeps only their project layer
-# (.claude/skills/<skill>/references/). A SKILL.md here would be ignored in favour of the personal
-# skill and drift, so it is never tracked.
-.claude/skills/**/SKILL.md

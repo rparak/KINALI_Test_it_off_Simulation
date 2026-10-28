@@ -44,9 +44,9 @@ CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.git
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
 CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md')
-# The project layer of the personal skills: the only files tracked under .claude/skills/.
+# The files of the skills the repository ships (owner, 2026-10-28): the only files tracked under .claude/skills/.
 #   Unit [Set<string>]
-CONST_SKILL_FILES = {'feature-manager/references/project.md', 'project-optimize/references/project.md',
+CONST_SKILL_FILES = {'LICENSE', 'feature-manager/references/project.md', 'project-optimize/references/project.md',
                      'project-style-rpx/references/project.md', 'project-style-rpx/references/check_style.json',
                      'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
                      'readme-writer/references/check_readme.json'}
@@ -87,11 +87,10 @@ def test_the_project_docs_are_tracked(root):
         assert '.claude/project-docs/' + name in tracked, name
 
 
-def test_the_skill_folders_track_only_the_project_references(root):
+def test_the_skill_folders_track_only_the_shipped_skills(root):
     """
     Description:
-        Under .claude/skills/ git tracks exactly the project references: a SKILL.md there would be ignored
-        in favour of the personal skill of the same name and drift unseen.
+        Under .claude/skills/ git tracks exactly the files of the shipped skills and their licence, nothing else.
     """
 
     prefix = '.claude/skills/'
