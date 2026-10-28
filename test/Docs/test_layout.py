@@ -47,8 +47,15 @@ CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEAT
 # The files of the skills the repository ships (owner, 2026-10-28): the only files tracked under .claude/skills/.
 #   Unit [Set<string>]
 CONST_SKILL_FILES = {'LICENSE', 'feature-manager/references/project.md', 'project-optimize/references/project.md',
-                     'project-style-rpx/references/project.md', 'project-style-rpx/references/check_style.json',
-                     'project-style-rpx/references/mjcf.md', 'readme-writer/references/project.md',
+                     'project-style-rpx/SKILL.md', 'project-style-rpx/references/project.md',
+                     'project-style-rpx/references/check_style.json', 'project-style-rpx/references/mjcf.md',
+                     'project-style-rpx/references/python.md', 'project-style-rpx/references/structure.md',
+                     'project-style-rpx/references/yaml.md', 'project-style-rpx/references/shell.md',
+                     'project-style-rpx/references/markdown.md', 'project-style-rpx/references/figures.md',
+                     'project-style-rpx/assets/header.txt', 'project-style-rpx/assets/module_template.py',
+                     'project-style-rpx/assets/script_template.py', 'project-style-rpx/assets/config_template.yaml',
+                     'project-style-rpx/scripts/check_style.py', 'project-style-rpx/scripts/test_check_style.py',
+                     'readme-writer/references/project.md',
                      'readme-writer/references/check_readme.json'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its

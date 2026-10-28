@@ -1,16 +1,14 @@
 # project-style-rpx: project reference for KINALI_Test_it_off_Simulation
 
-The conventions of this repository that the generic skill leaves to the project, as
-`.claude/project-docs/SPEC.md` decides them. The generic skill is personal (`~/.claude/skills/`,
-`rparak/rp-claude-skills`); its checker `check_style.py` is part of it. This file overrides the
-generic skill where they differ. The repository holds no `SKILL.md`: a personal skill wins over a
-project skill of the same name, so a copy would be ignored and drift (`.gitignore` excludes one). ✅ = enforced (checker, test); 📄 = documentation only.
+The conventions this repository decides for itself, as `.claude/project-docs/SPEC.md` states them; the rules for any
+project in the RP style are in `SKILL.md` and the other references beside this file. ✅ = enforced (checker, test);
+📄 = documentation only.
 
 Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, what is never changed).
 
-Brand skill: **jic-sf-ui-style** (JIC Smart Factory) for the JIC Smart Factory logo in the README header - its source
-file (`Media/Original/jic-smart-factory.svg`, byte-identical to the skill's asset) and its logo rules, with one departure
-(below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its figures follow the generic default look
+Brand: the JIC Smart Factory logo in the README header comes from **jic-sf-ui-style** (a separate skill, not part of this
+repository) - its source file (`Media/Original/jic-smart-factory.svg`, byte-identical to that skill's asset) and its logo
+rules, with one departure (below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its figures follow the generic default look
 (references/figures.md).
 
 **Figure style 📄** (owner, 2026-10-25; design-decisions: the figure style): the generic default look (references/figures.md)
@@ -27,14 +25,15 @@ the media are encoded with Pillow and imageio-ffmpeg), and the `svg.hashsalt` fi
 
 ## Header and checker
 
-- Holder: **JIC Smart Factory** - `Copyright (c) 2026 JIC Smart Factory` in `LICENSE` and every header (as in
-  the template UR_PathGen_SF_1); the `Author   :` line names the author, **Roman Parak**. The checker enforces
-  the copyright line (`check_style.json` `holder`). Vendored licences keep their holders
-  (`models/aubo_i5/LICENSE_Manipulator-Mujoco`). The `#`-comment header form. `File Name:` examples:
-  `../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_program.py`, `../test/Scene/test_core.py`.
+- Holder: **JIC Smart Factory** in `LICENSE` and every header (as in the template UR_PathGen_SF_1; the header itself:
+  `SKILL.md` §3). The checker enforces the copyright line (`check_style.json` `holder`). Vendored licences keep their
+  holders (`models/aubo_i5/LICENSE_Manipulator-Mujoco`). The `#`-comment header form.
+- The skills in `.claude/skills/` carry their own licence, `.claude/skills/LICENSE` (MIT, Roman Parak; owner, 2026-10-28).
 - `check_style.json` (this folder): class roots `src`, `Example`; test root `test`; check roots `src`,
   `Example`, `test`; no exclusions.
-- Command: `.venv/bin/python ~/.claude/skills/project-style-rpx/scripts/check_style.py src Example test`.
+- The checker and its tests are kept byte-identical to their source, rp-claude-skills `ec7af02` (owner, 2026-10-28). Known,
+  accepted upstream text: without `check_style.json` the checker says to run the skill "in bootstrap mode", a mode these
+  in-repository skills do not have; the file is committed, so the message is not reached.
 
 ## Layout and layers (SPEC §6)
 
@@ -175,16 +174,14 @@ returned list, printed by the script, exit code 1.
   to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
   to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
   `test/conftest.py`). `Example/Simulation/run_program.py` is a report script (references/python.md: report on stdout).
-- Module-level private helpers: `_Pascal_Snake_Case` (e.g. `Scene.Core._Apply_Look`), like test
-  helpers (the generic skill leaves it *Unsettled*; decided 2026-10-24).
 - Stream protocols are not implemented in `src/` (no `write`/`flush` methods, which the naming rule would
   refuse); a script prints what `Script_Log_Cls.Line` returns instead.
 - The verified physics values are never changed in a style or structure change (SPEC §3, mjcf.md).
 
-## Departures from the generic skill
+## Departures from the generic rules
 
 - The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
-  says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure
+  (not part of this repository) says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure
   until the official monochrome JIC file (requested from JIC) replaces it (design-decisions: the brand).
 - `Example/Program/compare_programs.py`'s figure keeps its own palette (the dataviz one) and one light theme, and does not
   use `Report.Style` (owner: kept, 2026-10-27), although references/figures.md has every figure script use the one style
