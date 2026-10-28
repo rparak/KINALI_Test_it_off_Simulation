@@ -42,6 +42,25 @@ these are compared on the real AUBO i5 controller, and this entry is removed whe
   The simulation itself is not affected: FK of the joints is checked against `Pose` with this project's convention.
 - **What would close it:** the four comparisons above, recorded in SPEC §8 (the convention, or a conversion) and §4.2.
 
+## The real cell's operating mode and its risk assessment are open
+
+Whether the real cell runs fenced or in collaborative operation is not decided (owner, 2026-10-28). The simulation assumes
+no fence and models no human in the cell, so it says nothing about collaborative safety; no risk assessment exists.
+
+- **Impact:** no simulation result supports a claim about the safety of people near the cell; if the cell is collaborative,
+  the fork's contact forces and the robot's speeds near people are unassessed.
+- **What would close it:** the operating mode decided (fenced or collaborative) and the risk assessment done; if
+  collaborative: the human-contact force and pressure limits, speed and separation monitoring, and whether the AUBO
+  controller's safety functions cover them.
+
+## Publishing: KINALI's approval pending
+
+The repository is private. Publishing it needs KINALI's approval, which is pending; the repository stays private until the
+owner decides, and only the owner switches its visibility (owner, 2026-10-28).
+
+- **Impact:** the README's links to the v1.0 release assets work only for those with access; nothing may be made public.
+- **What would close it:** KINALI's approval and the owner's decision.
+
 ## MuJoCo warns about an integrator conflict when the robot is attached
 
 Every build of the cell makes MuJoCo log, print on stderr and raise as a Python UserWarning:
