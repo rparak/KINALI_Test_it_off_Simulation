@@ -12,6 +12,9 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
+- [~] F18 (Revision 1): the four Claude Code skills shipped in the repository, mujoco-robot-cell's project layer removed,
+      the skills' own MIT licence, the README section; `874d19e`…this commit, pushed on the owner's instruction
+      2026-10-28; the owner's acceptance pending.
 
 ## Done
 

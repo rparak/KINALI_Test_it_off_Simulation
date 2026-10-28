@@ -52,8 +52,8 @@ four is installed personally on this machine (`KNOWN_ISSUES.md`).
 
 Everything the agent conventions need is in the repository: the skills, their checkers and their tests
 (`.claude/skills/`, Skills above). No personal skill is needed; nothing in `src/`, `test/`, `Example/` or `.claude/skills/`
-reads `~/.claude/` (verified 2026-10-26 for `src/`, `test/` and `Example/`: the fast tests pass with `HOME` set to an empty
-directory). The skills came from
+reads `~/.claude/` (verified 2026-10-28: a fresh clone with `HOME` set to an empty directory installs and passes the
+per-commit tier, the full suite and both checkers). The skills came from
 `rparak/rp-claude-skills` at `ec7af02` and are maintained here from then on (design-decisions: the skills in the repository).
 
 ## Commands

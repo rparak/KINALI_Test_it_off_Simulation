@@ -378,11 +378,12 @@ LICENSE                   MIT, Copyright (c) 2026 JIC Smart Factory (headers: Au
 CITATION.cff              the citation metadata, CFF 1.2.0 (root exception; owner, 2026-10-26)
 install.sh                macOS (verified) + Ubuntu (unverified), OS detection, Python 3.11
 requirements.txt          pinned
-pytest.ini                import mode and the slow marker (root exception)
-.gitignore                .venv, caches, .DS_Store, logger/, Data/Generated/, any SKILL.md under .claude/skills/
+pytest.ini                import mode, the slow marker, testpaths: test/ and the skills' scripts (root exception)
+.gitignore                .venv, caches, .DS_Store, logger/, Data/Generated/
 .claude/settings.json     commit attribution off
 .claude/project-docs/     SPEC.md, KNOWN_ISSUES.md, design-decisions.md, FEATURES.md (the tracker)
-.claude/skills/<skill>/references/   the project layer of each personal skill (no SKILL.md tracked)
+.claude/skills/<skill>/   the four shipped Claude Code skills (SKILL.md, references/, assets/, scripts/; §12);
+                          .claude/skills/LICENSE (MIT, Copyright (c) 2026 Roman Parak)
 models/scene.xml          the finished scene (workstation, MG06, loader, PCB), from Blender; never regenerated
 models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/Scene/export_cell_scene.py
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
@@ -1025,7 +1026,14 @@ by `test/Install/test_install.py`.
 
 ## 12. Skills
 
-The personal skills and their project layers: `CLAUDE.md` > Skills.
+The repository ships its four Claude Code skills in `.claude/skills/` (owner, 2026-10-28; design-decisions: the skills
+ship in the repository): `project-style-rpx` (conventions, the style checker), `feature-manager` (the change procedure),
+`project-optimize` (behaviour-preserving work), `readme-writer` (the README, its checker and renderer). Each is
+self-contained: `SKILL.md` with the generic rules and this project's decisions written in, `references/project.md` with
+what is only about this project. Source: `rparak/rp-claude-skills` at `ec7af02`; maintained here from then on. Licence:
+`.claude/skills/LICENSE`, MIT, Copyright (c) 2026 Roman Parak. Their own tests run in the suite (`pytest.ini`
+`testpaths`); `test/Docs/test_layout.py` pins their files and `test/Docs/test_skills.py` that they are self-contained. The
+README names them (readme-writer's project reference). The list with their references: `CLAUDE.md` > Skills.
 
 ## 13. Risks and how they are handled
 

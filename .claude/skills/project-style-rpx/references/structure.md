@@ -19,7 +19,7 @@ Media/                           the README images, written by one script (readm
 <generated folder>/<Kind>/       generated output by kind (reports, images, ...), git-ignored (below)
 <log folder>/                    run logs, git-ignored
 .claude/project-docs/            SPEC.md, KNOWN_ISSUES.md, design-decisions.md (FEATURES.md if the project keeps one)
-.claude/skills/<skill>/references/   the project layer of each skill (below)
+.claude/skills/<skill>/          the shipped skills: SKILL.md, references/, assets/, scripts/ (below)
 install.sh, requirements.txt     the installer and the pinned requirements (references/shell.md)
 README.md, LICENSE, CLAUDE.md
 ```

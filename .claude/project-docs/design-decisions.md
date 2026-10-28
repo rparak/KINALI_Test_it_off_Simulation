@@ -4,8 +4,9 @@ Deliberate choices whose reason is not visible in the code. Each one says what w
 
 ## The project follows project-style-rpx and the UR_PathGen_SF_1 layout, not the brief's package layout
 
-**Decision.** The code, tests, scripts, installer and records follow the personal skills
-(project-style-rpx first) with github.com/rparak/UR_PathGen_SF_1 as the structural template:
+**Decision.** The code, tests, scripts, installer and records follow the owner's skills
+(project-style-rpx first; personal skills until 2026-10-28, shipped in the repository since - corrected in place, see
+*The skills ship in the repository*) with github.com/rparak/UR_PathGen_SF_1 as the structural template:
 `src/<Domain>/Core.py` without `__init__.py`, `Example/` scripts, `test/` mirroring `src/`,
 `install.sh` + `requirements.txt`, `.claude/project-docs/`. This replaces the layout of the brief §5.1
 (package `kinali_sim`, `pyproject.toml`, console script `kinali-sim`, `tests/`, `config/`) wherever they
@@ -1509,3 +1510,43 @@ decides nothing; the phase sampling only quantizes the per-step table's boundari
 **Revisit if** a run's cup count or a mark ever depends on these values (a vacuum with a holding range, a shorter step).
 
 Pinned by the physics baselines (`test/Simulation/test_baselines.py`), which hold the current values.
+
+## The skills ship in the repository
+
+**Decision.** The repository ships four Claude Code skills in `.claude/skills/<skill>/` - `project-style-rpx`,
+`feature-manager`, `project-optimize`, `readme-writer` - each self-contained (`SKILL.md`, `references/`, and `assets/` or
+`scripts/` where it has them), public with the project (owner, 2026-10-28; Revision 1, F18). Source: the generic versions
+of `rparak/rp-claude-skills` at `ec7af027e36d263740161451341fbe93e1a442ea`, read without changing that repository; this
+project's decisions from the former project layers (`references/project.md`) written into each `SKILL.md` where they
+replace a generic sentence, the rest kept in `references/project.md`, each rule in one place. Removed: the bootstrap mode
+(`bootstrap.md`, the reference and README templates, `check_style_template.json`), the "no `SKILL.md` in the repository"
+rule, `ui.md` (no GUI, owner 2026-10-25), the pointers to skills not shipped (project-bootstrap, deep-tech-ui-style;
+jic-sf-ui-style stays named as the logo's source, "not part of this repository"), the `evals/` trigger sets (not
+shipped). The scripts (`check_style.py`, `check_readme.py`, `render_readme.py`) and their tests are byte-identical to
+`ec7af02`; `check_style.py`'s "bootstrap mode" hint is accepted upstream text (style project reference > Header and
+checker). The skills' tests run in the suite through `pytest.ini` `testpaths` (88 tests, under a second); `cmarkgfm`
+(the renderer only) is pinned `==2025.10.22` in `CLAUDE.md`'s throwaway-environment command, not in `requirements.txt`.
+`.claude/skills/mujoco-robot-cell/` is removed: the personal skill of that name stays installed and finds no project
+reference here.
+
+**Licence.** The skills carry their own licence, `.claude/skills/LICENSE`: MIT, Copyright (c) 2026 Roman Parak (owner,
+2026-10-28: option (b), not the project's LICENSE with JIC Smart Factory as holder). `rp-claude-skills` has no licence
+file; no asset brought in is third-party (all text, written by the author).
+
+**Why.** Whoever clones the project gets the conventions, checkers and procedures its records cite; the checks no longer
+depend on a private repository installed on one machine. Verified 2026-10-28: a fresh clone with `HOME` and `TMPDIR`
+set to empty directories installs, passes the per-commit tier (595 fast tests), the full suite (618) and both checkers
+from its own files; the session's skill list showed the four skills from this repository as soon as their `SKILL.md`
+files were written (no new session needed).
+
+**Alternatives.** Keep the skills personal with only their project layer tracked (the previous layout): rejected by the
+owner - the project would not be self-contained when public. A git submodule of `rp-claude-skills`: not chosen - it
+would ship all skills and need a private repository's access. Ship the skills' project copies under other names:
+not needed - the owner removed the personal copies of the four (a sparse checkout of `~/.claude/skills`).
+
+**Revisit if** a personal skill of one of the four names is installed again (it would take precedence; KNOWN_ISSUES), or
+an upstream change in `rp-claude-skills` should be taken over (a deliberate merge, the scripts compared byte for byte).
+
+Pinned by `test/Docs/test_layout.py` (`test_the_skill_folders_track_only_the_shipped_skills`), `test/Docs/test_skills.py`
+(the frontmatter names, the links, no path into a personal install), `test/Docs/test_readme.py`
+(`test_the_readme_names_the_shipped_skills`).

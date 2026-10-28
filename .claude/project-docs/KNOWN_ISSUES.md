@@ -256,3 +256,26 @@ from JIC.
 - **Impact:** visual only; the collision geoms are separate boxes and unaffected.
 - **What would close it:** splitting the mesh into the board and the parts above the board top, and
   colouring the components grey/black (brief §7 step 2, an optional follow-up; FEATURES.md > Open).
+
+## A personal skill of the same name would hide a shipped skill
+
+Claude Code gives a personal skill (`~/.claude/skills/<name>/`) precedence over a project skill of the same name. The
+four shipped skills keep their names (`project-style-rpx`, `feature-manager`, `project-optimize`, `readme-writer`), so a
+machine with a personal copy of one uses that copy, not the repository's (design-decisions: the skills ship in the
+repository). On the owner's machine the four personal copies are removed (a sparse checkout of `~/.claude/skills`);
+verified 2026-10-28 in the session's skill list.
+
+- **Impact:** a contributor with a personal copy follows its rules, not this project's decisions; the checkers' commands
+  in `CLAUDE.md` still run the repository's scripts.
+- **Pinned by:** nothing in the repository (a personal install is outside it).
+- **What would close it:** none of the four installed personally; or Claude Code letting a project skill take precedence.
+
+## The shipped skills are no longer synced with rp-claude-skills
+
+The skills came from `rparak/rp-claude-skills` at `ec7af02` (2026-10-28) and are maintained here from then on; nothing
+carries a later upstream change over.
+
+- **Impact:** an improvement made upstream (a checker rule, a procedure step) reaches this project only by a deliberate
+  merge.
+- **What would close it:** a merge from upstream as its own change: the scripts compared byte for byte, the Markdown
+  merged by hand with this project's decisions kept.
