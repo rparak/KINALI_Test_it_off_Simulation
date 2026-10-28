@@ -1,7 +1,6 @@
 # project-optimize: project reference for KINALI_Test_it_off_Simulation
 
-This project's part of optimization work. The generic skill is personal (`~/.claude/skills/`); this
-file overrides it where they differ. No `SKILL.md` is tracked here.
+This project's part of optimization work (`SKILL.md` holds the procedure, the interpreter and the radon command).
 
 ## Outputs compared byte for byte
 
@@ -37,8 +36,9 @@ fields vary by design, and only these are filtered:
   `Example/Scene/model_fingerprint.py`.
 - MuJoCo names by string: bodies, geoms, sites, actuators, cameras (`pcb_vis`, `aubo/tool/suction_tcp`,
   `vacuum0`, `cam_pcb`, ...) in code and tests.
-- Files by path string: `models/`, `Data/`, the baselines,
-  `.claude/skills/project-style-rpx/references/check_style.json`.
+- Files by path string: `models/`, `Data/`, the baselines, the skills' configurations
+  (`.claude/skills/project-style-rpx/references/check_style.json`, `.claude/skills/readme-writer/references/check_readme.json`),
+  every file under `.claude/skills/` (pinned by `test/Docs/test_layout.py`; the skills' tests through `pytest.ini` `testpaths`).
 - Docs: SPEC, design-decisions, KNOWN_ISSUES, FEATURES, the README.
 
 ## Slow paths and timings
@@ -60,19 +60,9 @@ Apple M2 Pro, 2026-10-25, three runs each (spread under 3 %):
 Open (optional, a later measurement; owner, 2026-10-27): the 15 slowest tests (`pytest --durations=15`) and the serial
 suites over three runs.
 
-## Check tiers
-
-Per commit and per accepted feature: `CLAUDE.md` > Branches and checks (commands and times).
-
 ## Outputs with a tolerance
 
 The regenerated videos: the same frame count, duration and resolution, and every frame at least 40 dB PSNR against the
 previous render (measured at least 45.9 dB: a 1-level render difference changes libx264's rate control until the next keyframe;
 design-decisions: the media are encoded with Pillow and imageio-ffmpeg, commit `ef7767b`). Every other output, `Media/`'s PNGs and
 GIFs included, stays byte for byte; the charts' SVGs differ only in matplotlib's random clip and marker ids.
-
-## Interpreter and tools
-
-- Project python: `.venv/bin/python` (Python 3.11); never a bare `python3` (miniforge on this
-  machine). Explicit python for throwaway environments: `/opt/homebrew/bin/python3.11`.
-- Code folders for radon: `src Example`.
