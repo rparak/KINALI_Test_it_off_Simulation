@@ -35,7 +35,7 @@ A change on the physics or build path is also proven by its outputs, byte for by
 
 ## Skills
 
-The repository ships its four Claude Code skills in `.claude/skills/<skill>/` (`SKILL.md`, `references/`, and
+The repository ships its five Claude Code skills in `.claude/skills/<skill>/` (`SKILL.md`, `references/`, and
 `assets/` or `scripts/` where a skill has them; owner, 2026-10-28). Each is self-contained: the generic rules in
 `SKILL.md`, this project's decisions in `references/project.md`. Licence: `.claude/skills/LICENSE` (MIT, Roman Parak).
 
@@ -44,9 +44,15 @@ The repository ships its four Claude Code skills in `.claude/skills/<skill>/` (`
 - `feature-manager` — how a feature, a behaviour change or a bug fix is made; `references/project.md`.
 - `project-optimize` — behaviour-preserving work; the outputs compared in `references/project.md`.
 - `readme-writer` — every README change; `references/project.md`, `check_readme.json`; the README checker and renderer.
+- `support-brief` — creates or refreshes `.claude/project-docs/SUPPORT_CHAT.md`, the brief the owner pastes into a new
+  Claude chat that acts as the project's senior technical support; `references/project.md`. Its `SKILL.md` is generic
+  (no project content). Invoke `/support-brief`: CREATE when the file does not exist, REFRESH when it does (the skill
+  states which); add "no review" to write, check and commit locally without stopping for the report (never a push before
+  the owner's acceptance). When the brief is updated:
+  feature-manager's `references/project.md` > The support-chat brief.
 
 A personal skill of the same name (`~/.claude/skills/<skill>/`) takes precedence over the project's copy, so none of the
-four is installed personally on this machine (`KNOWN_ISSUES.md`).
+five is installed personally on this machine (`KNOWN_ISSUES.md`).
 
 ## Development setup
 
