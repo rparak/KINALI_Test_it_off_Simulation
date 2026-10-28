@@ -37,7 +37,8 @@ The Optimized program finishes after 59.148 s against 70.404 s. Simulation resul
 [About](#about) · [What the cell does](#what-the-cell-does) · [How the model was built](#how-the-model-was-built) ·
 [Collision structure](#collision-structure) · [Architecture](#architecture) · [Quick start](#quick-start) ·
 [Usage](#usage) · [Default vs Optimized program](#default-vs-optimized-program) · [Verification](#verification) ·
-[Repository layout](#repository-layout) · [Requirements and platform](#requirements-and-platform) ·
+[Repository layout](#repository-layout) · [Claude Code skills](#claude-code-skills) ·
+[Requirements and platform](#requirements-and-platform) ·
 [Citation](#citation) · [License](#license) · [Authors](#authors)
 
 ## About
@@ -550,7 +551,36 @@ models/          the MJCF files and meshes: scene.xml, the AUBO i5, the VGC10 wi
 src/             the library, one folder per domain (see Architecture)
 test/            the tests, mirroring src/ and Example/, with the regression baselines in test/<Domain>/data/
 install.sh       creates .venv with Python 3.11 and the pinned requirements
+.claude/skills/  the Claude Code skills the development follows (see Claude Code skills)
 ```
+
+## Claude Code skills
+
+The repository ships the [Claude Code skills](https://code.claude.com/docs/en/skills) its development follows, in
+`.claude/skills/`. Claude Code loads them when it is started in this folder.
+
+<details>
+<summary>The four skills, their tools and how to use them</summary>
+
+| Skill | What it is for | Its tools |
+|---|---|---|
+| `project-style-rpx` | the code, YAML, installer and Markdown conventions, and this project's layout, file formats and model rules | `check_style.py` |
+| `feature-manager` | how a feature, a behaviour change or a bug fix is made: requirements, the premise checked, a report before building, small commits | - |
+| `project-optimize` | behaviour-preserving work (cleanup, speed, complexity, reliability), proven by byte-identical outputs | - |
+| `readme-writer` | every change to this README: the source of each number, the figures, the statuses | `check_readme.py`, `render_readme.py` |
+
+Claude Code picks a skill by its description, or you name it, for example `/feature-manager <your request>`. The checkers
+run on their own: 0 issues and 0 errors are expected, and `check_readme.py` warns about the README's length.
+
+```bash
+.venv/bin/python .claude/skills/project-style-rpx/scripts/check_style.py
+.venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md
+```
+
+The skills' own tests run with the test suite. A personal skill of the same name (`~/.claude/skills/<name>/`) takes
+precedence over the repository's copy.
+
+</details>
 
 ## Requirements and platform
 
@@ -569,7 +599,8 @@ on the repository page.
 
 ## License
 
-MIT License, Copyright (c) 2026 JIC Smart Factory. See [LICENSE](LICENSE).
+MIT License, Copyright (c) 2026 JIC Smart Factory. See [LICENSE](LICENSE). The Claude Code skills in `.claude/skills/`: MIT
+License, Copyright (c) 2026 Roman Parak. See [.claude/skills/LICENSE](.claude/skills/LICENSE).
 
 Third party:
 

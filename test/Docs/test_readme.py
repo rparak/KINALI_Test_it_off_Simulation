@@ -38,9 +38,10 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_BASELINES = {'Default program': 'test/Simulation/data/baseline_report_taught.txt',
                    'Optimized program': 'test/Simulation/data/baseline_report_optimized.txt'}
-# Never in the README (CLAUDE.md, the readme-writer project reference > Rules; owner, 2026-10-26).
+# Never in the README (CLAUDE.md, the readme-writer project reference > Rules; owner, 2026-10-26; the skills named since
+# owner, 2026-10-28).
 #   Unit [List<string>]
-CONST_FORBIDDEN = ['.claude', 'project-docs', 'SKILL.md', 'PyQt', 'Phase 2']
+CONST_FORBIDDEN = ['project-docs', 'PyQt', 'Phase 2']
 
 
 def _Readme(root):
@@ -119,15 +120,30 @@ def test_every_readme_medium_is_shown(root):
 def test_the_readme_keeps_the_project_rules(root):
     """
     Description:
-        The README names neither the internal documents nor the skills, mentions no GUI or phase, calls the programs the
+        The README names no internal document (of .claude/ only the skills), mentions no GUI or phase, calls the programs the
         Default program and the Optimized program, and carries the safety alert near the top.
     """
 
     text = _Readme(root)
     for word in CONST_FORBIDDEN:
         assert word not in text, word
+    assert set(re.findall(r'\.claude/([\w-]+)', text)) == {'skills'}
     assert 'taught program' not in text.lower() and 'optimised' not in text.lower()
     assert text.count('Default program') >= 5 and text.count('Optimized program') >= 5
     alert = text.index('> [!WARNING]')
     assert alert < text.index('## Contents')
     assert 'are simulation results and are NOT validated for driving the real cell.' in text[alert:alert + 400]
+
+
+def test_the_readme_names_the_shipped_skills(root):
+    """
+    Description:
+        The README's skills table names exactly the skills git tracks in .claude/skills/ (one SKILL.md each), so a skill
+        added, removed or renamed shows in the README.
+    """
+
+    tracked = subprocess.run(['git', 'ls-files', '.claude/skills'], cwd=root, capture_output=True, text=True, timeout=60)
+    assert tracked.returncode == 0, tracked.stderr
+    shipped = {p.split('/')[2] for p in tracked.stdout.splitlines() if p.endswith('/SKILL.md')}
+    section = _Readme(root).split('## Claude Code skills', 1)[1].split('\n## ', 1)[0]
+    assert set(re.findall(r'(?m)^\| `([\w-]+)` \|', section)) == shipped

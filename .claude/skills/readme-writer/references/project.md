@@ -33,6 +33,7 @@ content and the Authors HTML in full); accepted by the owner 2026-10-26.
 | A KNOWN_ISSUES item (the real-cell items above all) | How the model was built > Main limitations, the first-run order | - |
 | The release (version, date) | `CITATION.cff` `version`, `date-released`; the README's release link | `test/Docs/test_citation.py` |
 | The interpreter or a pin | badges, Requirements and platform | - |
+| A shipped skill added, removed or renamed, or a checker's command | Claude Code skills, Repository layout | `test/Docs/test_readme.py`, the commands as documented |
 
 ## Statuses
 
@@ -71,8 +72,11 @@ alt attributes of the owner's Authors HTML lengthened).
 ## Rules
 
 - Root layout: `.claude/skills/project-style-rpx/references/project.md` > Root.
-- Never mentioned in the README: `.claude/project-docs/`, the skills, `CLAUDE.md`'s content, a GUI, a "Phase 2"
+- Never mentioned in the README: `.claude/project-docs/`, `CLAUDE.md`'s content, a GUI, a "Phase 2"
   (`test/Docs/test_readme.py`). The limitations are summarized in the README itself.
+- The README names the shipped skills (owner, 2026-10-28): the section *Claude Code skills* after Repository layout, one
+  visible sentence, the table of the four skills with their tools and the usage collapsed; `.claude/skills/` is the only
+  `.claude` path it names; the skills' licence in License (`test/Docs/test_readme.py`).
 - The title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo" (design-decisions: the name).
 - The logo header at the top: JIC Smart Factory and KINALI (Test-it-off by name only, no logo), each a `<picture>` with
   `prefers-color-scheme: dark` -> `_White.svg`, else `_Black.svg`. No funding band.
