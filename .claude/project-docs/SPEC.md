@@ -395,7 +395,6 @@ Configuration/Optimization.yaml   the optimized program's settings: the FREE seg
 Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
-Data/Experiments/<name>/  a not-adopted experiment: its .patch, its script, README.md (the only copy of its commit)
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/; Reports/Comparison/ (the comparison, §7.12)
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
 Media/Original/           the owner's logo originals, kept untouched for regeneration

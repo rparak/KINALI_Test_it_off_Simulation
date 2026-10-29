@@ -51,8 +51,7 @@ test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is test
                        test/Example/<Domain>/test_<script>.py; test/Install/test_install.py; test/Docs/test_layout.py;
                        reference data (the baselines) in test/<Domain>/data/
 models/                the MJCFs and their meshes (mjcf.md)
-Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml,
-                       Experiments/<name>/ (a not-adopted experiment: its .patch, script, README.md)
+Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by
                        Example/Media/make_logo_variants.py; Cycle_<Side_by_Side|Optimized>.gif, View_*.png, Collision_*.png,

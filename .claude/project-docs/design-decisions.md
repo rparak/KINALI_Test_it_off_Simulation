@@ -1257,8 +1257,9 @@ The owner's rule adopts a retraction only when 0.55-0.65 mm all pass; 0.65 mm do
 (0.55-0.60 mm) is too narrow and the recording stays. The criterion is the net force, not the summed force: the summed force
 adds the squeeze between the slot's walls.
 
-**How to repeat it:** `Data/Experiments/fork_bar_retraction/README.md` (its patch against `92d1943`, the sweep script and the
-runs; the experiment's own commit is not on main).
+**How to repeat it:** `git show c43f079:Data/Experiments/fork_bar_retraction/README.md` (its patch against `92d1943`, the sweep
+script and the runs; the experiment's own commit is not on main). *Corrected 2026-10-29 (F20): the folder was in the tree until
+`c43f079`; the archive is removed, git keeps it.*
 
 **Bounds** (from the worst mode x 1.15): net force 247.3 N -> 290 N; hinge load 11.45 N m -> 13.5 N m (rounded up to 10 N and
 0.5 N m); the summed force (371 N x 1.15 -> 430 N) is reported, not bounded.
