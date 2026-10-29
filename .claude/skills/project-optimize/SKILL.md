@@ -107,6 +107,46 @@ references/python.md). A why-comment stays - above all one citing a manual page,
 SPEC section behind a value. **When unsure whether a comment explains why, keep it** and list it in
 the report as *kept, unsure*, with the line, so the owner can decide.
 
+**A review of what can go (user simplicity).** For a request to make the project simpler for its
+user: not only unused code, but every script, tool, generator, folder and dependency the user does
+not need. Report first, like every finding.
+
+1. **Inventory.** One row per tracked script or tool, module folder, data folder and dependency:
+   *item | purpose | used by | verdict*. *Used by* is the user's workflow (the documented commands),
+   the checks (the project's tiers), the tests, or nobody; the verdict is KEEP, REMOVE or MERGE
+   (into what). Each REMOVE or MERGE names its evidence (*A hit is a candidate until its reader is
+   found*).
+2. **Who carries it out.** Removing or merging what the user runs or sees is a change of
+   functionality (*Anything that would touch functionality*, above): it goes under **For
+   feature-manager**, which carries it out with steps 3-8. Code left without a reader is cleanup,
+   here.
+3. **Dead code after the removals.** Every function, constant, class, fixture and test helper whose
+   only readers were the removed items, searched by name and as a string, goes in the same step as
+   its last reader, with its tests (the collected count drops by exactly those).
+4. **Dependencies.** A dependency goes in the same commit as its last reader, never before it;
+   removing a pin is the owner's decision, like adding one (*Speed*, a new dependency). Measured
+   before and after in a throwaway environment: install time (three runs, warm cache, with the
+   spread), environment size, package count.
+5. **Restore point first.** Before the first removal, the commit before it is recorded by its full
+   hash in the change's design-decisions entry, with how to bring a file back
+   (`git show <hash>:<path>`, `git checkout <hash> -- <path>`).
+6. **Nothing points to what went.** After each removal, `git grep` for every removed file, module,
+   function, option and dependency, in its exact spelling (a case-insensitive hit is checked by
+   hand): no hit outside the history the project keeps and the committed artefacts that cannot be
+   edited, both listed by path, with the reason, in the report.
+7. **What stays is unchanged.** Every output of what stays is compared with a frozen run of the
+   commit before the change, on the same inputs. The deterministic outputs are compared byte for
+   byte, printed output after the normalisation filter (*The output is the contract*); an output
+   the project compares with tolerances instead (a physics run, whose contacts react to
+   sub-micrometre differences) stays within its regression tolerances and envelopes. The project
+   reference says which output is which and where each tolerance lives. A difference is allowed
+   only in lines the owner approved one by one (each listed, old and new); a pin those lines move is
+   re-captured in its own commit (feature-manager §8).
+8. **A fresh clone last.** The installer, the user's main command, both tiers of checks and the
+   checkers run in a fresh clone with `HOME` and `TMPDIR` set to empty directories (*Prove it
+   outside the working tree*, below): the proof that nothing removed was still needed by a path the
+   developer's tree hid.
+
 ### Speed
 
 **Measure every check first.** Before speeding anything up, time each check the project runs: every

@@ -2,12 +2,33 @@
 
 This project's part of optimization work (`SKILL.md` holds the procedure, the interpreter and the radon command).
 
-## Cleanup criteria
+## Cleanup criteria and the review of what can go
 
-Anything the no-clutter rule excludes is a cleanup finding (style project reference > Layout and layers > No clutter): a second
-user entry point beside `Example/cell.py`, a maintenance tool outside `Example/Maintenance/` or not in `CLAUDE.md`, a one-off
-script whose output is committed, a generator of by-products (media, figures, variants) the owner has not approved, a copy or
-an archive in the tree.
+Anything the no-clutter rule excludes is a cleanup finding (style project reference > Layout and layers > No clutter). For the
+review of what can go (`SKILL.md` > Cleanup > A review of what can go), in this project:
+
+- *Used by*: the workflow is `Example/cell.py`'s subcommands; the checks are the two tiers in `CLAUDE.md` > Branches and
+  checks; the tests are `pytest -n 8`.
+- The restore point is written in the change's design-decisions entry and in `CLAUDE.md` > Branches and checks (F20:
+  `c43f07961adbabf0edbffa891355afda323c29f7`).
+- Kept history, where `git grep` may still find a removed name: `design-decisions.md` (superseded entries and the change's
+  own entry), `SPEC.md`'s history notes, `FEATURES.md`'s done lines, the skills' project references where they say what is in
+  git at a commit. Committed artefacts: the SVGs in `Media/` (they name matplotlib, which wrote them). A case-insensitive hit
+  is checked by hand (`Compare_Programs` in `physics_baseline.py` is not the removed `compare_programs.py`).
+- What stays (step 7): byte for byte the kinematic golden (`golden_program.py`, 0 differences), the point table and the
+  check output (`cell.py check`), the build's check report and the optimized program, and the printed reports after the
+  normalisation filter (below); the physics runs within the baselines' drift tolerances and the fork's envelope
+  (`physics_baseline.py`, 0 failures; SPEC §10.2, `physics_baseline.CONST_TOLERANCES`, each program's `envelope` in
+  `test/Simulation/data/baseline_metrics_<program>.json`). A change to the physics path itself is held to the empty diff of
+  the reports (Outputs compared byte for byte).
+- Install measurement, three runs with a warm pip cache, with `python3.11`, the interpreter `./install.sh --detect-only` names
+  (`Using Python 3.11 at ...`): `python3.11 -m venv "$SCRATCH/v" && time "$SCRATCH/v/bin/pip" install -q -r requirements.txt`,
+  then `du -sh "$SCRATCH/v"` and `"$SCRATCH/v/bin/pip" list | tail -n +3 | wc -l` (the packages, without the two header
+  lines). 2026-10-29, Apple M2 Pro: 7.5-8.1 s, 289 MB, 21 packages (F20's numbers: design-decisions, one user entry point >
+  Measured).
+- The fresh clone: `git clone -q . "$SCRATCH/clone"`; in it, with `HOME="$SCRATCH/home" TMPDIR="$SCRATCH/tmp"` (both empty):
+  `./install.sh`, `.venv/bin/python Example/cell.py all`, both tiers, both checkers. 2026-10-29: install 21.4 s (no pip
+  cache under the empty `HOME`), `cell.py all` 52.5 s, the full suite 552 passed in 289.4 s.
 
 ## Outputs compared byte for byte
 
