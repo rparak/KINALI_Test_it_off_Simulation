@@ -21,6 +21,12 @@ The maintenance rule is in feature-manager's project reference (`.claude/skills/
   (SPEC §17). The first run states which domain modules apply and why.
 - Exact commands stay in `CLAUDE.md` > Commands; the brief points there.
 
+## Length
+
+At most 3,000 words by `wc -w .claude/project-docs/SUPPORT_CHAT.md`, in place of `SKILL.md` §4's 2,500 (owner, 2026-10-29:
+2,694 at `e80320e`, with room for the next features). When a REFRESH would pass 2,750, tighten the wording first; raising the
+limit is the owner's decision.
+
 ## Checks after writing
 
 The per-commit tier (`CLAUDE.md` > Branches and checks). The light test is proposed at the first run.

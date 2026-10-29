@@ -172,8 +172,10 @@ rest).
 - Only facts from the repository, each traceable to a file; anything unknown becomes an open
   question, never a guess.
 - No secrets, credentials or personal data beyond what the repository already states publicly.
-- Concise: at most about 2,500 words; details by reference to the repository files; no history that
-  git already holds.
+- Concise: at most about 2,500 words, counted by `wc -w` on the whole file (tables, code and markup
+  included): the one measure, so counts compare between runs; no other count is reported. The
+  project reference may set another limit. Details by reference to the repository files; no history
+  that git already holds.
 - English.
 
 ## 5. Placement and maintenance (propose; do after approval)
@@ -189,8 +191,9 @@ rest).
 ## 6. Report, then build
 
 **Report**: the mode, the survey summary with its source files, the activated modules and why, the
-full draft (CREATE) or the list of changes (REFRESH), the questions for the owner, and the proposed
-location, maintenance rule and test. Then stop.
+full draft (CREATE) or the list of changes (REFRESH), the word count by `wc -w` (before and after for
+REFRESH), the questions for the owner, and the proposed location, maintenance rule and test. Then
+stop.
 
 **After the owner's approval**: write the file (CREATE) or apply the listed changes (REFRESH), plus
 the maintenance rule and the test if they do not exist yet; run the project's checks; commit
