@@ -109,7 +109,7 @@ Full rules: [references/python.md](references/python.md).
 
 1. Every `.py` file opens with the `#`-comment licence header. Copy [assets/header.txt](assets/header.txt):
    `Copyright (c) 2026 JIC Smart Factory`, `Author   : Roman Parak`, and `File Name:` set to the real
-   path (`../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Simulation/run_program.py`,
+   path (`../Scene/Core.py` for `src/Scene/Core.py`, `../Example/Cell/run_program.py`,
    `../test/Scene/test_core.py`). Vendored licences keep their holders.
 2. Names: `Pascal_Snake_Case_Cls`, `Pascal_Snake_Case_Str` dataclasses, `Pascal_Snake_Case`
    functions and methods (verb-first), `snake_case` parameters and locals (or math symbols such as

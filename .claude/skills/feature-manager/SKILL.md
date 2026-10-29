@@ -226,7 +226,7 @@ per-run timeout. "Passed on re-run" is not a diagnosis.
   restore a deleted file** without asking: a deletion in the working tree may be the owner's.
 - **Never committed**: `logger/`, `Data/Generated/` (the trajectories included; owner 2026-10-24),
   `.venv/`. The optimized program (`Data/Optimized/Program_Optimized.yaml`) is committed with its
-  input hashes, written only by `Example/Program/optimize_program.py`; when an input changes, run it
+  input hashes, written only by `Example/cell.py optimize`; when an input changes, run it
   again and commit the result as its own change.
 - **Only as its own deliberate change**, with its report: a regenerated `models/cell_scene.xml`
   whose source changed, a re-captured physics baseline, golden data or fingerprint.

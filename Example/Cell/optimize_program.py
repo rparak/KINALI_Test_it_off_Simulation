@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Program/optimize_program.py
+# File Name: ../Example/Cell/optimize_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -33,6 +33,8 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
+# Typing (Support for type hints)
+import typing as tp
 # Math (Mathematical functions)
 import math
 # Time (Time access)
@@ -58,7 +60,7 @@ from Optimizer.Core import Optimize_Program, Free_Transfers, Optimizer_Error_Cls
 from Optimizer.Measure import Compare_Locked, Interlocks, Carried_Tilt, Step_Bounds
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Make the optimized program (FEATURES.md F9): the FREE transfers of Configuration/Program.yaml (Configuration/
@@ -69,15 +71,23 @@ def main():
         program; the check. Exit 0 when the check passes, every interlock and the gating rule hold and every LOCKED part is
         byte-identical, 1 otherwise or when it cannot be made.
 
-            .venv/bin/python Example/Program/optimize_program.py [--out DIR]
+            Called by Example/cell.py optimize.
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/optimize_program.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Make the optimized program (Data/Optimized/Program_Optimized.yaml) and check it.')
     parser.add_argument('--out', help='the folder for the program and the report (default: Data/Optimized and Data/Generated/Reports)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('optimize_program')
+    log = Script_Log_Cls(log_name or 'optimize_program', append=log_name is not None)
     began = time.perf_counter()
     path = os.path.join(args.out, os.path.basename(CONST_OPTIMIZED_PROGRAM_YAML)) if args.out else CONST_OPTIMIZED_PROGRAM_YAML
     try:
@@ -150,7 +160,3 @@ def main():
                    % ('INFO' if ok else 'ERROR', 'passes its check' if ok else 'FAILS')))
     log.Close()
     return 0 if ok else 1
-
-
-if __name__ == '__main__':
-    sys.exit(main())

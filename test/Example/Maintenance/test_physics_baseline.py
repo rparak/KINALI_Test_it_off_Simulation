@@ -23,50 +23,27 @@
 
 # System (Default)
 import os
-import sys
 # JSON (JSON encoder and decoder)
 import json
-# Shutil (High-level file operations)
-import shutil
 # Subprocess (Subprocess management)
 import subprocess
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
 
-"""
-Description:
-    Initialization of constants.
-"""
-# The tracked folders a fresh clone holds that the physics scripts read (models/ is linked, not copied: 59 MB).
-#   Unit [Tuple<string>]
-CONST_FRESH_FOLDERS = ('src', 'Example', 'Configuration', 'Data', os.path.join('test', 'Simulation', 'data'))
 
-
-def _Fresh_Tree(root, tree):
+def _Run_In(command, tree, script, arguments, cwd, temporary):
     """
     Description:
-        A copy of the repository as a fresh clone has it: the tracked folders the physics scripts read, models/ linked, and no
-        Data/Generated/ (git-ignored, so never in a clone).
+        Run tree/Example/<script> (command: the script_command fixture) from cwd with its own temporary folder (TMPDIR), so what
+        the script leaves there can be seen.
     """
 
-    for folder in CONST_FRESH_FOLDERS:
-        shutil.copytree(os.path.join(root, folder), tree / folder, ignore=shutil.ignore_patterns('Generated', '__pycache__'))
-    os.symlink(os.path.join(root, 'models'), tree / 'models')
-    return tree
-
-
-def _Run_In(tree, script, arguments, cwd, temporary):
-    """
-    Description:
-        Run tree/Example/<script> from cwd with its own temporary folder (TMPDIR), so what the script leaves there can be seen.
-    """
-
-    return subprocess.run([sys.executable, os.path.join(str(tree), 'Example', script)] + list(arguments), cwd=str(cwd),
+    return subprocess.run(command(tree, script) + list(arguments), cwd=str(cwd),
                           capture_output=True, text=True, timeout=900, env=dict(os.environ, TMPDIR=str(temporary)))
 
 
 @pytest.mark.slow
-def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, tmp_path):
+def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, tmp_path, script_command, fresh_tree):
     """
     Description:
         Step 6: in a fresh tree (no Data/Generated/, as in a fresh clone) and from an unrelated directory, on a trajectory built
@@ -77,16 +54,16 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
         temporary folder.
     """
 
-    tree, built, work, temporary = _Fresh_Tree(root, tmp_path / 'tree'), tmp_path / 'built', tmp_path / 'work', tmp_path / 'tmp'
+    tree, built, work, temporary = fresh_tree(tmp_path / 'tree'), tmp_path / 'built', tmp_path / 'work', tmp_path / 'tmp'
     work.mkdir()
     temporary.mkdir()
     program = os.path.join(str(tree), 'Data', 'Optimized', 'Program_Optimized.yaml')
-    assert _Run_In(tree, 'Program/build_program.py', ['--program', program, '--out', str(built)], work, temporary).returncode == 0
-    result = _Run_In(tree, 'Maintenance/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built)], work, temporary)
+    assert _Run_In(script_command, tree, 'Cell/build_program.py', ['--program', program, '--out', str(built)], work, temporary).returncode == 0
+    arguments = ['--program', 'optimized', '--trajectories', str(built)]
+    result = _Run_In(script_command, tree, 'Maintenance/physics_baseline.py', arguments, work, temporary)
     assert result.returncode == 0 and '[INFO] optimized: 0 failure(s) (bounds and drift)' in result.stdout, result.stdout[-2000:]
     out = tmp_path / 'out'
-    result = _Run_In(tree, 'Maintenance/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built), '--out', str(out)],
-                     work, temporary)
+    result = _Run_In(script_command, tree, 'Maintenance/physics_baseline.py', arguments + ['--out', str(out)], work, temporary)
     assert result.returncode == 0 and sorted(os.listdir(out)) == ['baseline_environment.json', 'baseline_metrics_optimized.json',
                                                                   'baseline_report_optimized.txt'], result.stdout[-2000:]
     committed = open(os.path.join(root, 'test', 'Simulation', 'data', 'baseline_report_optimized.txt'), encoding='utf-8').read()

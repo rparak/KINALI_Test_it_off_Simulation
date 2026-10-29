@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Keypoints/test_show_keypoint.py
+# File Name: ../test/Example/Cell/test_show_keypoint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -35,7 +35,7 @@ def test_headless_posing_prints_the_keypoint_and_its_context(tmp_path, run_scrip
         exits 0.
     """
 
-    result = run_script('Keypoints/show_keypoint.py', ['--name', 'P_MG06_CLOSE_END', '--mg06', 'Closed', '--loader', 'L_HOME',
+    result = run_script('Cell/show_keypoint.py', ['--name', 'P_MG06_CLOSE_END', '--mg06', 'Closed', '--loader', 'L_HOME',
                                                        '--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert '[INFO] P_MG06_CLOSE_END: End of PATH_FORK_CLOSE' in result.stdout
@@ -48,7 +48,7 @@ def test_an_unknown_keypoint_is_an_error_line(tmp_path, run_script):
         An unknown point is an [ERROR] line listing the points, exit 1.
     """
 
-    result = run_script('Keypoints/show_keypoint.py', ['--name', 'nowhere', '--headless'], tmp_path)
+    result = run_script('Cell/show_keypoint.py', ['--name', 'nowhere', '--headless'], tmp_path)
     assert result.returncode == 1 and "[ERROR] There is no point 'nowhere'" in result.stdout
 
 
@@ -60,6 +60,6 @@ def test_the_viewer_under_python_on_macos_names_mjpython(tmp_path, run_script):
         exits 2 with the command to use.
     """
 
-    result = run_script('Keypoints/show_keypoint.py', ['--name', 'P_HOME'], tmp_path)
+    result = run_script('Cell/show_keypoint.py', ['--name', 'P_HOME'], tmp_path)
     assert result.returncode == 2
     assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name P_HOME' in result.stdout

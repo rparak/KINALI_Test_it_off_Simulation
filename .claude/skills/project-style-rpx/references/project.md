@@ -56,9 +56,12 @@ logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: ge
 docstring would be its first statement and read as its header). Pinned by `test/Docs/test_layout.py`: the declared modules per domain,
 each module's test file, each constant with its readers. The checker's configuration has no layout key.
 
-The scripts folder is `Example/`; a script builds the repository root from `__file__` two folders up. A script may
-import another as a module through `importlib` (`physics_baseline.py` uses `run_program.py`'s `Load_Run`;
-`show_physics.py` too). `Data/` subfolders are named by purpose, Pascal case like the domains.
+The scripts folder is `Example/`: `cell.py`, the one user entry point (the repository root one folder up from `__file__`), its
+internal modules in `Example/Cell/` and the maintenance tools in `Example/Maintenance/` (the root two folders up). An internal
+module has no command line of its own: it is a `main(argv, log_name)` that `cell.py` calls (its tests through the same seam,
+`test/conftest.py` `Script_Command`). A module or tool may import another as a module through `importlib`
+(`physics_baseline.py` uses `run_program.py`'s `Load_Run`; `show_physics.py` too; `cell.py` imports by name, so a parallel
+run's workers import it again). `Data/` subfolders are named by purpose, Pascal case like the domains.
 
 Layer order 📄 (by domain; within a domain: `Const` ← `Core` ← the topic modules):
 
@@ -97,10 +100,10 @@ that differ only in letter case.
 | `Configuration/Cell.yaml` | `Configuration.Core.Load_Cell_Configuration`; written by hand |
 | `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser.Load_Constants`, `Load_Simulation`, `Load_Program`; written by hand (a script that finds a value to change prints the line: `resolve_keypoint.py`) |
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser.Load_Optimization`; written by hand |
-| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer.Core.Optimized_Text` (only through `Example/Program/optimize_program.py`); read by `Configuration.Program_Parser.Load_Program` |
+| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer.Core.Optimized_Text` (only through `Example/Cell/optimize_program.py`); read by `Configuration.Program_Parser.Load_Program` |
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
-| a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
+| a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Cell/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Maintenance/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (the generator is in git at `c43f079`); read by the README |
 | the README media and charts in `Media/` | committed (v1.0; the generators are in git at `c43f079`); read by the README |
@@ -158,9 +161,9 @@ returned list, printed by the script, exit code 1.
 ## Project rules
 
 - Logs: scripts print `[INFO]` / `[WARNING]` / `[ERROR]` lines (no `logging` module) and write every line
-  to `logger/<script>.log` through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
+  to `logger/<script>.log` (a `cell.py` subcommand's modules append to `logger/cell_<subcommand>.log`) through `Script_Log_Cls.Line` (`print(log.Line(text))`); MuJoCo's own log goes
   to `logger/MUJOCO_LOG.TXT` (`Configure_MuJoCo_Log`, called first by every script and by
-  `test/conftest.py`). `Example/Simulation/run_program.py` is a report script (references/python.md: report on stdout).
+  `test/conftest.py`). `Example/Cell/run_program.py` (`cell.py run --program`) is a report module (references/python.md: report on stdout).
 - Stream protocols are not implemented in `src/` (no `write`/`flush` methods, which the naming rule would
   refuse); a script prints what `Script_Log_Cls.Line` returns instead.
 - The verified physics values are never changed in a style or structure change (SPEC §3, mjcf.md).

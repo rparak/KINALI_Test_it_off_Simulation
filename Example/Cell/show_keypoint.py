@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Keypoints/show_keypoint.py
+# File Name: ../Example/Cell/show_keypoint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -33,6 +33,8 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
+# Typing (Support for type hints)
+import typing as tp
 # Time (Time access)
 import time
 # Numpy (Array computing) [pip3 install numpy]
@@ -52,7 +54,7 @@ from Keypoints.Core import Pose_Cell, Keypoints_Error_Cls
 from Render.Core import Launch_Passive_Viewer, Render_Error_Cls
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Pose the whole cell at one point of Configuration/Constants.yaml (robot, loader, jaws, PCB, MG06 from its scene in
@@ -60,9 +62,15 @@ def main():
         and prints. The viewer needs mjpython on
         macOS (the passive viewer).
 
-            .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name <P_point> [--loader <L_position>] [--gripper <G_command>]
-                                                                  [--pcb <location>] [--mg06 Open|Closed]
-            .venv/bin/python Example/Keypoints/show_keypoint.py --name <P_point> --headless
+            Called by Example/cell.py point <name> (--show | --headless) [--loader L] [--gripper G] [--pcb LOC] [--mg06 Open|Closed].
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/show_keypoint.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Show the cell posed at one point.')
@@ -72,10 +80,10 @@ def main():
     parser.add_argument('--pcb', choices=CONST_PCB_LOCATIONS, help='a PCB location instead of the point\'s scene')
     parser.add_argument('--mg06', choices=CONST_FIXTURE_STATES, help='an MG06 state instead of the point\'s Fixture')
     parser.add_argument('--headless', action='store_true', help='pose and print, no window')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('show_keypoint')
+    log = Script_Log_Cls(log_name or 'show_keypoint', append=log_name is not None)
     try:
         cell, constants, meta = Load_Cell_Configuration(), Load_Constants(), Read_PCB_Meta()
         simulation = Load_Simulation(constants)
@@ -110,7 +118,3 @@ def main():
             time.sleep(0.05)
     log.Close()
     return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

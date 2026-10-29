@@ -5,7 +5,7 @@
 #     signals - declared once (SPEC §8). Configuration/Program.yaml uses them by name;
 #     Configuration/Simulation.yaml holds what only the simulation needs. Read only by
 #     src/Configuration/Program_Parser.py (Load_Constants); written by hand. A corrected point comes from
-#     Example/Keypoints/resolve_keypoint.py, which prints its Joints and Pose lines; nothing writes this file.
+#     Example/cell.py point <name>, which prints its Joints and Pose lines; nothing writes this file.
 #
 #   REQUIRED: every field is required (Reference and Offset are null on a point that is not derived from
 #     another); a missing or invalid field fails the load, naming it.

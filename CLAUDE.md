@@ -26,11 +26,11 @@ the removed generators and scripts).
 
 The checks, in two tiers (Apple M2 Pro times):
 
-- **Per commit** (about 1 min): the fingerprint (`model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic golden
-  (`golden_program.py`, 0 differences), the point table (`check_keypoints.py`, 0 FAIL), the fast tests
+- **Per commit** (about 1 min): the fingerprint (`Maintenance/model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic
+  golden (`Maintenance/golden_program.py`, 0 differences), the point table (`cell.py check`, 0 FAIL), the fast tests
   (`pytest -n 8 -m "not slow"`), the style checker (0 issues).
 - **Per accepted feature, before the push** (about 5.5 min): both physics baselines with their envelopes
-  (`physics_baseline.py`, 0 failures) and the full suite (`pytest -n 8`).
+  (`Maintenance/physics_baseline.py`, 0 failures) and the full suite (`pytest -n 8`).
 
 A change on the physics or build path is also proven by its outputs, byte for byte (the project-optimize reference).
 
@@ -75,32 +75,29 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md   # 0 errors expected (1 warning: the length)
 /opt/homebrew/bin/python3.11 -m venv "$SCRATCH/gfm" && "$SCRATCH/gfm/bin/pip" install -q cmarkgfm==2025.10.22   # throwaway env, never .venv
 "$SCRATCH/gfm/bin/python" .claude/skills/readme-writer/scripts/render_readme.py README.md --out "$SCRATCH/readme.html"   # 0 leftovers
-.venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory F] [--out DIR]   # physics of a program; exit 0/1/2; ~19 s
+.venv/bin/python Example/cell.py --help                        # the user entry point; <subcommand> --help for each
+.venv/bin/python Example/cell.py check [--name K]              # the point table + the configuration and programs check; exit 0/1; ~3 s
+.venv/bin/python Example/cell.py point K [--seed K] [--show | --headless] [--loader L --gripper G --pcb LOC --mg06 S]   # a point's row, its corrected Joints/Pose lines
+.venv/bin/python Example/cell.py build                         # the Default program: trajectory + check report; exit 0/1; ~11 s
+.venv/bin/python Example/cell.py optimize                      # Data/Optimized/Program_Optimized.yaml + its trajectory; exit 0/1; ~70 s
+.venv/bin/python Example/cell.py run [--program default|optimized]   # both programs vs the physics baselines + the table; exit 0/1/2; ~21 s
+.venv/bin/python Example/cell.py show [--program P] [--physics] [--step N | --time T] [--speed F] [--headless] [--watchdog S]   # the viewer (re-launches under mjpython on macOS)
+# Maintenance tools (Example/Maintenance/, documented here only):
+.venv/bin/python Example/Maintenance/model_fingerprint.py      # compare with the baseline: 1 difference expected (pcb_vis rgba); --out FILE writes
+.venv/bin/python Example/Maintenance/export_cell_scene.py      # models/cell_scene.xml
+.venv/bin/python Example/Maintenance/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1; ~11 s
 .venv/bin/python Example/Maintenance/physics_baseline.py [--program P] [--trajectories DIR] [--out DIR]   # both programs vs their physics baselines (in parallel); exit 0/1/2; ~21 s; --out ~1 min
-.venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--time T] [--watchdog S]   # physics in the viewer, real time
-.venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...]   # physics to T, the state printed
-.venv/bin/python Example/Maintenance/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
-.venv/bin/python Example/Maintenance/export_cell_scene.py    # models/cell_scene.xml
-.venv/bin/python Example/Keypoints/check_keypoints.py [--name K]   # the keypoint check table; exit 1 on a FAIL
-.venv/bin/python Example/Keypoints/resolve_keypoint.py --name K [--seed K]   # prints the corrected Joints line
-.venv/bin/python Example/Keypoints/show_keypoint.py --name K --headless   # pose, printed
-.venv/bin/mjpython Example/Keypoints/show_keypoint.py --name K [--loader P --gripper S --pcb L --mg06 Open|Closed]
-.venv/bin/python Example/Program/build_program.py [--program F] [--out DIR]   # trajectory + check report; exit 0/1
-.venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless   # pose a moment, printed
-.venv/bin/mjpython Example/Program/show_program.py [--version default|optimized] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
-.venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~60 s
-.venv/bin/python Example/Maintenance/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
 ```
 
-The viewer scripts (`show_keypoint.py`, `show_program.py`, `show_physics.py`) use
-`mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`; under `.venv/bin/python` they exit 2
-naming the mjpython command. The cell configuration (`Cell.yaml`) and the cell
+The viewers (`cell.py show`, `cell.py point --show`) use `mujoco.viewer.launch_passive`, which macOS runs only under
+`.venv/bin/mjpython`: `cell.py` re-launches itself under it with the same arguments, or exits 2 with the install hint when it
+is missing. The cell configuration (`Cell.yaml`) and the cell
 program (`Constants.yaml` named values, `Simulation.yaml` simulation-only data, `Program.yaml` the program; read by
 `src/Configuration/Program_Parser.py`) and the optimizer's settings (`Optimization.yaml`) are edited by hand in `Configuration/` (no
-tool writes them). `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Program/optimize_program.py` (committed;
-re-run it when an input changes - a build refuses it stale).
+tool writes them). `Data/Optimized/Program_Optimized.yaml` is written only by `cell.py optimize` (`Example/Cell/optimize_program.py`;
+committed; re-run it when an input changes - a build refuses it stale).
 
 History across the RPX rewrite (commit `c6282af`, files rewritten below git's 50 % rename threshold):
 `git log --follow -M20% <file>`. The full feature records: `git show e7739f4:.claude/project-docs/FEATURES.md`.
 
-Logs: `logger/<script>.log` and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).
+Logs: `logger/cell_<subcommand>.log`, `logger/<tool>.log` (the maintenance tools) and `logger/MUJOCO_LOG.TXT`; generated artefacts: `Data/Generated/<Kind>/` (both git-ignored).

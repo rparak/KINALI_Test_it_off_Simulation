@@ -39,6 +39,13 @@ Description:
 # The repository root.
 #   Unit [string]
 CONST_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# The tracked folders a fresh clone holds that the scripts read, the regression data included (models/ is linked, not copied: 59 MB).
+#   Unit [Tuple<string>]
+CONST_FRESH_FOLDERS = ('src', 'Example', 'Configuration', 'Data', os.path.join('test', 'Simulation', 'data'), os.path.join('test', 'Program', 'data'))
+# Runs an internal module of Example/Cell/ (argv[1] its path) through its main(argv), as cell.py calls it, and exits with its code.
+#   Unit [string] (Python source)
+CONST_CELL_MODULE_RUNNER = ('import importlib.util, sys; spec = importlib.util.spec_from_file_location("module", sys.argv[1]); '
+                            'module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); sys.exit(module.main(sys.argv[2:]))')
 if os.path.join(CONST_ROOT, 'src') not in sys.path:
     sys.path.insert(0, os.path.join(CONST_ROOT, 'src'))
 from Configuration.Core import Configure_MuJoCo_Log  # noqa: E402
@@ -304,22 +311,35 @@ def check_program():
     return _Check_Program
 
 
+def Script_Command(root, script):
+    """
+    Description:
+        The command that runs Example/<script> in a fresh interpreter: a script (cell.py, Maintenance/<tool>.py) directly,
+        an internal module of Example/Cell/ through its main(argv) (it has no command line of its own; cell.py calls it so).
+    """
+
+    path = os.path.join(str(root), 'Example', script)
+    if not script.startswith('Cell/'):
+        return [sys.executable, path]
+    return [sys.executable, '-c', CONST_CELL_MODULE_RUNNER, path]
+
+
 def _Run_Script(script, arguments, cwd, timeout=600):
     """
     Description:
-        Run Example/<Domain>/<script> the way a person does: a fresh interpreter, from cwd (an unrelated directory).
+        Run Example/<script> the way a person does: a fresh interpreter, from cwd (an unrelated directory).
     """
 
     import subprocess
-    return subprocess.run([sys.executable, os.path.join(CONST_ROOT, 'Example', script)] + list(arguments), cwd=str(cwd),
-                          capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(Script_Command(CONST_ROOT, script) + list(arguments), cwd=str(cwd), capture_output=True, text=True,
+                          timeout=timeout)
 
 
 @pytest.fixture(scope='session')
 def built_trajectory(tmp_path_factory):
     """
     Description:
-        A program's trajectory built by Example/Program/build_program.py, each program at most once per session (per pytest-xdist
+        A program's trajectory built by Example/Cell/build_program.py, each program at most once per session (per pytest-xdist
         worker), into one folder: built_trajectory('taught' | 'optimized') -> the .npz path. Read only: a test that needs a
         changed trajectory writes a copy.
     """
@@ -331,11 +351,46 @@ def built_trajectory(tmp_path_factory):
             arguments = ['--out', str(folder)]
             if program == 'optimized':
                 arguments += ['--program', os.path.join(CONST_ROOT, 'Data', 'Optimized', 'Program_Optimized.yaml')]
-            result = _Run_Script('Program/build_program.py', arguments, folder)
+            result = _Run_Script('Cell/build_program.py', arguments, folder)
             assert result.returncode == 0, result.stdout[-2000:] + result.stderr
             made[program] = folder / ('Program.npz' if program == 'taught' else 'Program_Optimized.npz')
         return made[program]
     return _Build
+
+
+def _Fresh_Tree(tree):
+    """
+    Description:
+        A copy of the repository as a fresh clone has it: the tracked folders the scripts read (CONST_FRESH_FOLDERS), the
+        README, models/ linked, and no Data/Generated/ (git-ignored, so never in a clone).
+    """
+
+    import shutil
+    for folder in CONST_FRESH_FOLDERS:
+        shutil.copytree(os.path.join(CONST_ROOT, folder), os.path.join(str(tree), folder), ignore=shutil.ignore_patterns('Generated', '__pycache__'))
+    shutil.copy(os.path.join(CONST_ROOT, 'README.md'), os.path.join(str(tree), 'README.md'))
+    os.symlink(os.path.join(CONST_ROOT, 'models'), os.path.join(str(tree), 'models'))
+    return tree
+
+
+@pytest.fixture(scope='session')
+def fresh_tree():
+    """
+    Description:
+        The maker of a fresh-clone copy of the repository (_Fresh_Tree): fresh_tree(path) -> path.
+    """
+
+    return _Fresh_Tree
+
+
+@pytest.fixture(scope='session')
+def script_command():
+    """
+    Description:
+        The command that runs an Example/ script or Cell module in a given tree (Script_Command).
+    """
+
+    return Script_Command
 
 
 @pytest.fixture(scope='session')

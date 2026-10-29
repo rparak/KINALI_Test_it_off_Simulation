@@ -20,7 +20,7 @@ reports, and the programs' physics runs with their reports and acceptance verdic
 
 ## Real data for reproducing a premise
 
-The two programs and their physics runs (`Example/Simulation/run_program.py`; their baselines and the kinematic golden in
+The two programs and their physics runs (`Example/Cell/run_program.py`; their baselines and the kinematic golden in
 `test/<Domain>/data/`; the legacy planner and the legacy cycle run at their restore points, `CLAUDE.md` > Branches and
 checks), the fingerprint, the scene files. Walk the chain: the
 plan's joint trajectory and events, the servo set-points, the contacts per category, the PCB pose at
@@ -74,8 +74,7 @@ report and the fingerprint.
 
 ## Visual changes
 
-Open the cell in a viewer (`Example/Program/show_program.py`, `Example/Keypoints/show_keypoint.py`) and look at what
-changed.
+Open the cell in the viewer (`Example/cell.py show`, `Example/cell.py point <name> --show`) and look at what changed.
 
 ## The support-chat brief
 

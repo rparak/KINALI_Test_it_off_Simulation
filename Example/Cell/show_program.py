@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Program/show_program.py
+# File Name: ../Example/Cell/show_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -63,7 +63,7 @@ from Render.Core import (Launch_Passive_Viewer, Render_Error_Cls, Playback_Cls, 
 Description:
     Initialization of constants.
 """
-# The program file of each version: the taught one and the optimized one (F9, written by Example/Program/optimize_program.py).
+# The program file of each version: the taught one and the optimized one (F9, written by Example/Cell/optimize_program.py through cell.py optimize).
 #   Unit [Dict<string, string>]
 CONST_VERSIONS = {'default': CONST_PROGRAM_YAML, 'optimized': CONST_OPTIMIZED_PROGRAM_YAML}
 # The keys (GLFW codes) and their playback actions: Home pause / resume, Page Down or '.' the next step's start, Page Up the
@@ -97,20 +97,27 @@ def Sample_Of(trajectory: Trajectory_Str, step: tp.Optional[str], at: tp.Optiona
     return 0
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Play a program's trajectory in MuJoCo's viewer: the whole cell posed from the trajectory sample by sample in real
         time (kinematic, no physics), the segment's name and the command line being executed shown; Home pauses / resumes,
         Page Down or '.' jumps to the
         next step, Page Up back to the current step's start, End to its end. --step N / --time T pose one moment; --headless
-        prints it. Reads the trajectory Example/Program/build_program.py wrote and refuses
+        prints it. Reads the trajectory cell.py build or optimize wrote and refuses
         one whose inputs changed since. The viewer needs mjpython on macOS (the passive viewer); it follows the viewer rules
         of Render.Run_Viewer_Loop (the lock only for posing, the overlay outside it) and prints its frame times when closed;
         --watchdog S dumps every thread's traceback and exits 3 when the loop stalls for S seconds.
 
-            .venv/bin/mjpython Example/Program/show_program.py [--version default] [--step N | --time T] [--watchdog S]
-            .venv/bin/python Example/Program/show_program.py [--step N | --time T] --headless
+            Called by Example/cell.py show [--program default|optimized] [--step N | --time T] [--headless] [--watchdog S].
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/show_program.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Play or pose a program trajectory (kinematic).')
@@ -121,10 +128,10 @@ def main():
     parser.add_argument('--headless', action='store_true', help='pose and print, no window')
     parser.add_argument('--watchdog', type=float, metavar='S', help='debug: when the viewer loop stalls for S seconds, print every '
                         "thread's traceback and exit 3")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('show_program')
+    log = Script_Log_Cls(log_name or 'show_program', append=log_name is not None)
     program_path = CONST_VERSIONS[args.version]
     if not os.path.isfile(program_path):
         print(log.Line('[ERROR] There is no %s; make it with .venv/bin/python Example/Program/optimize_program.py' % program_path))
@@ -233,7 +240,3 @@ def main():
     print(log.Line('[INFO] Viewer: %s.' % stats.Summary()))
     log.Close()
     return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

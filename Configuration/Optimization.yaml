@@ -6,7 +6,7 @@
 #     spline checked and refitted, time-optimal timing (TOPP) - and the carried PCB's tilt limit. Read only by
 #     src/Configuration/Program_Parser.py (Load_Optimization); written by hand. The robot's joint speed and
 #     acceleration limits stay in Configuration/Cell.yaml (one source for both programs). The optimizer
-#     (Example/Program/optimize_program.py) writes Data/Optimized/Program_Optimized.yaml from it; nothing writes
+#     (Example/cell.py optimize) writes Data/Optimized/Program_Optimized.yaml from it; nothing writes
 #     this file.
 #
 #   REQUIRED: every field is required; a missing or invalid field fails the load, naming it.

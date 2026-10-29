@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Program/test_optimize_program.py
+# File Name: ../test/Example/Cell/test_optimize_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -37,7 +37,7 @@ def test_the_optimizer_reproduces_the_committed_program_byte_for_byte(tmp_path_f
     """
 
     out, cwd = tmp_path_factory.mktemp('optimized'), tmp_path_factory.mktemp('cwd')
-    result = run_script('Program/optimize_program.py', ['--out', str(out)], cwd)
+    result = run_script('Cell/optimize_program.py', ['--out', str(out)], cwd)
     assert result.returncode == 0, result.stdout + result.stderr
     assert sorted(os.listdir(out)) == ['Program_Optimized.yaml', 'optimize_program.txt'] and os.listdir(cwd) == []
     written = open(os.path.join(out, 'Program_Optimized.yaml'), 'rb').read()

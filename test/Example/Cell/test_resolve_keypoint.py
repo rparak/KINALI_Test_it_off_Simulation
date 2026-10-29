@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Keypoints/test_resolve_keypoint.py
+# File Name: ../test/Example/Cell/test_resolve_keypoint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -36,7 +36,7 @@ def test_the_resolved_lines_are_printed_close_to_the_shipped_point(tmp_path, run
         0.05 mm of the shipped Pose; it writes nothing.
     """
 
-    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'P_INPUT_ABOVE'], tmp_path)
+    result = run_script('Cell/resolve_keypoint.py', ['--name', 'P_INPUT_ABOVE'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     joints = next(l for l in result.stdout.splitlines() if l.strip().startswith('Joints: ['))
     values = [float(v) for v in re.findall(r'-?\d+\.\d{6}', joints)]
@@ -53,5 +53,5 @@ def test_a_point_without_a_target_is_refused(tmp_path, run_script):
         A point defined by its joints only (P_HOME: no Reference, no PCB_Hold) has nothing to resolve: [ERROR], exit 1.
     """
 
-    result = run_script('Keypoints/resolve_keypoint.py', ['--name', 'P_HOME'], tmp_path)
+    result = run_script('Cell/resolve_keypoint.py', ['--name', 'P_HOME'], tmp_path)
     assert result.returncode == 1 and '[ERROR] Point P_HOME has no Reference or PCB_Hold target to resolve' in result.stdout

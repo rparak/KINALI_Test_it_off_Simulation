@@ -142,7 +142,7 @@ Every `Pose` is in the robot base frame and every `Offset` in its Reference poin
 usually teach a station (a crate, the loader, MG06) in its own user frame, so a station that moves needs only its frame
 re-taught.
 
-- **Impact:** a moved station means re-resolving every point that depends on it (`Example/Keypoints/resolve_keypoint.py`
+- **Impact:** a moved station means re-resolving every point that depends on it (`Example/cell.py point <name>`
   per point).
 - **What would close it:** a future step that adds user frames to `Constants.yaml` (a frame per station, points and offsets
   given in it), with the owner's decision on their names and how they are taught.

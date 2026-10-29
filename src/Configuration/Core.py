@@ -198,13 +198,14 @@ def Script_Log_Path(script_name: str) -> str:
 class Script_Log_Cls(object):
     """
     Description:
-        The log of one script run, logger/<script name>.log, rewritten on each run. Line() writes a line
+        The log of one script run, logger/<script name>.log, rewritten on each run (or appended to). Line() writes a line
         and returns it unchanged, so the script prints it: print(log.Line('[INFO] ...')). It prints
         nothing by itself.
 
     Initialization of the Class:
         Args:
-            (1) script_name [string]: The script's file name without .py.
+            (1) script_name [string]: The script's file name without .py (or cell.py's cell_<subcommand>).
+            (2) append [bool]: Append to the log instead of rewriting it (the modules of one cell.py subcommand share it).
 
         Example:
             Initialization:
@@ -217,10 +218,10 @@ class Script_Log_Cls(object):
                 Cls.Close()
     """
 
-    def __init__(self, script_name: str) -> None:
+    def __init__(self, script_name: str, append: bool = False) -> None:
         # << PRIVATE >> #
         self.__path = Script_Log_Path(script_name)
-        self.__handle = open(self.__path, 'w', encoding='utf-8')
+        self.__handle = open(self.__path, 'a' if append else 'w', encoding='utf-8')
 
     @property
     def Path(self) -> str:

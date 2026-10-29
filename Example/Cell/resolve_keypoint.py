@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Keypoints/resolve_keypoint.py
+# File Name: ../Example/Cell/resolve_keypoint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -33,6 +33,8 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
+# Typing (Support for type hints)
+import typing as tp
 # Math (Mathematical functions)
 import math
 # Custom Lib.:
@@ -48,23 +50,31 @@ from Kinematics.Core import Robot_Kinematics_Cls, Degrees_Text
 from Keypoints.Core import Resolve_Keypoint, Keypoints_Error_Cls
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Resolve a point's joints from its Reference (or PCB_Hold) target (IK on its tool's site, in its family, seeded from
         its own joints or --seed) and print the Joints and Pose lines to paste into Configuration/Constants.yaml. It writes
         nothing (project-style-rpx references/yaml.md); the check names it when a point is stale.
 
-            .venv/bin/python Example/Keypoints/resolve_keypoint.py --name <P_point> [--seed <P_point>]
+            Called by Example/cell.py point <name> [--seed <point>].
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/resolve_keypoint.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Print the resolved Joints and Pose lines of a point.')
     parser.add_argument('--name', required=True, help='the point (with a Reference or a PCB_Hold)')
     parser.add_argument('--seed', help='the point whose joints seed the IK (default: its own)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('resolve_keypoint')
+    log = Script_Log_Cls(log_name or 'resolve_keypoint', append=log_name is not None)
     try:
         cell, constants, meta = Load_Cell_Configuration(), Load_Constants(), Read_PCB_Meta()
         simulation = Load_Simulation(constants)
@@ -81,7 +91,3 @@ def main():
     print(log.Line('    Pose: [%s]' % ', '.join(['%.9f' % v for v in pose[:3]] + [Degrees_Text(a) for a in pose[3:]])))
     log.Close()
     return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

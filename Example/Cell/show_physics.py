@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Simulation/show_physics.py
+# File Name: ../Example/Cell/show_physics.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -191,21 +191,28 @@ class Physics_View_Cls(object):
         return self.State()
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         A program's physics run in the MuJoCo viewer (F11): the taught or the optimized program's trajectory (refused when stale,
-        as Example/Simulation/run_program.py), stepped at the model's 0.5 ms in real time - the frames skipped by the wall clock
+        as Example/Cell/run_program.py), stepped at the model's 0.5 ms in real time - the frames skipped by the wall clock
         - or at --speed (0.25: four times slower); keys Home pause, Page Down next step, '.' one sample, End the step's end (a
         physics run cannot go back); the overlay: the step, the time, the cups, the slip, the line (or the fault). The viewer's
         rules (F10.4): the lock only for the state copy. --headless --time T runs to T, prints the state and exits.
         The viewer needs .venv/bin/mjpython on macOS: under python it exits 2 naming it.
 
-            .venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--watchdog S]
-            .venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...]
+            Called by Example/cell.py show --physics [--program default|optimized] [--time T] [--speed F] [--headless] [--watchdog S].
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/show_physics.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
-    run_program = _Script('Simulation/run_program.py')
+    run_program = _Script('Cell/run_program.py')
     parser = argparse.ArgumentParser(description='Play a program\'s physics run in the viewer.')
     parser.add_argument('--program', default='taught', choices=list(run_program.CONST_VERSIONS), help='the program (default: taught)')
     parser.add_argument('--trajectory', help='the trajectory file (default Data/Generated/Trajectories/<program>.npz)')
@@ -214,10 +221,10 @@ def main():
     parser.add_argument('--headless', action='store_true', help='run to --time, print, no window')
     parser.add_argument('--watchdog', type=float, metavar='S', help='debug: when the viewer loop stalls for S seconds, print every '
                         'thread\'s traceback and exit 3')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('show_physics')
+    log = Script_Log_Cls(log_name or 'show_physics', append=log_name is not None)
     if not args.speed > 0 or (args.headless and args.time is None):
         print(log.Line('[ERROR] --speed must be > 0 and --headless needs --time T.'))
         log.Close()
@@ -278,7 +285,3 @@ def main():
     print(log.Line('[INFO] Simulation result only: not validated for the real cell.'))
     log.Close()
     return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

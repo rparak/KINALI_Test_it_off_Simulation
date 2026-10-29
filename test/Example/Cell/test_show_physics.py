@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Simulation/test_show_physics.py
+# File Name: ../test/Example/Cell/test_show_physics.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -35,12 +35,12 @@ import pytest
 Description:
     Initialization of constants.
 
-    Example/Simulation/show_physics.py: headless (a fresh interpreter, an unrelated working directory) and its physics view
+    Example/Cell/show_physics.py: headless (a fresh interpreter, an unrelated working directory) and its physics view
     imported as a module; the viewer itself needs mjpython (checked by hand, FEATURES.md F11).
 """
 # The script.
 #   Unit [string]
-CONST_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'Example', 'Simulation', 'show_physics.py')
+CONST_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'Example', 'Cell', 'show_physics.py')
 
 
 @pytest.fixture(scope='module')
@@ -57,7 +57,7 @@ def test_headless_runs_the_physics_to_a_time(tmp_path, run_script, taught_trajec
 
     work = tmp_path / 'work'
     work.mkdir()
-    result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless', '--time', '3.5'], work)
+    result = run_script('Cell/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless', '--time', '3.5'], work)
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.startswith('[INFO] step 2/22 S2_Pick_Input   t = 3.500 s / 70.404 s (physics)   4/4 cups, slip ')
     assert ': Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)\n' in result.stdout and os.listdir(work) == []
@@ -70,12 +70,12 @@ def test_bad_options_and_the_viewer_without_mjpython_are_refused(tmp_path, run_s
         mjpython command.
     """
 
-    result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless'], tmp_path)
+    result = run_script('Cell/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless'], tmp_path)
     assert result.returncode == 1 and '[ERROR] --speed must be > 0 and --headless needs --time T.' in result.stdout
-    result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--speed', '0'], tmp_path)
+    result = run_script('Cell/show_physics.py', ['--trajectory', str(taught_trajectory), '--speed', '0'], tmp_path)
     assert result.returncode == 1
     if sys.platform == 'darwin':
-        result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory)], tmp_path)
+        result = run_script('Cell/show_physics.py', ['--trajectory', str(taught_trajectory)], tmp_path)
         assert result.returncode == 2 and '.venv/bin/mjpython Example/Simulation/show_physics.py --program taught' in result.stdout
 
 
@@ -89,7 +89,7 @@ def test_the_physics_view_steps_within_its_budget_and_copies_the_state(taught_tr
     spec = importlib.util.spec_from_file_location('show_physics', CONST_SCRIPT)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    run_program = module._Script('Simulation/run_program.py')
+    run_program = module._Script('Cell/run_program.py')
     cell, meta, program, trajectory, free, model, _ = run_program.Load_Run('taught', str(taught_trajectory))
     drive = module.Trajectory_Drive_Cls(trajectory, program, free)
     view = module.mujoco.MjData(model)

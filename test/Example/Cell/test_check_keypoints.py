@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Keypoints/test_check_keypoints.py
+# File Name: ../test/Example/Cell/test_check_keypoints.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -33,7 +33,7 @@ def test_the_shipped_keypoints_pass_and_the_table_lists_them_all(tmp_path, run_s
         (P_VIA_HOME_MG06, the family switch) / 24 PASS, and nothing written to the working directory.
     """
 
-    result = run_script('Keypoints/check_keypoints.py', [], tmp_path)
+    result = run_script('Cell/check_keypoints.py', [], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     rows = [line for line in result.stdout.splitlines() if line.split() and line.split()[-1] in ('PASS', 'WARN', 'FAIL')]
     assert len(rows) == 25
@@ -47,7 +47,7 @@ def test_one_keypoint_and_an_unknown_name(tmp_path, run_script):
         --name checks one point; an unknown name is an [ERROR] line listing the points, exit 1.
     """
 
-    result = run_script('Keypoints/check_keypoints.py', ['--name', 'P_MG06_CLOSE_END'], tmp_path)
+    result = run_script('Cell/check_keypoints.py', ['--name', 'P_MG06_CLOSE_END'], tmp_path)
     assert result.returncode == 0 and '1 keypoint(s): 0 FAIL, 0 WARN, 1 PASS' in result.stdout and 'handle_bar -0.33' in result.stdout
-    result = run_script('Keypoints/check_keypoints.py', ['--name', 'nowhere'], tmp_path)
+    result = run_script('Cell/check_keypoints.py', ['--name', 'nowhere'], tmp_path)
     assert result.returncode == 1 and "[ERROR] There is no point 'nowhere'" in result.stdout

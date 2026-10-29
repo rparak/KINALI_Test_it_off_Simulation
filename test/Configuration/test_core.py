@@ -157,6 +157,23 @@ def test_a_script_log_keeps_every_line_and_returns_it(tmp_path, monkeypatch):
     assert open(os.path.join(str(tmp_path), 'demo.log'), encoding='utf-8').read() == '[INFO] three\n'
 
 
+def test_a_log_opened_to_append_keeps_the_earlier_lines(tmp_path, monkeypatch):
+    """
+    Description:
+        With append=True a second log of the same name adds its lines after the first one's (the modules of one cell.py
+        subcommand share logger/cell_<subcommand>.log); without it the file is rewritten.
+    """
+
+    monkeypatch.setattr('Configuration.Core.CONST_LOGGER', str(tmp_path))
+    log = Script_Log_Cls('cell_demo')
+    log.Line('[INFO] first module')
+    log.Close()
+    log = Script_Log_Cls('cell_demo', append=True)
+    log.Line('[INFO] second module')
+    log.Close()
+    assert open(os.path.join(str(tmp_path), 'cell_demo.log'), encoding='utf-8').read() == '[INFO] first module\n[INFO] second module\n'
+
+
 def _Bytes_Hash(path):
     """
     Description:

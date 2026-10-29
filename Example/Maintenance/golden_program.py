@@ -195,13 +195,21 @@ def Compare_Golden(now: tp.Dict[str, tp.Any], golden: tp.Dict[str, tp.Any]) -> t
     return out
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Build the taught program and compare its golden data with test/Program/data/ (default) or another folder, listing every
         difference (exit 1 if there is one), or write it into a folder with --out (a re-capture: the source names it).
 
             .venv/bin/python Example/Maintenance/golden_program.py [--compare DIR | --out DIR --source TEXT]
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/golden_program.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='The taught program\'s golden data: compare or write.')
@@ -209,10 +217,10 @@ def main():
     group.add_argument('--compare', default=CONST_GOLDEN, help='compare with this folder (default: test/Program/data/)')
     group.add_argument('--out', default=None, help='write the golden data into this folder instead of comparing')
     parser.add_argument('--source', default='', help='the capture\'s provenance, stored with --out')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('golden_program')
+    log = Script_Log_Cls(log_name or 'golden_program', append=log_name is not None)
     now = Capture(args.source)
     if args.out is not None:
         Write_Golden(now, args.out)

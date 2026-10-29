@@ -56,7 +56,7 @@ Description:
 CONST_CONSTANTS_YAML = os.path.join(CONST_CONFIGURATION, 'Constants.yaml')
 CONST_SIMULATION_YAML = os.path.join(CONST_CONFIGURATION, 'Simulation.yaml')
 CONST_PROGRAM_YAML = os.path.join(CONST_CONFIGURATION, 'Program.yaml')
-# The optimizer's settings (hand-written) and the optimized program (written by Example/Program/optimize_program.py only).
+# The optimizer's settings (hand-written) and the optimized program (written by Example/Cell/optimize_program.py only, cell.py optimize).
 #   Unit [string]
 CONST_OPTIMIZATION_YAML = os.path.join(CONST_CONFIGURATION, 'Optimization.yaml')
 CONST_OPTIMIZED_PROGRAM_YAML = os.path.join(CONST_DATA, 'Optimized', 'Program_Optimized.yaml')

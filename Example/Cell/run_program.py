@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Simulation/run_program.py
+# File Name: ../Example/Cell/run_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -78,7 +78,8 @@ def Load_Run(version: str, trajectory_path: tp.Optional[str] = None) -> tp.Tuple
     """
     Description:
         What a program's physics run needs: the cell, the PCB poses, the program, its trajectory (refused when the program or
-        the trajectory is stale), its free transfers and the compiled cell. Example/Simulation/show_physics.py imports it.
+        the trajectory is stale), its free transfers and the compiled cell. Example/Cell/show_physics.py and
+        Example/Maintenance/physics_baseline.py import it.
 
     Args:
         (1) version [string]: 'taught' or 'optimized'.
@@ -112,17 +113,25 @@ def Load_Run(version: str, trajectory_path: tp.Optional[str] = None) -> tp.Tuple
     return cell, meta, program, trajectory, free, model, trajectory_path
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         The physics run of a program's trajectory (F11): the taught program (Configuration/Program.yaml) or the optimized one
-        (Data/Optimized/Program_Optimized.yaml), its trajectory from Example/Program/build_program.py (refused when stale). The
+        (Data/Optimized/Program_Optimized.yaml), its trajectory from cell.py build or optimize (refused when stale). The
         report (Simulation.Format_Program_Report: SPEC §4.6's lines, the vacuum holds, a row per step, the carrying free
         transfers' slip, the warnings, the acceptance of SPEC §10.1) on stdout and in DIR/<program>_physics.txt. Exit 0 when
         every criterion is met, 1 when one fails (a lost PCB, the vacuum switch not OK included), 2 when the run cannot start or
         becomes unstable.
 
-            .venv/bin/python Example/Simulation/run_program.py [--program taught|optimized] [--trajectory FILE] [--out DIR] [--progress]
+            Called by Example/cell.py run --program default|optimized.
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/run_program.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Physics run of a program\'s trajectory: report and acceptance.')
@@ -131,10 +140,10 @@ def main():
     parser.add_argument('--out', default=CONST_REPORTS, help='write <program>_physics.txt into this directory (default: %s)'
                         % os.path.relpath(CONST_REPORTS, CONST_ROOT))
     parser.add_argument('--progress', action='store_true', help='print the simulated time and step every 2 s (stderr)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('run_program')
+    log = Script_Log_Cls(log_name or 'run_program', append=log_name is not None)
     note = lambda line: print(log.Line(line), file=sys.stderr, flush=True)
     began = time.perf_counter()
     try:
@@ -158,7 +167,3 @@ def main():
                                  report, len(failed)))
     log.Close()
     return CONST_EXIT_FAILED if failed else CONST_EXIT_PASSED
-
-
-if __name__ == '__main__':
-    sys.exit(main())

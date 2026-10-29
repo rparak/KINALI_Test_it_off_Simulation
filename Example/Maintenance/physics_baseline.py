@@ -76,7 +76,7 @@ Description:
     Initialization of constants.
 
     The physics baselines of the two programs (step 6, owner 2026-10-25): per program the full report of
-    Example/Simulation/run_program.py (baseline_report_<program>.txt) and its metrics (baseline_metrics_<program>.json), with
+    Example/Cell/run_program.py (baseline_report_<program>.txt) and its metrics (baseline_metrics_<program>.json), with
     the environment they were captured in (baseline_environment.json), in test/Simulation/data/. A run FAILS the regression on
     SPEC §10.1 (the acceptance bounds) or when a metric drifts from its baseline beyond CONST_TOLERANCES; the report's diff is
     printed for information only (contact physics changes with sub-micrometre differences, design-decisions). This script is the
@@ -190,7 +190,7 @@ def _Trajectory_Path(program: str, trajectories: tp.Optional[str]) -> tp.Optiona
 
     if not trajectories:
         return None
-    return os.path.join(trajectories, os.path.basename(_Script('Simulation/run_program.py').CONST_VERSIONS[program]).replace('.yaml', '.npz'))
+    return os.path.join(trajectories, os.path.basename(_Script('Cell/run_program.py').CONST_VERSIONS[program]).replace('.yaml', '.npz'))
 
 
 def _Wait_Variant(program: str, wait: float, trajectories: tp.Optional[str] = None) -> tp.Tuple[tp.Any, ...]:
@@ -208,7 +208,7 @@ def _Wait_Variant(program: str, wait: float, trajectories: tp.Optional[str] = No
         (1) parameter [Tuple]: (cell, pcb_meta, program, trajectory, free_steps, model).
     """
 
-    run_program = _Script('Simulation/run_program.py')
+    run_program = _Script('Cell/run_program.py')
     with open(run_program.CONST_VERSIONS[program], encoding='utf-8') as handle:
         lines = handle.read().splitlines(True)
     at = [i for i, line in enumerate(lines) if line.strip().startswith(CONST_WAIT_AFTER[program])]
@@ -249,7 +249,7 @@ def Capture(program: str, trajectories: tp.Optional[str] = None,
     if wait:
         cell, meta, prog, trajectory, free, model = _Wait_Variant(program, wait, trajectories)
     else:
-        cell, meta, prog, trajectory, free, model, _ = _Script('Simulation/run_program.py').Load_Run(program, _Trajectory_Path(program, trajectories))
+        cell, meta, prog, trajectory, free, model, _ = _Script('Cell/run_program.py').Load_Run(program, _Trajectory_Path(program, trajectories))
     run = Physics_Run_Cls(model, Trajectory_Drive_Cls(trajectory, prog, free), meta, cell)
     if pcb or handle:
         run.Data.qpos[run.qpcb] += pcb
@@ -277,7 +277,7 @@ def _Capture_Job(job: tp.Tuple[str, tp.Optional[str], tp.Tuple[float, float, flo
 
     try:
         return True, Capture(*job)
-    except (_Script('Simulation/run_program.py').Run_Error_Cls, Simulation_Error_Cls) as error:
+    except (_Script('Cell/run_program.py').Run_Error_Cls, Simulation_Error_Cls) as error:
         return False, str(error)
 
 
@@ -445,7 +445,43 @@ def Compare(now: tp.Dict[str, tp.Any], baseline: tp.Dict[str, tp.Any]) -> tp.Tup
     return failures, diff
 
 
-def main():
+def Compare_Programs(programs: tp.List[str], trajectories: tp.Optional[str], folder: str, log: Script_Log_Cls) -> tp.Tuple[int, tp.Dict[str, tp.Any]]:
+    """
+    Description:
+        Each program's physics run now (in parallel, Capture_All) compared with its baseline in folder, in the programs'
+        order: the failures (SPEC §10.1 and the drift) and the report's diff printed. Example/cell.py run reads the runs.
+
+    Args:
+        (1) programs [List<string>]: 'taught', 'optimized'.
+        (2) trajectories [string]: The folder of the built trajectories, or None (Data/Generated/Trajectories).
+        (3) folder [string]: The baseline folder.
+        (4) log [Script_Log_Cls(object)]: The log the lines go to.
+
+    Returns:
+        (1) parameter [int]: 0 every program within its baseline, 1 a failure, 2 a run cannot run.
+        (2) parameter [Dict<string, Dict>]: The run now of each program compared (its report, metrics, acceptance).
+    """
+
+    failed, runs = False, {}
+    results = iter(Capture_All([(program, trajectories, CONST_PERTURBATIONS[0]) for program in programs]))
+    for program in programs:
+        ran, now = next(results)
+        if not ran:
+            print(log.Line('[ERROR] %s: the physics run cannot run: %s' % (program, now)))
+            return 2, runs
+        failures, diff = Compare(now, Read_Baseline(program, folder))
+        failed = failed or bool(failures)
+        print(log.Line('[%s] %s: %d failure(s) (bounds and drift), %d report line(s) differ (information)' % (
+            'ERROR' if failures else 'INFO', program, len(failures), sum(1 for line in diff if line[:1] in '+-' and line[:3] not in ('---', '+++')))))
+        for line in failures:
+            print(log.Line('  FAIL ' + line))
+        for line in diff:
+            print(log.Line('  diff ' + line))
+        runs[program] = now
+    return (1 if failed else 0), runs
+
+
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Run each program's physics and compare it with its baseline in test/Simulation/data/ (default): exit 1 when a SPEC §10.1
@@ -455,6 +491,14 @@ def main():
         program's in order, as one after the other would print and write them.
 
             .venv/bin/python Example/Maintenance/physics_baseline.py [--program taught|optimized] [--trajectories DIR] [--compare DIR | --out DIR]
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/physics_baseline.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='The programs\' physics baselines: compare (bounds and drift) or write.')
@@ -463,12 +507,18 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--compare', default=CONST_BASELINES, help='compare with this folder (default: test/Simulation/data/)')
     group.add_argument('--out', default=None, help='write the baselines into this folder instead of comparing')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('physics_baseline')
-    failed, programs = False, [args.program] if args.program else CONST_PROGRAMS
-    perturbations = CONST_PERTURBATIONS if args.out is not None else CONST_PERTURBATIONS[:1]
+    log = Script_Log_Cls(log_name or 'physics_baseline', append=log_name is not None)
+    programs = [args.program] if args.program else CONST_PROGRAMS
+    if args.out is None:
+        code, _ = Compare_Programs(programs, args.trajectories, args.compare, log)
+        if code != 2:
+            print(log.Line('[INFO] Simulation results only: not validated for the real cell.'))
+        log.Close()
+        return code
+    perturbations = CONST_PERTURBATIONS
     results = iter(Capture_All([(program, args.trajectories, x) for program in programs for x in perturbations]))
     for program in programs:
         runs = [next(results) for _ in perturbations]
@@ -477,36 +527,26 @@ def main():
             print(log.Line('[ERROR] %s: the physics run cannot run: %s' % (program, now)))
             log.Close()
             return 2
-        if args.out is not None:
-            if not all(ran for ran, _ in runs):
-                raise Simulation_Error_Cls('; '.join(message for ran, message in runs if not ran))
-            captures = [capture for _, capture in runs]
-            failing = [(c['perturbation'], [name for name, ok, _ in c['acceptance'] if not ok]) for c in captures
-                       if not all(ok for _, ok, _ in c['acceptance'])]
-            if failing:
-                print(log.Line('[ERROR] %s: perturbation runs fail SPEC §10.1 (PCB m, wait s, handle rad: items): %s; no baseline written.' % (
-                    program, '; '.join('%s: %s' % (p, ', '.join(names)) for p, names in failing))))
-                log.Close()
-                return 2
-            Write_Baseline(program, captures, args.out)
-            envelope = Envelope(captures)
-            print(log.Line('[INFO] %s: wrote its baseline into %s (cycle %.3f s; %d of %d criteria pass; the envelope over %d runs: net force '
-                           '%.1f-%.1f N, hinge load %.2f-%.2f N m; contact points %s).' % (
-                               program, args.out, now['metrics']['cycle_time'], sum(ok for _, ok, _ in now['acceptance']), len(now['acceptance']),
-                               len(captures), *envelope['fork_net_force'], *envelope['handle_load'],
-                               '/'.join(str(c['metrics']['fork_points']) for c in captures))))
-            continue
-        failures, diff = Compare(now, Read_Baseline(program, args.compare))
-        failed = failed or bool(failures)
-        print(log.Line('[%s] %s: %d failure(s) (bounds and drift), %d report line(s) differ (information)' % (
-            'ERROR' if failures else 'INFO', program, len(failures), sum(1 for line in diff if line[:1] in '+-' and line[:3] not in ('---', '+++')))))
-        for line in failures:
-            print(log.Line('  FAIL ' + line))
-        for line in diff:
-            print(log.Line('  diff ' + line))
+        if not all(ran for ran, _ in runs):
+            raise Simulation_Error_Cls('; '.join(message for ran, message in runs if not ran))
+        captures = [capture for _, capture in runs]
+        failing = [(c['perturbation'], [name for name, ok, _ in c['acceptance'] if not ok]) for c in captures
+                   if not all(ok for _, ok, _ in c['acceptance'])]
+        if failing:
+            print(log.Line('[ERROR] %s: perturbation runs fail SPEC §10.1 (PCB m, wait s, handle rad: items): %s; no baseline written.' % (
+                program, '; '.join('%s: %s' % (p, ', '.join(names)) for p, names in failing))))
+            log.Close()
+            return 2
+        Write_Baseline(program, captures, args.out)
+        envelope = Envelope(captures)
+        print(log.Line('[INFO] %s: wrote its baseline into %s (cycle %.3f s; %d of %d criteria pass; the envelope over %d runs: net force '
+                       '%.1f-%.1f N, hinge load %.2f-%.2f N m; contact points %s).' % (
+                           program, args.out, now['metrics']['cycle_time'], sum(ok for _, ok, _ in now['acceptance']), len(now['acceptance']),
+                           len(captures), *envelope['fork_net_force'], *envelope['handle_load'],
+                           '/'.join(str(c['metrics']['fork_points']) for c in captures))))
     print(log.Line('[INFO] Simulation results only: not validated for the real cell.'))
     log.Close()
-    return 1 if failed else 0
+    return 0
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Program/build_program.py
+# File Name: ../Example/Cell/build_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -111,23 +111,31 @@ def Build_Meta(program_path: str, optimized: bool = False) -> tp.Dict[str, tp.An
                          'numpy': np.__version__, 'mujoco': mujoco.__version__}}
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         Build a program into its trajectory (Data/Generated/Trajectories/<program>.npz and .csv) and check it (the report:
         stdout and Data/Generated/Reports/<program>_check.txt); exit 0 when the check passes, 1 when it fails or the
         program cannot be built.
 
-            .venv/bin/python Example/Program/build_program.py [--program FILE] [--out DIR]
+            Called by Example/cell.py build, and by Example/cell.py optimize (--program Data/Optimized/Program_Optimized.yaml).
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/build_program.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Build and check a program (default: Configuration/Program.yaml).')
     parser.add_argument('--program', default=CONST_PROGRAM_YAML, help='the program file (with Configuration/Constants.yaml and Simulation.yaml)')
     parser.add_argument('--out', help='the folder for the trajectory and the report (default: Data/Generated/Trajectories and Reports)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('build_program')
+    log = Script_Log_Cls(log_name or 'build_program', append=log_name is not None)
     try:
         cell, meta = Load_Cell_Configuration(), Read_PCB_Meta()
         constants = Load_Constants()
@@ -170,7 +178,3 @@ def main():
                                                'failed' if result.Verdict == 'FAIL' else 'passed')))
     log.Close()
     return 1 if result.Verdict == 'FAIL' else 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

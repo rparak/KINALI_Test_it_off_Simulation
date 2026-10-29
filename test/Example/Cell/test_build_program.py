@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Program/test_build_program.py
+# File Name: ../test/Example/Cell/test_build_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -31,7 +31,7 @@ import pytest
 def built(tmp_path_factory, run_script):
     out = tmp_path_factory.mktemp('built')
     cwd = tmp_path_factory.mktemp('cwd')
-    return out, cwd, run_script('Program/build_program.py', ['--out', str(out)], cwd)
+    return out, cwd, run_script('Cell/build_program.py', ['--out', str(out)], cwd)
 
 
 @pytest.mark.slow
@@ -67,7 +67,7 @@ def test_a_program_that_cannot_be_built_is_an_error_line(tmp_path, run_script, r
     path = tmp_path / 'Program.yaml'
     path.write_text(text.replace(old, old + '    - Tester.Run(J_TEST)\n', 1), encoding='utf-8')
     out = tmp_path / 'out'
-    result = run_script('Program/build_program.py', ['--program', str(path), '--out', str(out)], tmp_path)
+    result = run_script('Cell/build_program.py', ['--program', str(path), '--out', str(out)], tmp_path)
     assert result.returncode == 1, result.stdout + result.stderr
     assert '[ERROR] Step S1_Approach_Input, Tester.Run(J_TEST) > Test(Process.Test_Duration): the test needs the PCB in MG06' in result.stdout
     assert not out.exists()
@@ -83,18 +83,18 @@ def test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused(tmp_pa
     """
 
     optimized = os.path.join(root, 'Data', 'Optimized', 'Program_Optimized.yaml')
-    result = run_script('Program/build_program.py', ['--program', optimized, '--out', str(tmp_path)], tmp_path)
+    result = run_script('Cell/build_program.py', ['--program', optimized, '--out', str(tmp_path)], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'program Program_Optimized: 16 steps, 14788 samples (4 ms), cycle time 59.148 s;' in result.stdout
     text = open(optimized, encoding='utf-8').read()
     stale = tmp_path / 'Stale.yaml'
     cell = text.split('    cell: "', 1)[1].split('"', 1)[0]
     stale.write_text(text.replace('    cell: "%s"' % cell, '    cell: "%s"' % ('0' * 64), 1), encoding='utf-8')
-    result = run_script('Program/build_program.py', ['--program', str(stale), '--out', str(tmp_path)], tmp_path)
+    result = run_script('Cell/build_program.py', ['--program', str(stale), '--out', str(tmp_path)], tmp_path)
     assert result.returncode == 1 and 'was optimized from other inputs (cell changed since); make it again: .venv/bin/python ' \
                                        'Example/Program/optimize_program.py' in result.stdout
     edited = tmp_path / 'Edited.yaml'
     edited.write_text(text.replace('    S6_Close_MG06: 18.884', '    S6_Close_MG06: 18.932', 1), encoding='utf-8')
-    result = run_script('Program/build_program.py', ['--program', str(edited), '--out', str(tmp_path)], tmp_path)
+    result = run_script('Cell/build_program.py', ['--program', str(edited), '--out', str(tmp_path)], tmp_path)
     assert result.returncode == 1 and 'does not match its recorded Schedule' in result.stdout and 'S6_Close_MG06: recorded 18.932 s, built 18.884 s' \
         in result.stdout

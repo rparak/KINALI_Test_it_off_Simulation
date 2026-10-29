@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Keypoints/check_keypoints.py
+# File Name: ../Example/Cell/check_keypoints.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -33,6 +33,8 @@ if os.path.join(CONST_REPO_ROOT, 'src') not in sys.path:
     sys.path.append(os.path.join(CONST_REPO_ROOT, 'src'))
 # Argparse (Command-line parsing)
 import argparse
+# Typing (Support for type hints)
+import typing as tp
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
 from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls
@@ -47,21 +49,29 @@ from Collision.Core import Build_Planning_Model, Robot_Collision_Cls
 from Keypoints.Core import Check_Keypoint, Format_Check_Table
 
 
-def main():
+def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
         The keypoint check (SPEC §7.7), headless: every robot keypoint (or one) posed in its context, a table of the
         rules and the verdicts, every failure named; exit 1 when a keypoint FAILs (a WARN passes).
 
-            .venv/bin/python Example/Keypoints/check_keypoints.py [--name <keypoint>]
+            Called by Example/cell.py check [--name <keypoint>] and Example/cell.py point <name>.
+
+    Args:
+        (1) argv [List<string>]: The arguments (default: the command line).
+        (2) log_name [string]: The log to append to (cell.py's logger/cell_<subcommand>.log), or None: logger/check_keypoints.log,
+            rewritten.
+
+    Returns:
+        (1) parameter [int]: The exit code.
     """
 
     parser = argparse.ArgumentParser(description='Check the keypoints (limits, family, Check, stale, clearance).')
     parser.add_argument('--name', help='check one keypoint only')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     Configure_MuJoCo_Log()
-    log = Script_Log_Cls('check_keypoints')
+    log = Script_Log_Cls(log_name or 'check_keypoints', append=log_name is not None)
     try:
         cell, constants, meta = Load_Cell_Configuration(), Load_Constants(), Read_PCB_Meta()
         simulation = Load_Simulation(constants)
@@ -88,7 +98,3 @@ def main():
                       sum(r.Verdict == 'PASS' for r in results))))
     log.Close()
     return 1 if failed else 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

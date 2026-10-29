@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Simulation/test_run_program.py
+# File Name: ../test/Example/Cell/test_run_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -30,7 +30,7 @@ import pytest
 Description:
     Initialization of constants.
 
-    Example/Simulation/run_program.py run as a person runs it (fresh interpreter, unrelated working directory), on a trajectory
+    Example/Cell/run_program.py run as a person runs it (fresh interpreter, unrelated working directory), on a trajectory
     built into a temporary folder.
 """
 # The exit codes the script documents: all criteria met, one failed, cannot run / unstable.
@@ -54,7 +54,7 @@ def test_the_taught_program_runs_and_meets_the_acceptance(tmp_path, run_script, 
 
     work = tmp_path / 'work'
     work.mkdir()
-    result = run_script('Simulation/run_program.py', ['--program', 'taught', '--trajectory', str(taught_trajectory), '--out', str(tmp_path / 'out')],
+    result = run_script('Cell/run_program.py', ['--program', 'taught', '--trajectory', str(taught_trajectory), '--out', str(tmp_path / 'out')],
                         work)
     assert result.returncode == CONST_PASSED, result.stdout[-2000:] + result.stderr
     lines = result.stdout.splitlines()
@@ -72,9 +72,9 @@ def test_a_missing_or_stale_trajectory_exits_2(tmp_path, run_script, taught_traj
         [ERROR] lines naming what to do, exit 2, no report.
     """
 
-    result = run_script('Simulation/run_program.py', ['--trajectory', str(tmp_path / 'absent.npz'), '--out', str(tmp_path / 'out')], tmp_path)
+    result = run_script('Cell/run_program.py', ['--trajectory', str(tmp_path / 'absent.npz'), '--out', str(tmp_path / 'out')], tmp_path)
     assert result.returncode == CONST_ERROR and '[ERROR] ' in result.stderr and 'absent.npz' in result.stderr, result.stderr
-    result = run_script('Simulation/run_program.py', ['--program', 'optimized', '--trajectory', str(taught_trajectory), '--out',
+    result = run_script('Cell/run_program.py', ['--program', 'optimized', '--trajectory', str(taught_trajectory), '--out',
                                                       str(tmp_path / 'out')], tmp_path)
     assert result.returncode == CONST_ERROR and 'was built from other inputs (program changed since); rebuild it: .venv/bin/python ' \
         'Example/Program/build_program.py --program Data/Optimized/Program_Optimized.yaml' in result.stderr, result.stderr

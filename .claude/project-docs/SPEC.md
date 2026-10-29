@@ -61,8 +61,8 @@ Scope (the brief's steps, §7, in this order):
 - Blending (possible later); parallel robot/loader execution in the default program (the optimized program has it,
   under interlocks).
 - Driving a real robot or machine now. A transfer to the real cell is planned later (§17).
-- A GUI application (owner, 2026-10-25: no PyQt GUI, design-decisions). The interface is the scripts of `Example/`, the
-  MuJoCo viewer (`show_program.py`, `show_physics.py`, the keypoint viewer).
+- A GUI application (owner, 2026-10-25: no PyQt GUI, design-decisions). The interface is `Example/cell.py`, the
+  MuJoCo viewer (`Example/cell.py show`, `cell.py point --show`).
 
 ## 4. Measured facts this specification rests on
 
@@ -392,7 +392,7 @@ models/robot_tool/        VGC10 + fork MJCF and meshes
 Configuration/Cell.yaml   the cell's physical description (§8)
 Configuration/Constants.yaml, Simulation.yaml, Program.yaml   the cell program: its named values, the simulation's data, the program (§8)
 Configuration/Optimization.yaml   the optimized program's settings: the FREE segments, the planner (§8, F9)
-Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
+Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Cell/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Trajectories/
@@ -417,28 +417,29 @@ src/Program/Const.py      the constant the build and the check share
 src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
 src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt (§7.11)
-Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
-Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time
-Example/Maintenance/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
-Example/Maintenance/export_cell_scene.py     writes models/cell_scene.xml
-Example/Maintenance/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
-Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
-Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
-Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless
-Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
-                                       stale or its schedule differs)
-Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
-Example/Maintenance/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
-Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
-                                       segment and its current line), --version default | optimized, --step / --time, --watchdog S (debug)
-test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
+Example/cell.py           the one user entry point (design-decisions: one user entry point): check, point, build, optimize, run,
+                          show (exit 0 / 1 / 2; logger/cell_<subcommand>.log); a new user action is a subcommand, never a script
+Example/Cell/             its internal modules (not run directly; each a main(argv, log_name)): check_keypoints.py (the point
+                          table), check_programs.py (the configuration and programs check), resolve_keypoint.py (IK of a point:
+                          the Joints and Pose lines to paste), show_keypoint.py (the cell posed at a point), build_program.py (a
+                          program -> its trajectory, npz + csv, and check report; an optimized one refused when stale or its
+                          schedule differs), optimize_program.py (Data/Optimized/Program_Optimized.yaml and its report),
+                          run_program.py (one program's physics run, report and acceptance; Load_Run), show_program.py (a
+                          trajectory in the viewer: Home / Page Down / . / Page Up / End, the overlay the segment and its line),
+                          show_physics.py (the physics run in the viewer), results.py (the comparison table)
+Example/Maintenance/      the maintenance tools, documented in CLAUDE.md only: model_fingerprint.py (compares, default, or writes
+                          the compiled model's fingerprint), export_cell_scene.py (writes models/cell_scene.xml), golden_program.py
+                          (the taught program's golden data: compare, exit 0 / 1, or write), physics_baseline.py (the programs'
+                          physics baselines: compare - bounds and drift, exit 0 / 1 / 2 - or write; cell.py run calls its compare)
+test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Example/ mirroring Example/ (test_cell.py, Cell/,
+                               Maintenance/); test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/; test/conftest.py (src/ on the path,
                                the shared fixtures)
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
 
-`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Keypoints`, `Program`) and
-`Maintenance/` for the regression and scene tools (the model fingerprint, the scene export, the golden, the baselines). `Data/` is ordered by purpose. The configuration (the cell, the
+`Example/` holds `cell.py`, its internal modules in `Cell/` and the maintenance tools in `Maintenance/` (the model
+fingerprint, the scene export, the golden, the baselines); `test/Docs/test_layout.py` pins the three. `Data/` is ordered by purpose. The configuration (the cell, the
 program's three files) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
 
@@ -490,7 +491,7 @@ Starting the passive viewer with the studio look's fog and haze flags on (the of
 timeline by the wall clock with queued key actions; `Run_Viewer_Loop`, the mujoco 3.16 viewer rules: `viewer.lock()` only
 while posing, `set_texts` outside it and at most every 0.25 s unless the segment changes, `sync` every frame; `Watchdog_Cls`
 for `--watchdog`). No project imports. The playback has a speed against the wall clock and a `frame` action (one
-sample on, paused), and the loop a `prepare` hook called every frame before the lock (`Example/Simulation/show_physics.py` steps
+sample on, paused), and the loop a `prepare` hook called every frame before the lock (`Example/Cell/show_physics.py` steps
 its physics run there, at most 50 ms of wall time per frame, and only copies the state under the lock).
 
 ### 7.6 Simulation
@@ -511,7 +512,7 @@ dropped PCB falls through). The run stops at once with the fault `PCB lost at t,
 slip, tool tilt, TCP acceleration` (an acceptance failure, exit 1). An instability (MuJoCo resets the state) raises
 `Simulation_Error_Cls` with the time, the phase, the line and the PCB's last position (exit 2); neither hangs.
 
-**A program's physics run** (F11; `Example/Simulation/run_program.py`): `Trajectory_Drive_Cls(trajectory, program, free_steps)`,
+**A program's physics run** (F11; `Example/Cell/run_program.py`): `Trajectory_Drive_Cls(trajectory, program, free_steps)`,
 every 4 ms per step the closest robot - loader distance (the carriages and jaws, and in a FREE step the PCB where the program has
 it in the jaws: in the LOCKED handover and take the cups touch it by design, the cups_pcb group) and carried PCB - loader
 distance (at the handover and the take it touches the jaws by design, pcb_jaws; a line under the table says both);
@@ -799,7 +800,7 @@ tester's job runs whole). Checked at load besides the grammar: every constant an
 only across `P_VIA_HOME_MG06` and never in a MoveL; a MovePath starts where the robot stands; the segment names of
 `Simulation.yaml` exist.
 
-The **optimized program** `Data/Optimized/Program_Optimized.yaml` (F9) is written by `Example/Program/optimize_program.py`
+The **optimized program** `Data/Optimized/Program_Optimized.yaml` (F9) is written by `Example/Cell/optimize_program.py`
 only and committed (generated data). It has the `Program.yaml` format plus:
 `Robot.MoveSpline(W_<NAME>, v=)` (a planned spline, `v` a fraction of the datasheet speeds, required), `Loader.Start(J_)` /
 `Loader.WaitDone(J_)` (a job started while none runs and waited for before the next Start, Run or the end); `Waypoints`
@@ -839,13 +840,13 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `models/cell_scene.xml` | written by `Scene` (`Export_Cell_Scene`); read by MuJoCo's viewer only |
 | `Data/PCB/pcb_meta.json` | `Configuration` (`Read_PCB_Meta`), written by hand: the PCB poses (`cad_pos`, `place_pos`, `hold_pos`, `quat`) only |
 | `Configuration/Cell.yaml` | `Configuration` (`Load_Cell_Configuration`), written by hand (§8) |
-| `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser` (`Load_Constants`, `Load_Simulation`, `Load_Program`), written by hand (§8); `Example/Keypoints/resolve_keypoint.py` prints lines to paste, nothing writes them |
+| `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser` (`Load_Constants`, `Load_Simulation`, `Load_Program`), written by hand (§8); `Example/Cell/resolve_keypoint.py` prints lines to paste, nothing writes them |
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
-| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
-| the optimizer's report | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`) |
+| `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Cell/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
+| the optimizer's report | `Example/Cell/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`) |
 | the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png`, the charts `Media/Default_vs_Optimized_*`, `Media/Timeline_*` | committed (the v1.0 programs; their generators are in git at `c43f079`, §7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
-| a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
+| a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Cell/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
 | the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Maintenance/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (written once from the owner's originals, F5; the script is in git at `c43f079`); read by the README; pinned by sha256 (`test/Docs/test_readme.py`) |
 | the model fingerprint (JSON) | `Example/Maintenance/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
@@ -931,7 +932,7 @@ commands, editing keypoints and program, the file formats.
   `Example/Maintenance/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
   change to the program or its build re-captures it in its own commit, listing what changed.
 - **Physics baselines of the programs** (step 6, owner 2026-10-25): `test/Simulation/data/baseline_report_taught.txt` and
-  `baseline_report_optimized.txt` (the full report of `Example/Simulation/run_program.py`), `baseline_metrics_<program>.json`
+  `baseline_report_optimized.txt` (the full report of `Example/Cell/run_program.py`), `baseline_metrics_<program>.json`
   (the compared metrics) and `baseline_environment.json` (the platform, the versions, the commit), written and compared by
   `Example/Maintenance/physics_baseline.py` (`--out DIR` re-captures, in its own commit with the reason), pinned by
   `test/Simulation/test_baselines.py` (slow). A run FAILS on any §10.1 criterion and on a metric beyond its drift tolerance:

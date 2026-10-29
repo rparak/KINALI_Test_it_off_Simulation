@@ -756,7 +756,7 @@ displacement in the **Reference point's tool frame** (for `T_SUCTION`, +Z from t
 is above, away from the part). Both fields are required on every point, both `null` on a root point; one set without the
 other, an unknown or non-point Reference, and a Reference cycle are load errors naming the file, line and point. The
 point's FK must equal the Reference's pose moved by the Offset within `Clearance.Stale_Position` / `Stale_Angle` (0.05 mm,
-0.01°); its `Joints` stay authoritative and `Example/Keypoints/resolve_keypoint.py` prints corrected `Joints` and `Pose`
+0.01°); its `Joints` stay authoritative and `Example/Cell/resolve_keypoint.py` prints corrected `Joints` and `Pose`
 lines. The roots that are placed against the PCB (`P_INPUT_PICK`, `P_LOADER_PLACE`, `P_OUTPUT_PLACE`) take their target
 from `Simulation.yaml`'s `PCB_Hold` (a PCB location and an offset), since the PCB's poses are simulation data. The shipped
 offsets are within 0.0387 mm of their Reference (measured 2026-10-24).
@@ -902,7 +902,7 @@ Pinned by `test/Render/test_core.py::test_the_overlay_is_never_set_under_the_vie
 `::test_the_playback_follows_the_wall_clock_and_skips_samples_on_slow_frames`, `::test_keys_arriving_mid_frame_apply_at_the_next_frame`,
 `::test_the_overlay_updates_at_most_four_times_a_second_and_at_once_on_a_segment_change`,
 `::test_a_stalled_loop_is_reported_by_the_watchdog`,
-`test/Example/Program/test_show_program.py::test_a_frame_of_the_playback_fits_the_frame_period`.
+`test/Example/Cell/test_show_program.py::test_a_frame_of_the_playback_fits_the_frame_period`.
 
 ## The planner and the optimizer are two domains
 
@@ -984,7 +984,7 @@ keeps it out at the loader's modelled speed (F14: 2.2 % slower broke I8).
 
 **Revisit if** the loader's positions or jobs change (the optimizer finds the slot again).
 
-Pinned by `test/Optimizer/test_measure.py::test_the_interlocks_hold`, `test/Example/Program/test_optimize_program.py`.
+Pinned by `test/Optimizer/test_measure.py::test_the_interlocks_hold`, `test/Example/Cell/test_optimize_program.py`.
 
 ## The robot waits for the loader's done, never for a time (F15)
 
@@ -1055,7 +1055,7 @@ Pinned by `test/Program/test_check.py::test_the_optimized_program_keeps_the_gati
 
 ## The optimized program is generated data, committed and reproducible
 
-**Decision.** `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Program/optimize_program.py` and committed.
+**Decision.** `Data/Optimized/Program_Optimized.yaml` is written only by `Example/Cell/optimize_program.py` and committed.
 It records the sha256 of its inputs (the four configuration files, `Optimization.yaml`, the fork path, the compiled planning
 model), the platform and versions, each segment's start time and the TOPP grid. A build refuses it when an input changed or
 when it does not reproduce the schedule; the optimizer run again writes the same bytes (B5). A YAML input's hash - here and in
@@ -1074,9 +1074,9 @@ although an order can matter to a reader.
 
 Pinned by `test/Configuration/test_core.py::test_the_yaml_hash_is_the_content_not_the_bytes`,
 `test/Program/test_core.py::test_an_input_is_hashed_by_its_yaml_content_or_its_bytes`,
-`test/Example/Program/test_optimize_program.py::test_the_optimizer_reproduces_the_committed_program_byte_for_byte`,
+`test/Example/Cell/test_optimize_program.py::test_the_optimizer_reproduces_the_committed_program_byte_for_byte`,
 `test/Optimizer/test_core.py::test_the_shipped_optimized_program_is_current_and_matches_its_schedule`,
-`test/Example/Program/test_build_program.py::test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused`.
+`test/Example/Cell/test_build_program.py::test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused`.
 
 ## Run is Start plus WaitDone; a robot Wait holds only the robot
 
@@ -1116,7 +1116,7 @@ To_Output) are shorter in time, their clearances pass, and the tilt stays within
 **Revisit if** the physics shows PCB slip in a carrying transfer above its warning.
 
 Pinned until F20 by `test/Example/Program/test_compare_programs.py` (removed); the optimized trajectory is pinned since by
-`test/Example/Program/test_optimize_program.py` (byte-identical program) and the physics baseline.
+`test/Example/Cell/test_optimize_program.py` (byte-identical program) and the physics baseline.
 
 ## A robot stop is a tenth of a second at rest
 
@@ -1360,7 +1360,7 @@ format: loses the analytic speeds and the steps.
 **Revisit if** a program needs a mark or a contact rule the trajectory does not carry.
 
 Pinned by `test/Simulation/test_core.py` (the drive's interpolation and step classes), `test/Simulation/test_baselines.py` and
-`test/Example/Simulation/test_run_program.py`.
+`test/Example/Cell/test_run_program.py`.
 
 ## The carried PCB tilts at most 20 deg
 
