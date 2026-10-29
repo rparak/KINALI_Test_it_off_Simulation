@@ -25,7 +25,7 @@ The maintenance rule is in feature-manager's project reference (`.claude/skills/
 
 At most 3,000 words by `wc -w .claude/project-docs/SUPPORT_CHAT.md`, in place of `SKILL.md` §4's 2,500 (owner, 2026-10-29:
 2,694 at `e80320e`, with room for the next features). When a REFRESH would pass 2,750, tighten the wording first; raising the
-limit is the owner's decision.
+limit is the owner's decision. Pinned by `test/Docs/test_support_chat.py`, which reads the limit from this section.
 
 ## Checks after writing
 

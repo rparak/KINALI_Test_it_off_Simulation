@@ -40,14 +40,17 @@ import pytest
 Description:
     The support-chat brief, .claude/project-docs/SUPPORT_CHAT.md (the support-brief skill; owner, 2026-10-28): its sections
     0-9 in order, the commit and date it was checked against (sections 0 and 9 the same, an ancestor of HEAD), the
-    feature-manager safety sentence word for word, and its key numbers against their sources: the physics baselines, Cell.yaml
-    and Optimization.yaml.
+    feature-manager safety sentence word for word, its key numbers against their sources: the physics baselines, Cell.yaml
+    and Optimization.yaml, and its length within the limit of the support-brief project reference (wc -w).
 """
 # The brief, the safety sentence's source and the baseline tool, relative to the repository root.
 #   Unit [string]
 CONST_BRIEF = os.path.join('.claude', 'project-docs', 'SUPPORT_CHAT.md')
 CONST_SAFETY_SOURCE = os.path.join('.claude', 'skills', 'feature-manager', 'SKILL.md')
 CONST_TOOL = os.path.join('Example', 'Maintenance', 'physics_baseline.py')
+# The project reference of the support-brief skill, which states the brief's word limit (> Length).
+#   Unit [string]
+CONST_LIMIT_SOURCE = os.path.join('.claude', 'skills', 'support-brief', 'references', 'project.md')
 # The brief's sections, in order (the support-brief skill > section 2).
 #   Unit [Tuple<string>]
 CONST_SECTIONS = ('0. How to use this brief', '1. The project in brief', '2. Current state', '3. Architecture',
@@ -147,3 +150,16 @@ def test_the_brief_numbers_match_their_sources(root, baselines, cell_configurati
     assert '(limit %g, assumed)' % round(math.degrees(Load_Optimization(program).Carry_Max_Tilt), 6) in _Row(brief, 'Carried PCB tilt')
     assert 'test (%.1f s placeholder)' % cell_configuration.Test_Duration in brief
     assert 'the %g %% speed' % (100.0 * cell_configuration.Speed_Fraction) in brief
+
+
+def test_the_brief_stays_within_its_word_limit(root):
+    """
+    Description:
+        The brief's words, counted as wc -w counts them (whitespace-separated, the whole file), are at most the limit the
+        support-brief project reference states (> Length: "At most N words by `wc -w ..."), read from there, not repeated here.
+    """
+
+    with open(os.path.join(root, CONST_LIMIT_SOURCE), encoding='utf-8') as handle:
+        limits = re.findall(r'At most ([0-9,]+) words by `wc -w', handle.read())
+    assert len(limits) == 1
+    assert len(_Brief(root).split()) <= int(limits[0].replace(',', ''))
