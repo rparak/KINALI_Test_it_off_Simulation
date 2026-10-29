@@ -7,16 +7,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 
 ## Open
 
-- [ ] F21: the four in-repository skills (project-style-rpx, project-optimize, readme-writer, feature-manager) take the
-      procedures F20 proved (the no-clutter rule checked, the cleanup for user simplicity, the README ordered by the user's
-      path, accepting an intended change with `cell.py all --recapture`); docs and skills only, no code or behaviour change
-      (owner, 2026-10-29). Part A approved 2026-10-29: the re-captured files go in their own commit straight after the
-      change, in the same push (SPEC §10.2), and the README's sentence says so too; the module import by name only in
-      `cell.py`; the optimize reference's cleanup criteria a pointer, its commands without a machine path; the diff proof
-      byte for byte for the deterministic outputs, the physics within the baselines' tolerances and envelopes. Built
-      2026-10-29: `1b45b01` style, `e8cb2b1` optimize, `0cb6554` readme-writer, `de8db79` feature-manager, `7a11c39` the README's
-      re-capture sentence; the optimize reference's commands run first (install 7.5-8.1 s, 289 MB, 21 packages; fresh clone
-      with empty `HOME` and `TMPDIR`: install 21.4 s, `cell.py all` 52.5 s, 552 passed); waiting for the owner's acceptance.
 - [ ] Candidate experiment (owner, 2026-10-24: after step 6, now possible): start `J_INSERT` during the handover's last MoveL
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
@@ -47,3 +37,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F18 | Revision 1: the four Claude Code skills shipped in the repository (project-style-rpx, feature-manager, project-optimize, readme-writer; from rp-claude-skills `ec7af02`), mujoco-robot-cell's project layer removed, the skills' own licence (`.claude/skills/LICENSE`, MIT, Roman Parak; option (b) confirmed), the README section; accepted by the owner 2026-10-28 | `874d19e`…`7ed0bb1` |
 | F19 | Revision 2: the fifth skill, `support-brief` - creates or refreshes `.claude/project-docs/SUPPORT_CHAT.md`, the brief for a new Claude chat acting as the project's senior technical support; its `SKILL.md` generic, its project part in `references/project.md`, the maintenance rule in feature-manager's project reference, "no review" commits locally and never pushes; `SUPPORT_CHAT.md` itself is the skill's first run; accepted (owner, 2026-10-28) | `b38cecf`, `9253d31` and the docs commit; `6de6ca4` first run (CREATE) of support-brief |
 | F20 | One user entry point `Example/cell.py` (check, point, build, optimize, run, show, all `--recapture`), its modules in `Example/Cell/`, the maintenance tools in `Example/Maintenance/`; the comparison, media and logo generators, the archives, `--image` and six unused dependencies removed (restore point `c43f079`); the README results block and the README restructured; the no-clutter rule; accepted by the owner 2026-10-29 (the viewers checked by the owner: show, show --physics, point --show) | `271b004`…`a250731` |
+| F21 | The four in-repository skills take F20's procedures: the import by name only in `cell.py` and what the layout test pins (project-style-rpx); the review of what can go, with its commands run (project-optimize); the README ordered by the user's path and the block written by code (readme-writer); accepting an intended change with `cell.py all --recapture`, the re-captured files in their own commit straight after the change (feature-manager, SPEC §10.2); the README's re-capture sentence and CLAUDE.md's README-checker line corrected; docs and skills only; accepted by the owner 2026-10-29 | `929db17`…`a546744` |
