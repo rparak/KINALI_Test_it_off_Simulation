@@ -59,16 +59,18 @@ each module's test file, each constant with its readers. The checker's configura
 The scripts folder is `Example/`: `cell.py`, the one user entry point (the repository root one folder up from `__file__`), its
 internal modules in `Example/Cell/` and the maintenance tools in `Example/Maintenance/` (the root two folders up). An internal
 module has no command line of its own: it is a `main(argv, log_name)` that `cell.py` calls (its tests through the same seam,
-`test/conftest.py` `Script_Command`). A module or tool may import another as a module through `importlib`
-(`physics_baseline.py` uses `run_program.py`'s `Load_Run`; `show_physics.py` too; `cell.py` imports by name, so a parallel
-run's workers import it again). `Data/` subfolders are named by purpose, Pascal case like the domains.
+`test/conftest.py` `Script_Command`). A module or tool may import another as a module through `importlib`,
+by path (`physics_baseline.py` and `show_physics.py` load `run_program.py` for its `Load_Run`; the tests load a module the same
+way), except `cell.py`: it imports each by name with its folder on `sys.path` (`_Module`), because the spawned workers of a
+parallel run (`physics_baseline.Capture_All`) import the module of the function they run again by its name. `Data/` subfolders are named by purpose, Pascal case like the domains.
 
 **No clutter ✅** (owner, 2026-10-28; design-decisions: one user entry point): the user has one entry point, `Example/cell.py`;
 a new user action becomes a `cell.py` subcommand, never a new top-level script. Maintenance tools live only in
 `Example/Maintenance/` and are documented in `CLAUDE.md` only. A one-off script is removed once its output is committed (git
 history keeps it; design-decisions names the commit). No generator of by-products (media, figures, variants) without the
 owner's approval. No copies or archives in the tree: git history keeps them. Pinned by `test/Docs/test_layout.py`
-(`CONST_EXAMPLE_FILES`: the exact contents of `Example/`, `Example/Cell/` and `Example/Maintenance/`).
+(`CONST_EXAMPLE_FILES`: the exact contents of `Example/`, `Example/Cell/` and `Example/Maintenance/`, each with its mirrored
+test; a file added there fails the test until it is declared on purpose).
 
 Layer order 📄 (by domain; within a domain: `Const` ← `Core` ← the topic modules):
 
