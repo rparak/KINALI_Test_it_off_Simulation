@@ -15,12 +15,7 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 - [ ] Candidate, project-optimize, speed (owner, 2026-10-29; approval first):
       `test/Example/test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` takes
       233.65 s of the full suite's 292.5 s (`-n 8 --durations=15`, 553 tests, Apple M2 Pro, one run alone, 2026-10-29), so
-      `-n 8` cannot finish sooner; split it into parts that run in parallel. Approved 2026-10-29 (A, B, C; B also runs both
-      compares against the re-captured files). Built 2026-10-29: `a5b450f`, three slow tests (A `all` 45 s, B `--recapture`
-      with the compares 154 s, C `--recapture` unchanged 53 s), 556 full / 534 fast. The target (full suite <= 200 s) is not
-      met: 309.2 s and 310.2 s alone, because xdist's default `load` scheduling gives A, B, C and the `run` test to one
-      worker (they run one after another, 7 workers idle from 146 s); `--dist worksteal` measured 253.7 s (B still third on
-      its worker). Peak memory 6.4 GB (all suite processes, 16 GB machine). Waiting for the owner's decision.
+      `-n 8` cannot finish sooner; split it into parts that run in parallel.
 
 ## Done
 
