@@ -186,15 +186,15 @@ def Read_Trajectory(path: str) -> Trajectory_Str:
         archive = np.load(path)
         data = {k: archive[k] for k in archive.files}
     except (OSError, ValueError) as error:
-        raise Trajectory_Error_Cls('The trajectory %s cannot be read (%s). Build it with Example/Program/build_program.py.'
-                                   % (path, error)) from error
+        raise Trajectory_Error_Cls('The trajectory %s cannot be read (%s). Build it with Example/cell.py build (the Optimized program: '
+                                   'cell.py optimize).' % (path, error)) from error
     missing = [k for k in list(CONST_SAMPLE_KEYS) + CONST_SEGMENT_KEYS + ['step_names', 'events', 'meta'] if k not in data]
     if missing:
         raise Trajectory_Error_Cls('The trajectory %s lacks %s: it is not a trajectory of this format. Rebuild it with '
-                                   'Example/Program/build_program.py.' % (path, ', '.join(missing)))
+                                   'Example/cell.py build (the Optimized program: cell.py optimize).' % (path, ', '.join(missing)))
     meta = json.loads(str(data['meta']))
     if meta.get('format_version') != CONST_FORMAT_VERSION:
-        raise Trajectory_Error_Cls('The trajectory %s has format version %r, this code reads %d. Rebuild it with Example/Program/build_program.py.'
+        raise Trajectory_Error_Cls('The trajectory %s has format version %r, this code reads %d. Rebuild it with Example/cell.py build or optimize.'
                                    % (path, meta.get('format_version'), CONST_FORMAT_VERSION))
     n = len(data['t'])
     bad = [k for k, width in CONST_SAMPLE_KEYS.items() if data[k].shape != ((n,) if width == 1 else (n, width))]

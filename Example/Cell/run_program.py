@@ -91,7 +91,7 @@ def Load_Run(version: str, trajectory_path: tp.Optional[str] = None) -> tp.Tuple
 
     path = CONST_VERSIONS[version]
     if not os.path.isfile(path):
-        raise Run_Error_Cls('There is no %s; make it with .venv/bin/python Example/Program/optimize_program.py' % os.path.relpath(path, CONST_ROOT))
+        raise Run_Error_Cls('There is no %s; make it with Example/cell.py optimize' % os.path.relpath(path, CONST_ROOT))
     try:
         cell, meta, constants = Load_Cell_Configuration(), Read_PCB_Meta(), Load_Constants()
         program = Load_Program(constants, Load_Simulation(constants), cell, path)
@@ -103,13 +103,12 @@ def Load_Run(version: str, trajectory_path: tp.Optional[str] = None) -> tp.Tuple
         raise Run_Error_Cls(str(error))
     stale = Stale_Inputs(program, Build_Planning_Model(cell)) if program.Optimized is not None else []
     if stale:
-        raise Run_Error_Cls('%s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '
-                            'Example/Program/optimize_program.py' % (os.path.relpath(path, CONST_ROOT), ', '.join(stale)))
+        raise Run_Error_Cls('%s was optimized from other inputs (%s changed since); make it again: Example/cell.py optimize'
+                            % (os.path.relpath(path, CONST_ROOT), ', '.join(stale)))
     stale = Stale_Trajectory(trajectory, path)
     if stale:
-        raise Run_Error_Cls('The trajectory %s was built from other inputs (%s changed since); rebuild it: .venv/bin/python '
-                            'Example/Program/build_program.py%s' % (trajectory_path, ', '.join(stale), '' if program.Optimized is None else
-                                                                    ' --program ' + os.path.relpath(path, CONST_ROOT)))
+        raise Run_Error_Cls('The trajectory %s was built from other inputs (%s changed since); rebuild it: Example/cell.py %s'
+                            % (trajectory_path, ', '.join(stale), 'build' if program.Optimized is None else 'optimize'))
     return cell, meta, program, trajectory, free, model, trajectory_path
 
 

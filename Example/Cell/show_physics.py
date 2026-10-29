@@ -261,11 +261,12 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         if key in CONST_KEY_ACTIONS:
             playback.Request(CONST_KEY_ACTIONS[key])
         elif key == CONST_KEY_BACK:
-            print(log.Line('[INFO] A physics run goes forward only: Page Up is not available here (Example/Program/show_program.py '
-                           'plays the trajectory both ways).'), flush=True)
+            print(log.Line('[INFO] A physics run goes forward only: Page Up is not available here (Example/cell.py show '
+                           'without --physics plays the trajectory both ways).'), flush=True)
 
     try:
-        viewer = Launch_Passive_Viewer(model, view, On_Key, 'Example/Simulation/show_physics.py --program %s' % args.program)
+        viewer = Launch_Passive_Viewer(model, view, On_Key, 'Example/cell.py show --physics --program %s'
+                                        % ('default' if args.program == 'taught' else args.program))
     except Render_Error_Cls as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()

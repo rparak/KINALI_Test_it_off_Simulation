@@ -99,7 +99,7 @@ def test_the_viewer_under_python_on_macos_names_mjpython(trajectory, tmp_path, r
 
     result = run_script('Cell/show_program.py', ['--trajectory', trajectory], tmp_path)
     assert result.returncode == 2
-    assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/Program/show_program.py --version default' in result.stdout
+    assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/cell.py show --program default' in result.stdout
 
 
 @pytest.mark.slow

@@ -76,6 +76,6 @@ def test_a_missing_or_stale_trajectory_exits_2(tmp_path, run_script, taught_traj
     assert result.returncode == CONST_ERROR and '[ERROR] ' in result.stderr and 'absent.npz' in result.stderr, result.stderr
     result = run_script('Cell/run_program.py', ['--program', 'optimized', '--trajectory', str(taught_trajectory), '--out',
                                                       str(tmp_path / 'out')], tmp_path)
-    assert result.returncode == CONST_ERROR and 'was built from other inputs (program changed since); rebuild it: .venv/bin/python ' \
-        'Example/Program/build_program.py --program Data/Optimized/Program_Optimized.yaml' in result.stderr, result.stderr
+    assert result.returncode == CONST_ERROR and 'was built from other inputs (program changed since); rebuild it: Example/cell.py optimize' \
+        in result.stderr, result.stderr
     assert not (tmp_path / 'out').exists()

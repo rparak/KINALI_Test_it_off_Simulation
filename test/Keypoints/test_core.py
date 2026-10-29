@@ -196,7 +196,7 @@ def test_a_stale_point_is_reported_and_resolved(tools, constants, simulation, ce
     broken.Points['P_INPUT_ABOVE'].Joints[0] += math.radians(0.05)
     result = Check_Keypoint('P_INPUT_ABOVE', kinematics, collision, broken, simulation, cell_configuration, meta)
     assert result.Stale_Position > 0.00005
-    assert any('Reference target' in f and 'resolve_keypoint.py --name P_INPUT_ABOVE' in f for f in result.Failures)
+    assert any('Reference target' in f and 'Example/cell.py point P_INPUT_ABOVE' in f for f in result.Failures)
     joints, pose = Resolve_Keypoint('P_INPUT_ABOVE', kinematics, broken, simulation, meta, cell_configuration)
     broken.Points['P_INPUT_ABOVE'].Joints, broken.Points['P_INPUT_ABOVE'].Pose = list(joints), list(pose)
     again = Check_Keypoint('P_INPUT_ABOVE', kinematics, collision, broken, simulation, cell_configuration, meta)

@@ -62,4 +62,4 @@ def test_the_viewer_under_python_on_macos_names_mjpython(tmp_path, run_script):
 
     result = run_script('Cell/show_keypoint.py', ['--name', 'P_HOME'], tmp_path)
     assert result.returncode == 2
-    assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name P_HOME' in result.stdout
+    assert 'On macOS run it under mjpython: .venv/bin/mjpython Example/cell.py point P_HOME --show' in result.stdout

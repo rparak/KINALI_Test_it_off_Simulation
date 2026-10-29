@@ -886,7 +886,7 @@ def Format_Check_Report(result: Program_Check_Str, trajectory: Trajectory_Str, c
     lines += ['note: %s, %s: %s' % (n.Step, n.Command, n.Text) for n in result.Notes if n not in stretched]
     lines.append('events: %s' % ', '.join('%.3f s %s' % (t, e) for t, e in trajectory.Events))
     verdicts = [k.Verdict for k in result.Keypoints]
-    lines.append('keypoints used: %d (%d FAIL, %d WARN, %d PASS; Example/Keypoints/check_keypoints.py shows each)'
+    lines.append('keypoints used: %d (%d FAIL, %d WARN, %d PASS; Example/cell.py check shows each)'
                  % (len(verdicts), verdicts.count('FAIL'), verdicts.count('WARN'), verdicts.count('PASS')))
     for s in result.Steps:
         lines += ['  %s: %s' % (s.Name, f) for f in s.Failures]

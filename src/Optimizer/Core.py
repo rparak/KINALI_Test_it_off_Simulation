@@ -555,7 +555,7 @@ def Optimized_Text(program: Program_Str, planned: tp.List[tp.List[Planned_Transf
     merged = {key for legs in planned for key in legs[0].Transfer.Keys[1:] + legs[0].Transfer.Job_Keys}
     out = ['## =========================================================================== ##',
            '#   Description:',
-           '#     The OPTIMIZED program of the Test-it-off cell (FEATURES.md F9), WRITTEN by Example/Program/optimize_program.py',
+           '#     The OPTIMIZED program of the Test-it-off cell (FEATURES.md F9), WRITTEN by Example/cell.py optimize',
            '#     from Configuration/Program.yaml and Configuration/Optimization.yaml - never edit it by hand: change those and',
            '#     run the optimizer again. Read by src/Configuration/Program_Parser.py (Load_Program), the same format as',
            '#     Program.yaml plus Robot.MoveSpline, Loader.Start / Loader.WaitDone, Waypoints and the Optimized record.',

@@ -147,8 +147,8 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         kinematics = Robot_Kinematics_Cls(model, collision.Data)
         stale = Stale_Inputs(program, model)
         if stale:
-            print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '
-                           'Example/Program/optimize_program.py' % (args.program, ', '.join(stale))))
+            print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: Example/cell.py optimize'
+                           % (args.program, ', '.join(stale))))
             log.Close()
             return 1
         trajectory, notes = Build_Program(program, cell, meta, kinematics, Build_Meta(args.program, program.Optimized is not None))
@@ -157,7 +157,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         differences = Schedule_Differences(program, trajectory)
         if differences:
             print(log.Line('[ERROR] The build of %s does not match its recorded Schedule (another platform, or the file was edited): %s; make '
-                           'it again: .venv/bin/python Example/Program/optimize_program.py' % (args.program, '; '.join(differences))))
+                           'it again: Example/cell.py optimize' % (args.program, '; '.join(differences))))
             log.Close()
             return 1
     except (Configuration_Error_Cls, Scene_Error_Cls, Program_Error_Cls) as error:

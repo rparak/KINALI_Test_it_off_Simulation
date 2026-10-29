@@ -425,7 +425,7 @@ def Check_Keypoint(name: str, kinematics: Robot_Kinematics_Cls, collision: Robot
     result.Check_Angle = Rotation_Angle(RPY_To_Matrix(point.Pose[3:]), rotation)
     if result.Check_Error > CONST_POSE_POSITION or result.Check_Angle > CONST_POSE_ANGLE:
         result.Failures.append('Pose %.4f mm / %.4f deg from FK(Joints, %s) (at most %.2f mm / %.3f deg); print the corrected Pose with '
-                               'Example/Keypoints/resolve_keypoint.py --name %s' % (1000 * result.Check_Error, math.degrees(result.Check_Angle),
+                               'Example/cell.py point %s' % (1000 * result.Check_Error, math.degrees(result.Check_Angle),
                                                                                   point.Tool, 1000 * CONST_POSE_POSITION,
                                                                                   math.degrees(CONST_POSE_ANGLE), name))
     target = Target_Pose(name, constants, simulation, pcb_meta, kinematics)
@@ -435,7 +435,7 @@ def Check_Keypoint(name: str, kinematics: Robot_Kinematics_Cls, collision: Robot
         result.Stale_Angle = Rotation_Angle(target[1], R)
         if result.Stale_Position > cell.Stale_Position or result.Stale_Angle > cell.Stale_Angle:
             result.Failures.append('stale: %.3f mm / %.3f deg from its %s target; print the corrected lines with '
-                                   'Example/Keypoints/resolve_keypoint.py --name %s' % (1000 * result.Stale_Position,
+                                   'Example/cell.py point %s' % (1000 * result.Stale_Position,
                                                                                         math.degrees(result.Stale_Angle),
                                                                                      'Reference' if point.Reference else 'PCB_Hold', name))
     # The clearance, posed in the scene: exact distances of the robot's geoms, and of the carried PCB's.

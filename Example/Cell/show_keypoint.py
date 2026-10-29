@@ -107,7 +107,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         log.Close()
         return 0
     try:
-        viewer = Launch_Passive_Viewer(model, kinematics.Data, command='Example/Keypoints/show_keypoint.py --name %s' % args.name)
+        viewer = Launch_Passive_Viewer(model, kinematics.Data, command='Example/cell.py point %s --show' % args.name)
     except Render_Error_Cls as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()

@@ -155,7 +155,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         handle.write('\n'.join(lines) + '\n')
     for line in lines:
         print(log.Line(line))
-    print(log.Line('[INFO] Wrote %s and %s; build it with .venv/bin/python Example/Program/build_program.py --program %s' % (path, report, path)))
+    print(log.Line('[INFO] Wrote %s and %s; Example/cell.py optimize builds its trajectory next.' % (path, report)))
     print(log.Line('[%s] The optimized program %s. Simulation results only: not validated for the real cell.'
                    % ('INFO' if ok else 'ERROR', 'passes its check' if ok else 'FAILS')))
     log.Close()

@@ -334,7 +334,7 @@ def Validate_Constants(program: Program_Str, kinematics: Robot_Kinematics_Cls, c
         error, angle = float(np.linalg.norm(position - point.Pose[:3])), Rotation_Angle(RPY_To_Matrix(point.Pose[3:]), rotation)
         if error > CONST_POSE_POSITION or angle > CONST_POSE_ANGLE:
             problems.append('%s:%d: Points.%s.Pose: %.4f mm / %.4f deg from FK(Joints, %s) (at most %.2f mm / %.3f deg); print the corrected '
-                            'Pose with Example/Keypoints/resolve_keypoint.py --name %s' % (file, point.Line, name, 1000 * error, math.degrees(angle),
+                            'Pose with Example/cell.py point %s' % (file, point.Line, name, 1000 * error, math.degrees(angle),
                                                                                          point.Tool, 1000 * CONST_POSE_POSITION,
                                                                                          math.degrees(CONST_POSE_ANGLE), name))
         target = Target_Pose(name, c, s, pcb_meta, kinematics)
@@ -679,7 +679,7 @@ class _Builder_Cls(object):
                                                                               math.degrees(stored[CONST_WRIST_2])))
         if position > self.__cell.Stale_Position or angle > self.__cell.Stale_Angle or jump > CONST_SNAP_JOINTS:
             self.Fail(step, text, 'the motion ends %.3f mm / %.4f deg / %.5f rad from the stored joints of %s (stale point?); check it with '
-                                  'Example/Keypoints/check_keypoints.py --name %s' % (1000 * position, math.degrees(angle), jump, target, target))
+                                  'Example/cell.py check --name %s' % (1000 * position, math.degrees(angle), jump, target, target))
         return stored
 
     def Movel(self, command: Command_Str, step_name: str, step: int, segment: int) -> None:

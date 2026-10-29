@@ -134,7 +134,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
     log = Script_Log_Cls(log_name or 'show_program', append=log_name is not None)
     program_path = CONST_VERSIONS[args.version]
     if not os.path.isfile(program_path):
-        print(log.Line('[ERROR] There is no %s; make it with .venv/bin/python Example/Program/optimize_program.py' % program_path))
+        print(log.Line('[ERROR] There is no %s; make it with Example/cell.py optimize' % program_path))
         log.Close()
         return 1
     try:
@@ -150,15 +150,13 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
     stale = Stale_Trajectory(trajectory, program_path)
     optimized_stale = Stale_Optimized_Inputs(program, Build_Planning_Model(cell)) if program.Optimized is not None else []
     if optimized_stale:
-        print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: .venv/bin/python '
-                       'Example/Program/optimize_program.py' % (program_path, ', '.join(optimized_stale))))
+        print(log.Line('[ERROR] %s was optimized from other inputs (%s changed since); make it again: Example/cell.py optimize'
+                       % (program_path, ', '.join(optimized_stale))))
         log.Close()
         return 1
     if stale:
-        print(log.Line('[ERROR] The trajectory %s was built from other inputs (%s changed since); rebuild it: '
-                       '.venv/bin/python Example/Program/build_program.py%s' % (path, ', '.join(stale), '' if program.Optimized is None
-                                                                                 else ' --program ' + os.path.relpath(program_path,
-                                                                                                                      CONST_REPO_ROOT))))
+        print(log.Line('[ERROR] The trajectory %s was built from other inputs (%s changed since); rebuild it: Example/cell.py %s'
+                       % (path, ', '.join(stale), 'build' if program.Optimized is None else 'optimize')))
         log.Close()
         return 1
     try:
@@ -225,7 +223,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         return Describe(i) + (int(trajectory.Segment_Id[i]),)
 
     try:
-        viewer = Launch_Passive_Viewer(model, kinematics.Data, On_Key, 'Example/Program/show_program.py --version %s' % args.version)
+        viewer = Launch_Passive_Viewer(model, kinematics.Data, On_Key, 'Example/cell.py show --program %s' % args.version)
     except Render_Error_Cls as error:
         print(log.Line('[ERROR] %s' % error))
         log.Close()

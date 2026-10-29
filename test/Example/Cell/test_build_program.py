@@ -91,8 +91,8 @@ def test_the_optimized_program_is_built_and_a_stale_or_edited_one_refused(tmp_pa
     cell = text.split('    cell: "', 1)[1].split('"', 1)[0]
     stale.write_text(text.replace('    cell: "%s"' % cell, '    cell: "%s"' % ('0' * 64), 1), encoding='utf-8')
     result = run_script('Cell/build_program.py', ['--program', str(stale), '--out', str(tmp_path)], tmp_path)
-    assert result.returncode == 1 and 'was optimized from other inputs (cell changed since); make it again: .venv/bin/python ' \
-                                       'Example/Program/optimize_program.py' in result.stdout
+    assert result.returncode == 1 and 'was optimized from other inputs (cell changed since); make it again: Example/cell.py optimize' \
+                                       in result.stdout
     edited = tmp_path / 'Edited.yaml'
     edited.write_text(text.replace('    S6_Close_MG06: 18.884', '    S6_Close_MG06: 18.932', 1), encoding='utf-8')
     result = run_script('Cell/build_program.py', ['--program', str(edited), '--out', str(tmp_path)], tmp_path)

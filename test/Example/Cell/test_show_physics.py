@@ -76,7 +76,7 @@ def test_bad_options_and_the_viewer_without_mjpython_are_refused(tmp_path, run_s
     assert result.returncode == 1
     if sys.platform == 'darwin':
         result = run_script('Cell/show_physics.py', ['--trajectory', str(taught_trajectory)], tmp_path)
-        assert result.returncode == 2 and '.venv/bin/mjpython Example/Simulation/show_physics.py --program taught' in result.stdout
+        assert result.returncode == 2 and '.venv/bin/mjpython Example/cell.py show --physics --program default' in result.stdout
 
 
 def test_the_physics_view_steps_within_its_budget_and_copies_the_state(taught_trajectory):

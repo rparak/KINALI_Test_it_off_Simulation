@@ -1088,7 +1088,7 @@ class _Program_Parser_Cls(object):
             Fail('%s is reserved (the tester\'s job runs as a whole); use Tester.Run' % name)
             return None
         if name in CONST_OPTIMIZED_COMMANDS and name not in grammar:
-            Fail('%s is only in an optimized program (Data/Optimized/Program_Optimized.yaml, written by Example/Program/optimize_program.py); '
+            Fail('%s is only in an optimized program (Data/Optimized/Program_Optimized.yaml, written by Example/cell.py optimize); '
                  'a taught program uses %s' % (name, 'Robot.MoveJ' if name == 'Robot.MoveSpline' else 'Loader.Run (Run = Start + WaitDone)'))
             return None
         if name not in grammar:
@@ -1415,7 +1415,7 @@ def Load_Program(constants: Constants_Str, simulation: Simulation_Str, cell: Cel
                   % (name, declared[name]))
         if program.Optimized is not None and name not in parser.Used:
             p.Add(1, 'Program', '%s is declared for the optimized program (Optimization.yaml %s) but this program does not use it; make it '
-                  'again: .venv/bin/python Example/Program/optimize_program.py' % (name, declared[name]))
+                  'again: Example/cell.py optimize' % (name, declared[name]))
     used = set(parser.Used) | {simulation.Start_Robot, simulation.Start_Loader, simulation.Start_Gripper} | optimizer_only
     for name in list(used):
         while name in constants.Points:
