@@ -26,8 +26,6 @@ import os
 import sys
 # Pytest (Testing framework) [pip3 install pytest]
 import pytest
-# Matplotlib (Plotting) [pip3 install matplotlib]
-import matplotlib.image as mpimg
 
 
 def test_headless_posing_prints_the_keypoint_and_its_context(tmp_path, run_script):
@@ -42,17 +40,6 @@ def test_headless_posing_prints_the_keypoint_and_its_context(tmp_path, run_scrip
     assert result.returncode == 0, result.stdout + result.stderr
     assert '[INFO] P_MG06_CLOSE_END: End of PATH_FORK_CLOSE' in result.stdout
     assert '[INFO] loader L_HOME, gripper G_OPEN, PCB mg06, MG06 Closed' in result.stdout and os.listdir(tmp_path) == []
-
-
-def test_the_image_is_written(tmp_path, run_script):
-    """
-    Description:
-        --image FILE writes the offscreen render of the posed cell (960 x 720).
-    """
-
-    path = tmp_path / 'home.png'
-    result = run_script('Keypoints/show_keypoint.py', ['--name', 'P_HOME', '--image', str(path)], tmp_path)
-    assert result.returncode == 0 and mpimg.imread(str(path)).shape[:2] == (720, 960)
 
 
 def test_an_unknown_keypoint_is_an_error_line(tmp_path, run_script):

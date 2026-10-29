@@ -37,7 +37,7 @@ import pytest
 import mujoco
 # Custom Lib.: the module under test
 #   ../Render/Core
-from Render.Core import (Render_Free_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop, Watchdog_Cls, CONST_FRAME_PERIOD,
+from Render.Core import (Render_Error_Cls, Playback_Cls, Run_Viewer_Loop, Watchdog_Cls, CONST_FRAME_PERIOD,
                          CONST_OVERLAY_PERIOD, CONST_WATCHDOG_EXIT)
 
 
@@ -46,55 +46,6 @@ def state(cell_model):
     data = mujoco.MjData(cell_model)
     mujoco.mj_forward(cell_model, data)
     return cell_model, data
-
-
-def test_a_free_camera_image_and_its_size_limit(state):
-    """
-    Description:
-        Render_Free_Image looks at a point from a distance and two angles; a size beyond the offscreen buffer is
-        refused.
-    """
-
-    from Render.Core import Render_Free_Image
-    model, data = state
-    image = Render_Free_Image(model, data, [0.0, -0.3, 0.2], 1.5, 150, -25, 320, 240)
-    assert image.shape == (240, 320, 3) and image.std() > 0
-    with pytest.raises(Render_Error_Cls, match='exceeds'):
-        Render_Free_Image(model, data, [0.0, 0.0, 0.0], 1.0, 0, 0, 4000, 240)
-
-
-def test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres(state):
-    """
-    Description:
-        Looking straight down from 3 m at (2.5, 2.5) on the floor (fovy 45 deg: 289.7 px/m), the grid lines across a
-        row are 1.00 m apart and at x = 2.5 +- 0.5, +- 1.5 m: one line per metre on the world axes (measured
-        2026-10-24: 289.5-290 px).
-    """
-
-    from Render.Core import Render_Free_Image
-    model, data = state
-    image = Render_Free_Image(model, data, [2.5, 2.5, -0.873], 3.0, 90, -90).astype(float).mean(2)
-    row = image[300]
-    base = np.median(row)
-    columns = np.where(row > base + 0.5 * (row.max() - base))[0]
-    lines = [g.mean() for g in np.split(columns, np.where(np.diff(columns) > 1)[0] + 1)]
-    pixels_per_metre = image.shape[0] / (2 * 3.0 * np.tan(np.radians(model.vis.global_.fovy / 2)))
-    offsets = (np.array(lines) - (image.shape[1] - 1) / 2) / pixels_per_metre
-    assert offsets == pytest.approx([-1.5, -0.5, 0.5, 1.5], abs=0.01)
-
-
-def test_the_offscreen_floor_fades_into_the_horizon_colour(state):
-    """
-    Description:
-        Fog is on in the offscreen renders: near the horizon (a low view, left of the cell) the far floor has the
-        horizon colour (0.42 0.45 0.49 = 115.6 / 255 mean), not its own dark grey (measured 2026-10-24: 115.7 with
-        fog, about 51 without).
-    """
-
-    from Render.Core import Render_Free_Image
-    model, data = state
-    image = Render_Free_Image(model, data, [0.2, -0.3, -0.6], 3.0, 120, -4).astype(float)
-    assert image[290:315, 60:120].mean() == pytest.approx(np.mean([0.42, 0.45, 0.49]) * 255, abs=2)
 
 
 def test_the_passive_viewer_switches_on_fog_and_haze(state, monkeypatch):

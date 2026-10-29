@@ -26,8 +26,6 @@ import os
 import sys
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
-# Matplotlib (Plotting) [pip3 install matplotlib]
-import matplotlib.image as mpimg
 # Threading (Thread-based parallelism)
 import threading
 # Types (Dynamic type creation and names for built-in types)
@@ -66,18 +64,6 @@ def test_headless_posing_at_a_step_and_at_a_time(trajectory, tmp_path, run_scrip
     assert ('[INFO] step 2/22 S2_Pick_Input   t = 3.276 s / 70.404 s   PCB input_crate (sample 819): Robot.MoveL(P_INPUT_PICK, v=0.03)'
             in result.stdout)
     assert os.listdir(tmp_path) == []
-
-
-@pytest.mark.slow
-def test_the_image_is_written(trajectory, tmp_path, run_script):
-    """
-    Description:
-        --image FILE writes the offscreen render of the posed cell (960 x 720).
-    """
-
-    path = tmp_path / 'moment.png'
-    result = run_script('Program/show_program.py', ['--trajectory', trajectory, '--step', 'S4_Handover', '--image', str(path)], tmp_path)
-    assert result.returncode == 0 and mpimg.imread(str(path)).shape[:2] == (720, 960)
 
 
 @pytest.mark.slow

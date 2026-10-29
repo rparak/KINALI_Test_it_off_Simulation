@@ -39,8 +39,7 @@ import typing as tp
 import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the program, the logs, the folders
-from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_TRAJECTORIES,
-                                CONST_IMAGES)
+from Configuration.Core import (Configure_MuJoCo_Log, Load_Cell_Configuration, Script_Log_Cls, Configuration_Error_Cls, CONST_TRAJECTORIES)
 #   ../Configuration/Program_Parser - the program's three files, the PCB locations
 from Configuration.Program_Parser import (CONST_PCB_LOCATIONS, Load_Constants, Load_Simulation, Load_Program, CONST_PROGRAM_YAML,
                                           CONST_OPTIMIZED_PROGRAM_YAML)
@@ -56,8 +55,8 @@ from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls, Trajectory_St
 #   ../Collision/Core, ../Optimizer/Core - an optimized program's inputs (its planning model's hash)
 from Collision.Core import Build_Planning_Model
 from Optimizer.Core import Stale_Inputs as Stale_Optimized_Inputs
-#   ../Render/Core - the viewer and the image
-from Render.Core import (Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
+#   ../Render/Core - the viewer
+from Render.Core import (Launch_Passive_Viewer, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
                          Watchdog_Cls)
 
 """
@@ -72,9 +71,6 @@ CONST_VERSIONS = {'default': CONST_PROGRAM_YAML, 'optimized': CONST_OPTIMIZED_PR
 # viewer binds Space, the arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
 #   Unit [Dict<int, string>]
 CONST_KEY_ACTIONS = {268: 'pause', 267: 'next', 46: 'next', 266: 'previous', 269: 'end'}
-# The image camera: the cell's centre (the studio look's statistic, SPEC §4.10) seen from the front right.
-#   Unit [Vector<float> 1x3] (m), [float] (m), [float] (deg), [float] (deg)
-CONST_IMAGE_LOOKAT, CONST_IMAGE_DISTANCE, CONST_IMAGE_AZIMUTH, CONST_IMAGE_ELEVATION = [0.15, -0.40, 0.25], 1.9, 135.0, -28.0
 
 
 def Sample_Of(trajectory: Trajectory_Str, step: tp.Optional[str], at: tp.Optional[float]) -> int:
@@ -108,13 +104,13 @@ def main():
         time (kinematic, no physics), the segment's name and the command line being executed shown; Home pauses / resumes,
         Page Down or '.' jumps to the
         next step, Page Up back to the current step's start, End to its end. --step N / --time T pose one moment; --headless
-        prints it; --image writes an offscreen render. Reads the trajectory Example/Program/build_program.py wrote and refuses
+        prints it. Reads the trajectory Example/Program/build_program.py wrote and refuses
         one whose inputs changed since. The viewer needs mjpython on macOS (the passive viewer); it follows the viewer rules
         of Render.Run_Viewer_Loop (the lock only for posing, the overlay outside it) and prints its frame times when closed;
         --watchdog S dumps every thread's traceback and exits 3 when the loop stalls for S seconds.
 
             .venv/bin/mjpython Example/Program/show_program.py [--version default] [--step N | --time T] [--watchdog S]
-            .venv/bin/python Example/Program/show_program.py [--step N | --time T] --headless [--image [FILE]]
+            .venv/bin/python Example/Program/show_program.py [--step N | --time T] --headless
     """
 
     parser = argparse.ArgumentParser(description='Play or pose a program trajectory (kinematic).')
@@ -123,7 +119,6 @@ def main():
     parser.add_argument('--step', help='pose the cell at the end of this step (its number from 1 or its name)')
     parser.add_argument('--time', type=float, help='pose the cell at this time [s]')
     parser.add_argument('--headless', action='store_true', help='pose and print, no window')
-    parser.add_argument('--image', nargs='?', const='', help='write an offscreen render (default Data/Generated/Images/<program>_<sample>.png)')
     parser.add_argument('--watchdog', type=float, metavar='S', help='debug: when the viewer loop stalls for S seconds, print every '
                         "thread's traceback and exit 3")
     args = parser.parse_args()
@@ -190,12 +185,7 @@ def main():
     title, comment = Describe(sample)
     print(log.Line('[INFO] %s (sample %d): %s' % (title, sample, comment)))
     print(log.Line('[INFO] Simulation result only: not validated for the real cell.'))
-    if args.image is not None:
-        image = args.image or os.path.join(CONST_IMAGES, '%s_%05d.png' % (program.Name, sample))
-        image = Save_Image(Render_Free_Image(model, kinematics.Data, CONST_IMAGE_LOOKAT, CONST_IMAGE_DISTANCE, CONST_IMAGE_AZIMUTH,
-                                             CONST_IMAGE_ELEVATION), image)
-        print(log.Line('[INFO] Wrote %s.' % image))
-    if args.headless or args.image is not None:
+    if args.headless:
         log.Close()
         return 0
     playback = Playback_Cls(trajectory.Step_Index, CONST_DT, sample, paused=args.step is not None or args.time is not None)

@@ -62,7 +62,7 @@ Scope (the brief's steps, §7, in this order):
   under interlocks).
 - Driving a real robot or machine now. A transfer to the real cell is planned later (§17).
 - A GUI application (owner, 2026-10-25: no PyQt GUI, design-decisions). The interface is the scripts of `Example/`, the
-  MuJoCo viewer (`show_program.py`, `show_physics.py`, the keypoint viewers) and the offscreen renders.
+  MuJoCo viewer (`show_program.py`, `show_physics.py`, the keypoint viewer).
 
 ## 4. Measured facts this specification rests on
 
@@ -301,7 +301,7 @@ in code by `Scene.Core._Apply_Look` (`CONST_LOOK_*`), visual only:
 - `statistic`: centre (0.178, −0.353, 0.208) m and extent 2.6 m, from the cell's bounding box at the default
   qpos, robot included (half diagonal 1.351 m): the default free camera (distance 1.5 × extent = 3.9 m, fovy
   45°) holds the whole cell with a 10 % margin;
-- fog is a render flag, not a model field: on in `Render.Core`'s offscreen images and passive viewer
+- fog is a render flag, not a model field: on in `Render.Core`'s passive viewer
   (`CONST_LOOK_FLAGS`: fog and haze); the blocking viewer (`python -m mujoco.viewer`) starts
   with fog off - left panel, Rendering > Fog (Haze is on by default).
 
@@ -317,15 +317,15 @@ PCB) and `cam_tool` (follows the tool from the side opposite the robot), both `t
   and `python3.11-venv` (deadsnakes on older releases).
 - Direct dependencies pinned `==` in `requirements.txt` (§11, design-decisions): `mujoco==3.16.0`,
   `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`, `trimesh==5.1.1`, `rtree==1.4.1`,
-  `coacd==1.0.14`, `matplotlib==3.11.2`,
+  `coacd==1.0.14`,
   `pytest==9.1.1`, `pytest-xdist==3.8.0`. The groups without a user yet are marked *planned* in `requirements.txt`.
 - **The verified baseline environment is recorded as a full `pip freeze`** (owner, 2026-10-24): a record of
   what the physics baselines (§10.2) ran with, not an install input (`install.sh` installs `requirements.txt` only). It
   is replaced, with its date, whenever the baselines are re-measured. Recorded 2026-10-24, Python 3.11.2, macOS 26.6.2 arm64
   (Apple M2 Pro), the `.venv` of `./install.sh --recreate`; the same packages captured the baselines of 2026-10-25
   (`baseline_environment.json`); `execnet` and `pytest-xdist` (the parallel test runner, no effect on a result) added
-  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25; `pillow` and `imageio-ffmpeg` removed
-  from `requirements.txt` 2026-10-29 with the media (F20; the record stays as the baselines were captured)
+  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25; `pillow`, `imageio-ffmpeg` and `matplotlib`
+  removed from `requirements.txt` 2026-10-29 with the media and the images (F20; the record stays as the baselines were captured)
   (`.venv/bin/python -m pip freeze --all`):
 
   ```
@@ -396,7 +396,7 @@ Configuration/Optimization.yaml   the optimized program's settings: the FREE seg
 Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
-Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/
+Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Trajectories/
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds (committed; their generator is in git at c43f079)
 src/<Domain>/Core.py      each domain's primary module; a second concern in a topic module, shared constants in Const.py
                           (the module layout: style project reference > Layout, design-decisions)
@@ -406,7 +406,7 @@ src/Configuration/Const.py   the root, Configuration/ and Data/, the contact gro
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
-src/Render/Core.py        offscreen image, passive viewer start and playback
+src/Render/Core.py        the passive viewer: its start and its playback loop
 src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the physics run with the instability guard and its measured values (§7.6)
 src/Simulation/Report.py  a run's acceptance checks (§10.1), warnings and report
@@ -419,19 +419,19 @@ src/Planner/Core.py       joint-space planning: the spline, its time-optimal tim
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
 src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt (§7.11)
 Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
-Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time, --image
+Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time
 Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
 Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
-Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
+Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless
 Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
-                                       segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
+                                       segment and its current line), --version default | optimized, --step / --time, --watchdog S (debug)
 test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
                                reference data (the baselines) in test/<Domain>/data/; test/conftest.py (src/ on the path,
                                the shared fixtures)
@@ -487,8 +487,7 @@ categories of §4.6.
 
 ### 7.5 Render
 
-An offscreen image from a free camera, with the studio look's fog and haze flags on; starting the passive viewer
-(with the same flags); the playback loop of a passive viewer (`Playback_Cls`, the
+Starting the passive viewer with the studio look's fog and haze flags on (the offscreen images went in F20); the playback loop of a passive viewer (`Playback_Cls`, the
 timeline by the wall clock with queued key actions; `Run_Viewer_Loop`, the mujoco 3.16 viewer rules: `viewer.lock()` only
 while posing, `set_texts` outside it and at most every 0.25 s unless the segment changes, `sync` every frame; `Watchdog_Cls`
 for `--watchdog`). No project imports. The playback has a speed against the wall clock and a `frame` action (one

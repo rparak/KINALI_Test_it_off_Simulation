@@ -203,7 +203,7 @@ flowchart BT
 | Scene | builds the cell from the MJCF files, exports `models/cell_scene.xml` |
 | Kinematics | site poses and inverse kinematics on the suction TCP or the flange |
 | Collision | exact distances (`mj_geomDistance`), the planning model, the contact categories |
-| Render | offscreen images and the passive viewer's playback loop |
+| Render | the passive viewer and its playback loop |
 | Trajectory | the 4 ms trajectory file (`.npz` and a CSV export) |
 | Keypoints | the named robot points: posing, the point check, IK resolution |
 | Program | builds a program into a trajectory and checks it (clearance, limits, interlocks) |
@@ -316,7 +316,7 @@ In the options, `taught` / `default` selects the Default program and `optimized`
 ```bash
 .venv/bin/mjpython Example/Program/show_program.py                       # play the Default program in the viewer
 .venv/bin/mjpython Example/Program/show_program.py --version optimized   # play the Optimized program
-.venv/bin/python Example/Program/show_program.py --step S11_Test --headless --image   # pose the end of a step, write an image
+.venv/bin/python Example/Program/show_program.py --step S11_Test --headless   # pose the end of a step, print it
 ```
 
 Keys: Home pause / resume, Page Down or `.` next step, Page Up step start / previous step, End step end. In the MuJoCo viewer
@@ -328,7 +328,7 @@ Keys: Home pause / resume, Page Down or `.` next step, Page Up step start / prev
 .venv/bin/python Example/Simulation/run_program.py --program optimized       # physics report + 28 checks; exit 0 pass, 1 fail, 2 cannot run
 .venv/bin/mjpython Example/Simulation/show_physics.py --program optimized    # the physics run in the viewer, real time
 .venv/bin/mjpython Example/Simulation/show_physics.py --speed 0.25           # slow motion
-.venv/bin/python Example/Simulation/show_physics.py --headless --time 20 --image   # run to 20 s, print the state, write an image
+.venv/bin/python Example/Simulation/show_physics.py --headless --time 20   # run to 20 s, print the state
 ```
 
 Keys: Home pause / resume, Page Down next step, `.` one sample on (paused), End step end. A physics run goes forward only.
@@ -567,7 +567,7 @@ precedence over the repository's copy.
 - **Platform:** macOS on Apple silicon (verified, Apple M2 Pro) and Ubuntu Linux (installer written, not verified).
 - **Python 3.11**, called explicitly by `install.sh` (`/opt/homebrew/bin/python3.11` on macOS, `python3.11` on Linux).
 - **Pinned packages** (`requirements.txt`): `mujoco==3.16.0`, `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`,
-  `matplotlib==3.11.2`, `pytest==9.1.1`, `pytest-xdist==3.8.0`, and
+  `pytest==9.1.1`, `pytest-xdist==3.8.0`, and
   `trimesh`, `rtree`, `coacd` for a planned collision-set build.
 - Results are byte-identical for the same inputs on one machine and platform. Across platforms they agree within numeric
   tolerance only.

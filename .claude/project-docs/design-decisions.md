@@ -113,6 +113,7 @@ Pinned by: none (text); checked by `git grep` for the old spellings when docs ch
 **Decision.** The project has no desktop GUI application: no PyQt5 or PyQt6 window and no Phase 2; the project is one phase.
 Its interface is the scripts of `Example/`, the MuJoCo viewer (`show_program.py`, `show_physics.py`, the keypoint viewers)
 and the offscreen renders. *Corrected 2026-10-25 (owner): this entry was "Phase 2 GUI toolkit: PyQt5 or PyQt6 - open".*
+*Corrected 2026-10-29 (F20): the interface is `Example/cell.py` and its viewers; the offscreen renders are removed.*
 
 **Why.** The owner's decision: the results are read in the viewer, the reports and the README.
 
@@ -433,10 +434,10 @@ angles +-0.1 deg, SPEC §10.2).
 
 **Decision.** One place per kind of file a run produces: logs (`logger/<script>.log`, MuJoCo's
 `logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the reports (a program's
-check and physics report, the optimizer's report, the comparison) in `Reports/`, images (the viewers' `--image`) in
-`Images/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
+check and physics report, the optimizer's report) in `Reports/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
 `--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it); no output folder at the root (owner,
-2026-10-24).
+2026-10-24). *Corrected 2026-10-29 (F20): the comparison in `Reports/` and the images in `Images/` went with their
+generators and the viewers' `--image`.*
 
 **Why.** The root holds only declared entries (style skill); `Data/Generated/` is the template's place for
 generated output beside the inputs; logs are not results and keep their own folder. One folder per kind
@@ -489,8 +490,9 @@ viewer and the images use would differ from the one the media use. Rendering til
 **Revisit if** a larger frame is needed (the GPU's maximum renderbuffer size bounds it), or the optimized program's hash
 should ignore visual fields.
 
-Pinned by `test/Scene/test_core.py::test_the_offscreen_buffer_holds_a_1440p_frame`, `test/Render/test_core.py` (a frame beyond the
-buffer refused) and the fingerprint test.
+Pinned by `test/Scene/test_core.py::test_the_offscreen_buffer_holds_a_1440p_frame` and the fingerprint test (`test/Render/test_core.py`'s
+refused frame until F20). *Corrected 2026-10-29 (F20): the media and the offscreen images are removed; the buffer stays in the
+model, unchanged (the fingerprint and the optimized program's planning-model hash record it).*
 
 ## The studio look: fog on, a 1 m grid, a statistic from the cell's bounding box
 
@@ -532,8 +534,8 @@ Pinned by `test/Scene/test_core.py::test_the_floor_is_a_visual_plane_with_a_one_
 `::test_the_sky_is_the_gradient_with_the_horizon_colour_between`, `::test_haze_and_fog_are_the_horizon_colour`,
 `::test_the_lights_are_one_key_spot_with_shadows_and_one_fill`, `::test_the_default_view_fits_the_whole_cell_with_a_margin`,
 `::test_the_pcb_and_tool_cameras_are_unchanged`, `::test_the_crates_and_every_non_visual_field_equal_the_baseline`,
-`test/Render/test_core.py::test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres`,
-`::test_the_offscreen_floor_fades_into_the_horizon_colour`, `::test_the_passive_viewer_switches_on_fog_and_haze`.
+`test/Render/test_core.py::test_the_passive_viewer_switches_on_fog_and_haze` (and until F20 the offscreen renders'
+`::test_the_floor_grid_lines_are_one_metre_apart_on_whole_metres`, `::test_the_offscreen_floor_fades_into_the_horizon_colour`).
 
 ## Two programs: the default one is taught, the optimized one is planned
 

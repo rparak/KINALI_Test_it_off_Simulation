@@ -39,7 +39,7 @@ import time
 import numpy as np
 # Custom Lib.:
 #   ../Configuration/Core - the configuration, the logs
-from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls, CONST_IMAGES
+from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Read_PCB_Meta, Script_Log_Cls, Configuration_Error_Cls
 #   ../Configuration/Program_Parser - the points and their scenes, the PCB locations, MG06's states
 from Configuration.Program_Parser import CONST_PCB_LOCATIONS, CONST_FIXTURE_STATES, Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell
@@ -48,21 +48,21 @@ from Scene.Core import Build_Cell_Model, Scene_Error_Cls
 from Kinematics.Core import Robot_Kinematics_Cls
 #   ../Keypoints/Core - posing
 from Keypoints.Core import Pose_Cell, Keypoints_Error_Cls
-#   ../Render/Core - the viewer and the image
-from Render.Core import Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls
+#   ../Render/Core - the viewer
+from Render.Core import Launch_Passive_Viewer, Render_Error_Cls
 
 
 def main():
     """
     Description:
         Pose the whole cell at one point of Configuration/Constants.yaml (robot, loader, jaws, PCB, MG06 from its scene in
-        Configuration/Simulation.yaml, each overridable) and show it in MuJoCo's viewer, static (not simulated). --image writes
-        an offscreen render looking at the TCP instead; --headless only poses and prints. The viewer needs mjpython on
+        Configuration/Simulation.yaml, each overridable) and show it in MuJoCo's viewer, static (not simulated); --headless only poses
+        and prints. The viewer needs mjpython on
         macOS (the passive viewer).
 
             .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name <P_point> [--loader <L_position>] [--gripper <G_command>]
                                                                   [--pcb <location>] [--mg06 Open|Closed]
-            .venv/bin/python Example/Keypoints/show_keypoint.py --name <P_point> --image [FILE] [--azimuth 150]
+            .venv/bin/python Example/Keypoints/show_keypoint.py --name <P_point> --headless
     """
 
     parser = argparse.ArgumentParser(description='Show the cell posed at one point.')
@@ -72,10 +72,6 @@ def main():
     parser.add_argument('--pcb', choices=CONST_PCB_LOCATIONS, help='a PCB location instead of the point\'s scene')
     parser.add_argument('--mg06', choices=CONST_FIXTURE_STATES, help='an MG06 state instead of the point\'s Fixture')
     parser.add_argument('--headless', action='store_true', help='pose and print, no window')
-    parser.add_argument('--image', nargs='?', const='', help='write an offscreen render (default Data/Generated/Images/keypoint_<name>.png)')
-    parser.add_argument('--azimuth', type=float, default=150.0, help='image camera azimuth [deg] (default 150)')
-    parser.add_argument('--elevation', type=float, default=-25.0, help='image camera elevation [deg] (default -25)')
-    parser.add_argument('--distance', type=float, default=1.1, help='image camera distance from the TCP [m] (default 1.1)')
     args = parser.parse_args()
 
     Configure_MuJoCo_Log()
@@ -99,11 +95,7 @@ def main():
     print(log.Line('[INFO] loader %s, gripper %s, PCB %s, MG06 %s' % (args.loader or scene.Loader, args.gripper or scene.Gripper,
                                                                        args.pcb or scene.PCB, args.mg06 or scene.Fixture)))
     print(log.Line('[INFO] Simulation result only: not validated for the real cell.'))
-    if args.image is not None:
-        path = args.image or os.path.join(CONST_IMAGES, 'point_%s.png' % point.Name)
-        path = Save_Image(Render_Free_Image(model, kinematics.Data, tcp, args.distance, args.azimuth, args.elevation), path)
-        print(log.Line('[INFO] Wrote %s.' % path))
-    if args.headless or args.image is not None:
+    if args.headless:
         log.Close()
         return 0
     try:

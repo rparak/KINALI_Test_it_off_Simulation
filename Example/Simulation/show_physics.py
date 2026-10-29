@@ -43,15 +43,15 @@ import importlib.util
 import mujoco
 # Custom Lib.:
 #   ../Configuration/Core - the logs, the folders
-from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls, CONST_IMAGES
+from Configuration.Core import Configure_MuJoCo_Log, Script_Log_Cls
 #   ../Collision/Core - the cups touching the PCB
 from Collision.Core import Cup_Contacts
 #   ../Trajectory/Core - the sample time
 from Trajectory.Core import CONST_DT
 #   ../Simulation/Core - the physics run of a trajectory
 from Simulation.Core import Trajectory_Drive_Cls, Physics_Run_Cls, Simulation_Error_Cls
-#   ../Render/Core - the viewer and the image
-from Render.Core import (Launch_Passive_Viewer, Render_Free_Image, Save_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
+#   ../Render/Core - the viewer
+from Render.Core import (Launch_Passive_Viewer, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop,
                          Watchdog_Cls)
 
 
@@ -198,11 +198,11 @@ def main():
         as Example/Simulation/run_program.py), stepped at the model's 0.5 ms in real time - the frames skipped by the wall clock
         - or at --speed (0.25: four times slower); keys Home pause, Page Down next step, '.' one sample, End the step's end (a
         physics run cannot go back); the overlay: the step, the time, the cups, the slip, the line (or the fault). The viewer's
-        rules (F10.4): the lock only for the state copy. --headless --time T runs to T, prints the state and exits (--image
-        renders it). The viewer needs .venv/bin/mjpython on macOS: under python it exits 2 naming it.
+        rules (F10.4): the lock only for the state copy. --headless --time T runs to T, prints the state and exits.
+        The viewer needs .venv/bin/mjpython on macOS: under python it exits 2 naming it.
 
             .venv/bin/mjpython Example/Simulation/show_physics.py [--program taught|optimized] [--speed F] [--watchdog S]
-            .venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...] [--image [FILE]]
+            .venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...]
     """
 
     run_program = _Script('Simulation/run_program.py')
@@ -212,8 +212,6 @@ def main():
     parser.add_argument('--speed', type=float, default=1.0, help='the playback speed against real time (default 1; 0.25: slow motion)')
     parser.add_argument('--time', type=float, help='start (paused) at this time [s]; with --headless: run to it and print the state')
     parser.add_argument('--headless', action='store_true', help='run to --time, print, no window')
-    parser.add_argument('--image', nargs='?', const='', help='with --headless: write an offscreen render (default Data/Generated/Images/'
-                        '<program>_physics_<ms>.png)')
     parser.add_argument('--watchdog', type=float, metavar='S', help='debug: when the viewer loop stalls for S seconds, print every '
                         'thread\'s traceback and exit 3')
     args = parser.parse_args()
@@ -239,12 +237,6 @@ def main():
     title, comment, _ = physics.State()
     print(log.Line('[INFO] %s: %s' % (title, comment)))
     if args.headless:
-        if args.image is not None:
-            show = _Script('Program/show_program.py')
-            image = args.image or os.path.join(CONST_IMAGES, '%s_physics_%06d.png' % (program.Name, int(round(1000 * physics.Run.Data.time))))
-            image = Save_Image(Render_Free_Image(model, view, show.CONST_IMAGE_LOOKAT, show.CONST_IMAGE_DISTANCE, show.CONST_IMAGE_AZIMUTH,
-                                                 show.CONST_IMAGE_ELEVATION), image)
-            print(log.Line('[INFO] Wrote %s.' % image))
         print(log.Line('[INFO] Simulation result only: not validated for the real cell.'))
         log.Close()
         return 1 if physics.Error or physics.Run.Fault else 0

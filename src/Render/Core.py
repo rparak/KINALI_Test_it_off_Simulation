@@ -45,13 +45,9 @@ import mujoco
 Description:
     Initialization of constants.
 
-    Pictures of a model (SPEC §7.5): an offscreen image from a free camera, a PNG file of it, the passive
-    viewer and its playback loop. It knows nothing of the cell: it takes a model and its data. matplotlib (the PNG
-    writer) and mujoco.viewer (a GUI) are imported only where they are used.
+    The viewer of a model (SPEC §7.5): the passive viewer with the studio look's flags and its playback loop. It knows
+    nothing of the cell: it takes a model and its data. mujoco.viewer (a GUI) is imported only where it is used.
 """
-# Default offscreen image size; within the cell's offscreen buffer (Scene.Core CONST_LOOK_OFFSCREEN, 2560 x 1440).
-#   Unit [int] (px)
-CONST_WIDTH, CONST_HEIGHT = 960, 720
 # The render flags of the studio look (F7) that are not model fields: fog (the floor fades into the horizon colour;
 # MuJoCo's default is off) and haze (MuJoCo's default is on, kept on explicitly).
 #   Unit [Dict<int, bool>] (mjtRndFlag -> on)
@@ -72,8 +68,7 @@ CONST_WATCHDOG_EXIT = 3
 class Render_Error_Cls(ValueError):
     """
     Description:
-        An image cannot be made: an unknown camera or a size beyond the model's offscreen buffer. The
-        message names the value and the limit.
+        The viewer cannot start (on macOS: not under mjpython). The message names the command to use.
     """
 
 
@@ -88,61 +83,6 @@ def _Set_Look_Flags(flags: np.ndarray) -> None:
 
     for flag, on in CONST_LOOK_FLAGS.items():
         flags[flag] = on
-
-
-def Render_Free_Image(model: mujoco.MjModel, data: mujoco.MjData, lookat: tp.Sequence[float], distance: float, azimuth: float,
-                      elevation: float, width: int = CONST_WIDTH, height: int = CONST_HEIGHT) -> np.ndarray:
-    """
-    Description:
-        An offscreen image of the data's current state from a free camera (a point looked at, a distance and two
-        angles, as the viewer's mouse camera).
-
-    Args:
-        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its state (after mj_forward).
-        (3) lookat [Vector<float> 1x3]: The point looked at (m).
-        (4) distance [float]: The camera's distance from it (m).
-        (5 - 6) azimuth, elevation [float]: The camera's angles (deg; elevation negative = from above).
-        (7 - 8) width, height [int]: The size (px).
-
-    Returns:
-        (1) parameter [Matrix<uint8> HxWx3]: The RGB image.
-    """
-
-    if width > model.vis.global_.offwidth or height > model.vis.global_.offheight:
-        raise Render_Error_Cls('An image of %dx%d px exceeds the model\'s offscreen buffer %dx%d px.'
-                               % (width, height, model.vis.global_.offwidth, model.vis.global_.offheight))
-    camera = mujoco.MjvCamera()
-    camera.lookat[:] = lookat
-    camera.distance, camera.azimuth, camera.elevation = distance, azimuth, elevation
-    renderer = mujoco.Renderer(model, height, width)
-    try:
-        renderer.update_scene(data, camera=camera)
-        _Set_Look_Flags(renderer.scene.flags)
-        return renderer.render().copy()
-    finally:
-        renderer.close()
-
-
-def Save_Image(image: np.ndarray, path: str) -> str:
-    """
-    Description:
-        Write an RGB image as a PNG file (matplotlib), creating its folder.
-
-    Args:
-        (1) image [Matrix<uint8> HxWx3]: The image.
-        (2) path [string]: The file.
-
-    Returns:
-        (1) parameter [string]: The absolute path written.
-    """
-
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.image as mpimg
-    path = os.path.abspath(path)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    mpimg.imsave(path, image)
-    return path
 
 
 def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callback: tp.Optional[tp.Callable[[int], None]] = None,

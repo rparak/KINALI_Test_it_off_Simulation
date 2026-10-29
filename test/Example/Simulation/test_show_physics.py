@@ -48,21 +48,19 @@ def taught_trajectory(built_trajectory):
     return built_trajectory('taught')
 
 
-def test_headless_runs_the_physics_to_a_time_and_renders_it(tmp_path, run_script, taught_trajectory):
+def test_headless_runs_the_physics_to_a_time(tmp_path, run_script, taught_trajectory):
     """
     Description:
         --headless --time 3.6: the physics run to 3.6 s (the vacuum switch's wait at the input pick), the state line - step,
-        time, 4 of 4 cups, slip, the line -, exit 0; --image writes the render; nothing in the working directory.
+        time, 4 of 4 cups, slip, the line -, exit 0; nothing in the working directory.
     """
 
     work = tmp_path / 'work'
     work.mkdir()
-    image = tmp_path / 'pick.png'
-    result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless', '--time', '3.5', '--image', str(image)],
-                        work)
+    result = run_script('Simulation/show_physics.py', ['--trajectory', str(taught_trajectory), '--headless', '--time', '3.5'], work)
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.startswith('[INFO] step 2/22 S2_Pick_Input   t = 3.500 s / 70.404 s (physics)   4/4 cups, slip ')
-    assert ': Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)\n' in result.stdout and image.stat().st_size > 10000 and os.listdir(work) == []
+    assert ': Robot.WaitDI(DI_VACUUM_OK, timeout=1.0)\n' in result.stdout and os.listdir(work) == []
 
 
 def test_bad_options_and_the_viewer_without_mjpython_are_refused(tmp_path, run_script, taught_trajectory):
