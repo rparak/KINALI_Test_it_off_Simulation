@@ -2,6 +2,13 @@
 
 This project's part of optimization work (`SKILL.md` holds the procedure, the interpreter and the radon command).
 
+## Cleanup criteria
+
+Anything the no-clutter rule excludes is a cleanup finding (style project reference > Layout and layers > No clutter): a second
+user entry point beside `Example/cell.py`, a maintenance tool outside `Example/Maintenance/` or not in `CLAUDE.md`, a one-off
+script whose output is committed, a generator of by-products (media, figures, variants) the owner has not approved, a copy or
+an archive in the tree.
+
 ## Outputs compared byte for byte
 
 An internal module of `Example/Cell/` has no command line of its own (`cell.py` calls its `main(argv, log_name)`); to produce

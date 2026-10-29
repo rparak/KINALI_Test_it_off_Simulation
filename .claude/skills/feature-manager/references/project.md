@@ -40,6 +40,11 @@ instead of excluding the pair; failing a run explicitly instead of clamping a va
 
 ## Domain checklist
 
+**Structure**
+
+- [ ] Does this need a new script, a `cell.py` subcommand, or nothing? (the no-clutter rule: style project reference >
+      Layout and layers > No clutter)
+
 **Physics and model**
 
 - [ ] The compiled model's fingerprint is unchanged, or the change says which fields and why (SPEC §10.2).

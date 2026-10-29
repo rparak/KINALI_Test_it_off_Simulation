@@ -63,6 +63,13 @@ module has no command line of its own: it is a `main(argv, log_name)` that `cell
 (`physics_baseline.py` uses `run_program.py`'s `Load_Run`; `show_physics.py` too; `cell.py` imports by name, so a parallel
 run's workers import it again). `Data/` subfolders are named by purpose, Pascal case like the domains.
 
+**No clutter ✅** (owner, 2026-10-28; design-decisions: one user entry point): the user has one entry point, `Example/cell.py`;
+a new user action becomes a `cell.py` subcommand, never a new top-level script. Maintenance tools live only in
+`Example/Maintenance/` and are documented in `CLAUDE.md` only. A one-off script is removed once its output is committed (git
+history keeps it; design-decisions names the commit). No generator of by-products (media, figures, variants) without the
+owner's approval. No copies or archives in the tree: git history keeps them. Pinned by `test/Docs/test_layout.py`
+(`CONST_EXAMPLE_FILES`: the exact contents of `Example/`, `Example/Cell/` and `Example/Maintenance/`).
+
 Layer order 📄 (by domain; within a domain: `Const` ← `Core` ← the topic modules):
 
 ```

@@ -238,8 +238,9 @@ per-run timeout. "Passed on re-run" is not a diagnosis.
   deleted, what only it holds is exported, and the hash it named is checked to be an ancestor of the
   main branch (`git merge-base --is-ancestor`).
 - **A failed experiment** is undone with `git revert`, never by rewriting pushed history. One that
-  is not adopted but worth repeating is kept as data: its patch against its base commit, its script
-  and a README (base commit, parameters, results, how to re-apply).
+  is not adopted but worth repeating is recorded in design-decisions (base commit, parameters,
+  results, how to re-apply) with the commit that holds its patch and script; git history keeps them,
+  never a copy in the tree (style project reference > No clutter).
 - **Acceptance**: the owner's acceptance of a feature is recorded with its date in the tracker,
   `.claude/project-docs/FEATURES.md`; then push main.
 - The message says what changed and why, with the numbers (before/after, the collected count, the
