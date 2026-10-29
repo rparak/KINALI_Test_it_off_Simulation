@@ -12,16 +12,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
-- [ ] Candidate, project-optimize, speed (owner, 2026-10-29; approval first):
-      `test/Example/test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` takes
-      233.65 s of the full suite's 292.5 s (`-n 8 --durations=15`, 553 tests, Apple M2 Pro, one run alone, 2026-10-29), so
-      `-n 8` cannot finish sooner; split it into parts that run in parallel. Tried, measured and reverted 2026-10-29 (owner's
-      rule: keep it only with both full-suite runs <= 200 s, alone): the split into three tests A `all`, B `--recapture` with
-      the compares, C `--recapture` unchanged (`a5b450f`, records `2706024`; reverted by `c5cbf32`, `9d12c1f`) ran the full
-      suite in 309.2 s and 310.2 s (290.1 s before), as xdist's `load` scheduling put A, B, C and the `run` test on one worker;
-      `--dist worksteal` alone 253.7 s; the experiment (the 7 tests >= 40 s marked heavy and collected first, `--dist
-      worksteal` in `addopts`, not committed) 253.3 s and 252.1 s - worksteal hands each worker one contiguous block of
-      the collection, so B still started at 97 s, behind A (B alone 154-156 s). Peak memory 6.4 GB of 16 GB.
 
 ## Done
 
@@ -49,3 +39,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F20 | One user entry point `Example/cell.py` (check, point, build, optimize, run, show, all `--recapture`), its modules in `Example/Cell/`, the maintenance tools in `Example/Maintenance/`; the comparison, media and logo generators, the archives, `--image` and six unused dependencies removed (restore point `c43f079`); the README results block and the README restructured; the no-clutter rule; accepted by the owner 2026-10-29 (the viewers checked by the owner: show, show --physics, point --show) | `271b004`…`a250731` |
 | F21 | The four in-repository skills take F20's procedures: the import by name only in `cell.py` and what the layout test pins (project-style-rpx); the review of what can go, with its commands run (project-optimize); the README ordered by the user's path and the block written by code (readme-writer); accepting an intended change with `cell.py all --recapture`, the re-captured files in their own commit straight after the change (feature-manager, SPEC §10.2); the README's re-capture sentence and CLAUDE.md's README-checker line corrected; docs and skills only; accepted by the owner 2026-10-29 | `929db17`…`a546744` |
 | F22 | The known MuJoCo attach warning through its filter at every compile (project-optimize, reliability): the collision test through `Compile_Spec`, the export's `to_xml` inside the exact-match filter, the test that another warning still reaches the caller; the full suite 0 warnings; accepted by the owner 2026-10-29 | `520bc5d`…`4eda2ef` |
+| F23 | Closed, not pursued (owner, 2026-10-29; project-optimize, speed): the split of `test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` (233.65 s of the full suite's 292.5 s) into parallel parts. Measured alone, Apple M2 Pro: the split into A `all`, B `--recapture` with the compares, C `--recapture` unchanged 309.2 s / 310.2 s (290.1 s before; xdist's `load` scheduling ran the `run` test, A, B and C on one worker, ending at 305 s, 7 workers idle from 146 s); `--dist worksteal` 253.7 s; the 7 tests >= 40 s collected first with `--dist worksteal` (not committed) 253.3 s / 252.1 s - worksteal hands each worker a contiguous block, so B (154-156 s) started at 97 s behind A on gw7, the other heavy tests ending by 152 s; peak memory 6.4 GB of 16 GB. Reason: the best result, 252 s against 290 s (-40 s, the per-feature tier only), needs custom xdist scheduling in `conftest.py`, fragile code not worth that gain. Reopen if the full suite grows well beyond 5 min | `a5b450f`, `2706024`; reverted by `9d12c1f`, `c5cbf32`; record `3d946d3` |

@@ -70,8 +70,7 @@ Key results (simulation only; deterministic on one machine, one run per program)
 - Baselines captured at `05556c4` (2026-10-25, macOS arm64, Python 3.11.2, MuJoCo 3.16.0; `baseline_environment.json`).
 
 Open (FEATURES): a candidate experiment, `J_INSERT` during the handover's last MoveL (at most −1.5 s; needs a
-time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional); a project-optimize candidate, the 234 s `cell.py all` test split for
-parallel runs (tried and reverted 2026-10-29: the full suite was slower, 309 s). Done: F22, the known attach warning
+time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional); done: F22, the known attach warning
 through its filter at every compile (the full suite 0 warnings). The real-cell transfer (SPEC
 §17) is planned, with no date and no access to the cell.
 
