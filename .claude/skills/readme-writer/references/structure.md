@@ -40,6 +40,17 @@ In this order:
 | Licence | the licence | the name, the holder, a link to `LICENSE`; third-party licences named |
 | Acknowledgements | who contributed or funded | only what the project states |
 
+**A tool the reader runs and changes** (a simulation, a pipeline): the visible part follows the
+user's path - the quick start (install -> the one command -> see the result), the result, how to
+change the main input (numbered steps, then a table *When this fails | It means | Do*), and a table
+of the files by who changes them (you edit / generated / re-captured / never edit by hand).
+Everything else is collapsed.
+
+**A block written by code** sits between named markers (`<!-- <name>:start -->` ...
+`<!-- <name>:end -->`), has one writer and one command that regenerates it, and a test that compares
+the block with what the writer gives. Nothing else of the README is written by code; the block is
+regenerated, never edited by hand.
+
 ## Information hierarchy
 
 - The **visible part** (everything outside `<details>`) answers what / why / how to start in about
