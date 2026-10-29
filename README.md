@@ -34,14 +34,92 @@ The Optimized program finishes first. The media show the v1.0 programs. Simulati
 
 ## Contents
 
+[Quick start](#quick-start) · [Results](#results) · [Change the key points](#change-the-key-points) · [Files](#files) ·
 [About](#about) · [What the cell does](#what-the-cell-does) · [How the model was built](#how-the-model-was-built) ·
-[Collision structure](#collision-structure) · [Architecture](#architecture) · [Quick start](#quick-start) ·
-[Usage](#usage) · [Default vs Optimized program](#default-vs-optimized-program) · [Verification](#verification) ·
-[Repository layout](#repository-layout) · [Claude Code skills](#claude-code-skills) ·
-[Requirements and platform](#requirements-and-platform) ·
-[Citation](#citation) · [License](#license) · [Authors](#authors)
+[Collision structure](#collision-structure) · [Architecture](#architecture) · [Usage](#usage) ·
+[The v1.0 comparison](#the-v10-comparison) · [Verification](#verification) · [Repository layout](#repository-layout) ·
+[Claude Code skills](#claude-code-skills) · [Requirements and platform](#requirements-and-platform) · [Citation](#citation) ·
+[License](#license) · [Authors](#authors)
+
+## Quick start
+
+Prerequisite: Python 3.11. macOS (verified, Apple silicon): `brew install python@3.11`. Ubuntu (not verified):
+`sudo apt install python3.11 python3.11-venv`.
+
+```bash
+git clone https://github.com/rparak/KINALI_Test_it_off_Simulation.git
+cd KINALI_Test_it_off_Simulation
+./install.sh                             # .venv with Python 3.11 and the pinned requirements
+.venv/bin/python Example/cell.py all     # check, build, optimize, run: both programs with physics, about 45 s
+.venv/bin/python Example/cell.py show    # the Default program in MuJoCo's viewer
+```
+
+`cell.py all` ends with the comparison of both programs:
+
+```text
+program               cycle [s]  throughput [PCB/h]  acceptance
+Default program          70.404                51.1  28/28 pass
+Optimized program        59.148                60.9  28/28 pass
+change                  -16.0 %             +19.0 %
+[INFO] The physics reports are in Data/Generated/Reports (<program>_physics.txt).
+[INFO] Simulation results only: not validated for the real cell.
+[INFO] all passed: check, build, optimize, run.
+```
+
+On macOS the viewer needs MuJoCo's `mjpython`: `cell.py` re-launches itself under `.venv/bin/mjpython`. Every action is a
+subcommand of `Example/cell.py`: `--help` lists them, `<subcommand> --help` gives its options.
+
+## Results
+
+The physics baselines of both programs ([P]: the physics run). `cell.py all --recapture` regenerates this table after an
+intended change. Throughput = 3600 s / cycle time. Simulation results.
+
+<!-- results:start -->
+| Metric | Default program | Optimized program | Change |
+|---|---:|---:|---:|
+| Cycle time [s] [P] | 70.404 | 59.148 | −16.0 % |
+| Throughput [PCB/h] [P] | 51.1 | 60.9 | +19.0 % |
+| Acceptance checks [P] | 28/28 pass | 28/28 pass | equal |
+<!-- results:end -->
+
+The media in this README (the GIF previews, the renders and the charts) show the v1.0 programs.
+
+## Change the key points
+
+The robot's named points are in `Configuration/Constants.yaml` (`Points`). A taught point is defined by its `Joints` [deg]. A
+derived point names a `Reference` point and an `Offset` [m] from it, and its `Joints` and `Pose` are the resolved values.
+
+1. Edit the point in `Configuration/Constants.yaml`.
+2. `.venv/bin/python Example/cell.py point <P>` prints the point's check row and, for a derived point, the corrected `Joints`
+   and `Pose` lines: paste them into the point. `--show` opens the viewer on the cell posed at it.
+3. `.venv/bin/python Example/cell.py check` checks every point (IK, family, clearance) and that the programs load.
+4. `.venv/bin/python Example/cell.py all` rebuilds both programs, runs the optimizer only when its inputs changed, and runs
+   the physics against the baselines.
+
+| When this fails | It means | Do |
+|---|---|---|
+| `check`: a point FAILs | the point is out of reach, in the wrong IK family, too close to the cell, or stale (its `Joints` no longer match its `Reference` and `Offset`) | `cell.py point <P>` names the rule: correct the point, or paste the printed lines |
+| `build` or `optimize`: the check fails | a step collides, exceeds a limit or breaks an interlock | the check report names the step and the closest pair: correct the point or the program |
+| `run`: an acceptance check FAILs | the physics run breaks one of the 28 checks, for example a contact or a lost PCB | correct the change. `cell.py run --program default` (or `optimized`) prints the full physics report |
+| `run`: only a drift FAILs | every check is met, but the physics moved beyond a regression tolerance | if you intended the change: `cell.py all --recapture` |
+
+`cell.py all --recapture` is for a change you intend. It re-captures the kinematic golden (`test/Program/data/`) and the
+physics baselines (`test/Simulation/data/`) where they differ, prints what changed, and regenerates the results table above.
+Commit them with the change. It refuses when an acceptance check fails: no baseline may accept a failing check.
+
+## Files
+
+| Kind | Files | How they change |
+|---|---|---|
+| You edit | `Configuration/Cell.yaml`, `Constants.yaml`, `Simulation.yaml`, `Program.yaml`, `Optimization.yaml` | by hand: nothing writes them |
+| Generated by `cell.py` | `Data/Optimized/Program_Optimized.yaml` (`optimize`, committed), the trajectories and reports in `Data/Generated/` and the logs in `logger/` (git-ignored) | `cell.py` writes them again when an input changes |
+| Re-captured by `cell.py all --recapture` | the golden `test/Program/data/`, the physics baselines `test/Simulation/data/`, the results block of this README | only after an intended change, never by hand |
+| Never edit by hand | `models/` (the scene, the vendored AUBO i5, the tool), `Data/PCB/`, `Data/Paths/` (the recorded fork path), `Media/`, `test/Scene/data/` | the sources and their pins |
 
 ## About
+
+<details>
+<summary><b>About</b>: the project, the cell and what this repository gives you</summary>
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
@@ -59,7 +137,12 @@ and puts the tested board into an output crate. This repository models that cell
   limits, speeds), then run with full physics against 28 acceptance checks.
 - **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
 
+</details>
+
 ## What the cell does
+
+<details>
+<summary><b>What the cell does</b>: the process step by step</summary>
 
 1. The robot picks the PCB with vacuum from the left (input) crate.
 2. It puts the PCB into the open loader jaws. The loader clamps it, the vacuum goes off and the robot leaves.
@@ -88,7 +171,12 @@ jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
 
 </details>
 
+</details>
+
 ## How the model was built
+
+<details>
+<summary><b>How the model was built</b>: the sources, the deviations, the limitations</summary>
 
 **From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
 Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
@@ -146,7 +234,12 @@ A first run on the real cell would go at reduced speed with the controller's own
 at a time where possible: the loader jobs alone, then the robot's transfers alone with the loader parked, then the LOCKED
 parts, then the parallel parts last, with the loader's `Loader.Start` / `Loader.WaitDone` handshake tested on its own first.
 
+</details>
+
 ## Collision structure
+
+<details>
+<summary><b>Collision structure</b>: the collision geometry and its categories</summary>
 
 <table>
   <tr>
@@ -171,7 +264,12 @@ and their geom counts, as in the images' legend:
 | workstation: frame, pedestal | grey | 8 |
 | PCB | sky blue | 4 |
 
+</details>
+
 ## Architecture
+
+<details>
+<summary><b>Architecture</b>: the domains, the configuration, the data flow, the optimizer and the interlocks</summary>
 
 The code is in `src/`, one folder per domain, each with its primary module `Core.py`. A domain imports only the domains
 below it:
@@ -274,24 +372,12 @@ the way before `Loader.Start`, or `Loader.WaitDone` before the robot moves in), 
 
 </details>
 
-## Quick start
-
-Prerequisite: Python 3.11. macOS (verified, Apple silicon): `brew install python@3.11`. Ubuntu (not verified):
-`sudo apt install python3.11 python3.11-venv`.
-
-```bash
-git clone https://github.com/rparak/KINALI_Test_it_off_Simulation.git
-cd KINALI_Test_it_off_Simulation
-./install.sh                                  # .venv with Python 3.11 and the pinned requirements, about 10 s
-.venv/bin/python Example/cell.py build        # the Default program -> trajectory + kinematic check, about 11 s
-.venv/bin/python Example/cell.py optimize     # the Optimized program and its trajectory, about 70 s
-.venv/bin/python Example/cell.py run          # both programs with physics: 28 checks, the baselines, the table, about 20 s
-.venv/bin/python Example/cell.py show         # the Default program in the viewer
-```
-
-On macOS the viewer needs MuJoCo's `mjpython`: `cell.py` re-launches itself under `.venv/bin/mjpython`.
+</details>
 
 ## Usage
+
+<details>
+<summary><b>Usage</b>: the subcommands, their options and the viewer keys</summary>
 
 One command, `Example/cell.py`, with a subcommand per action. `--help` lists them and `<subcommand> --help` its options.
 Outputs go into `Data/Generated/<Kind>/` (git-ignored), the log into `logger/cell_<subcommand>.log`. Exit codes: 0 success,
@@ -310,27 +396,12 @@ Outputs go into `Data/Generated/<Kind>/` (git-ignored), the log into `logger/cel
 Keys: Home pause / resume, Page Down or `.` next step (physics: `.` one sample on), Page Up step start (kinematic only), End
 step end. In the MuJoCo viewer `[` and `]` switch between the cameras `cam_pcb` and `cam_tool`.
 
-**What to regenerate after an edit.** Every trajectory records the sha256 of the files it was built from, and the Optimized
-program records its inputs and the planning model, so a stale output is refused and named.
+</details>
 
-| You edited | Then run | Stale detection |
-|---|---|---|
-| `Constants.yaml` (a point) | `cell.py point <P>`, paste the line, then `cell.py check` | the point check reports a stale derived point |
-| `Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml` | `cell.py build`, then `cell.py optimize` | the viewers and the physics run refuse a stale trajectory |
-| `Optimization.yaml` | `cell.py optimize` | the build refuses a stale Optimized program |
+## The v1.0 comparison
 
-## Default vs Optimized program
-
-The physics baselines of both programs ([P]: the physics run). `cell.py all --recapture` regenerates this table after an
-intended change. Throughput = 3600 s / cycle time. Simulation results.
-
-<!-- results:start -->
-| Metric | Default program | Optimized program | Change |
-|---|---:|---:|---:|
-| Cycle time [s] [P] | 70.404 | 59.148 | −16.0 % |
-| Throughput [PCB/h] [P] | 51.1 | 60.9 | +19.0 % |
-| Acceptance checks [P] | 28/28 pass | 28/28 pass | equal |
-<!-- results:end -->
+<details>
+<summary><b>The v1.0 comparison</b>: the Default and the Optimized program in detail, the figures and videos</summary>
 
 The v1.0 comparison (`d8e3e2a`), measured by that release's comparison tool: **[K]** the kinematic trajectory, **[P]** the
 physics run.
@@ -422,7 +493,12 @@ All close views are from the Optimized program's physics run, rendered from the 
 
 </details>
 
+</details>
+
 ## Verification
+
+<details>
+<summary><b>Verification</b>: the 28 checks, the regression baselines, the robustness to timing</summary>
 
 **The acceptance checks.** A physics run passes when all 28 checks pass. Both programs pass 28 of 28. They cover the
 contacts, the PCB's custody and placement, the robot's tracking and loads, the room around the loader and the place into MG06.
@@ -486,7 +562,12 @@ The robot slowed by a speed override, each job as programmed:
 
 </details>
 
+</details>
+
 ## Repository layout
+
+<details>
+<summary><b>Repository layout</b>: what each folder holds</summary>
 
 ```text
 Configuration/   the cell (Cell.yaml), the program (Program.yaml, Constants.yaml, Simulation.yaml), the optimizer (Optimization.yaml)
@@ -499,6 +580,8 @@ test/            the tests, mirroring src/ and Example/, with the regression bas
 install.sh       creates .venv with Python 3.11 and the pinned requirements
 .claude/skills/  the Claude Code skills the development follows (see Claude Code skills)
 ```
+
+</details>
 
 ## Claude Code skills
 
@@ -531,12 +614,17 @@ precedence over the repository's copy.
 
 ## Requirements and platform
 
+<details>
+<summary><b>Requirements and platform</b>: the platforms, Python and the pinned packages</summary>
+
 - **Platform:** macOS on Apple silicon (verified, Apple M2 Pro) and Ubuntu Linux (installer written, not verified).
 - **Python 3.11**, called explicitly by `install.sh` (`/opt/homebrew/bin/python3.11` on macOS, `python3.11` on Linux).
 - **Pinned packages** (`requirements.txt`): `mujoco==3.16.0`, `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`,
   `pytest==9.1.1`, `pytest-xdist==3.8.0`.
 - Results are byte-identical for the same inputs on one machine and platform. Across platforms they agree within numeric
   tolerance only.
+
+</details>
 
 ## Citation
 
