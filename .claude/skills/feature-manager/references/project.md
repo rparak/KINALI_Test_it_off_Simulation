@@ -81,6 +81,15 @@ report and the fingerprint.
 
 Open the cell in the viewer (`Example/cell.py show`, `Example/cell.py point <name> --show`) and look at what changed.
 
+## Accepting an intended change
+
+The pins an intended change moves are re-captured with `Example/cell.py all --recapture` (SPEC §10.2 > Re-capture after an
+intended change): the kinematic golden, both physics baselines and the README results block. It prints what differs and
+refuses when an acceptance check fails. The model fingerprint is not part of it (`Example/Maintenance/model_fingerprint.py
+--out`). The commits follow `SKILL.md` §8: the change first, its pins failing in the expected ways named in the message; then
+the re-captured files on their own, straight after it and in the same push, listing what changed and why. Then, when the
+brief states a moved number, `/support-brief` REFRESH (below).
+
 ## The support-chat brief
 
 `.claude/project-docs/SUPPORT_CHAT.md` is the brief the owner pastes into a new Claude chat that acts as the project's
