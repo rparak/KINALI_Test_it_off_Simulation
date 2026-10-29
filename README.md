@@ -339,7 +339,6 @@ Keys: Home pause / resume, Page Down next step, `.` one sample on (paused), End 
 .venv/bin/python Example/Keypoints/check_keypoints.py                          # the point table: IK, family, clearance; exit 1 on a FAIL
 .venv/bin/python Example/Keypoints/resolve_keypoint.py --name P_LOADER_WAIT    # prints the corrected Joints line to paste into Constants.yaml
 .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name P_LOADER_PLACE    # the cell posed at one point
-.venv/bin/mjpython Example/Keypoints/step_keypoints.py                         # step through the points: Page Down / Page Up
 ```
 
 **Run the tests and the regression baselines.** Two tiers (times on an Apple M2 Pro):

@@ -433,8 +433,8 @@ angles +-0.1 deg, SPEC §10.2).
 
 **Decision.** One place per kind of file a run produces: logs (`logger/<script>.log`, MuJoCo's
 `logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the reports (a program's
-check and physics report, the optimizer's report, the comparison) in `Reports/`, images (`pcb_green.png`,
-the comparison's figure) in `Images/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
+check and physics report, the optimizer's report, the comparison) in `Reports/`, images (the viewers' `--image`) in
+`Images/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
 `--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it); no output folder at the root (owner,
 2026-10-24).
 

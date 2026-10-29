@@ -74,8 +74,8 @@ report and the fingerprint.
 
 ## Visual changes
 
-Open the cell in the viewer (`Example/Render/show_cell.py`) or render an image (`Example/Render/render_image.py`) and
-look at what changed.
+Open the cell in a viewer (`Example/Program/show_program.py`, `Example/Keypoints/show_keypoint.py`) and look at what
+changed.
 
 ## The support-chat brief
 

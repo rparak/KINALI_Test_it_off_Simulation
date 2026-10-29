@@ -45,8 +45,8 @@ import mujoco
 Description:
     Initialization of constants.
 
-    Pictures of a model (SPEC §7.5): an offscreen image from a named camera, a PNG file of it, the
-    interactive viewer. It knows nothing of the cell: it takes a model and its data. matplotlib (the PNG
+    Pictures of a model (SPEC §7.5): an offscreen image from a free camera, a PNG file of it, the passive
+    viewer and its playback loop. It knows nothing of the cell: it takes a model and its data. matplotlib (the PNG
     writer) and mujoco.viewer (a GUI) are imported only where they are used.
 """
 # Default offscreen image size; within the cell's offscreen buffer (Scene.Core CONST_LOOK_OFFSCREEN, 2560 x 1440).
@@ -88,39 +88,6 @@ def _Set_Look_Flags(flags: np.ndarray) -> None:
 
     for flag, on in CONST_LOOK_FLAGS.items():
         flags[flag] = on
-
-
-def Render_Image(model: mujoco.MjModel, data: mujoco.MjData, camera: str, width: int = CONST_WIDTH, height: int = CONST_HEIGHT,
-                 segmentation: bool = False) -> np.ndarray:
-    """
-    Description:
-        An offscreen image of the data's current state from a named camera of the model.
-
-    Args:
-        (1 - 2) model, data [mujoco.MjModel, mujoco.MjData]: The model and its state (after mj_forward).
-        (3) camera [string]: The camera name (e.g. cam_pcb, cam_tool).
-        (4 - 5) width, height [int]: The size (px).
-        (6) segmentation [bool]: Return the segmentation image (object id, object type per pixel) instead.
-
-    Returns:
-        (1) parameter [Matrix<uint8> HxWx3]: The RGB image (or, with segmentation, int32 ids HxWx2).
-    """
-
-    if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, camera) < 0:
-        names = [model.camera(i).name for i in range(model.ncam)]
-        raise Render_Error_Cls("The model has no camera '%s'; its cameras are %s." % (camera, ', '.join(names)))
-    if width > model.vis.global_.offwidth or height > model.vis.global_.offheight:
-        raise Render_Error_Cls('An image of %dx%d px exceeds the model\'s offscreen buffer %dx%d px.'
-                               % (width, height, model.vis.global_.offwidth, model.vis.global_.offheight))
-    renderer = mujoco.Renderer(model, height, width)
-    try:
-        if segmentation:
-            renderer.enable_segmentation_rendering()
-        renderer.update_scene(data, camera=camera)
-        _Set_Look_Flags(renderer.scene.flags)
-        return renderer.render().copy()
-    finally:
-        renderer.close()
 
 
 def Render_Free_Image(model: mujoco.MjModel, data: mujoco.MjData, lookat: tp.Sequence[float], distance: float, azimuth: float,
@@ -178,22 +145,6 @@ def Save_Image(image: np.ndarray, path: str) -> str:
     return path
 
 
-def Launch_Viewer(model: mujoco.MjModel, data: tp.Optional[mujoco.MjData] = None) -> None:
-    """
-    Description:
-        Open MuJoCo's interactive viewer on the model and block until it is closed (mujoco.viewer.launch:
-        runs under python on macOS; launch_passive would need mjpython). This viewer takes no render flags from
-        code: the studio look's fog is off until switched on in the left panel, Rendering > Fog (Haze is on).
-
-    Args:
-        (1) model [mujoco.MjModel]: The model.
-        (2) data [mujoco.MjData]: Its state (default: a new one).
-    """
-
-    import mujoco.viewer
-    mujoco.viewer.launch(model, mujoco.MjData(model) if data is None else data)
-
-
 def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callback: tp.Optional[tp.Callable[[int], None]] = None,
                           command: str = '') -> tp.Any:
     """
@@ -221,7 +172,6 @@ def Launch_Passive_Viewer(model: mujoco.MjModel, data: mujoco.MjData, key_callba
         _Set_Look_Flags(viewer.user_scn.flags)
     viewer.sync()
     return viewer
-
 
 
 class Playback_Cls(object):

@@ -37,7 +37,7 @@ import pytest
 import mujoco
 # Custom Lib.: the module under test
 #   ../Render/Core
-from Render.Core import (Render_Image, Save_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop, Watchdog_Cls, CONST_FRAME_PERIOD,
+from Render.Core import (Render_Free_Image, Render_Error_Cls, Playback_Cls, Run_Viewer_Loop, Watchdog_Cls, CONST_FRAME_PERIOD,
                          CONST_OVERLAY_PERIOD, CONST_WATCHDOG_EXIT)
 
 
@@ -46,48 +46,6 @@ def state(cell_model):
     data = mujoco.MjData(cell_model)
     mujoco.mj_forward(cell_model, data)
     return cell_model, data
-
-
-def test_the_pcb_camera_shows_a_green_pcb(state):
-    """
-    Description:
-        cam_pcb at the initial state sees the PCB visual (segmentation), and its pixels are green: the
-        green channel dominates (measured 2026-10-24: mean RGB 17.6 / 121.5 / 55.1 over 2398 px).
-    """
-
-    model, data = state
-    image = Render_Image(model, data, 'cam_pcb')
-    segmentation = Render_Image(model, data, 'cam_pcb', segmentation=True)
-    assert image.shape == (720, 960, 3) and image.dtype == np.uint8
-    mask = (segmentation[..., 0] == model.geom('pcb_vis').id) & (segmentation[..., 1] == mujoco.mjtObj.mjOBJ_GEOM)
-    assert mask.sum() > 1000
-    r, g, b = image[mask].mean(0)
-    assert g > 2 * r and g > 1.5 * b
-
-
-def test_a_saved_image_reads_back(state, tmp_path):
-    """
-    Description:
-        Save_Image writes a PNG of the image's size into a new folder.
-    """
-
-    import matplotlib.image as mpimg
-    model, data = state
-    path = Save_Image(Render_Image(model, data, 'cam_tool', 320, 240), str(tmp_path / 'new' / 'tool.png'))
-    assert mpimg.imread(path).shape[:2] == (240, 320)
-
-
-def test_an_unknown_camera_or_a_too_large_image_is_refused(state):
-    """
-    Description:
-        An unknown camera is named with the model's cameras; a size beyond the offscreen buffer is named.
-    """
-
-    model, data = state
-    with pytest.raises(Render_Error_Cls, match="no camera 'cam_none'.*cam_pcb, cam_tool"):
-        Render_Image(model, data, 'cam_none')
-    with pytest.raises(Render_Error_Cls, match='3000x720 px exceeds the model.s offscreen buffer 2560x1440 px'):
-        Render_Image(model, data, 'cam_pcb', 3000, 720)
 
 
 def test_a_free_camera_image_and_its_size_limit(state):

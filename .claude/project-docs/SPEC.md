@@ -302,7 +302,7 @@ in code by `Scene.Core._Apply_Look` (`CONST_LOOK_*`), visual only:
   qpos, robot included (half diagonal 1.351 m): the default free camera (distance 1.5 × extent = 3.9 m, fovy
   45°) holds the whole cell with a 10 % margin;
 - fog is a render flag, not a model field: on in `Render.Core`'s offscreen images and passive viewer
-  (`CONST_LOOK_FLAGS`: fog and haze); the blocking viewer (`show_cell.py`, `python -m mujoco.viewer`) starts
+  (`CONST_LOOK_FLAGS`: fog and haze); the blocking viewer (`python -m mujoco.viewer`) starts
   with fog off - left panel, Rendering > Fog (Haze is on by default).
 
 Materials: aluminium and metal `specular` 0.75, plastic 0.25, dark parts 0.15. Cameras `cam_pcb` (follows the
@@ -406,7 +406,7 @@ src/Configuration/Const.py   the root, Configuration/ and Data/, the contact gro
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
 src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
-src/Render/Core.py        offscreen image, viewer start
+src/Render/Core.py        offscreen image, passive viewer start and playback
 src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
 src/Simulation/Core.py    the physics run with the instability guard and its measured values (§7.6)
 src/Simulation/Report.py  a run's acceptance checks (§10.1), warnings and report
@@ -423,12 +423,9 @@ Example/Simulation/show_physics.py     the physics run in the viewer (mjpython),
 Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
 Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
-Example/Render/show_cell.py            opens the viewer on the cell
-Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
 Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
 Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
 Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
-Example/Keypoints/step_keypoints.py    steps through the points in the viewer (mjpython): Page Down / . / Page Up
 Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
@@ -490,8 +487,8 @@ categories of §4.6.
 
 ### 7.5 Render
 
-An offscreen image from a named camera or a free camera, with the studio look's fog and haze flags on;
-starting the viewer (the passive one with the same flags); the playback loop of a passive viewer (`Playback_Cls`, the
+An offscreen image from a free camera, with the studio look's fog and haze flags on; starting the passive viewer
+(with the same flags); the playback loop of a passive viewer (`Playback_Cls`, the
 timeline by the wall clock with queued key actions; `Run_Viewer_Loop`, the mujoco 3.16 viewer rules: `viewer.lock()` only
 while posing, `set_texts` outside it and at most every 0.25 s unless the segment changes, `sync` every frame; `Watchdog_Cls`
 for `--watchdog`). No project imports. The playback has a speed against the wall clock and a `frame` action (one

@@ -81,13 +81,10 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Simulation/show_physics.py --headless --time T [--program ...] [--image [FILE]]   # physics to T; offscreen image
 .venv/bin/python Example/Scene/model_fingerprint.py    # compare with the baseline: 1 difference expected (pcb_vis rgba)
 .venv/bin/python Example/Scene/export_cell_scene.py    # models/cell_scene.xml
-.venv/bin/python Example/Render/show_cell.py            # MuJoCo viewer on the cell
-.venv/bin/python Example/Render/render_image.py         # Data/Generated/Images/pcb_green.png
 .venv/bin/python Example/Keypoints/check_keypoints.py [--name K]   # the keypoint check table; exit 1 on a FAIL
 .venv/bin/python Example/Keypoints/resolve_keypoint.py --name K [--seed K]   # prints the corrected Joints line
 .venv/bin/python Example/Keypoints/show_keypoint.py --name K --headless [--image [FILE]]   # pose; offscreen image
 .venv/bin/mjpython Example/Keypoints/show_keypoint.py --name K [--loader P --gripper S --pcb L --mg06 Open|Closed]
-.venv/bin/mjpython Example/Keypoints/step_keypoints.py [--start K]   # Page Down / '.' next, Page Up previous
 .venv/bin/python Example/Program/build_program.py [--program F] [--out DIR]   # trajectory + check report; exit 0/1
 .venv/bin/python Example/Program/show_program.py (--step N | --time T) --headless [--image [FILE]]   # pose a moment; offscreen image
 .venv/bin/mjpython Example/Program/show_program.py [--version default|optimized] [--watchdog S]   # playback: Home pause, Page Down/'.' next segment, Page Up, End
@@ -95,7 +92,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
 ```
 
-The viewer scripts (`show_keypoint.py`, `step_keypoints.py`, `show_program.py`, `show_physics.py`) use
+The viewer scripts (`show_keypoint.py`, `show_program.py`, `show_physics.py`) use
 `mujoco.viewer.launch_passive`, which macOS runs only under `.venv/bin/mjpython`; under `.venv/bin/python` they exit 2
 naming the mjpython command. The cell configuration (`Cell.yaml`) and the cell
 program (`Constants.yaml` named values, `Simulation.yaml` simulation-only data, `Program.yaml` the program; read by
