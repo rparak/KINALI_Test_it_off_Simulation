@@ -105,7 +105,7 @@ derived point names a `Reference` point and an `Offset` [m] from it, and its `Jo
 
 `cell.py all --recapture` is for a change you intend. It re-captures the kinematic golden (`test/Program/data/`) and the
 physics baselines (`test/Simulation/data/`) where they differ, prints what changed, and regenerates the results table above.
-Commit them with the change. It refuses when an acceptance check fails: no baseline may accept a failing check.
+Commit them right after the change, on their own, with the reason. It refuses when an acceptance check fails: no baseline may accept a failing check.
 
 ## Files
 
