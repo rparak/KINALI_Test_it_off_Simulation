@@ -63,6 +63,16 @@ CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/ref
                      'readme-writer/scripts/test_check_readme.py', 'readme-writer/scripts/test_render_readme.py',
                      'readme-writer/references/check_readme.json', 'support-brief/SKILL.md',
                      'support-brief/references/project.md'}
+# The files git tracks under Example/ (the no-clutter rule, style project reference > Layout; owner, 2026-10-28): the one user entry
+# point cell.py, its internal modules in Cell/, the maintenance tools in Maintenance/ (documented in CLAUDE.md). A new file there
+# fails the test until it is added here on purpose: a user action is a cell.py subcommand, never a new script.
+#   Unit [Set<string>]
+CONST_EXAMPLE_FILES = {'cell.py',
+                       'Cell/check_keypoints.py', 'Cell/check_programs.py', 'Cell/resolve_keypoint.py', 'Cell/show_keypoint.py',
+                       'Cell/build_program.py', 'Cell/optimize_program.py', 'Cell/run_program.py', 'Cell/show_program.py',
+                       'Cell/show_physics.py', 'Cell/results.py',
+                       'Maintenance/model_fingerprint.py', 'Maintenance/export_cell_scene.py', 'Maintenance/golden_program.py',
+                       'Maintenance/physics_baseline.py'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py); Const.py only where more than one of its
 # modules uses a constant.
@@ -109,6 +119,19 @@ def test_the_skill_folders_track_only_the_shipped_skills(root):
     prefix = '.claude/skills/'
     assert {p[len(prefix):] for p in _Tracked(root) if p.startswith(prefix)} == CONST_SKILL_FILES
 
+
+def test_example_holds_only_the_entry_point_its_modules_and_the_maintenance_tools(root):
+    """
+    Description:
+        Example/ tracks exactly cell.py, the declared Cell/ modules and the declared Maintenance/ tools, and each has its
+        mirrored test (test/Example/test_cell.py, test/Example/<folder>/test_<file>).
+    """
+
+    prefix = 'Example/'
+    tracked = _Tracked(root)
+    assert {p[len(prefix):] for p in tracked if p.startswith(prefix)} == CONST_EXAMPLE_FILES
+    tests = {'test/Example/' + (os.path.dirname(f) + '/' if '/' in f else '') + 'test_' + os.path.basename(f) for f in CONST_EXAMPLE_FILES}
+    assert sorted(tests - set(tracked)) == []
 
 def _Constants(tree):
     """
