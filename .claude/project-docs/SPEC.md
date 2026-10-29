@@ -417,7 +417,7 @@ src/Program/Check.py      the program check and its report, posing at a sample, 
 src/Program/Const.py      the constant the build and the check share
 src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
-src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt, the comparison's metrics (§7.11)
+src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt (§7.11)
 Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
 Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time, --image
 Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
@@ -432,7 +432,6 @@ Example/Keypoints/step_keypoints.py    steps through the points in the viewer (m
 Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
-Example/Program/compare_programs.py    taught vs optimized: a table and a figure (exit 0 / 1)
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
@@ -654,7 +653,7 @@ job's start it fails, naming the remedies: split the job or gate on a loader inp
 finally writes the schedule. `Interlocks` (I1-I10
 with their times), `Compare_Locked` (each
 LOCKED part against the taught program, byte by byte from its own start), `Carried_Tilt`, `Stale_Inputs` (the inputs' and the
-planning model's sha256 against the file's record), `Schedule_Differences`, `Measure` (the comparison's metrics).
+planning model's sha256 against the file's record), `Schedule_Differences` (`Measure`, the comparison's metrics, removed in F20 with `compare_programs.py`).
 
 **LOCKED and FREE.** `Optimization.yaml Free_Segments` lists the FREE segments by name; every other segment is LOCKED. A
 LOCKED segment's samples relative to its own start are byte-identical in both programs (its start time may move); a FREE
@@ -848,7 +847,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Configuration/Constants.yaml`, `Simulation.yaml`, `Program.yaml` | `Configuration.Program_Parser` (`Load_Constants`, `Load_Simulation`, `Load_Program`), written by hand (§8); `Example/Keypoints/resolve_keypoint.py` prints lines to paste, nothing writes them |
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
-| the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
+| the optimizer's report | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`) |
 | the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png`, the charts `Media/Default_vs_Optimized_*`, `Media/Timeline_*` | committed (the v1.0 programs; their generators are in git at `c43f079`, §7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |

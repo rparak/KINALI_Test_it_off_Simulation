@@ -26,7 +26,7 @@ import math
 # Typing (Support for type hints)
 import typing as tp
 # Dataclasses (Data Classes)
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 # Numpy (Array computing) [pip3 install numpy]
 import numpy as np
 # Custom Lib.:
@@ -51,14 +51,9 @@ Description:
     Initialization of constants.
 
     What the optimized program is measured by (SPEC §7.11): each LOCKED part against the taught program byte by byte, the
-    interlocks I1-I9 on the built trajectory, the carried PCB's tilt, the schedule's differences, and the comparison's
-    metrics. It prints nothing.
+    interlocks I1-I9 on the built trajectory, the carried PCB's tilt and the schedule's differences. It prints
+    nothing.
 """
-# A stop of the robot (the comparison's metric): every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME,
-# after a motion. The speed is a sample's joint change over the sample time; 1e-3 rad/s is far below any planned motion
-# (a min-jerk move reaches it within its first or last few samples) and above the plans' numerical noise.
-#   Unit [float] (rad/s), [float] (s)
-CONST_STOP_SPEED, CONST_STOP_TIME = 1e-3, 0.1
 CONST_ROBOT_CHANNELS = ('Robot_Q', 'Robot_QD', 'Loader_Y', 'Loader_Z', 'Gripper', 'Vacuum', 'PCB_Location', 'PCB_Pose', 'MG06_Lid',
                         'MG06_Handle', 'Jaw')
 CONST_LOADER_CHANNELS = ('Loader_Y', 'Loader_Z', 'Gripper', 'Jaw', 'PCB_Location', 'PCB_Pose')
@@ -310,67 +305,3 @@ def Carried_Tilt(trajectory: Trajectory_Str, first: int, last: int) -> float:
             w, x, y, z = trajectory.PCB_Pose[i][3:]
             best = max(best, math.acos(max(-1.0, min(1.0, 1.0 - 2.0 * (x * x + y * y)))))
     return best
-
-
-@dataclass
-class Program_Metrics_Str:
-    """
-    Description:
-        What a program's motion costs (compare_programs.py): the cycle time, the robot's joint travel per joint, its TCP's and
-        the PCB's path lengths, the loader's travel, the robot's stops (each time it comes to rest).
-    """
-
-    # The cycle time.
-    #   Unit [float] (s)
-    Cycle_Time: float = 0.0
-    # The joint travel, per joint (sum of |dq| over the samples).
-    #   Unit [Vector<float> 1x6] (rad)
-    Joint_Travel: np.ndarray = field(default_factory=lambda: np.zeros(6))
-    # The TCP's and the PCB's path lengths (the PCB: NaN when not known).
-    #   Unit [float] (m)
-    Tcp_Path: float = 0.0
-    Pcb_Path: float = math.nan
-    # The loader's travel, Y plus Z.
-    #   Unit [float] (m)
-    Loader_Travel: float = 0.0
-    # The robot's stops: every joint speed below CONST_STOP_SPEED for at least CONST_STOP_TIME, after a motion; their total time.
-    #   Unit [int], [float] (s)
-    Stops: int = 0
-    Rest_Time: float = 0.0
-
-
-def Measure(q: np.ndarray, dt: float, kinematics: Robot_Kinematics_Cls, loader_y: np.ndarray, loader_z: np.ndarray,
-            pcb: tp.Optional[np.ndarray] = None) -> Program_Metrics_Str:
-    """
-    Description:
-        A program's metrics from its samples: joint travel, the suction TCP's path (FK per sample), the PCB's path, the
-        loader's travel, the robot's stops (each run of samples with every joint speed - its change over dt - below
-        CONST_STOP_SPEED lasting at least CONST_STOP_TIME, once the robot has moved).
-
-    Args:
-        (1) q [Matrix<float> nx6]: The joints per sample (rad).
-        (2) dt [float]: The sample time (s).
-        (3) kinematics [Robot_Kinematics_Cls(object)]: FK.
-        (4 - 5) loader_y, loader_z [Vector<float> n]: The loader's axes per sample (m).
-        (6) pcb [Matrix<float> nx3]: The PCB's position per sample (m), or None.
-
-    Returns:
-        (1) parameter [Program_Metrics_Str(object)]: The metrics.
-    """
-
-    dq = np.abs(np.diff(q, axis=0))
-    tcp = np.array([kinematics.Site_Pose(qi)[0] for qi in q])
-    rest = np.max(dq, axis=1) / dt < CONST_STOP_SPEED
-    stops, run, moved, rest_time = 0, 0, False, 0.0
-    for still in np.r_[rest, False]:
-        if still:
-            run += 1
-            continue
-        if moved and run * dt >= CONST_STOP_TIME - 1e-9:
-            stops, rest_time = stops + 1, rest_time + run * dt
-        run, moved = 0, True
-    return Program_Metrics_Str(Cycle_Time=float(len(q) - 1) * dt, Joint_Travel=dq.sum(axis=0),
-                               Tcp_Path=float(np.sum(np.linalg.norm(np.diff(tcp, axis=0), axis=1))),
-                               Pcb_Path=float(np.sum(np.linalg.norm(np.diff(pcb, axis=0), axis=1))) if pcb is not None else math.nan,
-                               Loader_Travel=float(np.sum(np.abs(np.diff(loader_y))) + np.sum(np.abs(np.diff(loader_z)))),
-                               Stops=stops, Rest_Time=round(rest_time, 6))

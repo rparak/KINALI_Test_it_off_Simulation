@@ -1102,7 +1102,8 @@ Pinned by `test/Program/test_core.py::test_a_run_is_a_start_and_a_waitdone`, `te
 
 **Decision.** The optimized program carries the PCB farther than the taught one: at the decision (2026-10-24) 2.856 m against
 2.712 m (+5 %, the 20 deg tilt limit), while the robot's joint travel fell 18 % and the TCP's path 13-15 %: accepted (owner,
-2026-10-24). The current lengths: `Example/Program/compare_programs.py`.
+2026-10-24). The v1.0 lengths: the README's v1.0 comparison (2.71 m against 2.86 m). *Corrected 2026-10-29 (F20): this
+read "The current lengths: `Example/Program/compare_programs.py`"; the script is removed (in git at `c43f079`).*
 
 **Why.** The optimizer's objective is time within the limits and the clearance; the FREE transfers that carry the PCB (To_Loader,
 To_Output) are shorter in time, their clearances pass, and the tilt stays within its limit.
@@ -1111,9 +1112,13 @@ To_Output) are shorter in time, their clearances pass, and the tilt stays within
 
 **Revisit if** the physics shows PCB slip in a carrying transfer above its warning.
 
-Pinned by `test/Example/Program/test_compare_programs.py`.
+Pinned until F20 by `test/Example/Program/test_compare_programs.py` (removed); the optimized trajectory is pinned since by
+`test/Example/Program/test_optimize_program.py` (byte-identical program) and the physics baseline.
 
 ## A robot stop is a tenth of a second at rest
+
+*Superseded 2026-10-29 (F20): the stop count went with the kinematic comparison (`compare_programs.py`, `Optimizer.Measure.Measure`);
+both are in git at `c43f079`.*
 
 **Decision.** The comparison counts a robot stop when every joint speed (its change per sample over 4 ms) stays below 1e-3 rad/s
 for at least 0.1 s after a motion (`Optimizer.Measure.CONST_STOP_SPEED`, `CONST_STOP_TIME`), and reports the time at rest in
@@ -1129,7 +1134,7 @@ stays and the time at rest falls.
 
 **Revisit if** the comparison should tell the process holds from the waits.
 
-Pinned by `test/Optimizer/test_measure.py::test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion`,
+Pinned until F20 by `test/Optimizer/test_measure.py::test_a_stop_is_a_tenth_of_a_second_at_rest_after_a_motion`,
 `test/Example/Program/test_compare_programs.py`.
 
 ## The optimized take waits at P_LOADER_WAIT; the loader is the critical path

@@ -342,12 +342,6 @@ Keys: Home pause / resume, Page Down next step, `.` one sample on (paused), End 
 .venv/bin/mjpython Example/Keypoints/step_keypoints.py                         # step through the points: Page Down / Page Up
 ```
 
-**Compare the programs.**
-
-```bash
-.venv/bin/python Example/Program/compare_programs.py             # a quick kinematic table and figure of both programs
-```
-
 **Run the tests and the regression baselines.** Two tiers (times on an Apple M2 Pro):
 
 ```bash
