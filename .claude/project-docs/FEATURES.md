@@ -7,6 +7,13 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 
 ## Open
 
+- [ ] F21: the four in-repository skills (project-style-rpx, project-optimize, readme-writer, feature-manager) take the
+      procedures F20 proved (the no-clutter rule checked, the cleanup for user simplicity, the README ordered by the user's
+      path, accepting an intended change with `cell.py all --recapture`); docs and skills only, no code or behaviour change
+      (owner, 2026-10-29). Part A approved 2026-10-29: the re-captured files go in their own commit straight after the
+      change, in the same push (SPEC §10.2), and the README's sentence says so too; the module import by name only in
+      `cell.py`; the optimize reference's cleanup criteria a pointer, its commands without a machine path; the diff proof
+      byte for byte for the deterministic outputs, the physics within the baselines' tolerances and envelopes.
 - [ ] Candidate experiment (owner, 2026-10-24: after step 6, now possible): start `J_INSERT` during the handover's last MoveL
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
