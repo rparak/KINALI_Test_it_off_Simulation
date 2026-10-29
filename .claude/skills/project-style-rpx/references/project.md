@@ -11,17 +11,9 @@ repository) - its source file (byte-identical to that skill's asset; in git at `
 rules, with one departure (below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its figures follow the generic default look
 (references/figures.md).
 
-**Figure style 📄** (owner, 2026-10-25; design-decisions: the figure style): the generic default look (references/figures.md)
-in `src/Report/Style.py`, used by the comparison's figures (`Example/Report/compare_report.py`); the name helper is
-`Style.Label`. The project's choices: one colour per program in every figure (Default: sky blue / blue; Optimized: the JIC
-purple's 40 % tint on dark, the purple on light - each at least 4.5:1 on its background, `test/Report/test_style.py`). The
-programs are shown as "Default program" and "Optimized program" (`Style.CONST_PROGRAM_NAMES`); the code keeps taught /
-optimized. `compare_programs.py`'s figure keeps the dataviz palette (a departure, below).
-
-**Known gap 📄** (owner, 2026-10-27): no test regenerates the README charts and compares them with the committed files in
-`Media/` (references/figures.md > Saving); `test/Example/Report/test_compare_report.py` compares `--media` with `--out` only.
-The figures are checked at release. The SVGs are not byte-stable (matplotlib's random clip and marker ids; design-decisions:
-the media are encoded with Pillow and imageio-ffmpeg), and the `svg.hashsalt` fix is not yet verified.
+**Figures 📄**: the project generates no figure since F20 (the comparison's figure style, `src/Report/Style.py`, is in git
+at `c43f079`; design-decisions: the figure style, superseded). The README charts in `Media/` are committed (v1.0). A new
+figure generator needs the owner's approval; it follows references/figures.md.
 
 ## Header and checker
 
@@ -39,14 +31,12 @@ the media are encoded with Pillow and imageio-ffmpeg), and the `svg.hashsalt` fi
 
 ```
 src/<Domain>/Core.py   the domain's primary module: Configuration, Scene, Kinematics, Collision, Render, Simulation, Keypoints,
-                       Trajectory, Program, Planner, Optimizer, Report
+                       Trajectory, Program, Planner, Optimizer
 src/<Domain>/<Topic>.py  a second concern of a domain: Configuration/Program_Parser.py (the cell program's reader),
                        Program/Check.py (the trajectory check), Simulation/Report.py (a run's acceptance and report),
-                       Optimizer/Measure.py (what the optimized program is measured by), Report/Media.py (the
-                       comparison's frames, videos, GIFs), Report/Style.py (the figure style)
+                       Optimizer/Measure.py (what the optimized program is measured by)
 src/<Domain>/Const.py  only where more than one module of the domain uses a constant: Configuration, Program, Simulation
-Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Media, Keypoints, Program, Simulation,
-                       Report
+Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Keypoints, Program, Simulation
 test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is tested through its readers);
                        test/Example/<Domain>/test_<script>.py; test/Install/test_install.py; test/Docs/test_layout.py;
                        reference data (the baselines) in test/<Domain>/data/
@@ -55,8 +45,8 @@ Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimi
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
 Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), committed
                        (pinned by sha256); Cycle_<Side_by_Side|Optimized>.gif, View_*.png, Collision_*.png,
-                       Key_Points.png, written by Example/Report/make_media.py; Default_vs_Optimized_* and Timeline_* (dark,
-                       light; PNG, SVG), written by Example/Report/compare_report.py --media Media
+                       Key_Points.png, Default_vs_Optimized_* and Timeline_* (dark, light; PNG, SVG): committed, the v1.0
+                       programs (their generators are in git at c43f079)
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -81,7 +71,6 @@ Simulation                → Configuration, Scene, Collision, Trajectory
 Keypoints                 → Configuration, Scene, Kinematics, Collision
 Program                   → Configuration, Scene, Kinematics, Collision, Keypoints, Trajectory, Planner
 Optimizer                 → Configuration, Kinematics, Collision, Keypoints, Planner, Program, Trajectory
-Report                    → Configuration, Kinematics, Collision, Simulation, Program, Optimizer, Trajectory, Render
 Example/                  → any of src/
 ```
 
@@ -113,9 +102,7 @@ that differ only in letter case.
 | a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (the generator is in git at `c43f079`); read by the README |
-| the comparison `Data/Generated/Reports/Comparison/` (Comparison.md, figures, videos, view, point and collision images) | `Example/Report/compare_report.py`, `make_media.py` (through `Report.Core`, `Report.Media`); never read |
-| the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png` | `Example/Report/make_media.py` (`Report.Media.Write_Gif`, `Write_Png`, `Contact_Sheet`); read by the README |
-| the README charts `Media/Default_vs_Optimized_<dark|light>.<png|svg>`, `Media/Timeline_<dark|light>.<png|svg>` | `Example/Report/compare_report.py --media Media` (`Report.Style.Save_Figure`); read by the README |
+| the README media and charts in `Media/` | committed (v1.0; the generators are in git at `c43f079`); read by the README |
 | the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
@@ -182,6 +169,3 @@ returned list, printed by the script, exit code 1.
 - The logos are black and white recolourings of the originals (owner, 2026-10-24), although jic-sf-ui-style
   (not part of this repository) says its logos are "never recoloured" and the purple JIC logo is for white grounds: a temporary departure
   until the official monochrome JIC file (requested from JIC) replaces it (design-decisions: the brand).
-- `Example/Program/compare_programs.py`'s figure keeps its own palette (the dataviz one) and one light theme, and does not
-  use `Report.Style` (owner: kept, 2026-10-27), although references/figures.md has every figure script use the one style
-  module. Aligning it with `Report.Style` is a possible later task.

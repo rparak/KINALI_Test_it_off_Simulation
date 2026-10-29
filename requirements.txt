@@ -9,14 +9,9 @@ PyYAML==6.0.3
 trimesh==5.1.1
 rtree==1.4.1
 coacd==1.0.14
-# Offscreen images (src/Render: Save_Image, Example/Render/render_image.py) and the comparison's figures and README charts
-# (src/Report/Style.py, Example/Report/compare_report.py)
+# Offscreen images (src/Render: Save_Image, Example/Render/render_image.py) and the comparison table's figure
+# (Example/Program/compare_programs.py)
 matplotlib==3.11.2
-# The comparison's media (src/Report/Media.py; owner 2026-10-25): Pillow for the GIF previews, the labels and the contact sheet;
-# imageio-ffmpeg for its pinned ffmpeg binary (the H.264 videos), a tool only: BSD-2-Clause, its bundled ffmpeg 7.1 is a GPL
-# build run as a separate program, never linked or redistributed (design-decisions)
-pillow==13.0.0
-imageio-ffmpeg==0.6.0
 # Tests (pytest-xdist: the suite in parallel with -n 8; it also passes serially, -n 0)
 pytest==9.1.1
 pytest-xdist==3.8.0

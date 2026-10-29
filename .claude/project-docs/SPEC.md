@@ -317,14 +317,15 @@ PCB) and `cam_tool` (follows the tool from the side opposite the robot), both `t
   and `python3.11-venv` (deadsnakes on older releases).
 - Direct dependencies pinned `==` in `requirements.txt` (§11, design-decisions): `mujoco==3.16.0`,
   `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`, `trimesh==5.1.1`, `rtree==1.4.1`,
-  `coacd==1.0.14`, `matplotlib==3.11.2`, `pillow==13.0.0`, `imageio-ffmpeg==0.6.0` (the comparison's media, §7.12),
+  `coacd==1.0.14`, `matplotlib==3.11.2`,
   `pytest==9.1.1`, `pytest-xdist==3.8.0`. The groups without a user yet are marked *planned* in `requirements.txt`.
 - **The verified baseline environment is recorded as a full `pip freeze`** (owner, 2026-10-24): a record of
   what the physics baselines (§10.2) ran with, not an install input (`install.sh` installs `requirements.txt` only). It
   is replaced, with its date, whenever the baselines are re-measured. Recorded 2026-10-24, Python 3.11.2, macOS 26.6.2 arm64
   (Apple M2 Pro), the `.venv` of `./install.sh --recreate`; the same packages captured the baselines of 2026-10-25
   (`baseline_environment.json`); `execnet` and `pytest-xdist` (the parallel test runner, no effect on a result) added
-  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25
+  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25; `pillow` and `imageio-ffmpeg` removed
+  from `requirements.txt` 2026-10-29 with the media (F20; the record stays as the baselines were captured)
   (`.venv/bin/python -m pip freeze --all`):
 
   ```
@@ -395,7 +396,7 @@ Configuration/Optimization.yaml   the optimized program's settings: the FREE seg
 Data/Optimized/Program_Optimized.yaml   the optimized program, written by Example/Program/optimize_program.py only (committed, §8)
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
-Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/; Reports/Comparison/ (the comparison, §7.12)
+Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/
 Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds (committed; their generator is in git at c43f079)
 src/<Domain>/Core.py      each domain's primary module; a second concern in a topic module, shared constants in Const.py
                           (the module layout: style project reference > Layout, design-decisions)
@@ -417,8 +418,6 @@ src/Program/Const.py      the constant the build and the check share
 src/Planner/Core.py       joint-space planning: the spline, its time-optimal timing (TOPP), RRT-Connect, the shortcut, the refit (§7.10)
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
 src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt, the comparison's metrics (§7.11)
-src/Report/Core.py        the comparison: the physics run recorded, the cell's geometry over time, custody, critical path, I8 vs loader timing (§7.12)
-src/Report/Media.py       the comparison's media: labelled frames, the H.264 video, the GIF preview, the contact sheet (§7.12)
 Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
 Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time, --image
 Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
@@ -434,8 +433,6 @@ Example/Program/build_program.py       a program -> its trajectory (npz + csv) a
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
 Example/Program/compare_programs.py    taught vs optimized: a table and a figure (exit 0 / 1)
-Example/Report/compare_report.py       taught vs optimized in full: Data/Generated/Reports/Comparison/Comparison.md + figures (exit 0 / 1 / 2)
-Example/Report/make_media.py           videos (MP4) from named views, GIF previews, view, point and collision images (exit 0 / 2)
 Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time / --image, --watchdog S (debug)
@@ -445,7 +442,7 @@ test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Exampl
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
 
-`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`, `Media`, `Report`,
+`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`,
 `Keypoints`, `Program`). `Data/` is ordered by purpose. The configuration (the cell, the
 program's three files) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
@@ -455,8 +452,8 @@ import nothing of the project (`Planner`: numpy, scipy); `Scene` → `Configurat
 `Configuration`, `Scene`; `Trajectory` → `Configuration` (no MuJoCo); `Simulation` → `Configuration`, `Scene`, `Collision`,
 `Trajectory`; `Keypoints` → `Configuration`, `Scene`, `Kinematics`, `Collision`; `Program` → `Configuration`, `Scene`,
 `Kinematics`, `Collision`, `Keypoints`, `Trajectory`, `Planner`; `Optimizer` → `Configuration`, `Kinematics`, `Collision`,
-`Keypoints`, `Planner`, `Program`, `Trajectory`; `Report` → `Configuration`, `Kinematics`, `Collision`, `Simulation`, `Program`,
-`Optimizer`, `Trajectory`, `Render` (the top of the order). No import cycle (checked 2026-10-25). Scripts reach
+`Keypoints`, `Planner`, `Program`, `Trajectory` (the top of the order). No import cycle (checked 2026-10-25; the `Report` domain
+above `Optimizer` removed 2026-10-29, F20). Scripts reach
 `src/` through a path built from `__file__`.
 
 ## 7. Domains
@@ -713,60 +710,16 @@ every fault and fails on one. `J_RETURN` is two jobs for it: `J_RETURN_Y` (up to
 and `J_RETURN_Z` (down home, the hold), the same motion and timing; the taught program runs both with `Loader.Run` (its
 trajectory byte-identical, the golden's labels re-captured).
 
-### 7.12 Report
+### 7.12 (Removed: the Report domain)
 
-The comparison of the taught and the optimized program (`src/Report/Core.py`, `src/Report/Media.py`; F14, owner 2026-10-25). It
-changes no program, point, model or limit; it measures.
-
-- **The recording** (`Record_Physics`): a program's physics run (`Physics_Run_Cls`, stepped as `Run_Physics` steps it) with its
-  state read at every trajectory sample (4 ms): positions, velocities, the cups touching the PCB and whether the jaws, the
-  MG06 holder or a crate touch it (closer than `Cup_Touch`), the vacuum, the TCP. It never writes the run's data: the run's report
-  is byte-identical to `run_program.py`'s (tested).
-- **The geometry over time** (`Cell_Geometry_Cls`, `Geometry_Series`), on the planning model posed at a recording's positions or a
-  trajectory's sample: the exact distance (`Close_Pairs`, cut 100 mm) of each pair of `CONST_PAIRS` - the robot to the
-  environment (its mount excluded), to MG06's lid / handle / press plate, to the loader, to the PCB and to its own links (the
-  links not neighbours and not excluded by the model); the PCB to the environment, the loader and MG06; the loader to the
-  environment and MG06 - every 20 ms, each pair's minimum refined on every sample within 20 ms, the contacts by design left
-  out (`By_Design`: a step's `Allow_Contact` group, the PCB resting in a crate or MG06, the PCB between the jaws and the holder
-  while the loader is down at MG06). The objects' extents and the zones' occupancy from their collision geoms' points (a
-  mesh's vertices, a primitive's box corners).
-- **The shared zones** (owner 2026-10-25, split F16): the volume the loader's jaws and the PCB in them sweep in all its jobs where
-  its actuators put it, grown by `Loader_Free` (`Swept_Zone`: one pose per 5 mm cell of (Y, Z, jaw); the robot is in it when an
-  exact distance to a pose is below `Loader_Free`, the poses nearest by box gap first; the loader when its Y and Z lie within
-  `Loader_Free` of a pose's), split by the loader's Y: the **jaw zone** (`L_HOME`'s Y: the handover and the take, home to the
-  travel height) and the **MG06 corridor** (`L_TRAVEL`'s Y: the travel height down to the holder). The carriages are left out:
-  the Z carriage reaches far above the jaws, so its volume at the MG06 Y would cover the handover; the robot against them is the
-  gating rule's and I8's. The jaws' box at `L_HOME` (open and clamped, grown by `Loader_Free`) is the physics cross-check.
-- **The PCB** (`Handovers`, `Custody_Gaps`, `Overhang`, `Tilt`, `Location_Spans`): each location change of the trajectory checked
-  in physics (pose error, both holders, none), the spans without a holder, the board beyond the cups and the jaws.
-- **The timeline** (`Critical_Path`, `Robot_Waits`, `Signal_Order`, `Wrist_Approach`): the robot's program is the cell's
-  timeline; each segment is spent on its motion or on what it waits for (a `Wait` in a step with a parallel loader job: the
-  loader by its time).
-- **The loader or the robot slowed** (`Stretch_Job`, `Stretched_Distance`, `Clear_Height`): in a parallel job's window one lane
-  slowed by a factor, the other as programmed - the loader's job (0.5 to 2 x; the robot holding at its WaitDone), or the robot's
-  lines (a speed override of 10 to 100 %, F16; the loader holding at its end) - I8's distance on it (the actuator model, exact,
-  every 4 ms).
-- **The media** (`Media.py`): frames from named free-camera views (`CONST_VIEWS`: lookat, distance, azimuth, elevation,
-  field of view; Overview_Right, Overview_Left, Top, Input_Crate, Output_Crate, Loader_Handover, MG06_Insert, MG06_Fork) on a
-  render-only copy of the model (`Render_Model`: the view's field of view, the aluminium tone-down `CONST_TONE`; the model and
-  its files unchanged) with a label; depth and the geom per pixel for the collision overlay (`Collision_Overlay`); H.264 MP4
-  through imageio-ffmpeg's pinned ffmpeg (CRF 18, preset slow, yuv420p); GIF previews with one palette, kept under a size;
-  PNGs kept under a size by width (`Write_Png`); a contact sheet.
-
-`Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` (every number tagged with its source: [K] the
-trajectory, [P] the physics run, [C] the configuration, [M] the model), seven figures (summary "Default vs Optimized",
-timeline, joints, paths, clearance, critical path, the I8 stretch; `src/Report/Style.py`: two themes, PNG at 300 dpi and SVG each)
-and both physics reports; `--media DIR` writes the summary chart and the timeline (both themes) for the README. The programs are shown as
-"Default program" (the taught one) and "Optimized program".
-`Example/Report/make_media.py` writes into `Data/Generated/Reports/Comparison/` (60 fps, real time, H.264): per program the main
-video in Overview_Right (1920 x 1080 and 2560 x 1440), the 2 x 2 mosaic of Overview_Right, Loader_Handover, MG06_Insert and
-MG06_Fork (2560 x 1440), the event clips (pick, handover, insert, fork close, fork open, fetch, take, place; 3 s either side
-in the event's close view, 1920 x 1080, `Clips/`); the Default and the Optimized program side by side (2 x 1280 x 720); every
-view at the key moments and the collision images (2560 x 1440 PNG, `Views/`); the cell at every point (`Points/`). Into
-`Media/` (committed): the GIF previews `Cycle_Side_by_Side.gif` and `Cycle_Optimized.gif` (960 px, 4 x speed, 15 fps, at
-most 10 MB), the curated images `View_<view>.png`, `Collision_Overview_Right.png`, `Collision_Loader_Handover.png` and
-`Key_Points.png` (at most 1.5 MB each). Every file's render and encode time and size is printed. The videos become release
-assets only with the owner's approval.
+The comparison of the taught and the optimized program (`src/Report/`, `Example/Report/compare_report.py`, `make_media.py`;
+F14, owner 2026-10-25) is removed (F20, owner 2026-10-28; answers 2026-10-29): its outputs, the README media in `Media/`, are
+committed, and nothing in the workflow uses it. Its text is in git: `git show c43f079:.claude/project-docs/SPEC.md`; the code at
+`c43f079` (design-decisions: one user entry point). What stays and is cited here: the committed README media show the v1.0
+programs (v1.0 = `d8e3e2a`; nothing on the physics path has changed since), within their size budgets - the GIF previews
+`Media/Cycle_<Side_by_Side|Optimized>.gif` (960 px, 4 x speed, 15 fps, at most 10 MB each), the curated renders
+`Media/View_<view>.png`, `Media/Collision_<view>.png` and `Media/Key_Points.png` (at most 1.5 MB each) and the charts
+`Media/Default_vs_Optimized_<dark|light>` and `Media/Timeline_<dark|light>` (PNG and SVG); the full videos are v1.0 release assets.
 
 ## 8. Configuration — `Configuration/Cell.yaml` and the cell program (`Constants.yaml`, `Simulation.yaml`, `Program.yaml`)
 
@@ -896,8 +849,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Configuration/Optimization.yaml` | `Configuration.Program_Parser` (`Load_Optimization`), written by hand (§8) |
 | `Data/Optimized/Program_Optimized.yaml` | written by `Optimizer` (`Optimized_Text`, via `Example/Program/optimize_program.py` only), read by `Configuration.Program_Parser` (`Load_Program`) (§8) |
 | the optimizer's report, the comparison table and figure | `Example/Program/optimize_program.py` (`Data/Generated/Reports/optimize_program.txt`), `Example/Program/compare_programs.py` (`Reports/compare_programs.txt`, `Images/compare_programs.png`) |
-| the comparison `Data/Generated/Reports/Comparison/Comparison.md`, its figures, the videos, the view, point and collision images | written by `Example/Report/compare_report.py` and `make_media.py` (§7.12); never read |
-| the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png` | written by `Example/Report/make_media.py` (§7.12); read by the README |
+| the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png`, the charts `Media/Default_vs_Optimized_*`, `Media/Timeline_*` | committed (the v1.0 programs; their generators are in git at `c43f079`, §7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
 | the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Simulation/physics_baseline.py` (writes and compares) |

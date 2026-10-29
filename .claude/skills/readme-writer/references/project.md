@@ -15,9 +15,10 @@ content and the Authors HTML in full); accepted by the owner 2026-10-26.
 | What the README shows | Source | Written by | Pinned by |
 |---|---|---|---|
 | Cycle times 70.404 / 59.148 s, 28/28 checks | `test/Simulation/data/baseline_report_<taught\|optimized>.txt` (first and last line) | `physics_baseline.py --out` | `test/Docs/test_readme.py` |
-| Throughput, TCP / joint-space / PCB arc, clearances, tilt, slip, the critical path (-6.940 / -4.316 s), the stretch tables | `Data/Generated/Reports/Comparison/Comparison.md` (sections 3-7, 9) | `Example/Report/compare_report.py` | throughput: `test/Docs/test_readme.py`; the report: `test/Example/Report/test_compare_report.py` |
+| Throughput | 3600 s / the cycle times above | - | `test/Docs/test_readme.py` |
+| The v1.0 comparison: TCP / joint-space / PCB arc, clearances, tilt, slip, the critical path (-6.940 / -4.316 s), the stretch tables | the v1.0 comparison report, `Comparison.md` (sections 3-7, 9), at v1.0 (`d8e3e2a`) | `Example/Report/compare_report.py`, in git at `c43f079` (removed in F20) | frozen: the README labels them v1.0 |
 | The gate's cost (+0.432 s, 58.716 -> 59.148 s) | design-decisions (F16, Cost) | the owner's F16 record | `test/Optimizer/test_core.py` (58.716 s before) |
-| The collision legend's counts | `make_media.py`'s output line (`Collision_Only_Overview_Right.png: ... categories`) and the image legend | `Example/Report/make_media.py` | the image |
+| The collision legend's counts | the v1.0 media run's output line (`Collision_Only_Overview_Right.png: ... categories`) and the image legend | `make_media.py`, in git at `c43f079` | the image |
 | Datasheet values, estimates, CAD deviations, model numbers | SPEC §4.3, §4.4, §4.7, §4.10, `Configuration/Cell.yaml` comments | the owner | the fingerprint, the baselines |
 | MuJoCo 3.16.0, Python 3.11, the pins | `requirements.txt`, `install.sh` | the owner | `test/Install/test_install.py` |
 | Command outputs and times (install about 20 s, run about 20 s) | a fresh clone, 2026-10-26, Apple M2 Pro | - | - |
@@ -26,7 +27,7 @@ content and the Authors HTML in full); accepted by the owner 2026-10-26.
 
 | A change to | Updates | Then run |
 |---|---|---|
-| A program, a point, `Cell.yaml`, `Optimization.yaml` or the model | the comparison table, the findings, the stretch tables, Figures 1, 2, 6-13 | `compare_report.py --media Media`, `make_media.py`, `test/Docs/test_readme.py` |
+| A program, a point, `Cell.yaml`, `Optimization.yaml` or the model | nothing generated in the README but the cycle times and 28/28 (below); the v1.0 numbers and media stay, labelled v1.0 | `test/Docs/test_readme.py` |
 | A physics baseline | the cycle times, 28/28 | `test/Docs/test_readme.py` |
 | A command or option of an `Example/` script or `install.sh` | Quick start, Usage | the command as documented, from a fresh clone |
 | An acceptance check | Verification (the 28 checks) | - |
@@ -43,9 +44,10 @@ script options keep `taught` / `default` / `optimized`, explained once in Usage.
 
 ## Figures
 
-All generated; none edited by hand.
+All generated at v1.0 (`d8e3e2a`) and committed; none edited by hand. Their generators are in git at `c43f079` (removed in
+F20; design-decisions: one user entry point); a new generator needs the owner's approval.
 
-| Figure | File | Written by |
+| Figure | File | Written by (at v1.0) |
 |---|---|---|
 | 1, 8 | `Media/Cycle_Side_by_Side.gif`, `Media/Cycle_Optimized.gif` | `Example/Report/make_media.py` |
 | 2, 9-13 | `Media/View_<view>.png` | `make_media.py` |
@@ -62,8 +64,7 @@ at most 1.5 MB, 30 MB in all (owner, 2026-10-27), set with their reasons in `che
 assets (owner, 2026-10-26), each linked from the README by its asset URL (`releases/download/v1.0/<file>`) beside the release
 page's link; the side by side is `Default_vs_Optimized_Side_by_Side.mp4` (2560 x 720, no resolution suffix; owner, 2026-10-26).
 
-The summary chart carries no title inside the image; Figure 6's caption does (owner, 2026-10-26; pinned by
-`test/Example/Report/test_compare_report.py`).
+The summary chart carries no title inside the image; Figure 6's caption does (owner, 2026-10-26).
 
 The header's logos and the Authors table's avatars carry no "Figure N:" caption (owner, 2026-10-24 and 2026-10-26), configured in
 `check_readme.json` beside this file. The avatars' alt text is a sentence of at least 12 words (owner, 2026-10-26: only the two
@@ -84,8 +85,8 @@ alt attributes of the owner's Authors HTML lengthened).
 - The safety alert at the top, a `> [!WARNING]` with the sentence of `KNOWN_ISSUES.md`'s opening.
 - The Authors section is the owner's HTML, unchanged but for the two avatars' alt text (owner, 2026-10-26). No contact section.
 - A Citation section points at `CITATION.cff` (CFF 1.2.0, at the root; owner, 2026-10-26).
-- The third-party notes name the AUBO i5 model (MIT), imageio-ffmpeg and its GPL ffmpeg build (design-decisions: the media are
-  encoded with Pillow and imageio-ffmpeg), the datasheets cited.
+- The third-party notes name the AUBO i5 model (MIT) and the datasheets cited (imageio-ffmpeg and its GPL ffmpeg build left
+  with the media generator in F20).
 
 ## README tests
 

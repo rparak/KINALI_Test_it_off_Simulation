@@ -257,6 +257,8 @@ Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
 ## The media are encoded with Pillow and imageio-ffmpeg's pinned ffmpeg
 
+*Superseded 2026-10-29 (F20): the encoders (Pillow, imageio-ffmpeg) are removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
+
 **Decision.** `pillow==13.0.0` (already installed with matplotlib, now a direct dependency) writes the GIF previews, the
 step labels and the contact sheet; `imageio-ffmpeg==0.6.0` provides a pinned ffmpeg 7.1 binary that `src/Report/Media.py`
 runs as a separate process for the H.264 videos (owner, 2026-10-25). Both are tool dependencies of the media scripts only:
@@ -287,9 +289,11 @@ wheels bundle the same GPL/LGPL codecs.
 **Revisit if** the project starts to redistribute the binary (a bundled installer, a container image): then the GPL's source
 offer applies, or an LGPL build without libx264 is used.
 
-Pinned by `test/Report/test_media.py` (an MP4 and a GIF written and read back).
+Pinned until F20 by `test/Report/test_media.py` (an MP4 and a GIF written and read back).
 
 ## The comparison is generated, measured from the runs, every number with its source
+
+*Superseded 2026-10-29 (F20): the comparison (`compare_report.py`, `src/Report/`) is removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
 
 **Decision.** `Example/Report/compare_report.py` writes `Data/Generated/Reports/Comparison/Comparison.md` whole (git-ignored), its prose
 fixed and every number computed and tagged with its source ([K] the trajectory, [P] the physics run, [C] the configuration,
@@ -319,10 +323,12 @@ rejected (it changes the verified run's code for an analysis).
 **Revisit if** the report should be committed (then its numbers would need a regression pin) or the run's code changes (the
 recorder relies on `Physics_Run_Cls.Step`, `Done`, `Data`, `Result`).
 
-Pinned by `test/Report/test_core.py` (`test_the_recording_does_not_change_the_run`, slow, and the measurements) and
+Pinned until F20 by `test/Report/test_core.py` (`test_the_recording_does_not_change_the_run`, slow, and the measurements) and
 `test/Example/Report/test_compare_report.py` (slow).
 
 ## The figure style: Computer Modern, two themes, Okabe-Ito, one colour per program
+
+*Superseded 2026-10-29 (F20): the figure style (`src/Report/Style.py`) is removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
 
 **Decision.** The comparison's figures follow `src/Report/Style.py` (owner, 2026-10-25): LaTeX-like typesetting from
 matplotlib's own Computer Modern (mathtext `cm`, serif `cmr10`, no TeX install, no vendored fonts), a dark (#0D1117) and a light
@@ -341,9 +347,11 @@ installation (`text.usetex`): an external dependency for the same look. The data
 
 **Revisit if** a figure needs more than eight categories, or the README's background changes.
 
-Pinned by `test/Report/test_style.py` (the contrasts, the label, the files) and `test/Example/Report/test_compare_report.py`.
+Pinned until F20 by `test/Report/test_style.py` (the contrasts, the label, the files) and `test/Example/Report/test_compare_report.py`.
 
 ## The media use named free-camera views on a render-only copy; the GIFs stay under 10 MB
+
+*Superseded 2026-10-29 (F20): the views and the media script are removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
 
 **Decision.** Every medium of `Example/Report/make_media.py` is rendered from a named free-camera view of
 `Report.Media.CONST_VIEWS` (lookat, distance, azimuth, elevation, field of view; owner, 2026-10-25): Overview_Right (lookat
@@ -364,9 +372,11 @@ A per-frame palette (flicker).
 
 **Revisit if** a part of the cell must be seen that no view shows.
 
-Pinned by `test/Report/test_media.py` and `test/Example/Report/test_make_media.py` (slow).
+Pinned until F20 by `test/Report/test_media.py` and `test/Example/Report/test_make_media.py` (slow).
 
 ## The renders tone down the aluminium; the model keeps its look
+
+*Superseded 2026-10-29 (F20): the render-only tone-down is removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
 
 **Decision.** `Report.Media.Render_Model` renders a copy of the model whose `look_alu` geoms have their rgb scaled by 0.75 and
 the material's specular 0.30 and shininess 0.50 (`CONST_TONE`; the geoms' own rgba is what MuJoCo draws, so the material's
@@ -381,7 +391,7 @@ exposure for the whole frame (darkens the robot and the PCB too).
 
 **Revisit if** the studio lights change (F7).
 
-Pinned by `test/Report/test_media.py` (`test_the_tone_down_scales_the_aluminium_geoms_only`).
+Pinned until F20 by `test/Report/test_media.py` (`test_the_tone_down_scales_the_aluminium_geoms_only`).
 
 ## The collision structure is drawn over the visual cell in image space
 
@@ -981,8 +991,8 @@ same motion and timing (owner, 2026-10-25). The optimized take runs `Loader.Star
 (`Program.Check.Gating_Faults`, SPEC §7.11) are checked; the optimizer gates a spline only by a later slot, never by a Wait.
 
 **Why.** F14 measured the old `Wait(1.648)`: J_RETURN 2.2 % slower broke I8, 7.6 % slower was a contact with the Z carriage.
-With the loader's Y at home the whole `W_TO_TAKE` spline keeps more than 50 mm from the loader at any Z (`Report.Core.Clear_Height`),
-so waiting for `J_RETURN_Y` is enough. Measured 2026-10-25: the cycle stays 58.716 s (the spline still ends before
+With the loader's Y at home the whole `W_TO_TAKE` spline keeps more than 50 mm from the loader at any Z (`Report.Core.Clear_Height`,
+in git at `c43f079`), so waiting for `J_RETURN_Y` is enough. Measured 2026-10-25: the cycle stays 58.716 s (the spline still ends before
 `J_RETURN_Z` does); every loader job slowed up to 2 x keeps the robot at least 29.68 mm from the loader (I8 nominal 19.39 ->
 29.68 mm kinematic, 19.40 -> 29.02 mm in physics, S11); the taught trajectory is byte-identical (only four `Loader.Run` labels
 of the golden changed); the forced failure - the old timer schedule on the split jobs - breaks I9 and the gating rule while I8

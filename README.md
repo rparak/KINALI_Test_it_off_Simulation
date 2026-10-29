@@ -57,7 +57,7 @@ and puts the tested board into an output crate. This repository models that cell
   moves and runs the loader in parallel under interlocks.
 - **Checks at two levels.** Every program is built into a 4 ms trajectory and checked kinematically (exact clearances, joint
   limits, speeds), then run with full physics against 28 acceptance checks.
-- **A measured comparison** of the two programs, with figures and videos, every number tagged with its source.
+- **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
 
 ## What the cell does
 
@@ -191,9 +191,7 @@ flowchart BT
     Trajectory --> Program
     Program --> Optimizer
     Planner --> Optimizer
-    Optimizer --> Report
-    Simulation --> Report
-    Render --> Report
+    Render
 ```
 
 <details>
@@ -212,7 +210,6 @@ flowchart BT
 | Planner | RRT-Connect, shortcut, cubic spline and TOPP in joint space, independent of the cell |
 | Optimizer | plans the Optimized program's free transfers and writes it |
 | Simulation | the physics run of a trajectory, its report and the 28 acceptance checks |
-| Report | the comparison of the two programs, its figures and media |
 
 </details>
 
@@ -239,8 +236,6 @@ flowchart LR
     B --> T["trajectory .npz<br/>(4 ms)"]
     T --> R["run_program.py<br/>physics + 28 checks"]
     R --> RP["physics report"]
-    T --> C["compare_report.py<br/>make_media.py"]
-    C --> M["Comparison.md, figures,<br/>videos, Media/"]
 ```
 
 **The optimizer.** `Optimization.yaml` names the FREE segments: the free-space transfers between the process steps. Every
@@ -347,18 +342,11 @@ Keys: Home pause / resume, Page Down next step, `.` one sample on (paused), End 
 .venv/bin/mjpython Example/Keypoints/step_keypoints.py                         # step through the points: Page Down / Page Up
 ```
 
-**Compare the programs and render the media.**
+**Compare the programs.**
 
 ```bash
-.venv/bin/python Example/Report/compare_report.py                # Comparison.md + 7 figures (dark and light), about 80 s
-.venv/bin/python Example/Report/compare_report.py --media Media  # also the README's summary chart and timeline
-.venv/bin/python Example/Report/make_media.py                    # videos, GIF previews, view, point and collision images
 .venv/bin/python Example/Program/compare_programs.py             # a quick kinematic table and figure of both programs
 ```
-
-`compare_report.py` writes `Data/Generated/Reports/Comparison/`. `make_media.py` writes the full media there (MP4 videos
-at 1080p and 1440p, the 2 x 2 mosaics, the event clips, every named view) and the README's previews and images into
-`Media/`. `--program`, `--views`, `--until` and the `--skip-*` options limit what it renders.
 
 **Run the tests and the regression baselines.** Two tiers (times on an Apple M2 Pro):
 
@@ -378,12 +366,11 @@ built from, and the Optimized program records its inputs and the planning model.
 | `Constants.yaml` (a point) | `resolve_keypoint.py --name <P>`, paste the line, then `check_keypoints.py` | the point check reports a stale derived point |
 | `Program.yaml`, `Constants.yaml`, `Simulation.yaml`, `Cell.yaml` | `build_program.py`, then `optimize_program.py` and its build | the viewers and the physics run refuse a stale trajectory |
 | `Optimization.yaml` | `optimize_program.py`, then `build_program.py --program Data/Optimized/Program_Optimized.yaml` | the build refuses a stale Optimized program |
-| any of the above, for the comparison | `compare_report.py --media Media`, then `make_media.py` | both refuse stale trajectories |
 
 ## Default vs Optimized program
 
-All numbers are simulation results from `compare_report.py` on the committed programs: **[K]** the kinematic trajectory,
-**[P]** the physics run.
+All numbers are simulation results of the v1.0 programs (`d8e3e2a`), measured by the comparison tool of that release:
+**[K]** the kinematic trajectory, **[P]** the physics run.
 
 | Metric | Default program | Optimized program | Change |
 |---|---:|---:|---:|
@@ -447,7 +434,6 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 [`Optimized_Overview_Right_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Optimized_Overview_Right_1440p.mp4)) and as a 2 x 2 mosaic
 ([`Default_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Default_Mosaic_1440p.mp4),
 [`Optimized_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Optimized_Mosaic_1440p.mp4)).
-`make_media.py` writes them locally.
 
 <details>
 <summary><b>The stations close up</b>: the crates, the loader handover and MG06</summary>
@@ -588,7 +574,7 @@ precedence over the repository's copy.
 - **Platform:** macOS on Apple silicon (verified, Apple M2 Pro) and Ubuntu Linux (installer written, not verified).
 - **Python 3.11**, called explicitly by `install.sh` (`/opt/homebrew/bin/python3.11` on macOS, `python3.11` on Linux).
 - **Pinned packages** (`requirements.txt`): `mujoco==3.16.0`, `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`,
-  `matplotlib==3.11.2`, `pillow==13.0.0`, `imageio-ffmpeg==0.6.0`, `pytest==9.1.1`, `pytest-xdist==3.8.0`, and
+  `matplotlib==3.11.2`, `pytest==9.1.1`, `pytest-xdist==3.8.0`, and
   `trimesh`, `rtree`, `coacd` for a planned collision-set build.
 - Results are byte-identical for the same inputs on one machine and platform. Across platforms they agree within numeric
   tolerance only.
@@ -607,9 +593,6 @@ Third party:
 
 - **AUBO i5 model**: from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco), MIT License
   ([models/aubo_i5/LICENSE_Manipulator-Mujoco](models/aubo_i5/LICENSE_Manipulator-Mujoco)).
-- **imageio-ffmpeg** (BSD-2-Clause) is a tool dependency of the media scripts only. Its bundled ffmpeg 7.1 binary is a GPL
-  build (GPL-2.0-or-later, with libx264 and libx265). The project runs it as a separate program and neither links nor
-  redistributes it (pip installs it into `.venv`). No simulation, check or physics result depends on it.
 - **Vendor datasheets** (AUBO i5, OnRobot VGC10, SCHUNK EGI 040-EI) are cited for the values the model takes from them. They
   are not included in this repository.
 - Test-it-off is a product of KINALI and is referenced by name only.

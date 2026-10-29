@@ -64,13 +64,13 @@ CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/ref
                      'readme-writer/references/check_readme.json', 'support-brief/SKILL.md',
                      'support-brief/references/project.md'}
 # The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
-# has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py, Media.py, Style.py); Const.py only where more than one of its
+# has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py); Const.py only where more than one of its
 # modules uses a constant.
 #   Unit [Dict<string, Set<string>>]
 CONST_DOMAIN_MODULES = {'Configuration': {'Core.py', 'Const.py', 'Program_Parser.py'}, 'Scene': {'Core.py'}, 'Kinematics': {'Core.py'},
                         'Collision': {'Core.py'}, 'Render': {'Core.py'}, 'Simulation': {'Core.py', 'Const.py', 'Report.py'},
                         'Keypoints': {'Core.py'}, 'Trajectory': {'Core.py'}, 'Program': {'Core.py', 'Const.py', 'Check.py'},
-                        'Planner': {'Core.py'}, 'Optimizer': {'Core.py', 'Measure.py'}, 'Report': {'Core.py', 'Media.py', 'Style.py'}}
+                        'Planner': {'Core.py'}, 'Optimizer': {'Core.py', 'Measure.py'}}
 
 
 def _Tracked(root):

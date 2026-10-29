@@ -94,8 +94,6 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/Program/optimize_program.py [--out DIR]   # Data/Optimized/Program_Optimized.yaml + report; exit 0/1; ~60 s
 .venv/bin/python Example/Program/compare_programs.py [--out DIR]   # taught vs optimized: table + figure
 .venv/bin/python Example/Program/golden_program.py [--out DIR --source TEXT]   # taught program vs test/Program/data golden; exit 0/1
-.venv/bin/python Example/Report/compare_report.py [--trajectories DIR] [--out DIR] [--media Media]   # Comparison.md + 7 figures (dark, light); --media: the README charts
-.venv/bin/python Example/Report/make_media.py [--program P..] [--resolution R..] [--views V..] [--until T] [--clip S] [--skip-videos|mosaic|side|clips|images|points|collision]   # videos, GIFs, views; --media Media
 ```
 
 The viewer scripts (`show_keypoint.py`, `step_keypoints.py`, `show_program.py`, `show_physics.py`) use

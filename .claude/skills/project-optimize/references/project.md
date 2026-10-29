@@ -63,7 +63,5 @@ suites over three runs.
 
 ## Outputs with a tolerance
 
-The regenerated videos: the same frame count, duration and resolution, and every frame at least 40 dB PSNR against the
-previous render (measured at least 45.9 dB: a 1-level render difference changes libx264's rate control until the next keyframe;
-design-decisions: the media are encoded with Pillow and imageio-ffmpeg, commit `ef7767b`). Every other output, `Media/`'s PNGs and
-GIFs included, stays byte for byte; the charts' SVGs differ only in matplotlib's random clip and marker ids.
+None: every output above is compared byte for byte. (The regenerated videos' PSNR tolerance went with the media generator
+in F20; it is in git at `c43f079`.)
