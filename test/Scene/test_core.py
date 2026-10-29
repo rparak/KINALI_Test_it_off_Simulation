@@ -363,3 +363,33 @@ def test_any_other_warning_is_still_shown(capfd):
         Compile_Spec(parent)
     err = capfd.readouterr().err
     assert "WARNING: Attach conflict when attaching 'c' to 'p', policy is 'warning'" in err and CONST_KNOWN_ATTACH_NOTE not in err
+
+
+def test_the_export_reports_the_known_warning_once_and_passes_any_other_on(tmp_path, cell_configuration, monkeypatch, capfd):
+    """
+    Description:
+        Export_Cell_Scene compiles the cell twice (Compile_Spec, then to_xml): the known warning becomes one
+        CONST_KNOWN_ATTACH_NOTE line and no UserWarning. Another attach conflict on the same cell (a child spec with the RK4
+        integrator, worded like the known one but for the child 'c') reaches the caller at both compiles: the filter is
+        not a blanket.
+    """
+
+    def With_Other_Conflict(cell):
+        spec = Build_Cell_Spec(cell)
+        child = mujoco.MjSpec.from_string('<mujoco model="c"><option integrator="RK4"/><worldbody><body name="b">'
+                                          '<geom size=".1"/></body></worldbody></mujoco>')
+        spec.worldbody.add_frame(pos=[5, 5, 5]).attach_body(child.body('b'), 'c/', '')
+        return spec
+
+    capfd.readouterr()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        Export_Cell_Scene(cell_configuration, str(tmp_path / 'plain.xml'))
+    assert capfd.readouterr().err == CONST_KNOWN_ATTACH_NOTE + '\n' and caught == []
+    monkeypatch.setattr('Scene.Core.Build_Cell_Spec', With_Other_Conflict)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        Export_Cell_Scene(cell_configuration, str(tmp_path / 'other.xml'))
+    assert [str(w.message).split('\n')[0] for w in caught] == ["Attach conflict when attaching 'c' to 'mg06_loader_scene', "
+                                                               "policy is 'warning'"] * 2
+    assert capfd.readouterr().err.count(CONST_KNOWN_ATTACH_NOTE) == 1

@@ -530,7 +530,9 @@ def Export_Cell_Scene(cell: Cell_Configuration_Str, path: str = CONST_CELL_SCENE
     path = os.path.abspath(path)
     sc = Build_Cell_Spec(cell)
     Compile_Spec(sc)
-    r = ET.fromstring(sc.to_xml())
+    # to_xml compiles again and raises the known warning a second time; Compile_Spec has reported it once.
+    with _Known_Warning_Filter_Cls():
+        r = ET.fromstring(sc.to_xml())
     for c in r.iter('compiler'):
         c.set('meshdir', os.path.relpath(CONST_MODELS, os.path.dirname(path)))
     for me in r.iter('mesh'):
