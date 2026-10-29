@@ -1583,3 +1583,32 @@ Pinned by `test/Docs/test_layout.py` (`test_the_skill_folders_track_only_the_shi
 (`test_each_skill_names_its_folder`, `test_the_support_brief_skill_is_generic`,
 `test_the_brief_maintenance_rule_is_in_feature_manager_only`), `test/Docs/test_readme.py`
 (`test_the_readme_names_the_shipped_skills`).
+
+## One user entry point, Example/cell.py; the by-product generators removed (F20)
+
+**Decision.** The user runs one command, `Example/cell.py`, with the subcommands `check`, `point`, `build`, `optimize`,
+`run`, `show` and `all` (`--recapture`); its internal modules are in `Example/Cell/` and are not run directly. The
+maintenance tools (the model fingerprint, the `cell_scene.xml` export, the kinematic golden, the physics baselines) are in
+`Example/Maintenance/` and documented only in `CLAUDE.md` (owner, 2026-10-28: the goal "as clean and simple as possible";
+the answers 2026-10-29). Removed, because their outputs exist as committed files or nothing in the workflow uses them: the
+comparison and the media generators (`Example/Report/compare_report.py`, `make_media.py`, `src/Report/`), the kinematic
+comparison script (`Example/Program/compare_programs.py`), the logo variants' generator (`Example/Media/make_logo_variants.py`)
+and its originals (`Media/Original/`), the single-image and cell viewers (`Example/Render/render_image.py`,
+`show_cell.py`), the point stepper (`Example/Keypoints/step_keypoints.py`), the viewers' `--image`, the not-adopted
+experiment's archive (`Data/Experiments/`), and the dependencies only they used (matplotlib, Pillow, imageio-ffmpeg) or
+nothing used (trimesh, rtree, coacd). The programs, the physics, the checks, the optimizer and the committed media are
+unchanged.
+
+**Restore point.** `c43f07961adbabf0edbffa891355afda323c29f7`, the last commit before F20: every removed file is there
+(`git show c43f079:<path>`, or `git checkout c43f079 -- <path>` to bring a tool back with its test).
+
+**Why.** A user who edits the key points needs one path - check, build, optimize, run, view - and the regression that
+says whether the result changed; the generators of the README media and figures, run once for v1.0, made the tree and
+the install larger than that path.
+
+**Alternatives.** Keep the scripts and add `cell.py` beside them: rejected - two ways to do each thing. Move the scripts'
+logic into `src/`: not chosen - the program loading for a run needs the Optimizer domain, above Simulation in the layer
+order; the scripts moved verbatim are the smaller, provable change.
+
+**Revisit if** new media or figures are wanted (a generator is brought back from the restore point with the owner's
+approval), or a user action is needed that no subcommand covers (a new subcommand, never a new script).

@@ -21,7 +21,8 @@ with their metrics (bounds and drift tolerances, SPEC §10.2); the kinematic gol
 Work directly on main. Push after each accepted feature. A failed experiment is undone with git revert, never with
 force-push or history rewrite. Tags are used only for releases (`vMAJOR.MINOR`, annotated). Restore points by commit
 hash: `f754e2d0379b06ffb43286f4fb7aabf88e25ca5f` (the legacy planner), `4110010eeec0377c4e1801f7a2311994f79ab038` (before F9),
-`7a8560c8c16806739a02da8e989c2a2f65d1e41d` (the legacy cycle regression).
+`7a8560c8c16806739a02da8e989c2a2f65d1e41d` (the legacy cycle regression), `c43f07961adbabf0edbffa891355afda323c29f7` (before F20:
+the removed generators and scripts).
 
 The checks, in two tiers (Apple M2 Pro times):
 
