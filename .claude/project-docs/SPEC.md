@@ -396,8 +396,7 @@ Data/Optimized/Program_Optimized.yaml   the optimized program, written by Exampl
 Data/PCB/pcb_meta.json    PCB poses
 Data/Paths/fork_close_open_path.npz   recorded flange path that closes / opens MG06
 Data/Generated/<Kind>/    generated artefacts (git-ignored): Reports/, Images/, Trajectories/; Reports/Comparison/ (the comparison, §7.12)
-Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds, written by Example/Media/make_logo_variants.py
-Media/Original/           the owner's logo originals, kept untouched for regeneration
+Media/<Logo>_Black.svg, Media/<Logo>_White.svg   the logos for light / dark grounds (committed; their generator is in git at c43f079)
 src/<Domain>/Core.py      each domain's primary module; a second concern in a topic module, shared constants in Const.py
                           (the module layout: style project reference > Layout, design-decisions)
 src/Configuration/Core.py the repository paths, the YAML reader, Cell.yaml's loader, the PCB meta reader, the MuJoCo log route
@@ -427,7 +426,6 @@ Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
 Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Render/show_cell.py            opens the viewer on the cell
 Example/Render/render_image.py         offscreen image from a camera into Data/Generated/Images/
-Example/Media/make_logo_variants.py    the black / white SVG logos + Data/Generated/Images/logo_check.png
 Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
 Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
 Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless, --image
@@ -903,7 +901,7 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
 | the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Simulation/physics_baseline.py` (writes and compares) |
-| the logo variants `Media/<Logo>_<Black|White>.svg` | written by `Example/Media/make_logo_variants.py` from `Media/Original/`; read by the README |
+| the logo variants `Media/<Logo>_<Black|White>.svg` | committed (written once from the owner's originals, F5; the script is in git at `c43f079`); read by the README; pinned by sha256 (`test/Docs/test_readme.py`) |
 | the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label` (a step is a segment `S<n>_<Name>`, or `End_Settle`), `segment_id` (one executed command), `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256 - program, constants, simulation, cell (their loaded

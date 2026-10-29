@@ -67,11 +67,10 @@ Pinned by the style checker (`holder`), run before every commit.
 KINALI logo; the product Test-it-off is referenced by name only (no logo):
 - where: the README header;
 - how: black SVG on light grounds, white SVG on dark grounds (GitHub dark mode),
-  `Media/<Logo>_Black.svg` / `_White.svg`, written by `Example/Media/make_logo_variants.py` by recolouring the
-  vector originals (paths and viewBox kept);
-- the originals stay in `Media/Original/` for regeneration; the JIC Smart Factory original is byte-identical
-  to jic-sf-ui-style's `assets/logos/jic-smart-factory.svg` (sha256 pinned in the test), the brand's source
-  of truth;
+  `Media/<Logo>_Black.svg` / `_White.svg`, written once by recolouring the vector originals (paths and viewBox
+  kept);
+- the JIC Smart Factory original was byte-identical to jic-sf-ui-style's `assets/logos/jic-smart-factory.svg`, the
+  brand's source of truth; the originals and the script are in git at `c43f079`;
 - the JIC recolouring is a **temporary** project departure from jic-sf-ui-style ("never recoloured"),
   accepted by the owner (2026-10-24); an official monochrome JIC file has been requested from JIC and
   replaces the recoloured one when it arrives (`KNOWN_ISSUES.md`);
@@ -79,7 +78,9 @@ KINALI logo; the product Test-it-off is referenced by name only (no logo):
 - no funding band: the project has no external or public funding.
 
 *Corrected 2026-10-24: the Test-it-off logo is not used (owner).* *Corrected 2026-10-25 (owner): no PyQt GUI, so the
-application header is gone; jic-sf-ui-style remains the source of the JIC logo and its rules.*
+application header is gone; jic-sf-ui-style remains the source of the JIC logo and its rules.* *Corrected 2026-10-29
+(F20): `Example/Media/make_logo_variants.py` and `Media/Original/` are removed (git keeps them at `c43f079`); the four
+variants stay, pinned by their sha256.*
 
 **Why.** One monochrome family reads on both grounds and beside each other; the owner's decision.
 
@@ -89,8 +90,7 @@ grounds"): overruled by the owner until the official monochrome file arrives.
 **Revisit if** JIC Smart Factory supplies the official monochrome vector, KINALI supplies one, or the brand
 rules change.
 
-Pinned by `test/Example/Media/test_make_logo_variants.py` (originals' hashes, one colour, geometry kept,
-byte-identical regeneration).
+Pinned by `test/Docs/test_readme.py` (`test_the_logo_variants_are_pinned`: the four variants' sha256).
 
 ## The project is named "Test-it-off Simulation"
 
@@ -423,7 +423,7 @@ angles +-0.1 deg, SPEC §10.2).
 
 **Decision.** One place per kind of file a run produces: logs (`logger/<script>.log`, MuJoCo's
 `logger/MUJOCO_LOG.TXT`) in `logger/`; generated artefacts in `Data/Generated/<Kind>/` - the reports (a program's
-check and physics report, the optimizer's report, the comparison) in `Reports/`, images (`pcb_green.png`, `logo_check.png`,
+check and physics report, the optimizer's report, the comparison) in `Reports/`, images (`pcb_green.png`,
 the comparison's figure) in `Images/`, the programs' trajectories in `Trajectories/`. Both folders are git-ignored and created by `install.sh` and by the scripts; a script's
 `--out DIR` moves its file. `models/cell_scene.xml` stays in `models/` (the viewer command loads it); no output folder at the root (owner,
 2026-10-24).

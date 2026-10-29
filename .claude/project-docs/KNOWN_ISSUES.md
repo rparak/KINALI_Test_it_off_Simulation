@@ -264,9 +264,9 @@ by the owner (2026-10-24, design-decisions: the brand). An official monochrome J
 from JIC.
 
 - **Impact:** the JIC logo in the README header is not the brand's own file.
-- **Pinned by:** `test/Example/Media/test_make_logo_variants.py` (one colour, original geometry).
-- **What would close it:** the official monochrome file from JIC replaces the recoloured one (in
-  `Media/Original/`, made into `_Black` / `_White` by the script, or used as it is).
+- **Pinned by:** `test/Docs/test_readme.py` (`test_the_logo_variants_are_pinned`: the four SVGs' sha256).
+- **What would close it:** the official monochrome file from JIC replaces the recoloured one in `Media/`, and the pin
+  is re-recorded (the recolouring script and the originals are in git at `c43f079`, removed in F20).
 
 ## The PCB is one green mesh: board and components are not told apart
 

@@ -27,6 +27,8 @@ import os
 import re
 # Subprocess (Subprocess management)
 import subprocess
+# Hashlib (Secure hashes)
+import hashlib
 
 """
 Description:
@@ -38,6 +40,13 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_BASELINES = {'Default program': 'test/Simulation/data/baseline_report_taught.txt',
                    'Optimized program': 'test/Simulation/data/baseline_report_optimized.txt'}
+# The logo variants' sha256 (written once from the owner's originals, F5; their generator is in git at c43f079; design-decisions:
+# the brand, KNOWN_ISSUES: the JIC logo is a recoloured copy).
+#   Unit [Dict<string, string>]
+CONST_LOGOS = {'Media/JIC_Smart_Factory_Black.svg': 'd3df6501fe45fa0f75321e219d0abda0d71022f95279b1d176dca86a6e2ab59b',
+               'Media/JIC_Smart_Factory_White.svg': '8dbd848c53caca842e8007234de7e89c3266f6827cdaa5d4e4b1f1212ede77bb',
+               'Media/KINALI_Black.svg': '17a10180531339376e99b6077126b943919b4eebfe18daf87619de626f0a9305',
+               'Media/KINALI_White.svg': 'cdbf9ae4fd375192ac496f549746d246460cb4af62f01b392a2591b506399ba6'}
 # Never in the README (CLAUDE.md, the readme-writer project reference > Rules; owner, 2026-10-26; the skills named since
 # owner, 2026-10-28).
 #   Unit [List<string>]
@@ -106,13 +115,13 @@ def test_every_image_the_readme_shows_exists(root):
 def test_every_readme_medium_is_shown(root):
     """
     Description:
-        Every image in Media/ (not the owner's originals) is shown in the README; a chart's SVG beside its shown PNG is the
+        Every image in Media/ is shown in the README; a chart's SVG beside its shown PNG is the
         same figure in another format and is not shown.
     """
 
     tracked = subprocess.run(['git', 'ls-files', 'Media'], cwd=root, capture_output=True, text=True, timeout=60,
                              check=True).stdout.splitlines()
-    media = {p for p in tracked if not p.startswith('Media/Original/')}
+    media = set(tracked)
     expected = {p for p in media if not (p.endswith('.svg') and p[:-4] + '.png' in media)}
     assert expected == _Shown(_Readme(root))
 
@@ -147,3 +156,14 @@ def test_the_readme_names_the_shipped_skills(root):
     shipped = {p.split('/')[2] for p in tracked.stdout.splitlines() if p.endswith('/SKILL.md')}
     section = _Readme(root).split('## Claude Code skills', 1)[1].split('\n## ', 1)[0]
     assert set(re.findall(r'(?m)^\| `([\w-]+)` \|', section)) == shipped
+
+
+def test_the_logo_variants_are_pinned(root):
+    """
+    Description:
+        The four logo variants the README header shows are the committed ones, byte for byte (their sha256).
+    """
+
+    for path, digest in CONST_LOGOS.items():
+        with open(os.path.join(root, path), 'rb') as handle:
+            assert hashlib.sha256(handle.read()).hexdigest() == digest, path

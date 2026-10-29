@@ -7,7 +7,7 @@ project in the RP style are in `SKILL.md` and the other references beside this f
 Project-only page in this folder: **mjcf.md** (the scene, the vendored robot, what is never changed).
 
 Brand: the JIC Smart Factory logo in the README header comes from **jic-sf-ui-style** (a separate skill, not part of this
-repository) - its source file (`Media/Original/jic-smart-factory.svg`, byte-identical to that skill's asset) and its logo
+repository) - its source file (byte-identical to that skill's asset; in git at `c43f079:Media/Original/jic-smart-factory.svg`) and its logo
 rules, with one departure (below). Nothing else of it is used: there is no GUI (owner, 2026-10-25), and its figures follow the generic default look
 (references/figures.md).
 
@@ -53,10 +53,10 @@ test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is test
 models/                the MJCFs and their meshes (mjcf.md)
 Data/<Purpose>/        PCB/pcb_meta.json, Paths/fork_close_open_path.npz, Optimized/Program_Optimized.yaml
 Configuration/         Cell.yaml; the cell program Constants.yaml, Simulation.yaml, Program.yaml; Optimization.yaml
-Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), written by
-                       Example/Media/make_logo_variants.py; Cycle_<Side_by_Side|Optimized>.gif, View_*.png, Collision_*.png,
+Media/                 the README images: <Logo>_Black.svg / <Logo>_White.svg (JIC_Smart_Factory, KINALI), committed
+                       (pinned by sha256); Cycle_<Side_by_Side|Optimized>.gif, View_*.png, Collision_*.png,
                        Key_Points.png, written by Example/Report/make_media.py; Default_vs_Optimized_* and Timeline_* (dark,
-                       light; PNG, SVG), written by Example/Report/compare_report.py --media Media; Original/ the owner's files
+                       light; PNG, SVG), written by Example/Report/compare_report.py --media Media
 logger/                git-ignored: logs; Data/Generated/<Kind>/ git-ignored: generated artefacts
 ```
 
@@ -112,7 +112,7 @@ that differ only in letter case.
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
 | a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
-| the logo variants `Media/<Logo>_<Black|White>.svg` | `Example/Media/make_logo_variants.py` (`Recolour_Logo`, `Write_Logo`, `Check_Logo`); read by the README |
+| the logo variants `Media/<Logo>_<Black|White>.svg` | committed (the generator is in git at `c43f079`); read by the README |
 | the comparison `Data/Generated/Reports/Comparison/` (Comparison.md, figures, videos, view, point and collision images) | `Example/Report/compare_report.py`, `make_media.py` (through `Report.Core`, `Report.Media`); never read |
 | the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png` | `Example/Report/make_media.py` (`Report.Media.Write_Gif`, `Write_Png`, `Contact_Sheet`); read by the README |
 | the README charts `Media/Default_vs_Optimized_<dark|light>.<png|svg>`, `Media/Timeline_<dark|light>.<png|svg>` | `Example/Report/compare_report.py --media Media` (`Report.Style.Save_Figure`); read by the README |
