@@ -11,10 +11,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
-- [~] F20: one user entry point `Example/cell.py`, the maintenance tools in `Example/Maintenance/`, the by-product
-      generators and the unused dependencies removed (owner, 2026-10-28; answers 2026-10-29; design-decisions: one user
-      entry point; restore point `c43f079`). Built 2026-10-29 in the commits from `271b004` on, pushed with them; the owner's acceptance
-      of the result is open.
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
 
 ## Done
@@ -40,3 +36,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F17 | Step 7: the full README from the owner's outline, its tests (`test/Docs/test_readme.py`, `test_citation.py`), `CITATION.cff`, the timeline in `Media/`, the summary chart without a title, CLAUDE.md's Development setup, the media's reproducibility; accepted by the owner 2026-10-26 | `004bb92`…`139ab5f` |
 | F18 | Revision 1: the four Claude Code skills shipped in the repository (project-style-rpx, feature-manager, project-optimize, readme-writer; from rp-claude-skills `ec7af02`), mujoco-robot-cell's project layer removed, the skills' own licence (`.claude/skills/LICENSE`, MIT, Roman Parak; option (b) confirmed), the README section; accepted by the owner 2026-10-28 | `874d19e`…`7ed0bb1` |
 | F19 | Revision 2: the fifth skill, `support-brief` - creates or refreshes `.claude/project-docs/SUPPORT_CHAT.md`, the brief for a new Claude chat acting as the project's senior technical support; its `SKILL.md` generic, its project part in `references/project.md`, the maintenance rule in feature-manager's project reference, "no review" commits locally and never pushes; `SUPPORT_CHAT.md` itself is the skill's first run; accepted (owner, 2026-10-28) | `b38cecf`, `9253d31` and the docs commit; `6de6ca4` first run (CREATE) of support-brief |
+| F20 | One user entry point `Example/cell.py` (check, point, build, optimize, run, show, all `--recapture`), its modules in `Example/Cell/`, the maintenance tools in `Example/Maintenance/`; the comparison, media and logo generators, the archives, `--image` and six unused dependencies removed (restore point `c43f079`); the README results block and the README restructured; the no-clutter rule; accepted by the owner 2026-10-29 (the viewers checked by the owner: show, show --physics, point --show) | `271b004`…`a250731` |
