@@ -16,15 +16,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       `test/Example/test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` takes
       233.65 s of the full suite's 292.5 s (`-n 8 --durations=15`, 553 tests, Apple M2 Pro, one run alone, 2026-10-29), so
       `-n 8` cannot finish sooner; split it into parts that run in parallel.
-- [ ] Candidate, project-optimize, reliability (owner, 2026-10-29; the reading verified before any change): the known MuJoCo
-      attach warning (KNOWN_ISSUES: the integrator conflict) reaches pytest as 3 warnings from 2 tests, outside
-      `Scene.CONST_KNOWN_ATTACH_WARNING`: `test/Collision/test_core.py:117` (its own `spec.compile()`, twice) and
-      `src/Scene/Core.py:533` (`to_xml`) in `test/Scene/test_core.py::test_an_export_elsewhere_loads_and_equals_the_committed_one`;
-      present before F21 (`8e285ac`). Route them through the same filter, so the suite reports 0 warnings and a new one stands out.
-      Built 2026-10-29: `520bc5d` the collision test through `Compile_Spec`, `48864b5` the export's `to_xml` through the
-      filter with the test that another warning still reaches the caller (broken three times); `to_xml` and
-      `cell_scene.xml` byte-identical, the export's stderr without the 3-line UserWarning; the full suite 0 warnings;
-      waiting for the owner's acceptance.
 
 ## Done
 
@@ -51,3 +42,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F19 | Revision 2: the fifth skill, `support-brief` - creates or refreshes `.claude/project-docs/SUPPORT_CHAT.md`, the brief for a new Claude chat acting as the project's senior technical support; its `SKILL.md` generic, its project part in `references/project.md`, the maintenance rule in feature-manager's project reference, "no review" commits locally and never pushes; `SUPPORT_CHAT.md` itself is the skill's first run; accepted (owner, 2026-10-28) | `b38cecf`, `9253d31` and the docs commit; `6de6ca4` first run (CREATE) of support-brief |
 | F20 | One user entry point `Example/cell.py` (check, point, build, optimize, run, show, all `--recapture`), its modules in `Example/Cell/`, the maintenance tools in `Example/Maintenance/`; the comparison, media and logo generators, the archives, `--image` and six unused dependencies removed (restore point `c43f079`); the README results block and the README restructured; the no-clutter rule; accepted by the owner 2026-10-29 (the viewers checked by the owner: show, show --physics, point --show) | `271b004`…`a250731` |
 | F21 | The four in-repository skills take F20's procedures: the import by name only in `cell.py` and what the layout test pins (project-style-rpx); the review of what can go, with its commands run (project-optimize); the README ordered by the user's path and the block written by code (readme-writer); accepting an intended change with `cell.py all --recapture`, the re-captured files in their own commit straight after the change (feature-manager, SPEC §10.2); the README's re-capture sentence and CLAUDE.md's README-checker line corrected; docs and skills only; accepted by the owner 2026-10-29 | `929db17`…`a546744` |
+| F22 | The known MuJoCo attach warning through its filter at every compile (project-optimize, reliability): the collision test through `Compile_Spec`, the export's `to_xml` inside the exact-match filter, the test that another warning still reaches the caller; the full suite 0 warnings; accepted by the owner 2026-10-29 | `520bc5d`…`4eda2ef` |
