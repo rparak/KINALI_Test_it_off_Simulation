@@ -10,7 +10,7 @@ reference > The support-chat brief; support-brief, REFRESH).
 **The repository wins on any disagreement.** Sources of truth: `CLAUDE.md`, `.claude/project-docs/` (`SPEC.md`,
 `design-decisions.md`, `KNOWN_ISSUES.md`, `FEATURES.md`), `README.md`, the baselines in `test/<Domain>/data/`.
 
-State as of commit `73a8948`, 2026-10-29.
+State as of commit `0dc9c6a`, 2026-10-29.
 
 ## 1. The project in brief
 
@@ -40,11 +40,13 @@ The process (SPEC §4.5):
 
 ## 2. Current state
 
-Done (FEATURES F1-F20): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
+Done (FEATURES F1-F21): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
 checks, the taught (Default) and planned (Optimized) program, the physics run with 28 acceptance checks and its baselines,
 the README, five shipped skills. F20 (accepted 2026-10-29): one user entry point `Example/cell.py`; the comparison, media
 and logo generators, the archives and six unused dependencies removed (restore point `c43f079`); the committed media show
-the v1.0 programs.
+the v1.0 programs. F21 (accepted 2026-10-29, the latest): the four skills take F20's procedures - project-optimize's review
+of what can go, the README ordered by the user's path, accepting an intended change with `cell.py all --recapture` (the
+re-captured files in their own commit straight after the change; feature-manager's project reference).
 
 Key results (simulation only; deterministic on one machine, one run per program):
 
@@ -226,7 +228,7 @@ public record.
 
 ## 9. Updates
 
-Last updated 2026-10-29, checked against commit `73a8948`.
+Last updated 2026-10-29, checked against commit `0dc9c6a`.
 
 Update in every accepted change that alters the state, numbers, commands, rules, roles, modules or open items
 (feature-manager's project reference > The support-chat brief). Numbers stay exact to their sources: the cycle times,
