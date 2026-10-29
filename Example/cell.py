@@ -327,6 +327,102 @@ def Show(args: argparse.Namespace, argv: tp.List[str], log_name: str) -> int:
     return _Module('Cell/show_program.py').main(['--version', args.program] + options, log_name)
 
 
+def Recapture(log_name: str) -> int:
+    """
+    Description:
+        cell.py all --recapture, after check, build and optimize passed (owner, 2026-10-29): the kinematic golden and the
+        physics baselines compared first (what changed is printed), each re-captured when it differs - the baselines refused
+        when a perturbation run fails SPEC §10.1 -, then the README's results block regenerated from the baselines (nothing
+        else of the README), the table, and the reminder to commit and to refresh the support-chat brief.
+
+    Args:
+        (1) log_name [string]: The log.
+
+    Returns:
+        (1) parameter [int]: 0 re-captured (or unchanged), 2 a run cannot run or the re-capture is refused.
+    """
+
+    golden, baseline, results = _Module('Maintenance/golden_program.py'), _Module('Maintenance/physics_baseline.py'), _Module('Cell/results.py')
+    commit, dirty = _Module('Cell/build_program.py').Git_State()
+    source = 'Example/cell.py all --recapture at %s%s' % (commit[:7], ' with uncommitted changes' if dirty else '')
+    changed = []
+    if golden.main([], log_name) != CONST_EXIT_OK:
+        if golden.main(['--out', golden.CONST_GOLDEN, '--source', source], log_name) != CONST_EXIT_OK:
+            return CONST_EXIT_ERROR
+        changed.append(os.path.relpath(golden.CONST_GOLDEN, CONST_ROOT))
+    log = Script_Log_Cls(log_name, append=True)
+    code, runs = baseline.Compare_Programs(list(results.CONST_NAMES), None, baseline.CONST_BASELINES, log)
+    log.Close()
+    if code == CONST_EXIT_ERROR:
+        return code
+    differ = [p for p, now in runs.items() if any(baseline.Compare(now, baseline.Read_Baseline(p, baseline.CONST_BASELINES)))]
+    if differ:
+        if baseline.main(['--out', baseline.CONST_BASELINES], log_name) != CONST_EXIT_OK:
+            _Say(log_name, '[ERROR] The re-capture is refused (above): an acceptance check fails, which no baseline may accept; correct '
+                           'the change and run Example/cell.py all --recapture again.')
+            return CONST_EXIT_ERROR
+        changed.append(os.path.relpath(baseline.CONST_BASELINES, CONST_ROOT))
+    cycles, passed = results.Baseline_Results(baseline.CONST_BASELINES)
+    readme = os.path.join(CONST_ROOT, 'README.md')
+    if results.Update_Readme(readme, results.Readme_Block(cycles, passed)):
+        changed.append('README.md (the results block)')
+    for line in results.Table_Lines(cycles, passed):
+        _Say(log_name, line)
+    if not changed:
+        _Say(log_name, '[INFO] Nothing to re-capture: the golden, the physics baselines and the README results block are current.')
+        return CONST_EXIT_OK
+    _Say(log_name, '[INFO] Re-captured: %s. Commit them with the change that moved them (in their own commit, the reason in its '
+                   'message).' % ', '.join(changed))
+    _Say(log_name, '[INFO] Then refresh the support-chat brief, .claude/project-docs/SUPPORT_CHAT.md (/support-brief REFRESH).')
+    _Say(log_name, '[INFO] ' + CONST_SIMULATION_ONLY)
+    return CONST_EXIT_OK
+
+
+def All(args: argparse.Namespace, log_name: str) -> int:
+    """
+    Description:
+        cell.py all: check -> build -> optimize -> run, stopping at the first failure with what to do; the optimizer only when
+        Data/Optimized/Program_Optimized.yaml is stale (else its trajectory is built); --recapture instead of run re-captures
+        the golden and the physics baselines after an intended change and regenerates the README's results block (Recapture).
+
+    Args:
+        (1) args [argparse.Namespace]: The options (--recapture).
+        (2) log_name [string]: The log.
+
+    Returns:
+        (1) parameter [int]: The first failing step's exit code, or 0.
+    """
+
+    code = Check(argparse.Namespace(name=None), log_name)
+    if code != CONST_EXIT_OK:
+        _Say(log_name, '[ERROR] all stopped at check: correct what FAILs above, then run Example/cell.py all again.')
+        return code
+    code = Build(args, log_name)
+    if code != CONST_EXIT_OK:
+        _Say(log_name, '[ERROR] all stopped at build (above).')
+        return code
+    stale = _Module('Cell/check_programs.py').Optimized_Stale()
+    if stale:
+        _Say(log_name, '[INFO] %s is stale (%s changed): the optimizer runs.' % (os.path.relpath(CONST_OPTIMIZED_PROGRAM_YAML, CONST_ROOT),
+                                                                            ', '.join(stale)))
+        code = Optimize(args, log_name)
+    else:
+        _Say(log_name, '[INFO] %s is current: the optimizer is skipped (Example/cell.py optimize runs it anyway); its trajectory is built.'
+             % os.path.relpath(CONST_OPTIMIZED_PROGRAM_YAML, CONST_ROOT))
+        code = _Module('Cell/build_program.py').main(['--program', CONST_OPTIMIZED_PROGRAM_YAML], log_name)
+    if code != CONST_EXIT_OK:
+        _Say(log_name, '[ERROR] all stopped at optimize (above).')
+        return code
+    if args.recapture:
+        return Recapture(log_name)
+    code = Run(argparse.Namespace(program=None), log_name)
+    if code != CONST_EXIT_OK:
+        _Say(log_name, '[ERROR] all stopped at run (above).')
+        return code
+    _Say(log_name, '[INFO] all passed: check, build, optimize, run.')
+    return CONST_EXIT_OK
+
+
 def Parser() -> argparse.ArgumentParser:
     """
     Description:
@@ -341,7 +437,7 @@ def Parser() -> argparse.ArgumentParser:
                                                  'with physics, view them.\n' + CONST_SIMULATION_ONLY,
                                      epilog='exit codes: 0 success, 1 a check failed, 2 cannot run (a missing or stale input, no viewer)\n'
                                             'Run a subcommand with --help for its options.')
-    commands = parser.add_subparsers(dest='command', metavar='{check,point,build,optimize,run,show}', required=True)
+    commands = parser.add_subparsers(dest='command', metavar='{check,point,build,optimize,run,show,all}', required=True)
     command = commands.add_parser('check', help='the point table and the configuration and programs check (writes nothing)',
                                   description='The key-point table (IK, family, clearance; every point or one) and the configuration '
                                               'and programs check: everything loads, and whether the Optimized program and the built '
@@ -386,6 +482,14 @@ def Parser() -> argparse.ArgumentParser:
     command.add_argument('--speed', type=float, help='with --physics: the playback speed against real time (default 1)')
     command.add_argument('--headless', action='store_true', help='pose (physics: run to --time) and print, no window')
     command.add_argument('--watchdog', type=float, metavar='S', help='debug: exit 3 with every thread\'s traceback when the viewer stalls for S s')
+    command = commands.add_parser('all', help='check -> build -> optimize -> run; --recapture after an intended change',
+                                  description='check, build, optimize (the optimizer only when Data/Optimized/Program_Optimized.yaml '
+                                              'is stale) and run, stopping at the first failure with what to do (about 45 s; '
+                                              '105 s with the optimizer). --recapture, after a change you intend: instead of run, '
+                                              're-capture the kinematic golden (test/Program/data/) and the physics baselines '
+                                              '(test/Simulation/data/) where they differ, saying what changed, and regenerate the '
+                                              'results block of README.md (about 2 min more).')
+    command.add_argument('--recapture', action='store_true', help='re-capture the golden and the baselines and the README results block')
     return parser
 
 
@@ -394,7 +498,7 @@ def main(argv: tp.Optional[tp.List[str]] = None) -> int:
     Description:
         Parse the command line, start the subcommand's log (logger/cell_<subcommand>.log, rewritten) and run it.
 
-            .venv/bin/python Example/cell.py {check,point,build,optimize,run,show} [options]
+            .venv/bin/python Example/cell.py {check,point,build,optimize,run,show,all} [options]
 
     Args:
         (1) argv [List<string>]: The arguments (default: the command line).
@@ -417,6 +521,8 @@ def main(argv: tp.Optional[tp.List[str]] = None) -> int:
         return Optimize(args, log_name)
     if args.command == 'run':
         return Run(args, log_name)
+    if args.command == 'all':
+        return All(args, log_name)
     return Show(args, argv, log_name)
 
 

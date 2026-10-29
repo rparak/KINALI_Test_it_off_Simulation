@@ -1618,6 +1618,12 @@ experiment's archive (`Data/Experiments/`), and the dependencies only they used 
 nothing used (trimesh, rtree, coacd). The programs, the physics, the checks, the optimizer and the committed media are
 unchanged.
 
+**The README's results block** (owner, 2026-10-29): the results table (cycle time, throughput, change, acceptance) sits
+between `<!-- results:start -->` and `<!-- results:end -->`; `cell.py all --recapture` regenerates only that block from the
+physics baselines (`Example/Cell/results.py`), so the README's numbers follow an intended change without code touching the
+rest; Figure 1's caption names no cycle time (the media show the v1.0 programs); the v1.0-only numbers stay in a section
+labelled v1.0. After a re-capture cell.py reminds to refresh the support-chat brief.
+
 **Restore point.** `c43f07961adbabf0edbffa891355afda323c29f7`, the last commit before F20: every removed file is there
 (`git show c43f079:<path>`, or `git checkout c43f079 -- <path>` to bring a tool back with its test).
 

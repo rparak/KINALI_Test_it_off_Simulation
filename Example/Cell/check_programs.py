@@ -49,6 +49,24 @@ from Program.Core import Stale_Trajectory
 from Trajectory.Core import Read_Trajectory, Trajectory_Error_Cls
 
 
+def Optimized_Stale() -> tp.List[str]:
+    """
+    Description:
+        The inputs of the Optimized program that changed since it was made (cell.py all runs the optimizer only then; owner,
+        2026-10-29); every one when it does not load (it must be made again).
+
+    Returns:
+        (1) parameter [List<string>]: The changed inputs' names; empty when it is current.
+    """
+
+    try:
+        cell, constants = Load_Cell_Configuration(), Load_Constants()
+        optimized = Load_Program(constants, Load_Simulation(constants), cell, CONST_OPTIMIZED_PROGRAM_YAML)
+        return Stale_Inputs(optimized, Build_Planning_Model(cell))
+    except (Configuration_Error_Cls, Scene_Error_Cls) as error:
+        return [str(error)]
+
+
 def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:

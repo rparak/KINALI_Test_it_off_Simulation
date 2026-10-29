@@ -27,7 +27,7 @@ before it is run anywhere else.
 </p>
 
 **Figure 1:** The Default program (left) and the Optimized program (right) running the same cycle in physics, at 4 x speed.
-The Optimized program finishes after 59.148 s against 70.404 s. Simulation results.
+The Optimized program finishes first. The media show the v1.0 programs. Simulation results.
 
 > [!WARNING]
 > **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
@@ -321,13 +321,22 @@ program records its inputs and the planning model, so a stale output is refused 
 
 ## Default vs Optimized program
 
-All numbers are simulation results of the v1.0 programs (`d8e3e2a`), measured by the comparison tool of that release:
-**[K]** the kinematic trajectory, **[P]** the physics run.
+The physics baselines of both programs ([P]: the physics run). `cell.py all --recapture` regenerates this table after an
+intended change. Throughput = 3600 s / cycle time. Simulation results.
 
+<!-- results:start -->
 | Metric | Default program | Optimized program | Change |
 |---|---:|---:|---:|
-| Cycle time [s] [K] | 70.404 | 59.148 | −16.0 % |
-| Throughput [PCB/h] [K] | 51.1 | 60.9 | +19.0 % |
+| Cycle time [s] [P] | 70.404 | 59.148 | −16.0 % |
+| Throughput [PCB/h] [P] | 51.1 | 60.9 | +19.0 % |
+| Acceptance checks [P] | 28/28 pass | 28/28 pass | equal |
+<!-- results:end -->
+
+The v1.0 comparison (`d8e3e2a`), measured by that release's comparison tool: **[K]** the kinematic trajectory, **[P]** the
+physics run.
+
+| Metric (v1.0) | Default program | Optimized program | Change |
+|---|---:|---:|---:|
 | TCP arc length [m] [K] | 7.96 | 7.35 | −7.7 % |
 | Joint-space arc length [rad] [K] | 32.4 | 27.5 | −15.0 % |
 | PCB arc length [m] [K] | 2.71 | 2.86 | +5.5 % |
@@ -335,9 +344,8 @@ All numbers are simulation results of the v1.0 programs (`d8e3e2a`), measured by
 | Closest robot - loader overall, at the take [mm] [P] | 8.30 | 8.30 | equal |
 | Largest carried PCB tilt [deg] [P] | 9.0 | 16.8 | — |
 | Largest PCB slip in the cups [mm] [P] | 1.30 | 1.31 | — |
-| Acceptance checks [P] | 28/28 pass | 28/28 pass | equal |
 
-Throughput = 3600 s / cycle time. The joint-space arc length sums the norm of the six joints' change over the 4 ms samples.
+The joint-space arc length sums the norm of the six joints' change over the 4 ms samples.
 
 **Key findings.**
 

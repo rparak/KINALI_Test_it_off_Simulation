@@ -106,6 +106,7 @@ that differ only in letter case.
 | a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Cell/run_program.py` |
 | the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Maintenance/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (the generator is in git at `c43f079`); read by the README |
+| the README's results block (`<!-- results:start -->` ... `<!-- results:end -->`) | written by `Example/Cell/results.py` (`Readme_Block`, `Update_Readme`; through `cell.py all --recapture`); read by `test/Docs/test_readme.py` |
 | the README media and charts in `Media/` | committed (v1.0; the generators are in git at `c43f079`); read by the README |
 | the model fingerprint JSON | `Example/Maintenance/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |

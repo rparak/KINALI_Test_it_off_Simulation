@@ -39,7 +39,7 @@ Description:
 # cell.py and its subcommands.
 #   Unit [string], [List<string>]
 CONST_CELL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Example', 'cell.py')
-CONST_SUBCOMMANDS = ['check', 'point', 'build', 'optimize', 'run', 'show']
+CONST_SUBCOMMANDS = ['check', 'point', 'build', 'optimize', 'run', 'show', 'all']
 
 
 @pytest.fixture(scope='module')
@@ -58,12 +58,12 @@ def cell():
 def test_every_subcommand_is_listed_and_has_its_help(tmp_path, run_script):
     """
     Description:
-        cell.py --help lists the six subcommands and the exit codes; each subcommand's --help exits 0 with its usage; no
+        cell.py --help lists the seven subcommands and the exit codes; each subcommand's --help exits 0 with its usage; no
         subcommand is a usage error (exit 2).
     """
 
     result = run_script('cell.py', ['--help'], tmp_path)
-    assert result.returncode == 0 and '{check,point,build,optimize,run,show}' in result.stdout
+    assert result.returncode == 0 and '{check,point,build,optimize,run,show,all}' in result.stdout
     assert 'exit codes: 0 success, 1 a check failed, 2 cannot run' in result.stdout
     for name in CONST_SUBCOMMANDS:
         result = run_script('cell.py', [name, '--help'], tmp_path)
@@ -182,3 +182,45 @@ def test_run_compares_both_programs_writes_their_reports_and_the_table(tmp_path,
     reports = tree / 'Data' / 'Generated' / 'Reports'
     assert sorted(os.listdir(reports)) == ['Program_Optimized_physics.txt', 'Program_physics.txt'] and os.listdir(work) == []
     assert (reports / 'Program_physics.txt').read_text() == (tree / 'test' / 'Simulation' / 'data' / 'baseline_report_taught.txt').read_text()
+
+
+@pytest.mark.slow
+def test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved(tmp_path, fresh_tree, script_command, root):
+    """
+    Description:
+        cell.py all in a fresh tree (no trajectories): check, build, the optimizer skipped (the committed Optimized program is
+        current), its trajectory built, run - exit 0, 'all passed'. Then, as after an intended change, the golden's check report
+        line, a baseline's cycle time and the README's results block are made to differ: all --recapture says what differs,
+        re-captures the golden and both baselines and regenerates the block, so each is again the committed one byte for byte
+        (the baseline's environment record aside), the rest of the README untouched; it reminds to commit and to refresh the
+        support-chat brief.
+    """
+
+    import subprocess
+    tree, work = fresh_tree(tmp_path / 'tree'), tmp_path / 'work'
+    work.mkdir()
+    run = lambda *arguments: subprocess.run(script_command(tree, 'cell.py') + list(arguments), cwd=str(work), capture_output=True, text=True,
+                                            timeout=1800)
+    result = run('all')
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    assert 'is current: the optimizer is skipped' in result.stdout and '[INFO] all passed: check, build, optimize, run.' in result.stdout
+    golden = tree / 'test' / 'Program' / 'data' / 'golden_check_report.txt'
+    golden.write_text(golden.read_text().replace('keypoints used: 24', 'keypoints used: 23'))
+    report = tree / 'test' / 'Simulation' / 'data' / 'baseline_report_taught.txt'
+    report.write_text(report.read_text().replace('cycle 70.404 s', 'cycle 70.400 s', 1))
+    readme = tree / 'README.md'
+    readme.write_text(readme.read_text(encoding='utf-8').replace('| Cycle time [s] [P] | 70.404 |', '| Cycle time [s] [P] | 70.400 |'),
+                      encoding='utf-8')
+    result = run('all', '--recapture')
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    assert "report line 73: 'keypoints used: 23" in result.stdout
+    assert '  diff -program Program: physics run of its trajectory, cycle 70.400 s' in result.stdout
+    assert '[INFO] Re-captured: test/Program/data, test/Simulation/data, README.md (the results block).' in result.stdout
+    assert '/support-brief REFRESH' in result.stdout and os.listdir(work) == []
+    for path in ('README.md', os.path.join('test', 'Program', 'data', 'golden_check_report.txt'),
+                 os.path.join('test', 'Simulation', 'data', 'baseline_report_taught.txt'),
+                 os.path.join('test', 'Simulation', 'data', 'baseline_metrics_optimized.json')):
+        assert open(os.path.join(str(tree), path), 'rb').read() == open(os.path.join(root, path), 'rb').read(), path
+    result = run('all', '--recapture')
+    assert result.returncode == 0 and 'Nothing to re-capture' in result.stdout, result.stdout[-2000:]
+

@@ -81,6 +81,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python Example/cell.py build                         # the Default program: trajectory + check report; exit 0/1; ~11 s
 .venv/bin/python Example/cell.py optimize                      # Data/Optimized/Program_Optimized.yaml + its trajectory; exit 0/1; ~70 s
 .venv/bin/python Example/cell.py run [--program default|optimized]   # both programs vs the physics baselines + the table; exit 0/1/2; ~21 s
+.venv/bin/python Example/cell.py all [--recapture]                 # check -> build -> optimize (only if stale) -> run; --recapture: golden + baselines + README block; ~45 s / ~2.5 min
 .venv/bin/python Example/cell.py show [--program P] [--physics] [--step N | --time T] [--speed F] [--headless] [--watchdog S]   # the viewer (re-launches under mjpython on macOS)
 # Maintenance tools (Example/Maintenance/, documented here only):
 .venv/bin/python Example/Maintenance/model_fingerprint.py      # compare with the baseline: 1 difference expected (pcb_vis rgba); --out FILE writes

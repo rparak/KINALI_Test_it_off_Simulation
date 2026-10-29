@@ -418,7 +418,7 @@ src/Planner/Core.py       joint-space planning: the spline, its time-optimal tim
 src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the program written (§7.11)
 src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt (§7.11)
 Example/cell.py           the one user entry point (design-decisions: one user entry point): check, point, build, optimize, run,
-                          show (exit 0 / 1 / 2; logger/cell_<subcommand>.log); a new user action is a subcommand, never a script
+                          show, all [--recapture] (exit 0 / 1 / 2; logger/cell_<subcommand>.log); a new user action is a subcommand, never a script
 Example/Cell/             its internal modules (not run directly; each a main(argv, log_name)): check_keypoints.py (the point
                           table), check_programs.py (the configuration and programs check), resolve_keypoint.py (IK of a point:
                           the Joints and Pose lines to paste), show_keypoint.py (the cell posed at a point), build_program.py (a
@@ -426,7 +426,8 @@ Example/Cell/             its internal modules (not run directly; each a main(ar
                           schedule differs), optimize_program.py (Data/Optimized/Program_Optimized.yaml and its report),
                           run_program.py (one program's physics run, report and acceptance; Load_Run), show_program.py (a
                           trajectory in the viewer: Home / Page Down / . / Page Up / End, the overlay the segment and its line),
-                          show_physics.py (the physics run in the viewer), results.py (the comparison table)
+                          show_physics.py (the physics run in the viewer), results.py (the comparison table and the README's results
+                          block)
 Example/Maintenance/      the maintenance tools, documented in CLAUDE.md only: model_fingerprint.py (compares, default, or writes
                           the compiled model's fingerprint), export_cell_scene.py (writes models/cell_scene.xml), golden_program.py
                           (the taught program's golden data: compare, exit 0 / 1, or write), physics_baseline.py (the programs'
@@ -951,6 +952,12 @@ commands, editing keypoints and program, the file formats.
   (`fork_points`) is reported only. The runs are independent, so the script runs them in a pool of processes; the results,
   in the runs' order, are byte-identical to running them one after the other.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment.
+- **Re-capture after an intended change** (owner, 2026-10-29, F20): `Example/cell.py all --recapture` runs check, build and
+  optimize, compares the golden and both baselines (what differs is printed), re-captures each that differs (the baselines
+  refused when a perturbation run fails §10.1), and regenerates the README's results block from the baselines
+  (`Example/Cell/results.py`, the one writer of the block between `<!-- results:start -->` and `<!-- results:end -->`;
+  nothing else of the README is written by code; `test/Docs/test_readme.py` compares it). Its source names the commit it
+  ran at. The re-captured files are committed on their own, with the reason; the support-chat brief is refreshed after.
 - **Determinism** (B5): a program build gives byte-identical trajectory files for the same inputs and commit on one
   machine and platform (`test/Program/test_core.py::test_the_build_is_deterministic`); across platforms results agree
   within numeric tolerance only. The trajectory's metadata records the platform and the versions.

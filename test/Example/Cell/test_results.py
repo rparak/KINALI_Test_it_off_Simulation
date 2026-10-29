@@ -73,3 +73,26 @@ def test_the_change_is_against_the_default_program(results):
     """
 
     assert results.Change(100.0, 50.0) == pytest.approx(-50.0) and results.Change(100.0, 150.0) == pytest.approx(50.0)
+
+
+def test_the_readme_block_from_the_baselines_and_only_it_rewritten(results, root, tmp_path):
+    """
+    Description:
+        Baseline_Results reads 70.404 s / 59.148 s and 28 of 28 from the physics baselines; Readme_Block is the markers around
+        the table (the minus as U+2212); Update_Readme replaces only the text between the markers (the rest byte for byte),
+        returns False when the block is already current, and refuses a README without exactly one pair of markers.
+    """
+
+    cycles, passed = results.Baseline_Results(os.path.join(root, 'test', 'Simulation', 'data'))
+    assert cycles == {'taught': 70.404, 'optimized': 59.148} and passed == {'taught': (28, 28), 'optimized': (28, 28)}
+    block = results.Readme_Block(cycles, passed)
+    assert block.splitlines()[0] == results.CONST_BLOCK_START and block.splitlines()[-1] == results.CONST_BLOCK_END
+    assert '| Throughput [PCB/h] [P] | 51.1 | 60.9 | +19.0 % |' in block and '−16.0 %' in block
+    readme = tmp_path / 'README.md'
+    readme.write_text('# Title\n\nbefore\n\n%s\nold row\n%s\n\nafter\n' % (results.CONST_BLOCK_START, results.CONST_BLOCK_END), encoding='utf-8')
+    assert results.Update_Readme(str(readme), block)
+    assert readme.read_text(encoding='utf-8') == '# Title\n\nbefore\n\n%s\n\nafter\n' % block
+    assert not results.Update_Readme(str(readme), block)
+    readme.write_text('# Title\n', encoding='utf-8')
+    with pytest.raises(ValueError, match='must hold one results block'):
+        results.Update_Readme(str(readme), block)

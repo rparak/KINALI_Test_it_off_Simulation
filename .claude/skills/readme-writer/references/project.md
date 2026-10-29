@@ -14,8 +14,7 @@ content and the Authors HTML in full); accepted by the owner 2026-10-26.
 
 | What the README shows | Source | Written by | Pinned by |
 |---|---|---|---|
-| Cycle times 70.404 / 59.148 s, 28/28 checks | `test/Simulation/data/baseline_report_<taught\|optimized>.txt` (first and last line) | `physics_baseline.py --out` | `test/Docs/test_readme.py` |
-| Throughput | 3600 s / the cycle times above | - | `test/Docs/test_readme.py` |
+| The results block (between `<!-- results:start -->` and `<!-- results:end -->`): cycle times 70.404 / 59.148 s, throughputs, changes, 28/28 | `test/Simulation/data/baseline_report_<taught\|optimized>.txt` (first and last line) | `Example/Cell/results.py` (`Readme_Block`), through `cell.py all --recapture` only; nothing else of the README is written by code | `test/Docs/test_readme.py` |
 | The v1.0 comparison: TCP / joint-space / PCB arc, clearances, tilt, slip, the critical path (-6.940 / -4.316 s), the stretch tables | the v1.0 comparison report, `Comparison.md` (sections 3-7, 9), at v1.0 (`d8e3e2a`) | `Example/Report/compare_report.py`, in git at `c43f079` (removed in F20) | frozen: the README labels them v1.0 |
 | The gate's cost (+0.432 s, 58.716 -> 59.148 s) | design-decisions (F16, Cost) | the owner's F16 record | `test/Optimizer/test_core.py` (58.716 s before) |
 | The collision legend's counts | the v1.0 media run's output line (`Collision_Only_Overview_Right.png: ... categories`) and the image legend | `make_media.py`, in git at `c43f079` | the image |
@@ -28,7 +27,7 @@ content and the Authors HTML in full); accepted by the owner 2026-10-26.
 | A change to | Updates | Then run |
 |---|---|---|
 | A program, a point, `Cell.yaml`, `Optimization.yaml` or the model | nothing generated in the README but the cycle times and 28/28 (below); the v1.0 numbers and media stay, labelled v1.0 | `test/Docs/test_readme.py` |
-| A physics baseline | the cycle times, 28/28 | `test/Docs/test_readme.py` |
+| A physics baseline | the results block: `cell.py all --recapture` regenerates it with the baselines | `test/Docs/test_readme.py` |
 | A command or option of an `Example/` script or `install.sh` | Quick start, Usage | the command as documented, from a fresh clone |
 | An acceptance check | Verification (the 28 checks) | - |
 | A KNOWN_ISSUES item (the real-cell items above all) | How the model was built > Main limitations, the first-run order | - |
