@@ -96,7 +96,7 @@ finished and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulato
 (MIT), the VGC10 with the fork from the MG06 project. `src/Scene/Core.py` assembles the cell at load time with `mujoco.MjSpec`
 and changes nothing on disk: the tool mounted rigidly on the flange, one body with a bellows spring and an adhesion actuator
 per suction cup, the robot's position servos, the loader's drive lag and the studio look.
-`Example/Scene/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
+`Example/Maintenance/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
 
 **Collision geometry.** Every part has its own collision set, separate from its visual meshes: simplified and convex-part
 meshes in `models/<part>/assets/collision/` and primitives (the crates as a floor and four walls, the PCB as a board box,
@@ -345,10 +345,10 @@ Keys: Home pause / resume, Page Down next step, `.` one sample on (paused), End 
 
 ```bash
 .venv/bin/python -m pytest -n 8 -m "not slow"                  # per commit, about 45 s
-.venv/bin/python Example/Scene/model_fingerprint.py           # the compiled model vs its baseline: 1 difference expected (the PCB colour)
-.venv/bin/python Example/Program/golden_program.py            # the Default program vs its golden data: 0 differences
+.venv/bin/python Example/Maintenance/model_fingerprint.py           # the compiled model vs its baseline: 1 difference expected (the PCB colour)
+.venv/bin/python Example/Maintenance/golden_program.py            # the Default program vs its golden data: 0 differences
 .venv/bin/python -m pytest -n 8                                # per accepted change: the full suite, about 5 min
-.venv/bin/python Example/Simulation/physics_baseline.py       # both programs vs their physics baselines: 0 failures
+.venv/bin/python Example/Maintenance/physics_baseline.py       # both programs vs their physics baselines: 0 failures
 ```
 
 **What to regenerate after an edit.** The scripts detect stale inputs: every trajectory records the sha256 of the files it was
@@ -524,7 +524,7 @@ The robot slowed by a speed override, each job as programmed:
 ```text
 Configuration/   the cell (Cell.yaml), the program (Program.yaml, Constants.yaml, Simulation.yaml), the optimizer (Optimization.yaml)
 Data/            the PCB poses, the recorded MG06 fork path, the committed Optimized program; Generated/ (git-ignored outputs)
-Example/         the scripts, one folder per domain: Scene, Render, Keypoints, Program, Simulation, Report, Media
+Example/         the scripts, one folder per domain: Keypoints, Program, Simulation; Maintenance/ the regression tools
 Media/           the README's images, charts and GIF previews
 models/          the MJCF files and meshes: scene.xml, the AUBO i5, the VGC10 with the fork, cell_scene.xml
 src/             the library, one folder per domain (see Architecture)

@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Scene/model_fingerprint.py
+# File Name: ../Example/Maintenance/model_fingerprint.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -246,7 +246,7 @@ def main():
         Compare the cell's fingerprint with the baseline (default) or another file, listing every difference
         (exit 1 if there is one), or write it with --out.
 
-            .venv/bin/python Example/Scene/model_fingerprint.py [--compare FILE | --out FILE]
+            .venv/bin/python Example/Maintenance/model_fingerprint.py [--compare FILE | --out FILE]
     """
 
     parser = argparse.ArgumentParser(description='Fingerprint of the compiled cell: compare or write.')

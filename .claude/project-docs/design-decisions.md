@@ -850,7 +850,7 @@ Pinned by `test/Program/test_core.py::test_the_constants_are_checked_against_the
 
 **Decision.** `test/Program/data/` holds the taught program's golden data: the sha256 of every trajectory array's bytes, the
 cycle time, the events, the segments, each command's values as `float.hex`, the check report and the point table.
-`Example/Program/golden_program.py` writes (`--out DIR --source TEXT`) and compares it; `test/Program/test_golden.py`
+`Example/Maintenance/golden_program.py` writes (`--out DIR --source TEXT`) and compares it; `test/Program/test_golden.py`
 imports it. A change that moves a number on purpose re-captures the data in its own commit, listing what changed (its
 provenance in the record's `source`). The format change to the three files was proved this way: every array byte-identical.
 
@@ -862,7 +862,7 @@ trajectory's internals. A name map beside old data: every change would extend a 
 
 **Revisit if** the trajectory format changes (the golden data is then re-captured in the new form; the old is in git).
 
-Pinned by `test/Program/test_golden.py` and `test/Example/Program/test_golden_program.py`.
+Pinned by `test/Program/test_golden.py` and `test/Example/Maintenance/test_golden_program.py`.
 
 ## The optimizer drops the multi-seed IK of a FREE segment's ends
 
@@ -1341,7 +1341,7 @@ outcome with other values) or clusters of values (no fixed number of clusters to
 
 Pinned by `test/Simulation/test_baselines.py` (the envelope: inside, outside on both sides, J1 against the run, a failed bound
 inside the envelope) and
-`test/Example/Simulation/test_physics_baseline.py`.
+`test/Example/Maintenance/test_physics_baseline.py`.
 
 ## A program's physics runs through one loop fed by a trajectory drive
 

@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Program/golden_program.py
+# File Name: ../Example/Maintenance/golden_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -201,7 +201,7 @@ def main():
         Build the taught program and compare its golden data with test/Program/data/ (default) or another folder, listing every
         difference (exit 1 if there is one), or write it into a folder with --out (a re-capture: the source names it).
 
-            .venv/bin/python Example/Program/golden_program.py [--compare DIR | --out DIR --source TEXT]
+            .venv/bin/python Example/Maintenance/golden_program.py [--compare DIR | --out DIR --source TEXT]
     """
 
     parser = argparse.ArgumentParser(description='The taught program\'s golden data: compare or write.')

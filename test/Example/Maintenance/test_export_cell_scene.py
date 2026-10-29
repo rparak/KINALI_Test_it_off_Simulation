@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Scene/test_export_cell_scene.py
+# File Name: ../test/Example/Maintenance/test_export_cell_scene.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -36,7 +36,7 @@ def test_the_export_into_another_folder_loads(tmp_path, run_script):
 
     work = tmp_path / 'work'
     work.mkdir()
-    result = run_script('Scene/export_cell_scene.py', ['--out', str(tmp_path / 'out')], work)
+    result = run_script('Maintenance/export_cell_scene.py', ['--out', str(tmp_path / 'out')], work)
     assert result.returncode == 0, result.stderr
     path = tmp_path / 'out' / 'cell_scene.xml'
     assert result.stdout.startswith('[INFO] Wrote %s' % path)

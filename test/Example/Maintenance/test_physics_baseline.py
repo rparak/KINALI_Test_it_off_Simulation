@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Simulation/test_physics_baseline.py
+# File Name: ../test/Example/Maintenance/test_physics_baseline.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -82,10 +82,10 @@ def test_the_optimized_program_compares_clean_and_out_writes_its_baseline(root, 
     temporary.mkdir()
     program = os.path.join(str(tree), 'Data', 'Optimized', 'Program_Optimized.yaml')
     assert _Run_In(tree, 'Program/build_program.py', ['--program', program, '--out', str(built)], work, temporary).returncode == 0
-    result = _Run_In(tree, 'Simulation/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built)], work, temporary)
+    result = _Run_In(tree, 'Maintenance/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built)], work, temporary)
     assert result.returncode == 0 and '[INFO] optimized: 0 failure(s) (bounds and drift)' in result.stdout, result.stdout[-2000:]
     out = tmp_path / 'out'
-    result = _Run_In(tree, 'Simulation/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built), '--out', str(out)],
+    result = _Run_In(tree, 'Maintenance/physics_baseline.py', ['--program', 'optimized', '--trajectories', str(built), '--out', str(out)],
                      work, temporary)
     assert result.returncode == 0 and sorted(os.listdir(out)) == ['baseline_environment.json', 'baseline_metrics_optimized.json',
                                                                   'baseline_report_optimized.txt'], result.stdout[-2000:]

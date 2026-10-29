@@ -10,7 +10,7 @@ The cell is built by `src/Scene/Core.py` through `mujoco.MjSpec` from three file
 | `models/scene.xml` | built from Blender in `mg06_loader_mujoco` (workstation, MG06, loader, free PCB) | finished; **never regenerated**; edited by hand only for a decided change (the PCB colour, a mesh path) |
 | `models/aubo_i5/aubo_i5.xml` + meshes | vendored from github.com/ian-chuang/Manipulator-Mujoco (MIT, `LICENSE_Manipulator-Mujoco`) | never edited; a patch is applied in code |
 | `models/robot_tool/vgc10_opener_free.xml` + meshes | the VGC10 + fork of the MG06 project (a test variant with a free joint) | never edited; the free joint is removed in code |
-| `models/cell_scene.xml` | written by `Example/Scene/export_cell_scene.py` | generated; committed for the viewer; never hand-edited |
+| `models/cell_scene.xml` | written by `Example/Maintenance/export_cell_scene.py` | generated; committed for the viewer; never hand-edited |
 
 Mesh paths: each MJCF's `meshdir` is relative to its own file; `cell_scene.xml` gets the relative path
 from its folder to the meshes. ✅ `test/Scene/test_core.py` (every mesh file exists, from another working

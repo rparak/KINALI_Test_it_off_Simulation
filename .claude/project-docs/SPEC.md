@@ -385,7 +385,7 @@ pytest.ini                import mode, the slow marker, testpaths: test/ and the
 .claude/skills/<skill>/   the five shipped Claude Code skills (SKILL.md, references/, assets/, scripts/; §12);
                           .claude/skills/LICENSE (MIT, Copyright (c) 2026 Roman Parak)
 models/scene.xml          the finished scene (workstation, MG06, loader, PCB), from Blender; never regenerated
-models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/Scene/export_cell_scene.py
+models/cell_scene.xml     the whole cell in one MJCF for the viewer, written by Example/Maintenance/export_cell_scene.py
 models/mg06/ machine/ workstation/   the scene's meshes (visual + collision)
 models/aubo_i5/           vendored robot MJCF + meshes + LICENSE_Manipulator-Mujoco
 models/robot_tool/        VGC10 + fork MJCF and meshes
@@ -419,16 +419,16 @@ src/Optimizer/Core.py     the optimized program: the FREE transfers planned, the
 src/Optimizer/Measure.py  its verification: the LOCKED parts, the interlocks, the tilt (§7.11)
 Example/Simulation/run_program.py      the physics run of a program + report + acceptance (exit 0 / 1 / 2)
 Example/Simulation/show_physics.py     the physics run in the viewer (mjpython), --headless --time
-Example/Simulation/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
-Example/Scene/export_cell_scene.py     writes models/cell_scene.xml
-Example/Scene/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
+Example/Maintenance/physics_baseline.py the programs' physics baselines: compare (bounds and drift; exit 0 / 1 / 2) or write
+Example/Maintenance/export_cell_scene.py     writes models/cell_scene.xml
+Example/Maintenance/model_fingerprint.py     compares (default) or writes the compiled model's fingerprint
 Example/Keypoints/check_keypoints.py   the point check table (exit 0 / 1)
 Example/Keypoints/resolve_keypoint.py  IK of a point: prints the Joints and Pose lines to paste
 Example/Keypoints/show_keypoint.py     poses the cell at a point: viewer (mjpython), --headless
 Example/Program/build_program.py       a program -> its trajectory (npz + csv) and check report (exit 0 / 1); --program (an optimized one refused when
                                        stale or its schedule differs)
 Example/Program/optimize_program.py    the optimized program (Data/Optimized/Program_Optimized.yaml) and its report (exit 0 / 1)
-Example/Program/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
+Example/Maintenance/golden_program.py      the taught program's golden data: compare (exit 0 / 1) or write
 Example/Program/show_program.py        plays a trajectory in the viewer (mjpython; Home / Page Down / . / Page Up / End; the overlay shows the
                                        segment and its current line), --version default | optimized, --step / --time, --watchdog S (debug)
 test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Example/<Domain>/ mirroring Example/; test/Install/, test/Docs/;
@@ -437,8 +437,8 @@ test/<Domain>/test_<module>.py mirroring src/ (none for a Const.py); test/Exampl
 logger/                   run logs and MuJoCo's log (git-ignored, created at run time)
 ```
 
-`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Scene`, `Render`,
-`Keypoints`, `Program`). `Data/` is ordered by purpose. The configuration (the cell, the
+`Example/` has one folder per `src/` domain its scripts belong to (`Simulation`, `Keypoints`, `Program`) and
+`Maintenance/` for the regression and scene tools (the model fingerprint, the scene export, the golden, the baselines). `Data/` is ordered by purpose. The configuration (the cell, the
 program's three files) is in the root folder `Configuration/` (the style skill's `<config folder>/<file>.yaml`, as
 in the template's `Configuration/Cell_SF1.yaml`).
 
@@ -846,9 +846,9 @@ are shared, so not all need be used. A build refuses it when an input changed or
 | the README media `Media/Cycle_<Side_by_Side|Optimized>.gif`, `Media/View_*.png`, `Media/Collision_*.png`, `Media/Key_Points.png`, the charts `Media/Default_vs_Optimized_*`, `Media/Timeline_*` | committed (the v1.0 programs; their generators are in git at `c43f079`, §7.12); read by the README |
 | `Data/Paths/fork_close_open_path.npz` | `Program` (`Robot.MovePath`, §7.9); recorded in the MG06 project, never written |
 | a program's physics report (text) | `Simulation.Report` (`Format_Program_Report`), printed by `Example/Simulation/run_program.py`, written to `--out`/`<program>_physics.txt` (default `Data/Generated/Reports/`) |
-| the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Simulation/physics_baseline.py` (writes and compares) |
+| the physics baselines `test/Simulation/data/baseline_report_<program>.txt`, `baseline_metrics_<program>.json`, `baseline_environment.json` | `Example/Maintenance/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (written once from the owner's originals, F5; the script is in git at `c43f079`); read by the README; pinned by sha256 (`test/Docs/test_readme.py`) |
-| the model fingerprint (JSON) | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
+| the model fingerprint (JSON) | `Example/Maintenance/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/<script>.log`, `logger/MUJOCO_LOG.TXT` | written by `Configuration` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and MuJoCo; never read |
 | the trajectory file `Data/Generated/Trajectories/<program>.npz` (+ `.csv`, a write-only export) | `Trajectory` (`Write_Trajectory`, `Read_Trajectory`); written by the program build (F8). Per sample (4 ms, `CONST_DT`): `t` [s], `robot_q[6]` [rad], `robot_qd[6]` [rad/s], `loader_y`, `loader_z`, `gripper` [m, commands], `vacuum` [0/1], `step_index`, `step_label` (a step is a segment `S<n>_<Name>`, or `End_Settle`), `segment_id` (one executed command), `pcb_location` (index into the five locations), `pcb_pose[7]` [m, quaternion w first], `mg06_lid`, `mg06_handle` [rad], `jaw` [m, the jaws' real position]; per segment (one command): `segment_step`, `segment_command`, `segment_start`, `segment_end` (sample indices, end exclusive); `step_names`; `events` and `meta` (JSON: format version 1, dt, the program, the inputs' sha256 - program, constants, simulation, cell (their loaded
 content: `Program.Core.Input_Hash`), fork path (its bytes) -, git commit, units, joint order, TCP). Deterministic: the same trajectory gives the same bytes |
@@ -928,12 +928,12 @@ commands, editing keypoints and program, the file formats.
 - Pinned by `test/Scene/test_core.py` (fingerprint).
 - **Golden data of the taught program** (`test/Program/data/`: the trajectory arrays' sha256, the cycle time, the events, the
   segments, every command's values as float hex, the check report, the point table), written and compared by
-  `Example/Program/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
+  `Example/Maintenance/golden_program.py` (`--out DIR --source TEXT` re-captures), pinned by `test/Program/test_golden.py`. A
   change to the program or its build re-captures it in its own commit, listing what changed.
 - **Physics baselines of the programs** (step 6, owner 2026-10-25): `test/Simulation/data/baseline_report_taught.txt` and
   `baseline_report_optimized.txt` (the full report of `Example/Simulation/run_program.py`), `baseline_metrics_<program>.json`
   (the compared metrics) and `baseline_environment.json` (the platform, the versions, the commit), written and compared by
-  `Example/Simulation/physics_baseline.py` (`--out DIR` re-captures, in its own commit with the reason), pinned by
+  `Example/Maintenance/physics_baseline.py` (`--out DIR` re-captures, in its own commit with the reason), pinned by
   `test/Simulation/test_baselines.py` (slow). A run FAILS on any §10.1 criterion and on a metric beyond its drift tolerance:
   the cycle time, the fault, the cups at vacuum on and the fewest cups per hold exact; the vacuum events and the holds +-1
   sample (4 ms); the PCB's placed error, final position and penetrations +-0.05 mm, its placed and final tilt +-0.02 deg; MG06's

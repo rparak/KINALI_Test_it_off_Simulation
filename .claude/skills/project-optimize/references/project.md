@@ -6,11 +6,11 @@ This project's part of optimization work (`SKILL.md` holds the procedure, the in
 
 | Output | Produced by (into a temporary directory) | Deterministic inputs | Identical on two runs (date) |
 |---|---|---|---|
-| The programs' physics reports | `.venv/bin/python Example/Simulation/physics_baseline.py --out "$SCRATCH"` (after `build_program.py` for both programs) | the trajectories, the scene files, `Data/PCB/pcb_meta.json`; no randomness | yes, 2026-10-25 (byte-identical reports on one machine; `test/Example/Simulation/test_physics_baseline.py`); compared with tolerances in the regression (SPEC §10.2) |
-| The model fingerprint | `.venv/bin/python Example/Scene/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
-| The program trajectory and check report | `.venv/bin/python Example/Program/build_program.py --out "$SCRATCH"` | the configuration files (`Cell.yaml`, `Constants.yaml`, `Simulation.yaml`, `Program.yaml`), the fork path, the scene files; no randomness | yes, 2026-10-24 (`test/Program/test_core.py::test_the_build_is_deterministic`; byte-identical on one machine and platform; `test/Program/test_golden.py` pins it to the golden data, `Example/Program/golden_program.py`) |
+| The programs' physics reports | `.venv/bin/python Example/Maintenance/physics_baseline.py --out "$SCRATCH"` (after `build_program.py` for both programs) | the trajectories, the scene files, `Data/PCB/pcb_meta.json`; no randomness | yes, 2026-10-25 (byte-identical reports on one machine; `test/Example/Maintenance/test_physics_baseline.py`); compared with tolerances in the regression (SPEC §10.2) |
+| The model fingerprint | `.venv/bin/python Example/Maintenance/model_fingerprint.py` (compares with the baseline) | the scene files | yes, 2026-10-24 |
+| The program trajectory and check report | `.venv/bin/python Example/Program/build_program.py --out "$SCRATCH"` | the configuration files (`Cell.yaml`, `Constants.yaml`, `Simulation.yaml`, `Program.yaml`), the fork path, the scene files; no randomness | yes, 2026-10-24 (`test/Program/test_core.py::test_the_build_is_deterministic`; byte-identical on one machine and platform; `test/Program/test_golden.py` pins it to the golden data, `Example/Maintenance/golden_program.py`) |
 | The optimized program and its report | `.venv/bin/python Example/Program/optimize_program.py --out "$SCRATCH"` | the configuration files with `Optimization.yaml` (its seed), the fork path, the scene files | yes, 2026-10-24 (byte-identical to the committed `Data/Optimized/Program_Optimized.yaml`: `test/Example/Program/test_optimize_program.py`; one machine and platform) |
-| `models/cell_scene.xml` | `.venv/bin/python Example/Scene/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
+| `models/cell_scene.xml` | `.venv/bin/python Example/Maintenance/export_cell_scene.py --out "$SCRATCH"` | the scene files | identical to the committed file apart from `meshdir` (`test/Scene/test_core.py`) |
 
 The physics reports are the contract: a refactor of the physics path is proven by an empty diff against both programs'
 baseline reports on the same machine (stricter than the regression's drift tolerances), plus the acceptance checks.
@@ -33,7 +33,7 @@ fields vary by design, and only these are filtered:
 ## Reached without a grep hit
 
 - Entry points: `Example/*.py`, `install.sh` (names `requirements.txt`); `test/conftest.py` imports
-  `Example/Scene/model_fingerprint.py`.
+  `Example/Maintenance/model_fingerprint.py`.
 - MuJoCo names by string: bodies, geoms, sites, actuators, cameras (`pcb_vis`, `aubo/tool/suction_tcp`,
   `vacuum0`, `cam_pcb`, ...) in code and tests.
 - Files by path string: `models/`, `Data/`, the baselines, the skills' configurations

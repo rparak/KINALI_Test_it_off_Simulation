@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Simulation/physics_baseline.py
+# File Name: ../Example/Maintenance/physics_baseline.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -454,7 +454,7 @@ def main():
         over CONST_PERTURBATIONS, refused when one fails SPEC §10.1. Every run first, in parallel (Capture_All); then each
         program's in order, as one after the other would print and write them.
 
-            .venv/bin/python Example/Simulation/physics_baseline.py [--program taught|optimized] [--trajectories DIR] [--compare DIR | --out DIR]
+            .venv/bin/python Example/Maintenance/physics_baseline.py [--program taught|optimized] [--trajectories DIR] [--compare DIR | --out DIR]
     """
 
     parser = argparse.ArgumentParser(description='The programs\' physics baselines: compare (bounds and drift) or write.')

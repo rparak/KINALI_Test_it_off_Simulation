@@ -355,7 +355,7 @@ def fingerprint_tool():
         The model fingerprint script imported as a module (a script, not part of src/).
     """
 
-    path = os.path.join(CONST_ROOT, 'Example', 'Scene', 'model_fingerprint.py')
+    path = os.path.join(CONST_ROOT, 'Example', 'Maintenance', 'model_fingerprint.py')
     spec = importlib.util.spec_from_file_location('model_fingerprint', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

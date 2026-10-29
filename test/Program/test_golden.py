@@ -35,12 +35,12 @@ Description:
 
     The golden comparison of the taught program (SPEC §10.2): the program built now against test/Program/data/ (the record of
     the numeric arrays' sha256, the cycle time, the events, the steps, the segments and every command's values as float hex;
-    the program check's report; the point table), read and captured by Example/Program/golden_program.py. A change to the
+    the program check's report; the point table), read and captured by Example/Maintenance/golden_program.py. A change to the
     program or its build re-captures the data in its own commit, listing what changed.
 """
 # The golden tool (a script, not part of src/).
 #   Unit [string]
-CONST_TOOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Example', 'Program', 'golden_program.py')
+CONST_TOOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Example', 'Maintenance', 'golden_program.py')
 
 
 @pytest.fixture(scope='module')

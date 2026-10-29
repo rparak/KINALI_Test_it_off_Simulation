@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../test/Example/Program/test_golden_program.py
+# File Name: ../test/Example/Maintenance/test_golden_program.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -38,10 +38,10 @@ def test_the_default_compare_finds_no_difference_and_out_writes_the_same_data(ro
         changed record compares with exit 1 naming the difference.
     """
 
-    result = run_script('Program/golden_program.py', [], tmp_path)
+    result = run_script('Maintenance/golden_program.py', [], tmp_path)
     assert result.returncode == 0 and result.stdout.startswith('[INFO] 0 difference(s) against '), result.stdout
     out = tmp_path / 'golden'
-    result = run_script('Program/golden_program.py', ['--out', str(out), '--source', 'a test'], tmp_path)
+    result = run_script('Maintenance/golden_program.py', ['--out', str(out), '--source', 'a test'], tmp_path)
     assert result.returncode == 0 and '71 commands' in result.stdout, result.stdout
     data = os.path.join(root, 'test', 'Program', 'data')
     for name in ('golden_check_report.txt', 'golden_keypoint_table.txt'):
@@ -50,5 +50,5 @@ def test_the_default_compare_finds_no_difference_and_out_writes_the_same_data(ro
     assert written['source'] == 'a test' and {**written, 'source': ''} == {**committed, 'source': ''}
     written['cycle_time'] += 0.004
     (out / 'golden_program.json').write_text(json.dumps(written))
-    result = run_script('Program/golden_program.py', ['--compare', str(out)], tmp_path)
+    result = run_script('Maintenance/golden_program.py', ['--compare', str(out)], tmp_path)
     assert result.returncode == 1 and '  cycle_time: ' in result.stdout, result.stdout

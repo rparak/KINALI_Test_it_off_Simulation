@@ -47,7 +47,7 @@ Description:
 #   Unit [string]
 CONST_BRIEF = os.path.join('.claude', 'project-docs', 'SUPPORT_CHAT.md')
 CONST_SAFETY_SOURCE = os.path.join('.claude', 'skills', 'feature-manager', 'SKILL.md')
-CONST_TOOL = os.path.join('Example', 'Simulation', 'physics_baseline.py')
+CONST_TOOL = os.path.join('Example', 'Maintenance', 'physics_baseline.py')
 # The brief's sections, in order (the support-brief skill > section 2).
 #   Unit [Tuple<string>]
 CONST_SECTIONS = ('0. How to use this brief', '1. The project in brief', '2. Current state', '3. Architecture',

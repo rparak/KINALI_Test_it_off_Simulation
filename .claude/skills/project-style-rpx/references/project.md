@@ -36,7 +36,8 @@ src/<Domain>/<Topic>.py  a second concern of a domain: Configuration/Program_Par
                        Program/Check.py (the trajectory check), Simulation/Report.py (a run's acceptance and report),
                        Optimizer/Measure.py (what the optimized program is measured by)
 src/<Domain>/Const.py  only where more than one module of the domain uses a constant: Configuration, Program, Simulation
-Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Scene, Render, Keypoints, Program, Simulation
+Example/<Domain>/<script>.py   one subfolder per domain a script belongs to: Keypoints, Program, Simulation;
+                       Example/Maintenance/ the regression and scene tools
 test/<Domain>/test_<module>.py   mirroring src/ (a Const.py has none: it is tested through its readers);
                        test/Example/<Domain>/test_<script>.py; test/Install/test_install.py; test/Docs/test_layout.py;
                        reference data (the baselines) in test/<Domain>/data/
@@ -100,10 +101,10 @@ that differ only in letter case.
 | `Data/Generated/Trajectories/<program>.npz` (+ `.csv` export) | `Trajectory.Core.Write_Trajectory`, `Read_Trajectory`; filled by `Program.Core.Build_Program` |
 | `Data/Paths/fork_close_open_path.npz` | `Program.Core` (`Robot.MovePath`); recorded in the MG06 project, never written |
 | a program's physics report | `Simulation.Report.Format_Program_Report`; printed and written to `Data/Generated/Reports/<program>_physics.txt` by `Example/Simulation/run_program.py` |
-| the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Simulation/physics_baseline.py` (writes and compares) |
+| the physics baselines (`test/Simulation/data/baseline_*`) | `Example/Maintenance/physics_baseline.py` (writes and compares) |
 | the logo variants `Media/<Logo>_<Black|White>.svg` | committed (the generator is in git at `c43f079`); read by the README |
 | the README media and charts in `Media/` | committed (v1.0; the generators are in git at `c43f079`); read by the README |
-| the model fingerprint JSON | `Example/Scene/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
+| the model fingerprint JSON | `Example/Maintenance/model_fingerprint.py` (`Model_Fingerprint`, `Compare_Fingerprints`) |
 | `logger/*.log`, `logger/MUJOCO_LOG.TXT` | written by the scripts through `Configuration.Core` (`Script_Log_Cls`, `Configure_MuJoCo_Log`) and by MuJoCo; never read by code |
 
 ## Configuration

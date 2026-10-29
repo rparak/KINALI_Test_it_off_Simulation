@@ -35,13 +35,13 @@ Description:
     Initialization of constants.
 
     The physics regression of the two programs (step 6, SPEC §10.2): each program built into a temporary folder, run with
-    physics and compared with its baseline in test/Simulation/data/ by Example/Simulation/physics_baseline.py: SPEC §10.1 and
+    physics and compared with its baseline in test/Simulation/data/ by Example/Maintenance/physics_baseline.py: SPEC §10.1 and
     the metrics' drift tolerances fail it; the report's diff is printed, never failing.
 """
 # The baseline tool and the repository root.
 #   Unit [string]
 CONST_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-CONST_TOOL = os.path.join(CONST_ROOT, 'Example', 'Simulation', 'physics_baseline.py')
+CONST_TOOL = os.path.join(CONST_ROOT, 'Example', 'Maintenance', 'physics_baseline.py')
 
 
 @pytest.fixture(scope='module')

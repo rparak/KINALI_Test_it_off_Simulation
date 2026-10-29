@@ -18,7 +18,7 @@
 # SOFTWARE.
 ## =========================================================================== ##
 # Author   : Roman Parak
-# File Name: ../Example/Scene/export_cell_scene.py
+# File Name: ../Example/Maintenance/export_cell_scene.py
 ## =========================================================================== ##
 
 # System (Default)
@@ -46,7 +46,7 @@ def main():
         Write the whole cell as one MJCF for MuJoCo's viewer, through Scene.Core.Export_Cell_Scene, with the
         mesh paths relative to the file (default models/cell_scene.xml).
 
-            .venv/bin/python Example/Scene/export_cell_scene.py [--out DIR]
+            .venv/bin/python Example/Maintenance/export_cell_scene.py [--out DIR]
     """
 
     parser = argparse.ArgumentParser(description='Write the whole cell as one MJCF (cell_scene.xml).')
