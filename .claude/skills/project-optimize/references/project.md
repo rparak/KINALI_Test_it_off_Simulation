@@ -70,6 +70,7 @@ Apple M2 Pro, 2026-10-25, three runs each (spread under 3 %):
 | test suite `-m "not slow"`, `-n 8` / serial | 43.8 s (one run, 2026-10-26) / about 2 min (503 tests; serial not re-measured) |
 | test suite, full, `-n 8` / serial | 5.0 min (301.7-303.2 s, three runs, 2026-10-26) / about 7.4 min (526 tests; serial not re-measured) |
 | after F18 (2026-10-28, one run each, not re-measured over three): 595 fast / 618 full tests, the skills' 88 under a second | fast 48.0-52.1 s; full 336.3 s (338.1 s in a fresh clone) |
+| after F20 (2026-10-29, one run each): 532 fast / 552 full tests; `cell.py all` (the optimizer skipped); `install.sh` in a fresh clone (warm pip cache) | fast 36.2-70.1 s over the series' runs; full 286.0 s (290.9 s in a fresh clone); `all` 41.3 s (52.9 s in a fresh clone); install 22.6 s |
 
 Open (optional, a later measurement; owner, 2026-10-27): the 15 slowest tests (`pytest --durations=15`) and the serial
 suites over three runs.

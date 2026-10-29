@@ -13,7 +13,8 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       take waits at P_LOADER_WAIT).
 - [~] F20: one user entry point `Example/cell.py`, the maintenance tools in `Example/Maintenance/`, the by-product
       generators and the unused dependencies removed (owner, 2026-10-28; answers 2026-10-29; design-decisions: one user
-      entry point; restore point `c43f079`).
+      entry point; restore point `c43f079`). Built 2026-10-29 in the commits from `271b004` on, pushed with them; the owner's acceptance
+      of the result is open.
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
 
 ## Done

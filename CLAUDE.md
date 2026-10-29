@@ -29,7 +29,7 @@ The checks, in two tiers (Apple M2 Pro times):
 - **Per commit** (about 1 min): the fingerprint (`Maintenance/model_fingerprint.py`, 1 difference: `pcb_vis` rgba), the kinematic
   golden (`Maintenance/golden_program.py`, 0 differences), the point table (`cell.py check`, 0 FAIL), the fast tests
   (`pytest -n 8 -m "not slow"`), the style checker (0 issues).
-- **Per accepted feature, before the push** (about 5.5 min): both physics baselines with their envelopes
+- **Per accepted feature, before the push** (about 5 min): both physics baselines with their envelopes
   (`Maintenance/physics_baseline.py`, 0 failures) and the full suite (`pytest -n 8`).
 
 A change on the physics or build path is also proven by its outputs, byte for byte (the project-optimize reference).
@@ -59,8 +59,9 @@ five is installed personally on this machine (`KNOWN_ISSUES.md`).
 
 Everything the agent conventions need is in the repository: the skills, their checkers and their tests
 (`.claude/skills/`, Skills above). No personal skill is needed; nothing in `src/`, `test/`, `Example/` or `.claude/skills/`
-reads `~/.claude/` (verified 2026-10-28: a fresh clone with `HOME` set to an empty directory installs and passes the
-per-commit tier, the full suite and both checkers). The skills came from
+reads `~/.claude/` (verified 2026-10-28, again 2026-10-29 after F20: a fresh clone with `HOME` and `TMPDIR` set to empty directories installs
+(22.6 s), runs `Example/cell.py all` (52.9 s) and passes the per-commit tier, the full suite (552 tests, 4 min 51 s), the physics
+baselines and both checkers). The skills came from
 `rparak/rp-claude-skills` at `ec7af02` and are maintained here from then on (design-decisions: the skills in the repository).
 
 ## Commands

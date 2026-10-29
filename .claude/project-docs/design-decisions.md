@@ -1635,5 +1635,13 @@ the install larger than that path.
 logic into `src/`: not chosen - the program loading for a run needs the Optimizer domain, above Simulation in the layer
 order; the scripts moved verbatim are the smaller, provable change.
 
+**Measured** (Apple M2 Pro, 2026-10-29): install in a throwaway venv (warm pip cache, three runs) 11.0-11.6 s, 433 MB, 35
+packages before; 7.5-7.8 s, 290 MB, 21 packages after; tests 601 fast / 624 full before, 532 / 552 after; `cell.py all`
+41.3 s (52.9 s in a fresh clone with empty `HOME` and `TMPDIR`, which also passes both tiers and both checkers). Every output
+of what stays byte-identical to the frozen run of `c43f079` on the same inputs (after the normalisation filter), apart from the
+owner-approved message lines (the stale and missing hints, the viewer's mjpython hint, the check report's 'keypoints used' line,
+the optimizer's closing line and the optimized program's header line), so the golden's report line and
+`Program_Optimized.yaml` line 3 were re-captured on their own.
+
 **Revisit if** new media or figures are wanted (a generator is brought back from the restore point with the owner's
 approval), or a user action is needed that no subcommand covers (a new subcommand, never a new script).

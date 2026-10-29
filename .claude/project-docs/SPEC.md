@@ -860,9 +860,9 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker; pytest-xdist runs the suite in parallel
-(`-n 8`), and it passes serially too. Per commit `.venv/bin/python -m pytest -n 8 -m "not slow"` (601 tests, about 45 s;
-2 min serially); per accepted feature the full `.venv/bin/python -m pytest -n 8` (624 tests, about 5 min; 7.5 min serially;
-Apple M2 Pro; counts 2026-10-28). The two tiers of checks: `CLAUDE.md`.
+(`-n 8`), and it passes serially too. Per commit `.venv/bin/python -m pytest -n 8 -m "not slow"` (532 tests, about 50 s;
+2 min serially); per accepted feature the full `.venv/bin/python -m pytest -n 8` (552 tests, about 5 min; 7.5 min serially;
+Apple M2 Pro; counts 2026-10-29, after F20). The two tiers of checks: `CLAUDE.md`.
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
