@@ -12,6 +12,15 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
+- [ ] Candidate, project-optimize, speed (owner, 2026-10-29; approval first):
+      `test/Example/test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` takes
+      233.65 s of the full suite's 292.5 s (`-n 8 --durations=15`, 553 tests, Apple M2 Pro, one run alone, 2026-10-29), so
+      `-n 8` cannot finish sooner; split it into parts that run in parallel.
+- [ ] Candidate, project-optimize, reliability (owner, 2026-10-29; the reading verified before any change): the known MuJoCo
+      attach warning (KNOWN_ISSUES: the integrator conflict) reaches pytest as 3 warnings from 2 tests, outside
+      `Scene.CONST_KNOWN_ATTACH_WARNING`: `test/Collision/test_core.py:117` (its own `spec.compile()`, twice) and
+      `src/Scene/Core.py:533` (`to_xml`) in `test/Scene/test_core.py::test_an_export_elsewhere_loads_and_equals_the_committed_one`;
+      present before F21 (`8e285ac`). Route them through the same filter, so the suite reports 0 warnings and a new one stands out.
 
 ## Done
 

@@ -10,7 +10,7 @@ reference > The support-chat brief; support-brief, REFRESH).
 **The repository wins on any disagreement.** Sources of truth: `CLAUDE.md`, `.claude/project-docs/` (`SPEC.md`,
 `design-decisions.md`, `KNOWN_ISSUES.md`, `FEATURES.md`), `README.md`, the baselines in `test/<Domain>/data/`.
 
-State as of commit `0dc9c6a`, 2026-10-29.
+State as of commit `3e2441f`, 2026-10-29.
 
 ## 1. The project in brief
 
@@ -70,7 +70,8 @@ Key results (simulation only; deterministic on one machine, one run per program)
 - Baselines captured at `05556c4` (2026-10-25, macOS arm64, Python 3.11.2, MuJoCo 3.16.0; `baseline_environment.json`).
 
 Open (FEATURES): a candidate experiment, `J_INSERT` during the handover's last MoveL (at most −1.5 s; needs a
-time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional). The real-cell transfer (SPEC
+time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional); two project-optimize candidates (the 234 s `cell.py all` test split for
+parallel runs, the known attach warning routed through its filter in two tests). The real-cell transfer (SPEC
 §17) is planned, with no date and no access to the cell.
 
 ## 3. Architecture
@@ -228,7 +229,7 @@ public record.
 
 ## 9. Updates
 
-Last updated 2026-10-29, checked against commit `0dc9c6a`.
+Last updated 2026-10-29, checked against commit `3e2441f`.
 
 Update in every accepted change that alters the state, numbers, commands, rules, roles, modules or open items
 (feature-manager's project reference > The support-chat brief). Numbers stay exact to their sources: the cycle times,
