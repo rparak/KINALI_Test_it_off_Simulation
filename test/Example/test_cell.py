@@ -184,26 +184,67 @@ def test_run_compares_both_programs_writes_their_reports_and_the_table(tmp_path,
     assert (reports / 'Program_physics.txt').read_text() == (tree / 'test' / 'Simulation' / 'data' / 'baseline_report_taught.txt').read_text()
 
 
-@pytest.mark.slow
-def test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved(tmp_path, fresh_tree, script_command, root):
+def _Run_Cell(script_command, tree, work, *arguments):
     """
     Description:
-        cell.py all in a fresh tree (no trajectories): check, build, the optimizer skipped (the committed Optimized program is
-        current), its trajectory built, run - exit 0, 'all passed'. Then, as after an intended change, the golden's check report
-        line, a baseline's cycle time and the README's results block are made to differ: all --recapture says what differs,
-        re-captures the golden and both baselines and regenerates the block, so each is again the committed one byte for byte
-        (the baseline's environment record aside), the rest of the README untouched; it reminds to commit and to refresh the
-        support-chat brief.
+        cell.py <arguments> of the given tree, run as a person runs it (a fresh interpreter, from work).
     """
 
     import subprocess
+    return subprocess.run(script_command(tree, 'cell.py') + list(arguments), cwd=str(work), capture_output=True, text=True, timeout=1800)
+
+
+def _Fresh_Work(tmp_path, fresh_tree):
+    """
+    Description:
+        A fresh tree and an empty working directory beside it: (tree, work).
+    """
+
     tree, work = fresh_tree(tmp_path / 'tree'), tmp_path / 'work'
     work.mkdir()
-    run = lambda *arguments: subprocess.run(script_command(tree, 'cell.py') + list(arguments), cwd=str(work), capture_output=True, text=True,
-                                            timeout=1800)
-    result = run('all')
+    return tree, work
+
+
+def _Recapturable_Paths(root):
+    """
+    Description:
+        The files all --recapture may write, relative to the root: the README and every committed golden and baseline file.
+    """
+
+    return ['README.md'] + [os.path.join('test', folder, 'data', name) for folder in ('Program', 'Simulation')
+                            for name in sorted(os.listdir(os.path.join(root, 'test', folder, 'data')))]
+
+
+@pytest.mark.slow
+def test_all_passes_in_a_fresh_tree(tmp_path, fresh_tree, script_command):
+    """
+    Description:
+        cell.py all in a fresh tree (no trajectories): check, build, the optimizer skipped (the committed Optimized program is
+        current), its trajectory built, run - exit 0, 'all passed', nothing written into the working directory.
+    """
+
+    tree, work = _Fresh_Work(tmp_path, fresh_tree)
+    result = _Run_Cell(script_command, tree, work, 'all')
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
     assert 'is current: the optimizer is skipped' in result.stdout and '[INFO] all passed: check, build, optimize, run.' in result.stdout
+    assert os.listdir(work) == []
+
+
+@pytest.mark.slow
+def test_recapture_restores_what_an_intended_change_moved_and_the_compares_accept_it(tmp_path, fresh_tree, script_command, root):
+    """
+    Description:
+        As after an intended change, the golden's check report line, a baseline's cycle time and the README's results block
+        are made to differ in a fresh tree: all --recapture says what differs, re-captures the golden and both baselines and
+        regenerates the block, so every re-captured file is again the committed one byte for byte (the provenance fields
+        aside: the golden's source, the baselines' environment commit and date), the rest of the README untouched; it
+        reminds to commit and to refresh the support-chat brief. The golden compare and the baselines compare then pass
+        against the re-captured files (they accept the re-captured provenance).
+    """
+
+    import json
+    import subprocess
+    tree, work = _Fresh_Work(tmp_path, fresh_tree)
     golden = tree / 'test' / 'Program' / 'data' / 'golden_check_report.txt'
     golden.write_text(golden.read_text().replace('keypoints used: 24', 'keypoints used: 23'))
     report = tree / 'test' / 'Simulation' / 'data' / 'baseline_report_taught.txt'
@@ -211,16 +252,45 @@ def test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_chan
     readme = tree / 'README.md'
     readme.write_text(readme.read_text(encoding='utf-8').replace('| Cycle time [s] [P] | 70.404 |', '| Cycle time [s] [P] | 70.400 |'),
                       encoding='utf-8')
-    result = run('all', '--recapture')
+    result = _Run_Cell(script_command, tree, work, 'all', '--recapture')
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
     assert "report line 73: 'keypoints used: 23" in result.stdout
     assert '  diff -program Program: physics run of its trajectory, cycle 70.400 s' in result.stdout
     assert '[INFO] Re-captured: test/Program/data, test/Simulation/data, README.md (the results block).' in result.stdout
     assert '/support-brief REFRESH' in result.stdout and os.listdir(work) == []
-    for path in ('README.md', os.path.join('test', 'Program', 'data', 'golden_check_report.txt'),
-                 os.path.join('test', 'Simulation', 'data', 'baseline_report_taught.txt'),
-                 os.path.join('test', 'Simulation', 'data', 'baseline_metrics_optimized.json')):
-        assert open(os.path.join(str(tree), path), 'rb').read() == open(os.path.join(root, path), 'rb').read(), path
-    result = run('all', '--recapture')
-    assert result.returncode == 0 and 'Nothing to re-capture' in result.stdout, result.stdout[-2000:]
+    provenance = {os.path.join('test', 'Program', 'data', 'golden_program.json'): ['source'],
+                  os.path.join('test', 'Simulation', 'data', 'baseline_environment.json'): ['commit', 'date']}
+    paths = _Recapturable_Paths(root)
+    assert sorted(os.listdir(tree / 'test' / 'Program' / 'data')) + sorted(os.listdir(tree / 'test' / 'Simulation' / 'data')) == \
+        [os.path.basename(path) for path in paths[1:]]
+    for path in paths:
+        now, committed = open(os.path.join(str(tree), path), 'rb').read(), open(os.path.join(root, path), 'rb').read()
+        if path in provenance:
+            now, committed = json.loads(now), json.loads(committed)
+            for key in provenance[path]:
+                now.pop(key), committed.pop(key)
+        assert now == committed, path
+    compares = [subprocess.Popen(script_command(tree, tool), cwd=str(work), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                for tool in ('Maintenance/golden_program.py', 'Maintenance/physics_baseline.py')]
+    (golden_out, _), (baseline_out, _) = [c.communicate(timeout=900) for c in compares]
+    golden_code, baseline_code = [c.returncode for c in compares]
+    assert golden_code == 0 and '[INFO] 0 difference(s) against' in golden_out, golden_out[-2000:]
+    assert baseline_code == 0 and '[INFO] taught: 0 failure(s) (bounds and drift)' in baseline_out, baseline_out[-2000:]
+    assert '[INFO] optimized: 0 failure(s) (bounds and drift)' in baseline_out and os.listdir(work) == []
 
+
+@pytest.mark.slow
+def test_recapture_on_an_unchanged_tree_has_nothing_to_recapture(tmp_path, fresh_tree, script_command, root):
+    """
+    Description:
+        all --recapture in a fresh, unchanged tree: the golden, both baselines and the README's results block are current -
+        exit 0, 'Nothing to re-capture', and every file it could re-capture is still the committed one byte for byte.
+    """
+
+    tree, work = _Fresh_Work(tmp_path, fresh_tree)
+    result = _Run_Cell(script_command, tree, work, 'all', '--recapture')
+    assert result.returncode == 0 and 'Nothing to re-capture' in result.stdout, result.stdout[-2000:]
+    paths = _Recapturable_Paths(root)
+    for path in paths:
+        assert open(os.path.join(str(tree), path), 'rb').read() == open(os.path.join(root, path), 'rb').read(), path
+    assert os.listdir(work) == []
