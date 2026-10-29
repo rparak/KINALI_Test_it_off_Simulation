@@ -13,7 +13,10 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       (owner, 2026-10-29). Part A approved 2026-10-29: the re-captured files go in their own commit straight after the
       change, in the same push (SPEC §10.2), and the README's sentence says so too; the module import by name only in
       `cell.py`; the optimize reference's cleanup criteria a pointer, its commands without a machine path; the diff proof
-      byte for byte for the deterministic outputs, the physics within the baselines' tolerances and envelopes.
+      byte for byte for the deterministic outputs, the physics within the baselines' tolerances and envelopes. Built
+      2026-10-29: `1b45b01` style, `e8cb2b1` optimize, `0cb6554` readme-writer, `de8db79` feature-manager, `7a11c39` the README's
+      re-capture sentence; the optimize reference's commands run first (install 7.5-8.1 s, 289 MB, 21 packages; fresh clone
+      with empty `HOME` and `TMPDIR`: install 21.4 s, `cell.py all` 52.5 s, 552 passed); waiting for the owner's acceptance.
 - [ ] Candidate experiment (owner, 2026-10-24: after step 6, now possible): start `J_INSERT` during the handover's last MoveL
       (at most -1.5 s). Risk: the loader lifts the PCB towards the cups while the robot is still leaving; it needs a
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
