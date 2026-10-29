@@ -70,5 +70,5 @@ re-grip from MG06 (no press, 0.3 +- 0.1 mm): PCB-ledge gap with the jaws at grip
 stretched MoveLs: none
 note: S13_Open_MG06, Robot.MovePath(PATH_FORK_OPEN): the recorded path starts moving: the flange at 39.1 mm/s at its first row (a velocity step from rest; step 5 reports the tracking error and the force on the bar)
 events: 3.276 s vacuum_on, 9.316 s gripper_clamp, 10.164 s vacuum_off, 16.860 s gripper_open, 50.320 s gripper_clamp, 58.608 s vacuum_on, 59.508 s gripper_open, 67.080 s vacuum_off
-keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS; Example/Keypoints/check_keypoints.py shows each)
+keypoints used: 24 (0 FAIL, 1 WARN, 23 PASS; Example/cell.py check shows each)
 Program: the program check passed. Simulation results only: not validated for the real cell.

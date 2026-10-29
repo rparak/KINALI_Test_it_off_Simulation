@@ -1,5 +1,5 @@
 {
- "source": "F15 (2026-10-25): J_RETURN split into J_RETURN_Y and J_RETURN_Z; only the four Loader.Run labels of commands 47-50 changed, every array and value identical",
+ "source": "F20 (2026-10-29): the check report's 'keypoints used' line names Example/cell.py check instead of check_keypoints.py; every array and value identical",
  "cycle_time": 70.404,
  "samples": 17602,
  "arrays": {
