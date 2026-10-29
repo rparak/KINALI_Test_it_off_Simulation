@@ -73,7 +73,7 @@ Never use a bare `python3` on this machine (miniforge's). Use `.venv/bin/python`
 .venv/bin/python -m pytest -n 8 -m "not slow"    # per commit, about 45 s (serially, -n 0: about 2 min)
 .venv/bin/python -m pytest -n 8                  # per accepted feature, about 5 min (serially: about 7.5 min)
 .venv/bin/python .claude/skills/project-style-rpx/scripts/check_style.py   # src Example test, 0 issues expected
-.venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md   # 0 errors expected (1 warning: the length)
+.venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md   # 0 errors, 0 warnings expected
 /opt/homebrew/bin/python3.11 -m venv "$SCRATCH/gfm" && "$SCRATCH/gfm/bin/pip" install -q cmarkgfm==2025.10.22   # throwaway env, never .venv
 "$SCRATCH/gfm/bin/python" .claude/skills/readme-writer/scripts/render_readme.py README.md --out "$SCRATCH/readme.html"   # 0 leftovers
 .venv/bin/python Example/cell.py --help                        # the user entry point; <subcommand> --help for each
