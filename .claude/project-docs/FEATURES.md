@@ -21,6 +21,10 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       `Scene.CONST_KNOWN_ATTACH_WARNING`: `test/Collision/test_core.py:117` (its own `spec.compile()`, twice) and
       `src/Scene/Core.py:533` (`to_xml`) in `test/Scene/test_core.py::test_an_export_elsewhere_loads_and_equals_the_committed_one`;
       present before F21 (`8e285ac`). Route them through the same filter, so the suite reports 0 warnings and a new one stands out.
+      Built 2026-10-29: `520bc5d` the collision test through `Compile_Spec`, `48864b5` the export's `to_xml` through the
+      filter with the test that another warning still reaches the caller (broken three times); `to_xml` and
+      `cell_scene.xml` byte-identical, the export's stderr without the 3-line UserWarning; the full suite 0 warnings;
+      waiting for the owner's acceptance.
 
 ## Done
 

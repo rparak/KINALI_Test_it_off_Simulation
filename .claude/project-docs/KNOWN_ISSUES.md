@@ -75,13 +75,18 @@ The cause is `<option integrator="implicitfast"/>` (line 4) of the vendored robo
 keeps the parent's Euler; the verified physics was run that way, so the warning describes the verified
 state. Not fixed on purpose: changing either file changes the physics or the vendored model. The scripts and the tests
 show it as one line on stderr, `[INFO] Known: robot MJCF integrator ignored, scene uses Euler (KNOWN_ISSUES)`
-(`Scene.Compile_Spec` matches exactly this message, at the attach and at the compile, and passes any other warning on;
-owner, 2026-10-24); MuJoCo's log file goes to `logger/` (design-decisions: logs).
+(owner, 2026-10-24). `Scene._Known_Warning_Filter_Cls` matches exactly this message and passes any other warning on; it
+runs at the attach (`Build_Cell_Spec`), at the compile (`Compile_Spec`, which prints the line) and at
+`Export_Cell_Scene`'s `to_xml` (a second compile, the line already printed). A `spec.compile()` outside `Compile_Spec`
+raises it as a UserWarning, so the code and the tests compile the cell through `Compile_Spec` (one test compiles it
+directly under `ignore`, to compare the models; the full suite: 0 warnings, 2026-10-29). MuJoCo's log file goes to
+`logger/` (design-decisions: logs).
 
 - **Impact:** none: one INFO line per compiled model; not a fault.
 - **Evidence:** `MjLogConfig` probe 2026-10-24: the message is logged at the attach in the scene build.
 - **Pinned by:** `test/Configuration/test_core.py::test_mujoco_logs_into_the_configured_file_never_the_working_directory`,
-  `test/Scene/test_core.py::test_the_known_attach_warning_becomes_one_info_line`, `::test_any_other_warning_is_still_shown`.
+  `test/Scene/test_core.py::test_the_known_attach_warning_becomes_one_info_line`, `::test_any_other_warning_is_still_shown`,
+  `::test_the_export_reports_the_known_warning_once_and_passes_any_other_on`.
 - **What would close it:** the owner's decision on the integrator, with a new baseline (a physics change).
 
 ## The MG06 test time is a placeholder
