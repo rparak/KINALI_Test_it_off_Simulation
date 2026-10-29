@@ -107,14 +107,14 @@ def test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated(ce
     import mujoco
     from Configuration.Core import Read_PCB_Meta
     from Keypoints.Core import Pose_Cell
-    from Scene.Core import Build_Cell_Spec
+    from Scene.Core import Build_Cell_Spec, Compile_Spec
 
     def Model(extra_geom):
         spec = Build_Cell_Spec(cell_configuration)
         if extra_geom:
             box = spec.body('workstation').add_geom()
             box.type, box.size, box.pos, box.contype, box.conaffinity = mujoco.mjtGeom.mjGEOM_BOX, [0.01] * 3, [5, 5, 5], 2, 1
-        model = spec.compile()
+        model = Compile_Spec(spec)
         for g in range(model.ngeom):
             if model.body(model.geom_bodyid[g]).name.startswith('aubo/') or model.body(model.geom_bodyid[g]).name == 'pcb':
                 model.geom_margin[g] = 0.006
