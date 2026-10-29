@@ -5,10 +5,6 @@ numpy==2.4.6
 scipy==1.17.1
 # Cell configuration, keypoints, program (src/Configuration)
 PyYAML==6.0.3
-# Collision-set build only (planned: this project has no collision-set build yet); the tests never run CoACD
-trimesh==5.1.1
-rtree==1.4.1
-coacd==1.0.14
 # Tests (pytest-xdist: the suite in parallel with -n 8; it also passes serially, -n 0)
 pytest==9.1.1
 pytest-xdist==3.8.0

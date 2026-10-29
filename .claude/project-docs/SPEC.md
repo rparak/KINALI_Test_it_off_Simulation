@@ -316,16 +316,15 @@ PCB) and `cam_tool` (follows the tool from the side opposite the robot), both `t
   Prerequisite, presence-checked by the installer: `brew install python@3.11`; Ubuntu `python3.11`
   and `python3.11-venv` (deadsnakes on older releases).
 - Direct dependencies pinned `==` in `requirements.txt` (§11, design-decisions): `mujoco==3.16.0`,
-  `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`, `trimesh==5.1.1`, `rtree==1.4.1`,
-  `coacd==1.0.14`,
-  `pytest==9.1.1`, `pytest-xdist==3.8.0`. The groups without a user yet are marked *planned* in `requirements.txt`.
+  `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`, `pytest==9.1.1`, `pytest-xdist==3.8.0`; every one has a reader
+  (`trimesh`, `rtree` and `coacd`, pinned for a planned collision-set build that nothing used, removed 2026-10-29, F20).
 - **The verified baseline environment is recorded as a full `pip freeze`** (owner, 2026-10-24): a record of
   what the physics baselines (§10.2) ran with, not an install input (`install.sh` installs `requirements.txt` only). It
   is replaced, with its date, whenever the baselines are re-measured. Recorded 2026-10-24, Python 3.11.2, macOS 26.6.2 arm64
   (Apple M2 Pro), the `.venv` of `./install.sh --recreate`; the same packages captured the baselines of 2026-10-25
   (`baseline_environment.json`); `execnet` and `pytest-xdist` (the parallel test runner, no effect on a result) added
-  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25; `pillow`, `imageio-ffmpeg` and `matplotlib`
-  removed from `requirements.txt` 2026-10-29 with the media and the images (F20; the record stays as the baselines were captured)
+  2026-10-25, `imageio-ffmpeg` (the media's encoder, no effect on a result) added 2026-10-25; `pillow`, `imageio-ffmpeg`, `matplotlib`,
+  `trimesh`, `rtree` and `coacd` removed from `requirements.txt` 2026-10-29 (F20, none affects a result; the record stays as the baselines were captured)
   (`.venv/bin/python -m pip freeze --all`):
 
   ```

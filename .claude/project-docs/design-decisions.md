@@ -258,7 +258,8 @@ Pinned by `test/Install/test_install.py` (16 tests, sourced with stubs).
 
 ## The media are encoded with Pillow and imageio-ffmpeg's pinned ffmpeg
 
-*Superseded 2026-10-29 (F20): the encoders (Pillow, imageio-ffmpeg) are removed with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
+*Superseded 2026-10-29 (F20): the encoders (Pillow, imageio-ffmpeg) are removed, so the project no longer installs
+or runs the GPL ffmpeg build and the licence note below no longer applies; they went with the comparison and media generators; the media in `Media/` stay as committed (the v1.0 programs). The code and its tests are in git at `c43f079` (design-decisions: one user entry point).*
 
 **Decision.** `pillow==13.0.0` (already installed with matplotlib, now a direct dependency) writes the GIF previews, the
 step labels and the contact sheet; `imageio-ffmpeg==0.6.0` provides a pinned ffmpeg 7.1 binary that `src/Report/Media.py`

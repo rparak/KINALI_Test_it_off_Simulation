@@ -567,8 +567,7 @@ precedence over the repository's copy.
 - **Platform:** macOS on Apple silicon (verified, Apple M2 Pro) and Ubuntu Linux (installer written, not verified).
 - **Python 3.11**, called explicitly by `install.sh` (`/opt/homebrew/bin/python3.11` on macOS, `python3.11` on Linux).
 - **Pinned packages** (`requirements.txt`): `mujoco==3.16.0`, `numpy==2.4.6`, `scipy==1.17.1`, `PyYAML==6.0.3`,
-  `pytest==9.1.1`, `pytest-xdist==3.8.0`, and
-  `trimesh`, `rtree`, `coacd` for a planned collision-set build.
+  `pytest==9.1.1`, `pytest-xdist==3.8.0`.
 - Results are byte-identical for the same inputs on one machine and platform. Across platforms they agree within numeric
   tolerance only.
 
