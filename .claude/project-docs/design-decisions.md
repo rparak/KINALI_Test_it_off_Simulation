@@ -849,8 +849,8 @@ the fork plate's mid-plane (z −0.9 to 30.9 mm), the bar axis parallel to its Z
 fork MoveLs move by at most 1.4e-9 rad (the lines of the two sites differ to second order in rotations of at most
 0.009°; the IK converges on another site), the golden re-captured; both physics baselines 0 failures, 0 report lines
 differ, while the metrics files' full-precision values move by at most 6.75e-10 deg (the closed handle; the lid 5.05e-11
-deg, the PCB's end 1.2e-15 m), below every drift tolerance; `Program_Optimized.yaml` only its constants and simulation
-hashes.
+deg, the PCB's end 1.2e-15 m), below every drift tolerance, re-captured on their own; `Program_Optimized.yaml` only its
+constants and simulation hashes. Accepted by the owner 2026-11-03.
 
 **Alternatives.** Axes with +Z into the slot, like `T_SUCTION`'s approach: a rotated site, a model change and a new
 fingerprint, for the same offsets. The site moved onto the bar axis (y 66 mm): a model change for 4 mm along the slot's

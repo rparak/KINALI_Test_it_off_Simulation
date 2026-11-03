@@ -12,16 +12,6 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
-- [ ] F24, the fork tool `T_FORK` (owner, 2026-11-03; Part A approved 2026-11-03, questions 1-6 all yes, the SPEC's 2.5 mm
-      and the KNOWN_ISSUES TCP item added): built, Open until the owner accepts. The eight wrist-down points on the model site
-      `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes), `T_FLANGE` removed, `P_MG06_SLOT_EXIT`
-      derived (`P_MG06_BAR_CENTRE` + [0, -0.090, 0]), `cell.py point` naming the point's tool; Joints unchanged, the
-      recorded paths flange poses. Commits `1f5538a` (the change), `872a47e` (the golden: `robot_q`, `robot_qd` at most
-      1.4e-9 rad in the six fork MoveLs, the `SLOT_EXIT` table line), `174a729` (`Program_Optimized.yaml`: its two hashes
-      only, the schedule identical), and the records. Tests 555 -> 556. Physics baselines 0 failures, 0 report lines
-      differ. Open (the owner's decision): the full suite 555 passed, 1 failed -
-      `test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture...`, a fresh capture's `baseline_metrics_<taught|
-      optimized>.json` differ from the committed ones by at most 6.75e-10 deg (the closed handle) and 5.05e-11 deg (the lid).
 
 ## Done
 
@@ -50,3 +40,4 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
 | F21 | The four in-repository skills take F20's procedures: the import by name only in `cell.py` and what the layout test pins (project-style-rpx); the review of what can go, with its commands run (project-optimize); the README ordered by the user's path and the block written by code (readme-writer); accepting an intended change with `cell.py all --recapture`, the re-captured files in their own commit straight after the change (feature-manager, SPEC §10.2); the README's re-capture sentence and CLAUDE.md's README-checker line corrected; docs and skills only; accepted by the owner 2026-10-29 | `929db17`…`a546744` |
 | F22 | The known MuJoCo attach warning through its filter at every compile (project-optimize, reliability): the collision test through `Compile_Spec`, the export's `to_xml` inside the exact-match filter, the test that another warning still reaches the caller; the full suite 0 warnings; accepted by the owner 2026-10-29 | `520bc5d`…`4eda2ef` |
 | F23 | Closed, not pursued (owner, 2026-10-29; project-optimize, speed): the split of `test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved` (233.65 s of the full suite's 292.5 s) into parallel parts. Measured alone, Apple M2 Pro: the split into A `all`, B `--recapture` with the compares, C `--recapture` unchanged 309.2 s / 310.2 s (290.1 s before; xdist's `load` scheduling ran the `run` test, A, B and C on one worker, ending at 305 s, 7 workers idle from 146 s); `--dist worksteal` 253.7 s; the 7 tests >= 40 s collected first with `--dist worksteal` (not committed) 253.3 s / 252.1 s - worksteal hands each worker a contiguous block, so B (154-156 s) started at 97 s behind A on gw7, the other heavy tests ending by 152 s; peak memory 6.4 GB of 16 GB. Reason: the best result, 252 s against 290 s (-40 s, the per-feature tier only), needs custom xdist scheduling in `conftest.py`, fragile code not worth that gain. Reopen if the full suite grows well beyond 5 min | `a5b450f`, `2706024`; reverted by `9d12c1f`, `c5cbf32`; record `3d946d3` |
+| F24 | The fork tool `T_FORK`: the eight wrist-down points on the model site `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes), `T_FLANGE` removed, `P_MG06_SLOT_EXIT` derived (`P_MG06_BAR_CENTRE` + [0, -0.090, 0]), `cell.py point` naming the point's tool; Joints unchanged, the recorded paths flange poses; the golden (`robot_q`, `robot_qd` at most 1.4e-9 rad in the six fork MoveLs, the `SLOT_EXIT` table line), `Program_Optimized.yaml` (its two hashes) and the physics metrics (at most 6.75e-10 deg, the reports identical) re-captured; tests 555 -> 556; accepted by the owner 2026-11-03 | `bc2445d`…`063a631` |
