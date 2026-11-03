@@ -134,39 +134,6 @@ and puts the tested board into an output crate. This repository models that cell
   limits, speeds), then run with full physics against 28 acceptance checks.
 - **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
 
-## What the cell does
-
-1. The robot picks the PCB with vacuum from the left (input) crate.
-2. It puts the PCB into the open loader jaws. The loader clamps it, the vacuum goes off and the robot leaves.
-3. The loader lifts the PCB, moves it to MG06, lowers it into the holder, opens and parks.
-4. The robot closes MG06 with the fork (lid down, handle to about 29°), leaves while the board is tested, comes back and
-   opens MG06.
-5. The loader moves back, re-grips the PCB, lifts it and returns home.
-6. The robot takes the PCB from the loader, puts it into the right (output) crate and goes home.
-
-<p align="center">
-  <img src="Media/View_Overview_Right.png" alt="The whole cell from the front right: the grey workstation cabinet with two blue crates, the orange AUBO i5 robot on its pedestal handing a green PCB to the loader in front of the MG06 tester" width="85%">
-</p>
-
-**Figure 2:** The cell during the handover in the Optimized program (physics run, t = 8.45 s): the robot places the PCB into
-the loader's jaws in front of the MG06 tester. Rendered from the simulation model.
-
-<p align="center">
-  <img src="Media/Key_Points.png" alt="A contact sheet of 25 small renders of the cell, each labelled with a named robot point from P_HOME through the input, loader and MG06 points to P_OUTPUT_PLACE" width="100%">
-</p>
-
-**Figure 3:** The cell posed at every robot point of `Configuration/Constants.yaml`, in program order, with the loader,
-jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
-
-</details>
-
-</details>
-
-## How the model was built
-
-<details>
-<summary><b>How the model was built</b>: the sources, the deviations, the limitations</summary>
-
 **From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
 Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
 finished and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco)
@@ -198,30 +165,33 @@ them. Where it does not, the value is an estimate or an assumption and is labell
 | MG06 | lid gas springs, handle toggle with its dead point at about 31°, press plate coupled to the handle, lock with 1.5 mm play | modelled from the mechanism |
 | PCB | 120 x 85 x 1.8 mm, 60 g | the part |
 
-The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones). These physics values are verified and pinned
-by the model's fingerprint and the physics baselines (see [Verification](#verification)).
+The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones). 
 
-**Main limitations.** What the simulation does not model or has not verified:
+## What the cell does
 
-- **No real-cell validation exists yet.** The pose convention (roll, pitch, yaw), the pendant's TCP setting, each joint's
-  zero, direction and order, and the robot base pose are not compared with the AUBO controller. A point copied to the
-  controller could command a different pose.
-- **`MoveSpline`**, which the Optimized program uses, is not verified on the AUBO controller (streamed joint targets or
-  blended MoveJ differ in path, timing and limits).
-- **The loader gripper** is modelled from the datasheet (70 N, synchronized jaws, 100 mm/s). The real gripper's force and
-  speed settings, its centring and the real release and re-grip heights are not verified.
-- **The vacuum** is a constant force per touching cup: no leaks, no build-up, no holding range.
-- **The fork closes MG06 through a stiff contact** whose force is chaotic (4 or 6 contact points, up to 247 N on the
-  handle bar and a flange wrench of 239 N and 16.1 N m). The fork's bounds are regression bounds from the simulation. No
-  force or moment rating of the VGC10 interface or the AUBO i5's flange and joints is known, so the real robot may deflect,
-  trip its collision detection or overload the VGC10 although the run passes here.
-- The acceleration limits are assumed, and the recorded MG06 fork paths exceed them.
-- The MG06 test time is a 2.0 s placeholder, and the program's I/O ports are placeholders.
-- The carried PCB's 20° tilt limit is an assumption. Cables are not modelled.
+1. The robot picks the PCB with vacuum from the left (input) crate.
+2. It puts the PCB into the open loader jaws. The loader clamps it, the vacuum goes off and the robot leaves.
+3. The loader lifts the PCB, moves it to MG06, lowers it into the holder, opens and parks.
+4. The robot closes MG06 with the fork (lid down, handle to about 29°), leaves while the board is tested, comes back and
+   opens MG06.
+5. The loader moves back, re-grips the PCB, lifts it and returns home.
+6. The robot takes the PCB from the loader, puts it into the right (output) crate and goes home.
 
-A first run on the real cell would go at reduced speed with the controller's own safety limits active, one moving object
-at a time where possible: the loader jobs alone, then the robot's transfers alone with the loader parked, then the LOCKED
-parts, then the parallel parts last, with the loader's `Loader.Start` / `Loader.WaitDone` handshake tested on its own first.
+<p align="center">
+  <img src="Media/View_Overview_Right.png" alt="The whole cell from the front right: the grey workstation cabinet with two blue crates, the orange AUBO i5 robot on its pedestal handing a green PCB to the loader in front of the MG06 tester" width="85%">
+</p>
+
+**Figure 2:** The cell during the handover in the Optimized program (physics run, t = 8.45 s): the robot places the PCB into
+the loader's jaws in front of the MG06 tester. Rendered from the simulation model.
+
+<p align="center">
+  <img src="Media/Key_Points.png" alt="A contact sheet of 25 small renders of the cell, each labelled with a named robot point from P_HOME through the input, loader and MG06 points to P_OUTPUT_PLACE" width="100%">
+</p>
+
+**Figure 3:** The cell posed at every robot point of `Configuration/Constants.yaml`, in program order, with the loader,
+jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
+
+</details>
 
 </details>
 
