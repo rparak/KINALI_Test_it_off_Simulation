@@ -961,8 +961,10 @@ commands, editing keypoints and program, the file formats.
   in the runs' order, are byte-identical to running them one after the other.
 - **Baselines by run** (owner, 2026-10-24, B6; 2026-10-25): one baseline per program, measured in the pinned environment.
 - **Re-capture after an intended change** (owner, 2026-10-29, F20): `Example/cell.py all --recapture` runs check, build and
-  optimize, compares the golden and both baselines (what differs is printed), re-captures each that differs (the baselines
-  refused when a perturbation run fails §10.1), and regenerates the README's results block from the baselines
+  optimize, compares the golden and both baselines (what differs is printed), re-captures the golden when it differs and the
+  baselines when a run fails, drifts beyond a tolerance or its report differs (metrics moved inside the tolerances:
+  `physics_baseline.py --out`, feature-manager's project reference; the baselines refused when a perturbation run fails
+  §10.1), and regenerates the README's results block from the baselines
   (`Example/Cell/results.py`, the one writer of the block between `<!-- results:start -->` and `<!-- results:end -->`;
   nothing else of the README is written by code; `test/Docs/test_readme.py` compares it). Its source names the commit it
   ran at. The re-captured files are committed on their own, with the reason; the support-chat brief is refreshed after.

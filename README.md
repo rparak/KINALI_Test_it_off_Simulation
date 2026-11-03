@@ -103,8 +103,9 @@ derived point names a `Reference` point and an `Offset` [m] from it, and its `Jo
 | `run`: an acceptance check FAILs | the physics run breaks one of the 28 checks, for example a contact or a lost PCB | correct the change. `cell.py run --program default` (or `optimized`) prints the full physics report |
 | `run`: only a drift FAILs | every check is met, but the physics moved beyond a regression tolerance | if you intended the change: `cell.py all --recapture` |
 
-`cell.py all --recapture` is for a change you intend. It re-captures the kinematic golden (`test/Program/data/`) and the
-physics baselines (`test/Simulation/data/`) where they differ, prints what changed, and regenerates the results table above.
+`cell.py all --recapture` is for a change you intend. It re-captures the kinematic golden (`test/Program/data/`) where it
+differs and the physics baselines (`test/Simulation/data/`) when a run drifts beyond a tolerance or its report differs
+(metrics moved within the tolerances stay as they are), prints what changed, and regenerates the results table above.
 Commit them right after the change, on their own, with the reason. It refuses when an acceptance check fails: no baseline may accept a failing check.
 
 ## Files

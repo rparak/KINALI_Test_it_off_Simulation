@@ -10,7 +10,7 @@ reference > The support-chat brief; support-brief, REFRESH).
 **The repository wins on any disagreement.** Sources of truth: `CLAUDE.md`, `.claude/project-docs/` (`SPEC.md`,
 `design-decisions.md`, `KNOWN_ISSUES.md`, `FEATURES.md`), `README.md`, the baselines in `test/<Domain>/data/`.
 
-State as of commit `b177d3a`, 2026-11-03.
+State as of commit `fed5c8a`, 2026-11-03.
 
 ## 1. The project in brief
 
@@ -116,8 +116,9 @@ time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual
 - Never edit `Program_Optimized.yaml` by hand; re-run `cell.py optimize` when an input changes.
 - Keep one user entry point: a new user action is a `cell.py` subcommand, never a script; no by-product generator without
   the owner's approval, no copies or archives in the tree (style project reference > No clutter; `test_layout`).
-- After an intended change, re-capture with `cell.py all --recapture` (refused on a failing acceptance check); the README
-  results block is the only README text code writes (design-decisions: one user entry point).
+- After an intended change, re-capture with `cell.py all --recapture` (refused on a failing acceptance check; metrics moved
+  inside the tolerances: `physics_baseline.py --out`, on their own); the README results block is the only README text code
+  writes (design-decisions: one user entry point).
 - Keep the integrator warning: the verified physics ran with Euler (KNOWN_ISSUES).
 
 ## 5. How work is done
@@ -230,7 +231,7 @@ public record.
 
 ## 9. Updates
 
-Last updated 2026-11-03, checked against commit `b177d3a`.
+Last updated 2026-11-03, checked against commit `fed5c8a`.
 
 Update in every accepted change that alters the state, numbers, commands, rules, roles, modules or open items
 (feature-manager's project reference > The support-chat brief). Numbers stay exact to their sources: the cycle times,

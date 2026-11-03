@@ -90,6 +90,13 @@ refuses when an acceptance check fails. The model fingerprint is not part of it 
 the re-captured files on their own, straight after it and in the same push, listing what changed and why. Then, when the
 brief states a moved number, `/support-brief` REFRESH (below).
 
+**Metrics moved inside the tolerances.** `--recapture` re-captures the physics baselines only when a run fails a check, drifts
+beyond a tolerance or a report line differs. A change that moves only full-precision metrics within the tolerances (the
+reports identical) leaves them as they are. `test/Example/test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_change_moved`
+then fails, because a fresh capture must equal the committed baselines byte for byte. Re-capture them with
+`Example/Maintenance/physics_baseline.py --out test/Simulation/data` (the writer `--recapture` calls). Commit the rewritten
+files (the metrics and the environment record) on their own, listing the moved values and the cause, as F24's `063a631` did.
+
 ## The support-chat brief
 
 `.claude/project-docs/SUPPORT_CHAT.md` is the brief the owner pastes into a new Claude chat that acts as the project's

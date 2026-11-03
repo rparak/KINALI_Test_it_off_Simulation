@@ -486,10 +486,13 @@ def Parser() -> argparse.ArgumentParser:
                                   description='check, build, optimize (the optimizer only when Data/Optimized/Program_Optimized.yaml '
                                               'is stale) and run, stopping at the first failure with what to do (about 45 s; '
                                               '105 s with the optimizer). --recapture, after a change you intend: instead of run, '
-                                              're-capture the kinematic golden (test/Program/data/) and the physics baselines '
-                                              '(test/Simulation/data/) where they differ, saying what changed, and regenerate the '
+                                              're-capture the kinematic golden (test/Program/data/) where it differs and the physics '
+                                              'baselines (test/Simulation/data/) when a run fails, drifts beyond its tolerances or '
+                                              'its report differs, saying what changed, and regenerate the '
                                               'results block of README.md (about 2 min more).')
-    command.add_argument('--recapture', action='store_true', help='re-capture the golden and the baselines and the README results block')
+    command.add_argument('--recapture', action='store_true',
+                         help='re-capture the golden, the baselines (only a run outside its tolerances or with a changed report) and the README '
+                              'results block')
     return parser
 
 
