@@ -121,40 +121,13 @@ Commit them right after the change, on their own, with the reason. It refuses wh
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
 [Test-it-off](https://www.testitoff.cz/en/about-test-it-off/) system, an automated workcell for testing assembled printed
-circuit boards (PCBA).
-
-In the Test-it-off cell an AUBO i5 robot with an OnRobot VGC10 vacuum gripper and a fork takes each board from an input
-crate, hands it to a two-axis loader that inserts it into an MG06 test fixture, closes and opens the fixture with the fork,
-and puts the tested board into an output crate. This repository models that cell in MuJoCo and gives you:
-
-- **Two robot programs for the same process.** The *Default program* is taught as an operator would teach it: named points,
-  sequential steps, the robot and the loader never moving at the same time. The *Optimized program* plans its free-space
-  moves and runs the loader in parallel under interlocks.
-- **Checks at two levels.** Every program is built into a 4 ms trajectory and checked kinematically (exact clearances, joint
-  limits, speeds), then run with full physics against 28 acceptance checks.
-- **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
-
-**From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
-Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
-finished and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco)
-(MIT), the VGC10 with the fork from the MG06 project. `src/Scene/Core.py` assembles the cell at load time with `mujoco.MjSpec`
-and changes nothing on disk: the tool mounted rigidly on the flange, one body with a bellows spring and an adhesion actuator
-per suction cup, the robot's position servos, the loader's drive lag and the studio look.
-`Example/Maintenance/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
-
-**Collision geometry.** Every part has its own collision set, separate from its visual meshes: simplified and convex-part
-meshes in `models/<part>/assets/collision/` and primitives (the crates as a floor and four walls, the PCB as a board box,
-two corner strips and one component box, each cup as a square pad of its area). The kinematic checks use a planning model
-that adds the table top as two boxes. The physics model has no table.
-
-**Documented CAD deviations.** Three deliberate corrections in `models/scene.xml` make the cycle work in the model: the
-loader shifted +100 mm in Y and +0.95 mm in X, the rear-right holder support lowered by 0.8 mm, and the electrical cabinet
-200 mm deep instead of 300 mm. They must be checked against the real cell before any transfer.
-
-**Physics and dynamics from the datasheets.** The parameters come from the components' datasheets where a datasheet gives
-them. Where it does not, the value is an estimate or an assumption.
-
-The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones). 
+circuit boards (PCBA). This repository models that cell in MuJoCo (an AUBO i5 robot with an OnRobot VGC10 vacuum gripper
+and a fork, a two-axis loader, the MG06 test fixture, an input and an output crate), built from KINALI's CAD with three
+documented deviations (*How the model was built*, under [Architecture](#architecture)), for engineers who write its robot
+program and want to verify it before it runs anywhere else. It ships two programs for the same process: the *Default
+program*, taught as an operator would teach it, and the *Optimized program*, with planned robot moves and the loader working
+in parallel under interlocks. Everything it produces is a simulation result and is not validated for the real cell (the
+warning at the top).
 
 ## What the cell does
 
@@ -184,6 +157,11 @@ jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
 
 <details>
 <summary><b>Collision structure</b>: the collision geometry and its categories</summary>
+
+**Collision geometry.** Every part has its own collision set, separate from its visual meshes: simplified and convex-part
+meshes in `models/<part>/assets/collision/` and primitives (the crates as a floor and four walls, the PCB as a board box,
+two corner strips and one component box, each cup as a square pad of its area). The kinematic checks use a planning model
+that adds the table top as two boxes. The physics model has no table.
 
 <table>
   <tr>
@@ -316,31 +294,80 @@ the way before `Loader.Start`, or `Loader.WaitDone` before the robot moves in), 
 
 </details>
 
+<details>
+<summary><b>How the model was built</b>: the sources, the CAD deviations, the physics parameters</summary>
+
+**From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
+Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
+finished and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco)
+(MIT), the VGC10 with the fork from the MG06 project. `src/Scene/Core.py` assembles the cell at load time with `mujoco.MjSpec`
+and changes nothing on disk: the tool mounted rigidly on the flange, one body with a bellows spring and an adhesion actuator
+per suction cup, the robot's position servos, the loader's drive lag and the studio look.
+`Example/Maintenance/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
+
+**Documented CAD deviations.** Three deliberate corrections in `models/scene.xml` make the cycle work in the model: the
+loader shifted +100 mm in Y and +0.95 mm in X, the rear-right holder support lowered by 0.8 mm, and the electrical cabinet
+200 mm deep instead of 300 mm. They must be checked against the real cell before any transfer.
+
+**Physics and dynamics from the datasheets.** The parameters come from the components' datasheets where a datasheet gives
+them. Where it does not, the value is an estimate or an assumption.
+
+The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones).
+
+</details>
+
 </details>
 
 ## Usage
 
-<details>
-<summary><b>Usage</b>: the subcommands, their options and the viewer keys</summary>
-
-One command, `Example/cell.py`, with a subcommand per action. `--help` lists them and `<subcommand> --help` its options.
-Outputs go into `Data/Generated/<Kind>/` (git-ignored), the log into `logger/cell_<subcommand>.log`. Exit codes: 0 success,
-1 a check failed, 2 the action cannot run. `--program default` is the Default program, `--program optimized` the Optimized one.
+Every action is a subcommand of one Python script, run with the repository's interpreter:
+`.venv/bin/python Example/cell.py <subcommand>`. `--help` lists the subcommands and `<subcommand> --help` gives the options.
+`--program default` is the Default program and `--program optimized` the Optimized one. On macOS the viewer needs
+`mjpython` ([Quick start](#quick-start)). `--headless` (`point`, `show`) poses the cell and prints it without a window.
+The times are measured on an Apple M2 Pro.
 
 ```bash
-.venv/bin/python Example/cell.py check                          # the point table (IK, family, clearance) and the programs check
-.venv/bin/python Example/cell.py point P_LOADER_WAIT            # one point: its row and the corrected Joints line to paste
-.venv/bin/python Example/cell.py point P_LOADER_PLACE --show    # the cell posed at one point, in the viewer
-.venv/bin/python Example/cell.py run --program optimized        # one program's full physics report and its 28 checks
-.venv/bin/python Example/cell.py show --program optimized       # play the Optimized program (kinematic)
-.venv/bin/python Example/cell.py show --physics --speed 0.25    # the physics run in slow motion
-.venv/bin/python Example/cell.py show --step S11_Test --headless   # pose the end of a step, print it
+.venv/bin/python Example/cell.py check                         # every key point (IK, family, clearance), the programs load; writes nothing
+.venv/bin/python Example/cell.py point P_INPUT_ABOVE           # one point: its check row, the corrected Joints and Pose lines
+.venv/bin/python Example/cell.py point P_INPUT_ABOVE --show    # the cell posed at that point, in the viewer
+.venv/bin/python Example/cell.py build                         # the Default program: 4 ms trajectory, kinematic check; about 11 s
+.venv/bin/python Example/cell.py optimize                      # the Optimized program and its trajectory; about 70 s
+.venv/bin/python Example/cell.py run                           # both programs with physics: 28 checks, drift, comparison; about 21 s
+.venv/bin/python Example/cell.py run --program optimized       # one program's full physics report (no baselines)
+.venv/bin/python Example/cell.py show                          # play the Default program's trajectory
+.venv/bin/python Example/cell.py show --program optimized      # play the Optimized program's trajectory
+.venv/bin/python Example/cell.py show --physics --speed 0.25   # the physics run, four times slower than real time
+.venv/bin/python Example/cell.py show --step S4_Handover       # pose the end of a step (number or name; trajectory only)
+.venv/bin/python Example/cell.py show --time 9.0               # start paused at 9.0 s
+.venv/bin/python Example/cell.py all                           # check -> build -> optimize (only when stale) -> run; about 45 s
+.venv/bin/python Example/cell.py all --recapture               # after an intended change: golden, baselines, results; about 2.5 min
 ```
 
-Keys: Home pause / resume, Page Down or `.` next step (physics: `.` one sample on), Page Up step start (kinematic only), End
-step end. In the MuJoCo viewer `[` and `]` switch between the cameras `cam_pcb` and `cam_tool`.
+`build` checks every 4 ms sample for clearance, joint limits, speeds and the interlocks. `optimize` plans the free-space
+moves and lets the loader work in parallel. `run` runs each trajectory with full physics against the 28 acceptance checks.
 
-</details>
+**Typical workflows.**
+
+- *The first run:* `./install.sh` -> `all` -> `show`, as in [Quick start](#quick-start).
+- *Change a key point:* edit `Configuration/Constants.yaml` -> `point <P>` -> paste the printed `Joints` and `Pose` lines ->
+  `check` -> `build` -> `all`. What each failure means: [Change the key points](#change-the-key-points).
+- *Accept an intended change:* `all --recapture` -> commit the re-captured files on their own, right after the change, with
+  the reason. It refuses a failing acceptance check ([Change the key points](#change-the-key-points)).
+
+**Viewer keys.** The viewer window must have the keyboard focus (click it once). `[` and `]` are MuJoCo's own viewer keys.
+
+| Key | On a Mac keyboard | Trajectory | Physics (`--physics`) |
+|---|---|---|---|
+| Home | Fn + Left | pause / resume | pause / resume |
+| Page Down | Fn + Down | the next step | the next step |
+| `.` | `.` | the next step | one sample on |
+| Page Up | Fn + Up | the step's start | not available (a physics run goes forward only) |
+| End | Fn + Right | the step's end | the step's end |
+| `[` / `]` | `[` / `]` | cycle the cameras (`cam_pcb`, `cam_tool`) | the same |
+
+**Exit codes and outputs.** 0 success, 1 a check failed, 2 the action cannot run (a missing or stale input, no viewer).
+Outputs go into `Data/Generated/<Kind>/` (git-ignored), the logs into `logger/cell_<subcommand>.log`. The full list is in
+[Files](#files).
 
 ## The v1.0 comparison
 
