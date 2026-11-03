@@ -1,5 +1,5 @@
 {
- "source": "F20 (2026-10-29): the check report's 'keypoints used' line names Example/cell.py check instead of check_keypoints.py; every array and value identical",
+ "source": "F24 (2026-11-03): the fork points on T_FORK - robot_q and robot_qd differ by at most 1.4e-9 rad in the six fork MoveLs; the point table's P_MG06_SLOT_EXIT stale column 0.025 mm (derived); every other array and value identical",
  "cycle_time": 70.404,
  "samples": 17602,
  "arrays": {
@@ -11,7 +11,7 @@
    ]
   },
   "robot_q": {
-   "sha256": "4b9a63fb2321a767865021e0e7b6605604856a9f6650e66dca4797e7dcdb481a",
+   "sha256": "6ad2373781a7e53d61d61aaedb5131193074d1c8faa1c4d7a0dca0aa8e404212",
    "dtype": "float64",
    "shape": [
     17602,
@@ -19,7 +19,7 @@
    ]
   },
   "robot_qd": {
-   "sha256": "6dec0924ee4ca013eb72b97dab46d5162eaaffca8879fba50bd70c27da6ae0fc",
+   "sha256": "5a47a3bb7d8f27dce9563169922e944caaef95177ec4f6543ca8f09ba902ea18",
    "dtype": "float64",
    "shape": [
     17602,
