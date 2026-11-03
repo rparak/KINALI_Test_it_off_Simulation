@@ -12,6 +12,12 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
+- [ ] F24, the fork tool `T_FORK` (owner, 2026-11-03; Part A reported, waiting for the owner's answers): the fork points
+      taught on the model site `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes) instead of the
+      flange, like a fork TCP defined on the AUBO controller; Joints unchanged, the recorded paths kept as flange poses.
+      Measured in a scratch copy: the check 0 FAIL; the six fork MoveLs move by at most 1.4e-9 rad (the golden's `robot_q`,
+      `robot_qd` hashes differ); both physics baselines 0 failures, 0 report lines differ; `Program_Optimized.yaml` differs
+      in its two input hashes only.
 
 ## Done
 
