@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="From a YAML file to a verified cycle: Configure, Check, Build, Optimize, Run, Compare, with Show beside them">
+<rect width="1200" height="520" fill="#FFFFFF"/>
+<text x="600.0" y="40" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#0A0A0A">From a YAML file to a verified cycle</text>
+<rect x="20.5" y="72.5" width="169" height="155" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="36" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#666666">01</text>
+<text x="36" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Configure</text>
+<text x="36" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">You edit the YAML files:</text>
+<text x="36" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">points, program, limits</text>
+<rect x="36.5" y="192.5" width="111.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="43" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">Configuration/</text>
+<rect x="218.5" y="72.5" width="169" height="155" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="234" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#666666">02</text>
+<text x="234" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Check</text>
+<text x="234" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">Every point reachable,</text>
+<text x="234" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">clear of the cell</text>
+<rect x="234.5" y="192.5" width="104.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="241" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">cell.py check</text>
+<rect x="416.5" y="72.5" width="169" height="155" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="432" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#666666">03</text>
+<text x="432" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Build</text>
+<text x="432" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">The taught program,</text>
+<text x="432" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">checked step by step</text>
+<rect x="432.5" y="192.5" width="104.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="439" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">cell.py build</text>
+<rect x="614.5" y="72.5" width="169" height="155" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="630" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#666666">04</text>
+<text x="630" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Optimize</text>
+<text x="630" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">Planned robot moves,</text>
+<text x="630" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">loader works in parallel</text>
+<rect x="630.5" y="192.5" width="125.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="637" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">cell.py optimize</text>
+<rect x="812.5" y="72.5" width="169" height="155" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="828" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#666666">05</text>
+<text x="828" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Run</text>
+<text x="828" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">Full MuJoCo physics,</text>
+<text x="828" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">28 acceptance checks</text>
+<rect x="828.5" y="192.5" width="90.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="835" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">cell.py run</text>
+<rect x="1010.5" y="72.5" width="169" height="155" rx="10" fill="#0A0A0A" stroke="#0A0A0A" stroke-width="1"/>
+<text x="1026" y="100" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#8C8C8C">06</text>
+<text x="1026" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#F5F5F5">Compare</text>
+<text x="1026" y="148" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#C4C4C4">Both programs</text>
+<text x="1026" y="165" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#C4C4C4">side by side</text>
+<rect x="1026.5" y="192.5" width="111.0" height="21" rx="5" fill="none" stroke="#404040" stroke-width="1"/>
+<text x="1033" y="207" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#F5F5F5">README results</text>
+<line x1="195" y1="150.0" x2="207" y2="150.0" stroke="#666666" stroke-width="1.5"/>
+<path d="M206 145.5 L213 150.0 L206 154.5 Z" fill="#666666"/>
+<line x1="393" y1="150.0" x2="405" y2="150.0" stroke="#666666" stroke-width="1.5"/>
+<path d="M404 145.5 L411 150.0 L404 154.5 Z" fill="#666666"/>
+<line x1="591" y1="150.0" x2="603" y2="150.0" stroke="#666666" stroke-width="1.5"/>
+<path d="M602 145.5 L609 150.0 L602 154.5 Z" fill="#666666"/>
+<line x1="789" y1="150.0" x2="801" y2="150.0" stroke="#666666" stroke-width="1.5"/>
+<path d="M800 145.5 L807 150.0 L800 154.5 Z" fill="#666666"/>
+<line x1="987" y1="150.0" x2="999" y2="150.0" stroke="#666666" stroke-width="1.5"/>
+<path d="M998 145.5 L1005 150.0 L998 154.5 Z" fill="#666666"/>
+<path d="M501.0 228 V298 H560.0 V338" fill="none" stroke="#666666" stroke-width="1.2" stroke-dasharray="5 4"/>
+<path d="M897.0 228 V298 H640.0 V338" fill="none" stroke="#666666" stroke-width="1.2" stroke-dasharray="5 4"/>
+<path d="M222 238 V246 H978 V238" fill="none" stroke="#666666" stroke-width="1"/>
+<rect x="506.0" y="252" width="188" height="20" fill="#FFFFFF"/>
+<text x="600.0" y="267" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="12" fill="#404040">cell.py all runs 02 → 05</text>
+<text x="600.0" y="290" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" font-style="italic" fill="#666666">view at any time</text>
+<text x="493.0" y="302" text-anchor="end" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.5" fill="#666666">the motion</text>
+<text x="905.0" y="302" font-family="Inter, Helvetica, Arial, sans-serif" font-size="11.5" fill="#666666">the physics</text>
+<rect x="470.5" y="338.5" width="259" height="129" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="486.0" y="376" font-family="Inter, Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#0A0A0A">Show</text>
+<text x="486.0" y="400" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">Watch the motion,</text>
+<text x="486.0" y="417" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#404040">or the physics with --physics</text>
+<rect x="486.5" y="432.5" width="97.0" height="21" rx="5" fill="#F5F5F5" stroke="#E5E5E5" stroke-width="1"/>
+<text x="493.0" y="447" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11.5" fill="#0A0A0A">cell.py show</text>
+<text x="600.0" y="498" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12.5" fill="#666666">Simulation results only: not validated for the real cell</text>
+</svg>

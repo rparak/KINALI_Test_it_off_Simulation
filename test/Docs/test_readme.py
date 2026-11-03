@@ -49,6 +49,11 @@ CONST_LOGOS = {'Media/JIC_Smart_Factory_Black.svg': 'd3df6501fe45fa0f75321e219d0
                'Media/JIC_Smart_Factory_White.svg': '8dbd848c53caca842e8007234de7e89c3266f6827cdaa5d4e4b1f1212ede77bb',
                'Media/KINALI_Black.svg': '17a10180531339376e99b6077126b943919b4eebfe18daf87619de626f0a9305',
                'Media/KINALI_White.svg': 'cdbf9ae4fd375192ac496f549746d246460cb4af62f01b392a2591b506399ba6'}
+# The architecture figure's variants' sha256 (hand-made, no generator; owner, 2026-11-03: updated by hand when the cell.py
+# subcommands or the steps change, then re-pinned here).
+#   Unit [Dict<string, string>]
+CONST_ARCHITECTURE = {'Media/Architecture_light.svg': 'fb52bcce4583a0675479abefb561f2a32218537db182b2d491b51f52ca5cc38d',
+                      'Media/Architecture_dark.svg': '63fe255f697570344c9bfc514e627c176f49337fd7ff9aeb29a5bdb5642a1f60'}
 # Never in the README (CLAUDE.md, the readme-writer project reference > Rules; owner, 2026-10-26; the skills named since
 # owner, 2026-10-28).
 #   Unit [List<string>]
@@ -174,5 +179,16 @@ def test_the_logo_variants_are_pinned(root):
     """
 
     for path, digest in CONST_LOGOS.items():
+        with open(os.path.join(root, path), 'rb') as handle:
+            assert hashlib.sha256(handle.read()).hexdigest() == digest, path
+
+
+def test_the_architecture_figure_is_pinned(root):
+    """
+    Description:
+        The two architecture figure variants Usage shows are the committed ones, byte for byte (their sha256).
+    """
+
+    for path, digest in CONST_ARCHITECTURE.items():
         with open(os.path.join(root, path), 'rb') as handle:
             assert hashlib.sha256(handle.read()).hexdigest() == digest, path

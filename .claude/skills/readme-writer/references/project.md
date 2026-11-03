@@ -32,7 +32,7 @@ as it is: that structure is now the rule (Rules > The outline).
 |---|---|---|
 | A program, a point, `Cell.yaml`, `Optimization.yaml` or the model | nothing generated in the README but the cycle times and 28/28 (below); the v1.0 numbers and media stay, labelled v1.0 | `test/Docs/test_readme.py` |
 | A physics baseline | the results block: `cell.py all --recapture` regenerates it with the baselines | `test/Docs/test_readme.py` |
-| A `cell.py` subcommand or option, or `install.sh` | Quick start, Change the key points, Usage | the command as documented, from a fresh clone |
+| A `cell.py` subcommand or option, or `install.sh` | Quick start, Change the key points, Usage; the architecture figure by hand when a subcommand or step changes (Figures) | the command as documented, from a fresh clone; `test/Docs/test_readme.py` |
 | An acceptance check | the count 28 where the README states it (Results, Architecture, Usage, Change the key points) | `test/Docs/test_readme.py` |
 | A KNOWN_ISSUES item | the safety alert when the opening sentence changes; How the model was built (and About's count of three) when a CAD deviation changes | `test/Docs/test_readme.py` |
 | The release (version, date) | `CITATION.cff` `version`, `date-released`; the README's release link | `test/Docs/test_citation.py` |
@@ -48,15 +48,17 @@ script options keep `taught` / `default` / `optimized`, explained once in Usage.
 ## Figures
 
 All generated at v1.0 (`d8e3e2a`) and committed; none edited by hand. Their generators are in git at `c43f079` (removed in
-F20; design-decisions: one user entry point); a new generator needs the owner's approval.
+F20; design-decisions: one user entry point); a new generator needs the owner's approval. The one exception is Figure 6,
+below.
 
 | Figure | File | Written by (at v1.0) |
 |---|---|---|
-| 1, 8 | `Media/Cycle_Side_by_Side.gif`, `Media/Cycle_Optimized.gif` | `Example/Report/make_media.py` |
-| 2, 9-13 | `Media/View_<view>.png` | `make_media.py` |
+| 1, 9 | `Media/Cycle_Side_by_Side.gif`, `Media/Cycle_Optimized.gif` | `Example/Report/make_media.py` |
+| 2, 10-14 | `Media/View_<view>.png` | `make_media.py` |
 | 3 | `Media/Key_Points.png` | `make_media.py` |
 | 4, 5 | `Media/Collision_Overview_Right.png`, `Media/Collision_Loader_Handover.png` | `make_media.py` |
-| 6, 7 | `Media/Default_vs_Optimized_<dark\|light>.png`, `Media/Timeline_<dark\|light>.png` (the SVGs beside them) | `compare_report.py --media Media` |
+| 6 | `Media/Architecture_<light\|dark>.svg` | by hand (owner, 2026-11-03), see below |
+| 7, 8 | `Media/Default_vs_Optimized_<dark\|light>.png`, `Media/Timeline_<dark\|light>.png` (the SVGs beside them) | `compare_report.py --media Media` |
 
 The renders (GIFs, views, collision images, key points) exist in one version: they are images of the scene, legible on both
 themes. The charts are a `<picture>` (dark for the dark theme, light for the light one).
@@ -67,7 +69,14 @@ at most 1.5 MB, 30 MB in all (owner, 2026-10-27), set with their reasons in `che
 assets (owner, 2026-10-26), each linked from the README by its asset URL (`releases/download/v1.0/<file>`) beside the release
 page's link; the side by side is `Default_vs_Optimized_Side_by_Side.mp4` (2560 x 720, no resolution suffix; owner, 2026-10-26).
 
-The summary chart carries no title inside the image; Figure 6's caption does (owner, 2026-10-26).
+The summary chart carries no title inside the image; Figure 7's caption does (owner, 2026-10-26).
+
+**The architecture figure** (Figure 6, at the top of Usage; owner, 2026-11-03) is a hand-made SVG committed as is, with no
+generator in the repository (the no-clutter rule): one row of six steps (Configure, Check, Build, Optimize, Run, Compare)
+with their commands, the bracket `cell.py all runs 02 -> 05`, and the Show block linked to Build and Run. It carries no
+number from the results or the configuration. Monochrome and flat, the owner's light and dark palettes, fonts by name with
+fallbacks only, a `<picture>` like the header logos. It is updated by hand when the `cell.py` subcommands or the steps
+change, rendered to PNG in both variants and looked at, then re-pinned (`test/Docs/test_readme.py`, `CONST_ARCHITECTURE`).
 
 The header's logos and the Authors table's avatars carry no "Figure N:" caption (owner, 2026-10-24 and 2026-10-26), configured in
 `check_readme.json` beside this file. The avatars' alt text is a sentence of at least 12 words (owner, 2026-10-26: only the two
@@ -85,7 +94,7 @@ alt attributes of the owner's Authors HTML lengthened).
   three CAD deviations, the two programs, the simulation-only disclaimer); What the cell does (the six steps, two figures).
   Collapsed under their headings: Collision structure (the collision geometry paragraph first), Architecture (ending with
   the nested *How the model was built*: from CAD, the CAD deviations, the datasheets, the solver). Usage is visible: every
-  subcommand with one real example, three workflow lists that link to Quick start and Change the key points instead of
+  subcommand with one real example under the architecture figure (Figures), three workflow lists that link to Quick start and Change the key points instead of
   repeating them, the viewer keys with the Mac keyboard, the exit codes and outputs. The v1.0 comparison is visible (the
   table, the key findings, the charts, the GIF, the videos), with The stations close up collapsed. Repository layout and
   Requirements and platform collapsed; Claude Code skills as below; Citation, License and Authors visible. No
@@ -113,8 +122,9 @@ alt attributes of the owner's Authors HTML lengthened).
 ## README tests
 
 `test/Docs/test_readme.py` (fast): the cycle times and throughputs against the physics baselines, 28/28 in both, every image
-shown exists, every README medium in `Media/` is shown, the rules above. `test/Docs/test_citation.py`: `CITATION.cff` against the
-CFF 1.2.0 schema and the repository. Also `check_readme.py README.md --max-visible 330` (0 errors, 0 warnings) and `render_readme.py` (0 leftover Markdown).
+shown exists, every README medium in `Media/` is shown, the logo and architecture figure bytes pinned, the rules above.
+`test/Docs/test_citation.py`: `CITATION.cff` against the CFF 1.2.0 schema and the repository. Also
+`check_readme.py README.md --max-visible 330` (0 errors, 0 warnings) and `render_readme.py` (0 leftover Markdown).
 
 ## Pointers
 

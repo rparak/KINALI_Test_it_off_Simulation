@@ -320,6 +320,16 @@ The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones).
 
 ## Usage
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Media/Architecture_dark.svg">
+    <img src="Media/Architecture_light.svg" alt="Six blocks in a row joined by arrows, Configure, Check, Build, Optimize, Run and Compare, each with its command, a bracket marking that cell.py all runs Check to Run, and a Show block below linked to Build and Run by dashed lines" width="100%">
+  </picture>
+</p>
+
+**Figure 6:** From a YAML file to a verified cycle: each step with its command, `cell.py all` running steps 02 to 05, and
+the viewer (`cell.py show`), which can be opened at any time on a built trajectory or, with `--physics`, on its physics run.
+
 Every action is a subcommand of one Python script, run with the repository's interpreter:
 `.venv/bin/python Example/cell.py <subcommand>`. `--help` lists the subcommands and `<subcommand> --help` gives the options.
 `--program default` is the Default program and `--program optimized` the Optimized one. On macOS the viewer needs
@@ -406,7 +416,7 @@ The joint-space arc length sums the norm of the six joints' change over the 4 ms
   </picture>
 </p>
 
-**Figure 6:** Default vs Optimized: the Optimized program relative to the Default program (100 %), with each value and its
+**Figure 7:** Default vs Optimized: the Optimized program relative to the Default program (100 %), with each value and its
 change. Throughput = 3600 s / cycle time. All values from the kinematic trajectories [K]. Simulation results.
 
 <p align="center">
@@ -416,7 +426,7 @@ change. Throughput = 3600 s / cycle time. All values from the kinematic trajecto
   </picture>
 </p>
 
-**Figure 7:** The timeline of every moving object in both programs: who holds the PCB, when the robot moves or waits (hatched
+**Figure 8:** The timeline of every moving object in both programs: who holds the PCB, when the robot moves or waits (hatched
 by what it waits for), the loader axes and jaws, MG06, and when the robot or the loader is in a shared zone. In the
 Optimized program the loader rows overlap the robot's motion. Kinematic trajectories.
 
@@ -424,7 +434,7 @@ Optimized program the loader rows overlap the robot's motion. Kinematic trajecto
   <img src="Media/Cycle_Optimized.gif" alt="The Optimized program's full cycle seen from the front right of the cell, the robot moving while the loader carries the PCB into the MG06 tester and back" width="85%">
 </p>
 
-**Figure 8:** The Optimized program's cycle in physics, Overview_Right view, at 4 x speed.
+**Figure 9:** The Optimized program's cycle in physics, Overview_Right view, at 4 x speed.
 
 The full-resolution videos (MP4, H.264, real time) are assets of the
 [v1.0 release](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/tag/v1.0): the two programs side by side
@@ -440,19 +450,19 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 <table>
   <tr>
     <td width="50%"><img src="Media/View_Input_Crate.png" alt="Close view of the input crate with the robot's suction cups above the green PCB lying flat in the blue crate" width="100%">
-    <p><b>Figure 9:</b> The input crate: the pick with four suction cups.</p></td>
+    <p><b>Figure 10:</b> The input crate: the pick with four suction cups.</p></td>
     <td width="50%"><img src="Media/View_Loader_Handover.png" alt="Close view of the loader's two jaws below the robot tool holding the tilted green PCB at the handover" width="100%">
-    <p><b>Figure 10:</b> The loader handover: the PCB placed into the open jaws, tilted 8.94° like the cassette.</p></td>
+    <p><b>Figure 11:</b> The loader handover: the PCB placed into the open jaws, tilted 8.94° like the cassette.</p></td>
   </tr>
   <tr>
     <td width="50%"><img src="Media/View_MG06_Insert.png" alt="Close view of the MG06 tester with its lid open, the green PCB lying in the holder and the loader jaws opened beside it" width="100%">
-    <p><b>Figure 11:</b> MG06: the loader has released the PCB into the holder, 0.15 mm above its seat.</p></td>
+    <p><b>Figure 12:</b> MG06: the loader has released the PCB into the holder, 0.15 mm above its seat.</p></td>
     <td width="50%"><img src="Media/View_MG06_Fork.png" alt="Close view of the closed MG06 tester with the robot's fork on the handle bar, the orange robot arm reaching in from the right" width="100%">
-    <p><b>Figure 12:</b> MG06: the fork on the handle bar after closing the fixture, before it leaves for the test.</p></td>
+    <p><b>Figure 13:</b> MG06: the fork on the handle bar after closing the fixture, before it leaves for the test.</p></td>
   </tr>
   <tr>
     <td width="50%"><img src="Media/View_Output_Crate.png" alt="Close view of the output crate with the robot placing the tested green PCB flat into the blue crate" width="100%">
-    <p><b>Figure 13:</b> The output crate: the place, the PCB released 1 mm above the floor.</p></td>
+    <p><b>Figure 14:</b> The output crate: the place, the PCB released 1 mm above the floor.</p></td>
     <td width="50%"></td>
   </tr>
 </table>
