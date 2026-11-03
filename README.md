@@ -118,7 +118,6 @@ Commit them right after the change, on their own, with the reason. It refuses wh
 
 ## About
 
-<details>
 <summary><b>About</b>: the project, the cell and what this repository gives you</summary>
 
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
@@ -136,8 +135,6 @@ and puts the tested board into an output crate. This repository models that cell
 - **Checks at two levels.** Every program is built into a 4 ms trajectory and checked kinematically (exact clearances, joint
   limits, speeds), then run with full physics against 28 acceptance checks.
 - **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
-
-</details>
 
 ## What the cell does
 
