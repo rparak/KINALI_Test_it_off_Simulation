@@ -33,8 +33,9 @@
 #              rotation (180 and -180 are the same roll).
 #     Reference: <P_ constant> | null   the point this one is derived from
 #     Offset: [dx, dy, dz] | null       displacement from Reference, in the Reference point's tool frame [m]
-#              (T_SUCTION: +Z from the flange towards the cups); the point's FK must equal Reference's pose moved
-#              by it within Cell.yaml Clearance.Stale_Position and Stale_Angle (0.05 mm, 0.01 deg).
+#              (T_SUCTION: +Z from the flange towards the cups; T_FORK: -Y out of the bar along the fork slot); the point's
+#              FK must equal Reference's pose moved by it within Cell.yaml Clearance.Stale_Position and Stale_Angle
+#              (0.05 mm, 0.01 deg).
 #     Loader   Y towards MG06, Z up, the model's axis zeros (SPEC §4.10).
 ## =========================================================================== ##
 
@@ -43,9 +44,9 @@ Tools:
   T_SUCTION:
     Description: "The VGC10's cup face, 260.6 mm from the flange along its Z; +Z towards the cups (SPEC §4.3)."
     Flange_Offset: [0.0, 0.0, 0.2606, 0.0, 0.0, 0.0]
-  T_FLANGE:
-    Description: "The robot flange itself: the recorded fork path and the fork points are taught on it."
-    Flange_Offset: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  T_FORK:
+    Description: "The fork slot's centre (the model site aubo/tool/fork_center), the flange's axes: X across the slot, Y along it (+Y towards its mouth), Z along the engaged bar; the fork points are taught on it."
+    Flange_Offset: [0.12, 0.07, 0.015, 0.0, 0.0, 0.0]
 
 # The robot points, in the order of the cycle. Joints [deg] from the reference plan at full precision
 # (SPEC §4.8); P_INPUT_CLEAR is the default program's auxiliary point (FEATURES.md F8.5).
@@ -143,60 +144,60 @@ Points:
     Pose: [0.276110035, -0.312020755, 0.025367286, -171.060005305, -0.000020997, 135.000000282]
   P_VIA_HOME_MG06:
     Description: "Free-space switch between the wrist-up and wrist-down families (SPEC §4.7)."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-0.788522, 11.575078, 44.717233, -97.364679, -0.940915, 28.627733]
-    Pose: [0.199697121, -0.218316197, 0.771091130, -86.529820402, 78.095877379, -176.781602525]
+    Pose: [0.243435834, -0.235096610, 0.639446371, -86.529820402, 78.095877379, -176.781602525]
   P_MG06_ABOVE:
     Description: "Above the MG06 handle, before the fork start."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-47.013661, 11.779830, 55.387120, -136.392660, -92.013789, 65.999979]
-    Pose: [0.097658236, -0.278126511, 0.691102950, -89.999877146, 65.999977243, -134.999759768]
+    Pose: [0.118970328, -0.278027745, 0.553005937, -89.999877146, 65.999977243, -134.999759768]
   P_MG06_FORK_START:
     Description: "Start and end of the recorded fork path (SPEC §4.9)."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-64.906783, 0.782055, 64.972241, -115.809544, -109.906717, 66.000126]
-    Pose: [0.097667945, -0.419539604, 0.591107286, -89.999375843, 66.000034066, -134.999495804]
+    Pose: [0.118980482, -0.419441160, 0.453010341, -89.999375843, 66.000034066, -134.999495804]
   P_MG06_CLOSE_END:
     Description: "End of PATH_FORK_CLOSE: the bar on the slot bottom, the handle at 29.1 deg."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-29.547477, 1.304953, 138.071309, -43.231989, -74.548206, 65.994483]
-    Pose: [0.222569012, -0.294637228, 0.153395784, -89.996078881, 65.994923888, -134.995689027]
+    Pose: [0.243875125, -0.294549483, 0.015297841, -89.996078881, 65.994923888, -134.995689027]
   P_MG06_BAR_CENTRE:
-    Description: "The bar centred in the slot, 2 mm off its bottom, MG06 settled closed (SPEC §4.10)."
-    Tool: T_FLANGE
+    Description: "The bar centred in the slot, 2.5 mm off its bottom, MG06 settled closed (SPEC §4.10)."
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-29.322855, 2.899541, 137.288607, -45.609282, -74.323561, 65.994536]
-    Pose: [0.223282828, -0.293922979, 0.163898129, -89.996090252, 65.994982328, -134.995722413]
+    Pose: [0.244589033, -0.293835136, 0.025800200, -89.996090252, 65.994982328, -134.995722413]
   P_MG06_SLOT_EXIT:
     Description: "90 mm along the slot, out of the bar."
-    Tool: T_FLANGE
-    Reference: null
-    Offset: null
+    Tool: T_FORK
+    Reference: P_MG06_BAR_CENTRE
+    Offset: [0.0, -0.0900, 0.0]
     Joints: [-47.226025, 3.337062, 130.325032, -53.010438, -92.226730, 65.995045]
-    Pose: [0.165158530, -0.352047263, 0.200531401, -89.996089644, 65.994983095, -134.995722850]
+    Pose: [0.186464736, -0.351959420, 0.062433472, -89.996089644, 65.994983095, -134.995722850]
   P_MG06_WAIT:
     Description: "120 mm up from P_MG06_SLOT_EXIT; the robot waits here while MG06 is closed and tests."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-47.228767, 12.241795, 117.292067, -74.948137, -92.229473, 65.995045]
-    Pose: [0.165149166, -0.352056630, 0.320530705, -89.996092107, 65.994983058, -134.995724101]
+    Pose: [0.186455370, -0.351968785, 0.182432776, -89.996092107, 65.994983058, -134.995724101]
   P_MG06_OPEN_JOIN:
     Description: "Join of PATH_FORK_OPEN: the recorded handle already below the real closed angle (SPEC §4.7)."
-    Tool: T_FLANGE
+    Tool: T_FORK
     Reference: null
     Offset: null
     Joints: [-28.842276, 3.103794, 137.267423, -45.838179, -73.840454, 66.003235]
-    Pose: [0.224808794, -0.292397543, 0.164875737, -90.004269969, 66.002731751, -135.005722901]
+    Pose: [0.246122540, -0.292291763, 0.026778984, -90.004269969, 66.002731751, -135.005722901]
   P_VIA_LOADER_OUTPUT:
     Description: "Free-space via between the loader and the output crate."
     Tool: T_SUCTION
@@ -262,7 +263,8 @@ Gripper_Commands:
 
 # The recorded flange paths (SPEC §4.9): File (repository-relative), Phase (CLOSE: the rows from 1 to the last
 # CLOSE row; OPEN: the OPEN rows after the join - the first with the handle below Cell.yaml MG06.Closed_Handle
-# minus MG06.Open_Join_Margin), the points they start and end at.
+# minus MG06.Open_Join_Margin), the points they start and end at. Their rows are poses of the robot's flange, not of a
+# tool in Tools: Robot.MovePath runs its IK on the flange site (aubo/tool/tool_flange), whatever its points' tool.
 Paths:
   PATH_FORK_CLOSE:
     Description: "Close MG06: lid down, handle to 29 deg, the bar on the fork slot's bottom."

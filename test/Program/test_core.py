@@ -297,6 +297,8 @@ def test_the_carried_pcb_hangs_at_the_cup_face_once_the_bellows_extend(program_b
     ('  P_INPUT_ABOVE:', '    Offset: [0.0, 0.0, -0.1215]', '    Offset: [0.0, 0.0, -0.1216]', 'Points.P_INPUT_ABOVE.Reference: the point is 0.1'),
     ('  T_SUCTION:', '    Flange_Offset: [0.0, 0.0, 0.2606, 0.0, 0.0, 0.0]', '    Flange_Offset: [0.0, 0.0, 0.2607, 0.0, 0.0, 0.0]',
      'Tools.T_SUCTION.Flange_Offset: 0.1000 mm / 0.0000 deg from the model site aubo/tool/suction_tcp'),
+    ('  T_FORK:', '    Flange_Offset: [0.12, 0.07, 0.015, 0.0, 0.0, 0.0]', '    Flange_Offset: [0.12, 0.0701, 0.015, 0.0, 0.0, 0.0]',
+     'Tools.T_FORK.Flange_Offset: 0.1000 mm / 0.0000 deg from the model site aubo/tool/fork_center'),
     ('  L_PARK:', '    Y: -0.1995', '    Y: -0.25', "Loader_Positions.L_PARK.Y: -0.25 m is outside the model's y_axis range"),
     ('  G_OPEN:', '    Jaw: 0.035', '    Jaw: 0.045', "Gripper_Commands.G_OPEN.Jaw: 0.045 m is outside the jaws' range"),
 ])
@@ -304,8 +306,8 @@ def test_the_constants_are_checked_against_the_model(tmp_path, cell_configuratio
     """
     Description:
         Validate_Constants (the build runs it first): a Pose 0.02 mm off FK, an Offset 0.1 mm off its Reference's pose (beyond the
-        0.05 mm stale tolerance), a tool offset 0.1 mm off its model site, a loader position beyond its axis, a jaw beyond its
-        range - each named with Constants.yaml's line and the constant; the build refuses them.
+        0.05 mm stale tolerance), a tool offset 0.1 mm off its model site (the suction cups', the fork's), a loader position
+        beyond its axis, a jaw beyond its range - each named with Constants.yaml's line and the constant; the build refuses them.
     """
 
     kinematics, meta, _ = program_tools

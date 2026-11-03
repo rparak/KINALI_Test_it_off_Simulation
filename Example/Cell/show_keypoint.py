@@ -46,10 +46,10 @@ from Configuration.Core import Configure_MuJoCo_Log, Load_Cell_Configuration, Re
 from Configuration.Program_Parser import CONST_PCB_LOCATIONS, CONST_FIXTURE_STATES, Load_Constants, Load_Simulation
 #   ../Scene/Core - the cell
 from Scene.Core import Build_Cell_Model, Scene_Error_Cls
-#   ../Kinematics/Core - the TCP pose
+#   ../Kinematics/Core - the tool's pose
 from Kinematics.Core import Robot_Kinematics_Cls
 #   ../Keypoints/Core - posing
-from Keypoints.Core import Pose_Cell, Keypoints_Error_Cls
+from Keypoints.Core import Pose_Cell, Site_Id, Keypoints_Error_Cls
 #   ../Render/Core - the viewer
 from Render.Core import Launch_Passive_Viewer, Render_Error_Cls
 
@@ -97,9 +97,9 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
         log.Close()
         return 1
     scene = simulation.Points[point.Name]
-    tcp, _ = kinematics.Site_Pose(np.array(point.Joints))
+    tcp, _ = kinematics.Site_Pose(np.array(point.Joints), Site_Id(model, simulation, point.Tool))
     print(log.Line('[INFO] %s: %s' % (point.Name, point.Description)))
-    print(log.Line('[INFO] joints [deg] %s; TCP [m] %s' % (np.round(np.degrees(point.Joints), 6).tolist(), np.round(tcp, 5).tolist())))
+    print(log.Line('[INFO] joints [deg] %s; %s [m] %s' % (np.round(np.degrees(point.Joints), 6).tolist(), point.Tool, np.round(tcp, 5).tolist())))
     print(log.Line('[INFO] loader %s, gripper %s, PCB %s, MG06 %s' % (args.loader or scene.Loader, args.gripper or scene.Gripper,
                                                                        args.pcb or scene.PCB, args.mg06 or scene.Fixture)))
     print(log.Line('[INFO] Simulation result only: not validated for the real cell.'))

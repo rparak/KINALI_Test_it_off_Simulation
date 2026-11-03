@@ -52,7 +52,8 @@ CONST_FORK = ['P_MG06_FORK_START', 'P_MG06_CLOSE_END', 'P_MG06_BAR_CENTRE', 'P_M
 #   Unit [List<string>]
 CONST_DERIVED = ['P_INPUT_ABOVE', 'P_INPUT_APPROACH', 'P_INPUT_PICK', 'P_INPUT_CLEAR', 'P_LOADER_ABOVE', 'P_LOADER_WAIT', 'P_LOADER_APPROACH',
                  'P_LOADER_PLACE',
-                 'P_LOADER_PICK', 'P_LOADER_TAKE_TOUCH', 'P_LOADER_EXIT', 'P_OUTPUT_ABOVE', 'P_OUTPUT_APPROACH', 'P_OUTPUT_PLACE']
+                 'P_LOADER_PICK', 'P_LOADER_TAKE_TOUCH', 'P_LOADER_EXIT', 'P_MG06_SLOT_EXIT', 'P_OUTPUT_ABOVE', 'P_OUTPUT_APPROACH',
+                 'P_OUTPUT_PLACE']
 
 
 @pytest.fixture(scope='module')
@@ -111,7 +112,7 @@ def test_the_family_is_wrist_2s_sign(results, constants):
 def test_the_derived_points_are_not_stale(results):
     """
     Description:
-        The 14 derived points reach their Reference's pose moved by their Offset (11) or their PCB-hold target (3) within
+        The 15 derived points reach their Reference's pose moved by their Offset (12) or their PCB-hold target (3) within
         0.05 mm / 0.01 deg (measured at most 0.0255 mm after the handover points were resolved again, B work item 2); the others
         have no target.
     """

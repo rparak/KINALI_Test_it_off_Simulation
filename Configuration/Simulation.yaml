@@ -29,7 +29,7 @@ Start:
 # The model site that is each tool's frame (the IK and the checks run on it). REQUIRED for every tool.
 Tool_Site:
   T_SUCTION: aubo/tool/suction_tcp
-  T_FLANGE: aubo/tool/tool_flange
+  T_FORK: aubo/tool/fork_center
 
 # The simulated actuator each digital output drives (vacuum: the four cups' adhesion). REQUIRED for every DO.
 Actuators:

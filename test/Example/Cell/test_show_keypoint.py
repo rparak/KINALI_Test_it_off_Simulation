@@ -31,7 +31,7 @@ import pytest
 def test_headless_posing_prints_the_keypoint_and_its_context(tmp_path, run_script):
     """
     Description:
-        --headless poses the cell at a point, prints its description, joints, TCP and scene (overrides applied) and
+        --headless poses the cell at a point, prints its description, joints, its tool's position and scene (overrides applied) and
         exits 0.
     """
 
@@ -39,6 +39,7 @@ def test_headless_posing_prints_the_keypoint_and_its_context(tmp_path, run_scrip
                                                        '--headless'], tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert '[INFO] P_MG06_CLOSE_END: End of PATH_FORK_CLOSE' in result.stdout
+    assert '; T_FORK [m] [0.04, -0.29914, 0.1773]' in result.stdout
     assert '[INFO] loader L_HOME, gripper G_OPEN, PCB mg06, MG06 Closed' in result.stdout and os.listdir(tmp_path) == []
 
 

@@ -250,7 +250,7 @@ def test_an_offset_cycle_is_rejected(tmp_path):
 @pytest.mark.parametrize('old, new, text', [
     ('  Vacuum: OFF', '  Vacuum: maybe', "Start.Vacuum: 'maybe' is not one of ON, OFF"),
     ('  Robot: P_HOME', '  Robot: P_GARAGE', "Start.Robot: 'P_GARAGE' is not one of"),
-    ('  T_FLANGE: aubo/tool/tool_flange\n', '', 'Tool_Site.T_FLANGE: missing: every tool needs its model site'),
+    ('  T_FORK: aubo/tool/fork_center\n', '', 'Tool_Site.T_FORK: missing: every tool needs its model site'),
     ('  G_CLAMP: 0.01754', '  G_SQUEEZE: 0.01754', 'Jaw_Actual.G_SQUEEZE: is not a declared gripper command'),
     ('  P_HOME:\n    Context', '  P_HOMME:\n    Context', 'Points.P_HOMME: is not a point of Constants.yaml (unknown point)'),
     ('    Fixture: Open\n    Contacts: []\n    PCB_Hold: null\n  P_INPUT_ABOVE',
