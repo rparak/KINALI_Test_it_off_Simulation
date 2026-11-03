@@ -118,8 +118,6 @@ Commit them right after the change, on their own, with the reason. It refuses wh
 
 ## About
 
-<summary><b>About</b>: the project, the cell and what this repository gives you</summary>
-
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
 [Test-it-off](https://www.testitoff.cz/en/about-test-it-off/) system, an automated workcell for testing assembled printed
@@ -138,9 +136,6 @@ and puts the tested board into an output crate. This repository models that cell
 
 ## What the cell does
 
-<details>
-<summary><b>What the cell does</b>: the process step by step</summary>
-
 1. The robot picks the PCB with vacuum from the left (input) crate.
 2. It puts the PCB into the open loader jaws. The loader clamps it, the vacuum goes off and the robot leaves.
 3. The loader lifts the PCB, moves it to MG06, lowers it into the holder, opens and parks.
@@ -155,9 +150,6 @@ and puts the tested board into an output crate. This repository models that cell
 
 **Figure 2:** The cell during the handover in the Optimized program (physics run, t = 8.45 s): the robot places the PCB into
 the loader's jaws in front of the MG06 tester. Rendered from the simulation model.
-
-<details>
-<summary><b>The robot points</b>: the cell posed at each of the 25 named points</summary>
 
 <p align="center">
   <img src="Media/Key_Points.png" alt="A contact sheet of 25 small renders of the cell, each labelled with a named robot point from P_HOME through the input, loader and MG06 points to P_OUTPUT_PLACE" width="100%">
