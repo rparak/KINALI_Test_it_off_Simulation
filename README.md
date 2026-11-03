@@ -35,9 +35,9 @@ The Optimized program finishes first. The media show the v1.0 programs. Simulati
 ## Contents
 
 [Quick start](#quick-start) · [Results](#results) · [Change the key points](#change-the-key-points) · [Files](#files) ·
-[About](#about) · [What the cell does](#what-the-cell-does) · [How the model was built](#how-the-model-was-built) ·
+[About](#about) · [What the cell does](#what-the-cell-does) ·
 [Collision structure](#collision-structure) · [Architecture](#architecture) · [Usage](#usage) ·
-[The v1.0 comparison](#the-v10-comparison) · [Verification](#verification) · [Repository layout](#repository-layout) ·
+[The v1.0 comparison](#the-v10-comparison) · [Repository layout](#repository-layout) ·
 [Claude Code skills](#claude-code-skills) · [Requirements and platform](#requirements-and-platform) · [Citation](#citation) ·
 [License](#license) · [Authors](#authors)
 
@@ -179,10 +179,6 @@ the loader's jaws in front of the MG06 tester. Rendered from the simulation mode
 
 **Figure 3:** The cell posed at every robot point of `Configuration/Constants.yaml`, in program order, with the loader,
 jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
-
-</details>
-
-</details>
 
 ## Collision structure
 
