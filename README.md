@@ -152,18 +152,7 @@ loader shifted +100 mm in Y and +0.95 mm in X, the rear-right holder support low
 200 mm deep instead of 300 mm. They must be checked against the real cell before any transfer.
 
 **Physics and dynamics from the datasheets.** The parameters come from the components' datasheets where a datasheet gives
-them. Where it does not, the value is an estimate or an assumption and is labelled as one:
-
-| Component | What the model uses | Source |
-|---|---|---|
-| AUBO i5 | joint speeds 220 deg/s (J1-J4), 230 deg/s (J5-J6), both programs at 60 % | AUBO i5 datasheet |
-| AUBO i5 | joint accelerations 3 rad/s² (J1-J3), 6 rad/s² (J4-J6) | assumption (not in the datasheet) |
-| AUBO i5 | torque limits 180/180/150/60/60/60 N m, armature, servo gains | estimates (AUBO publishes neither) |
-| OnRobot VGC10 | 4 cups of 15 mm, 40 kPa vacuum (datasheet range 20-60 %), so 7 N per touching cup | OnRobot VGC10 datasheet |
-| SCHUNK EGI 040-EI | 40 mm stroke per jaw, 70 N grip (datasheet 25-70 N), jaws synchronized, at most 100 mm/s | SCHUNK product page and data sheet, ID 1474382 |
-| Loader axes QF12 S420 (Y) and S300 (Z) | strokes from the CAD model, 30 ms drive lag, carriage masses 4 kg and 1.6 kg, move times of the reference plan | the CAD model, masses estimated |
-| MG06 | lid gas springs, handle toggle with its dead point at about 31°, press plate coupled to the handle, lock with 1.5 mm play | modelled from the mechanism |
-| PCB | 120 x 85 x 1.8 mm, 60 g | the part |
+them. Where it does not, the value is an estimate or an assumption.
 
 The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones). 
 
