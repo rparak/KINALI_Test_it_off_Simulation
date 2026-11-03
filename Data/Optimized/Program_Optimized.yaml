@@ -228,8 +228,8 @@ Waypoints:
 Optimized:
   Inputs:
     program: "ddf8a647117e8b20032569f041c7919d80cd87a3651b0516305804410bc8982d"
-    constants: "942ed70a3da3bc92c477c55759547ec31d6b06ab1c30a011838d11709d23b804"
-    simulation: "b951462c85ea1c5b12be1233ded01acd37c2ef1983ac5e92daa6350cd09d8540"
+    constants: "3fca2f04f6772ea580e0c67a00a289d35ce601ca0de7a40e56cdbef50d8caf4b"
+    simulation: "37cbd0f598cfd23c381febfb874ae73f4d598acb9ccd58a730a9aba3191df762"
     cell: "c94fd92cfd4a36be74f5b0f8374523d423e5b0b34423feadb6b29e90804dd514"
     optimization: "f2ca912693deffaa28b2aa6d1db3458ca87c93fd28cd74d09bf2f69fa9bc2f83"
     fork_path: "a48b260bd18aea39988bf369cb296014ee1a4523d0ebe88909ce73865d2705b9"
