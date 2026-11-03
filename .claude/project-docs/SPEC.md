@@ -105,8 +105,11 @@ impratio 10, noslip iterations 5, solver Newton, integrator Euler (the scene's; 
 | 3–8 | `robot_*` | joint position servos, kp 5000/5000/4000/2000/2000/1500, kv 150/150/100/25/25/15, armature, gravity compensation; driven with velocity feed-forward `ctrl = q_ref + (kv/kp)·v_ref` |
 | 9–12 | `vacuum0..3` | adhesion on the 4 cups, ctrl 0/1, 7 N each (40 kPa × D15); holds only where a cup touches |
 
-Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cup direction),
-`aubo/tool/tool_flange`, `aubo/tool/fork_center`, `handle_grasp`. Cameras `cam_pcb`, `cam_tool`
+Sites: `aubo/tool/suction_tcp` (cup face, 260.6 mm from the flange, tool +Z = cup direction; `T_SUCTION`),
+`aubo/tool/tool_flange` (the recorded fork path's frame), `aubo/tool/fork_center` (`T_FORK`: flange (0.120, 0.070, 0.015) m,
+the flange's axes - on the fork slot's centreline and the fork plate's mid-plane, 4.0 mm towards the slot's mouth from the
+bar axis at `P_MG06_BAR_CENTRE`; X across the slot, Y along it, +Y towards its mouth, Z along the engaged bar, parallel
+within 0.003°; measured on the collision meshes, F24, 2026-11-03), `handle_grasp`. Cameras `cam_pcb`, `cam_tool`
 (`targetbody`).
 
 ### 4.4 Key numbers
@@ -215,7 +218,7 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 | `P_MG06_ABOVE` | −0.8205, 0.2056, 0.9667, −2.3805, −1.6059, 1.1519 | flange (0.1550, −0.2074, 0.8531) | |
 | `P_MG06_FORK_START` | −1.1328, 0.0136, 1.1340, −2.0213, −1.9182, 1.1519 | flange (0.0550, −0.1074, 0.7531) | start/end of the recorded path |
 | `P_MG06_CLOSE_END` | −0.5157, 0.0227, 2.4098, −0.7545, −1.3011, 1.1518 | flange (0.0550, −0.2840, 0.3154) | end of `PATH_FORK_CLOSE` |
-| `P_MG06_BAR_CENTRE` | −0.5118, 0.0507, 2.3961, −0.7961, −1.2972, 1.1518 | flange (0.0550, −0.2850, 0.3259) | bar in slot centre, 2 mm off bottom |
+| `P_MG06_BAR_CENTRE` | −0.5118, 0.0507, 2.3961, −0.7961, −1.2972, 1.1518 | flange (0.0550, −0.2850, 0.3259) | bar in slot centre, 2.5 mm off bottom (measured, F24) |
 | `P_MG06_SLOT_EXIT` | −0.8243, 0.0582, 2.2746, −0.9252, −1.6097, 1.1518 | flange (0.0550, −0.2028, 0.3625) | 90 mm along the slot |
 | `P_MG06_WAIT` | −0.8243, 0.2137, 2.0471, −1.3081, −1.6097, 1.1518 | flange (0.0550, −0.2028, 0.4825) | +120 mm, wait here (MG06 closed) |
 | `P_MG06_OPEN_JOIN` | −0.5034, 0.0542, 2.3958, −0.8000, −1.2887, 1.1520 | flange (0.0550, −0.2872, 0.3269) | join point of `PATH_FORK_OPEN` |
@@ -231,7 +234,9 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 `Data/Paths/fork_close_open_path.npz`, recorded in the MG06 project, stores `t, lid, press, handle, flange_pos[3],
 flange_quat[4]` per row, each row with its phase. `PATH_FORK_CLOSE` is the rows with phase `CLOSE` (≈6.1 s, after the first
 rows that bring the fork from `P_MG06_FORK_START`); `PATH_FORK_OPEN` the rows with phase `OPEN` after the join row (handle
-≤ 28.45°). `Robot.MovePath` follows them with IK on the flange site (§7.9). The legacy planner's joins, the leave / return
+≤ 28.45°). `Robot.MovePath` follows them with IK on the flange site (§7.9): the rows are flange poses, not a tool's,
+although the points the paths start and end at are taught on `T_FORK` (F24; the fixed flange -> fork transform is not
+applied to the recording). The legacy planner's joins, the leave / return
 path around the closed handle and its other special moves: `git show f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py`.
 
 ### 4.10 Model details (verified state; from the previous Czech README of `mg06_cell_mujoco`)
@@ -277,8 +282,9 @@ Y carriage 4 kg, vertical carriage with the gripper 1.6 kg, PCB 60 g.
 **Leaving and returning to the MG06 handle.** The recorded close/open path (MG06 project) leaves with the
 bar on the bottom of the fork slot and assumes the handle at exactly 29.3°; with the robot the closed
 handle stays at 28.6° and the lid rises 0.5° in the lock's play, and the fork tooth hit the bar. The
-replacement path: (1) move the fork so the bar is centred in the slot (5 mm play each side) and 2 mm off
-its bottom; (2) out 90 mm along the slot, then 120 mm up; (3) return the same way in reverse; (4) join the
+replacement path: (1) move the fork so the bar is centred in the slot (5 mm play each side) and 2.5 mm off
+its bottom (measured at `P_MG06_BAR_CENTRE` in the flange frame, F24, 2026-11-03: the bar axis at y 66.0 mm, 63.5 mm with
+the bar on the bottom at `P_MG06_CLOSE_END`; the former "2 mm" was not reproduced); (2) out 90 mm along the slot, then 120 mm up; (3) return the same way in reverse; (4) join the
 recorded opening path only where its handle angle already points up below the real closed angle, so the
 slot wall meets the bar moving up and the handle is never pushed down (it stays at 28.6° until opening
 starts). Measured fork-to-bar clearance while leaving and returning: 3.8–4.7 mm (on the legacy plan).
@@ -403,7 +409,7 @@ src/Configuration/Core.py the repository paths, the YAML reader, Cell.yaml's loa
 src/Configuration/Program_Parser.py   the cell program's loader: Constants, Simulation, Program -> the typed IR (§8)
 src/Configuration/Const.py   the root, Configuration/ and Data/, the contact groups, the Process keys (shared by both)
 src/Scene/Core.py         the cell builder (MjSpec), its constants, the look, the MJCF export
-src/Kinematics/Core.py    site poses, DLS IK for the suction TCP and the flange
+src/Kinematics/Core.py    site poses, DLS IK on a tool's site (the suction TCP, the fork) or the flange
 src/Collision/Core.py     robot contacts and clearance, contact classification of a run
 src/Render/Core.py        the passive viewer: its start and its playback loop
 src/Keypoints/Core.py     the points: posing the cell, the check, the IK resolution (§7.7)
@@ -474,8 +480,8 @@ as one MJCF with mesh paths relative to the file. The compiled model is pinned b
 
 ### 7.3 Kinematics
 
-Site poses of a robot configuration, damped-least-squares IK on the suction TCP or the flange (with a
-null-space pull to a reference), the TCP pose that holds the PCB at a given pose.
+Site poses of a robot configuration, damped-least-squares IK on a tool's site (the suction TCP, the fork) or the flange
+(with a null-space pull to a reference), the TCP pose that holds the PCB at a given pose.
 
 ### 7.4 Collision
 
@@ -569,7 +575,7 @@ until the job's last sample; a `Run` gives the same samples as Start + WaitDone 
   time-optimally (TOPP, §7.10) within its `v=` of the datasheet speeds and the acceleration limits from rest to rest on the
   file's TOPP grid, stretched to whole samples; speeds analytic; ends exactly on its end point's `Joints`; it may change the IK
   family (a joint-space motion); MG06 moves to the end point's `Fixture` along it.
-- **MoveL**: the target point's tool site (`T_SUCTION`: `suction_tcp`, `T_FLANGE`: the flange) on a straight
+- **MoveL**: the target point's tool site (`T_SUCTION`: `suction_tcp`, `T_FORK`: `fork_center`) on a straight
   line, orientation slerp, min-jerk time law over `T = max(Movel_Min_Duration, 1.875·L/v)`; IK per sample (pure DLS,
   1e-8 m) seeded from the previous; fails on non-convergence, wrist_2 within `Family_Margin` or a family change; stretched
   (noted) while a sampled joint speed or acceleration exceeds its limit; ends exactly on the target's stored joints (the
@@ -757,17 +763,19 @@ with a one-line `Description`, and used by `Program.yaml` or `Simulation.yaml` (
 
 | Section | Prefix | Fields | Unit, frame |
 |---|---|---|---|
-| `Tools` | `T_` | `Flange_Offset` [x, y, z, R, P, Y] | m, deg; the tool frame in the flange frame (`T_SUCTION`, `T_FLANGE`) |
+| `Tools` | `T_` | `Flange_Offset` [x, y, z, R, P, Y] | m, deg; the tool frame in the flange frame (`T_SUCTION`, `T_FORK`; §4.3) |
 | `Points` | `P_` | `Tool`, `Reference`, `Offset`, `Joints`, `Pose` | `Joints` [deg] in the model's joint order - authoritative; `Pose` [x, y, z m; R, P, Y deg] the tool frame in the robot base frame, R = Rz(Y)·Ry(P)·Rx(R), each angle written in (-180, 180], FK(`Joints`, `Tool`) within 1e-5 m / 1e-3° as a rotation; `Reference: <P_> \| null`, `Offset: [dx, dy, dz] \| null` [m] in the Reference point's tool frame, both null or both set, no cycle, FK within `Stale_Position` / `Stale_Angle` |
 | `Loader_Positions` | `L_` | `Y`, `Z` | m, the model's axis zeros (`L_HOME`, `L_TRAVEL`, `L_PLACE`, `L_FETCH`, `L_PARK`) |
 | `Gripper_Commands` | `G_` | `Jaw` | m per jaw, the command (`G_OPEN`, `G_CLAMP`) |
-| `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path (§4.9) |
+| `Paths` | `PATH_` | `File`, `Phase` (`CLOSE` / `OPEN`), `Start`, `End` (points) | the recorded flange path: its rows are flange poses, MovePath's IK on the flange site (§4.9) |
 | `Signals` | `DO_` / `DI_` | `Port` | a placeholder (`KNOWN_ISSUES.md`) |
 
 25 points: the 22 of §4.8 at full precision, the taught program's `P_INPUT_CLEAR` (F8.5) and `P_LOADER_TAKE_TOUCH` (the
 take's touch, §4.7), and the optimized program's waiting point `P_LOADER_WAIT` (50 mm beyond `P_LOADER_ABOVE` along the plate
 normal).
-Approach and exit points are `Reference` + `Offset` of their place; the fork points and the vias are roots.
+Approach and exit points are `Reference` + `Offset` of their place, and so is `P_MG06_SLOT_EXIT` (`P_MG06_BAR_CENTRE` + [0,
+−0.090, 0] in `T_FORK`, 90 mm along the slot; F24); the other fork points and the vias are roots. The wrist-down points
+(`P_VIA_HOME_MG06`, every `P_MG06_*`) are on `T_FORK`, the others on `T_SUCTION`.
 
 `Simulation.yaml`: `Start` (`Robot` a point, `Loader` a position, `Gripper` a command, `Vacuum` `ON` / `OFF`, `PCB` a location
 - `input_crate`, `cups`, `jaws`, `mg06`, `output_crate` -, `MG06` `Open` / `Closed`); `Tool_Site` (a model site per tool);
@@ -860,9 +868,9 @@ Scripts that write take `--out DIR`.
 ## 10. Tests
 
 Layout per §6; `pytest.ini` with `--import-mode=importlib` and the `slow` marker; pytest-xdist runs the suite in parallel
-(`-n 8`), and it passes serially too. Per commit `.venv/bin/python -m pytest -n 8 -m "not slow"` (534 tests, about 50 s;
-2 min serially); per accepted feature the full `.venv/bin/python -m pytest -n 8` (554 tests, about 5 min; 7.5 min serially;
-Apple M2 Pro; counts 2026-10-29, after F22's test). The two tiers of checks: `CLAUDE.md`.
+(`-n 8`), and it passes serially too. Per commit `.venv/bin/python -m pytest -n 8 -m "not slow"` (536 tests, about 50 s;
+2 min serially); per accepted feature the full `.venv/bin/python -m pytest -n 8` (556 tests, about 5 min; 7.5 min serially;
+Apple M2 Pro; counts 2026-11-03, after F24's test). The two tiers of checks: `CLAUDE.md`.
 Expected numbers come from §4 (measured) or the brief's criteria, never from the code under test.
 
 ### 10.1 Acceptance criteria (brief §5.6)
@@ -1024,7 +1032,8 @@ AUBO i5 later (owner, 2026-10-24); a test on the real cell is planned. Consequen
 1. **Controller-friendly formats.** The keypoint, program and trajectory formats state
    joint values in a defined unit and order (rad in code, the file's unit declared; order shoulder pan,
    shoulder lift, elbow, wrist 1, wrist 2, wrist 3), the TCP definition they refer to (`suction_tcp`:
-   the cup face, 260.6 mm from the flange along tool +Z; the flange; §4.3), and speeds as a percentage of
+   the cup face, 260.6 mm from the flange along tool +Z; `fork_center`: the fork slot's centre, flange (0.120, 0.070,
+   0.015) m with the flange's axes; the flange for the recorded paths; §4.3), and speeds as a percentage of
    the AUBO i5 datasheet joint speeds (§4.4).
 2. **Simulation-only deviations are checked against the real cell before any transfer**: the CAD shifts
    compensated in `scene.xml` (§4.7: loader +100 mm Y and +0.95 mm X, `holder_10` −0.8 mm, cabinet

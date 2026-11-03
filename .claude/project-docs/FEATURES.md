@@ -12,12 +12,16 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       time-dependent check (I2 relaxed, the LOCKED handover split) and the physics proof (design-decisions: the optimized
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
-- [ ] F24, the fork tool `T_FORK` (owner, 2026-11-03; Part A reported, waiting for the owner's answers): the fork points
-      taught on the model site `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes) instead of the
-      flange, like a fork TCP defined on the AUBO controller; Joints unchanged, the recorded paths kept as flange poses.
-      Measured in a scratch copy: the check 0 FAIL; the six fork MoveLs move by at most 1.4e-9 rad (the golden's `robot_q`,
-      `robot_qd` hashes differ); both physics baselines 0 failures, 0 report lines differ; `Program_Optimized.yaml` differs
-      in its two input hashes only.
+- [ ] F24, the fork tool `T_FORK` (owner, 2026-11-03; Part A approved 2026-11-03, questions 1-6 all yes, the SPEC's 2.5 mm
+      and the KNOWN_ISSUES TCP item added): built, Open until the owner accepts. The nine wrist-down points on the model site
+      `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes), `T_FLANGE` removed, `P_MG06_SLOT_EXIT`
+      derived (`P_MG06_BAR_CENTRE` + [0, -0.090, 0]), `cell.py point` naming the point's tool; Joints unchanged, the
+      recorded paths flange poses. Commits `1f5538a` (the change), `872a47e` (the golden: `robot_q`, `robot_qd` at most
+      1.4e-9 rad in the six fork MoveLs, the `SLOT_EXIT` table line), `174a729` (`Program_Optimized.yaml`: its two hashes
+      only, the schedule identical), and the records. Tests 555 -> 556. Physics baselines 0 failures, 0 report lines
+      differ. Open (the owner's decision): the full suite 555 passed, 1 failed -
+      `test_cell.py::test_all_passes_in_a_fresh_tree_and_recapture...`, a fresh capture's `baseline_metrics_<taught|
+      optimized>.json` differ from the committed ones by at most 6.75e-10 deg (the closed handle) and 5.05e-11 deg (the lid).
 
 ## Done
 

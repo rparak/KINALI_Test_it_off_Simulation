@@ -818,17 +818,55 @@ Pinned by `test/Program/test_core.py::test_a_waitdi_holds_its_simulated_response
 ## Every constant is used; no field without effect
 
 **Decision.** A constant declared in `Constants.yaml` and used by neither `Program.yaml` nor `Simulation.yaml` is a load
-error, and so is a job no segment runs. So `T_FORK` is not declared (the fork's MoveLs and paths run on the flange,
-`T_FLANGE`).
+error, and so is a job no segment runs. Since F24 (2026-11-03) the fork points are on `T_FORK`, and `T_FLANGE`, which no
+point uses any more, is removed; the recorded paths are flange poses by their format, not a declared tool (below: the fork
+tool).
 
 **Why.** project-style-rpx: no configuration field that cannot take effect; an unused constant is either a mistake or dead
 data a reader would trust.
 
-**Alternatives.** Declaring `T_FORK` for documentation: a tool no line uses.
+**Alternatives.** Declaring a tool for documentation only (until F24, `T_FORK`; since then `T_FLANGE` for the paths): a
+tool no line uses.
 
-**Revisit if** a command runs on the fork's site.
+**Revisit if** a command runs on a site no declared tool names.
 
 Pinned by `test/Configuration/test_program_parser.py::test_signals_contacts_and_constants_are_complete`.
+
+## The fork tool T_FORK: the fork points on the fork slot's centre; the recorded paths stay flange poses (F24)
+
+**Decision.** `Constants.yaml` declares `T_FORK`, `Flange_Offset [0.12, 0.07, 0.015, 0, 0, 0]` - the model site
+`aubo/tool/fork_center` as it is, with the flange's axes (X across the fork slot, Y along it with +Y towards its mouth, Z
+along the engaged bar) - and the nine wrist-down points (`P_VIA_HOME_MG06`, every `P_MG06_*`) are on it; their `Joints`
+are unchanged and their `Pose` is the fork site's. `P_MG06_SLOT_EXIT` is derived: `P_MG06_BAR_CENTRE` + [0, −0.090, 0]
+(90 mm along the slot, 0.025 mm from its target); `P_MG06_WAIT` stays a root. `Robot.MovePath` keeps its IK on the flange
+site: the recorded rows are flange poses (owner, 2026-11-03, Part A questions 1-6).
+
+**Why.** A real cell defines a fork TCP on the AUBO controller (the owner's idea, 2026-11-03), and a MoveL there is linear
+in the active TCP. The site is a sensible TCP: on the slot's centreline (walls at x 100-140 mm in the flange frame) and
+the fork plate's mid-plane (z −0.9 to 30.9 mm), the bar axis parallel to its Z within 0.003° and 4.0 mm from it at
+`P_MG06_BAR_CENTRE` (7.9 mm at `P_MG06_CLOSE_END`, 6.4 mm at `P_MG06_OPEN_JOIN`), along the slot's free direction
+(measured on the collision meshes, 2026-11-03). Measured at the change: the point table PASS with the same joints; the six
+fork MoveLs move by at most 1.4e-9 rad (the lines of the two sites differ to second order in rotations of at most
+0.009°; the IK converges on another site), the golden re-captured; both physics baselines 0 failures, 0 report lines
+differ, while the metrics files' full-precision values move by at most 6.75e-10 deg (the closed handle; the lid 5.05e-11
+deg, the PCB's end 1.2e-15 m), below every drift tolerance; `Program_Optimized.yaml` only its constants and simulation
+hashes.
+
+**Alternatives.** Axes with +Z into the slot, like `T_SUCTION`'s approach: a rotated site, a model change and a new
+fingerprint, for the same offsets. The site moved onto the bar axis (y 66 mm): a model change for 4 mm along the slot's
+play. The recorded paths converted by the fixed flange -> fork transform: a derived second copy of the MG06 project's
+data, a new fork-path hash and more 1e-9 rad noise, for no motion change. MoveL kept on the flange: `T_FORK` would be a
+label no motion uses. Offsets do not get simpler: every pair of fork points is a pure translation, so an offset reads the
+same in both frames; "120 mm up" (`P_MG06_WAIT`) is [−109.615, −48.830, 0.003] mm in tool axes (world up is 66° from the
+slot), and an offset in the base frame is a grammar change.
+
+**Revisit if** the real fork's TCP is measured on the pendant (`KNOWN_ISSUES.md`), or the Offset grammar gets a base or
+station frame.
+
+Pinned by `test/Program/test_core.py::test_the_constants_are_checked_against_the_model` (the `T_FORK` case),
+`::test_the_shipped_constants_match_the_model`, `test/Keypoints/test_core.py::test_the_derived_points_are_not_stale`,
+`test/Example/Cell/test_show_keypoint.py::test_headless_posing_prints_the_keypoint_and_its_context`, the golden
+(`test/Program/test_golden.py`).
 
 ## The program's model checks live in the Program layer
 

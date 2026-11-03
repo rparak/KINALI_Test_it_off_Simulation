@@ -37,6 +37,9 @@ these are compared on the real AUBO i5 controller, and this entry is removed whe
   axis order, intrinsic or extrinsic reading and units are not checked, so the same three numbers may mean another
   orientation there.
 - **The pendant's TCP setting** against `T_SUCTION` (the cup face 260.6 mm from the flange along its Z, SPEC §4.3).
+- **The fork's TCP** - `T_FORK`, flange (0.120, 0.070, 0.015) m with the flange's axes (the model site `aubo/tool/fork_center`,
+  F24), against the real fork measured on the pendant: the nine wrist-down points' `Pose` and the fork MoveLs refer to it;
+  their `Joints` do not.
 - **The joint values** - each joint's zero and positive direction and the joint order: the vendored MJCF
   (ian-chuang/Manipulator-Mujoco) defines them (shoulder lift, wrist 1 and wrist 3 about −Y, SPEC §4.3); whether they equal
   the controller's convention is not checked (F6).

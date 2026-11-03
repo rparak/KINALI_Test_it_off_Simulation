@@ -243,7 +243,7 @@ flowchart BT
 |---|---|
 | Configuration | the only reader of the YAML files, the strict line parser of the cell program |
 | Scene | builds the cell from the MJCF files, exports `models/cell_scene.xml` |
-| Kinematics | site poses and inverse kinematics on the suction TCP or the flange |
+| Kinematics | site poses and inverse kinematics on a tool's site (the suction TCP, the fork) or the flange |
 | Collision | exact distances (`mj_geomDistance`), the planning model, the contact categories |
 | Render | the passive viewer and its playback loop |
 | Trajectory | the 4 ms trajectory file (`.npz` and a CSV export) |
