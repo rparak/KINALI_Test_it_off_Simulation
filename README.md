@@ -389,9 +389,6 @@ step end. In the MuJoCo viewer `[` and `]` switch between the cameras `cam_pcb` 
 
 ## The v1.0 comparison
 
-<details>
-<summary><b>The v1.0 comparison</b>: the Default and the Optimized program in detail, the figures and videos</summary>
-
 The v1.0 comparison (`d8e3e2a`), measured by that release's comparison tool: **[K]** the kinematic trajectory, **[P]** the
 physics run.
 
@@ -479,77 +476,6 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 </table>
 
 All close views are from the Optimized program's physics run, rendered from the simulation model.
-
-</details>
-
-</details>
-
-## Verification
-
-<details>
-<summary><b>Verification</b>: the 28 checks, the regression baselines, the robustness to timing</summary>
-
-**The acceptance checks.** A physics run passes when all 28 checks pass. Both programs pass 28 of 28. They cover the
-contacts, the PCB's custody and placement, the robot's tracking and loads, the room around the loader and the place into MG06.
-
-<details>
-<summary><b>The 28 checks</b>: grouped, with their bounds</summary>
-
-| Group | Checks |
-|---|---|
-| Contacts | no robot contact with MG06, the workstation, the crates or the loader, the tool on the handle only while closing and opening, no loader contact with MG06, the PCB never on the lid or the press plate (5) |
-| The PCB | 4 of 4 cups at both picks and in every hold, never lost, in MG06 within 0.5 mm and 0.2°, in the output crate within 2 mm of the centre, penetration at most 0.5 mm, slip at most 1.98 mm (7) |
-| The cell | MG06 ends open, every vacuum signal in time, the robot tracking within 0.0189 rad, no actuator saturated, the fork's force and the handle load within their simulation bounds (6) |
-| The loader | the free transfers at least 1 mm and 10 mm from the loader (2) |
-| The place into MG06 | the jaws only open, no press on the holder, the drop and settled penetrations, no side guide touched, the PCB seated within 0.2 s, the handover centring, the re-grip gap (8) |
-
-</details>
-
-**The regression baselines.** Each program's physics run is compared with its baseline in `test/Simulation/data/`. A run
-fails on any acceptance check and on a metric beyond its drift tolerance: the cycle time exact, the vacuum events ±4 ms,
-the PCB's placed and final positions ±0.05 mm, the tracking error and the joint torques ±10 %, the closest loader distance
-±0.5 mm. The fork's contact with the handle bar is chaotic, so its force, the handle load and two joint torques are compared
-with an envelope over 10 slightly perturbed runs per program, ±10 %. The compiled model is pinned by its fingerprint and the
-Default program's build by its golden data.
-
-**Robustness to timing.** The Optimized program's parallel jobs, slowed or with the robot slowed, measured on the kinematic
-trajectory (closest robot - loader distance over each job, the loader where its actuators put it):
-
-| Lane slowed | Range tried | Closest distance [mm] | First failure of I8 (14 mm), 10 mm, 1 mm, contact |
-|---|---|---:|---|
-| a loader job | 0.5 x to 2 x as long | 29.68 | none |
-| the robot (speed override) | 100 % down to 10 % | 29.68 | none |
-
-<details>
-<summary><b>The stretch tables</b>: the closest distance per job, loader slowed and robot overridden</summary>
-
-Each loader job slowed by a factor, the robot as programmed (`> 50 mm`: farther than 50 mm):
-
-| Factor | J_INSERT | J_PARK | J_FETCH [mm] | J_RETURN_Y [mm] | J_RETURN_Z |
-|---:|---|---|---:|---:|---|
-| 0.50 | > 50 mm | > 50 mm | 47.20 | 29.68 | > 50 mm |
-| 0.75 | > 50 mm | > 50 mm | 34.87 | 29.68 | > 50 mm |
-| 0.90 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.00 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.02 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.05 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.10 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.25 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 1.50 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 2.00 | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-
-The robot slowed by a speed override, each job as programmed:
-
-| Override | J_INSERT | J_PARK | J_FETCH [mm] | J_RETURN_Y [mm] | J_RETURN_Z |
-|---:|---|---|---:|---:|---|
-| 10 % | 47.85 mm | > 50 mm | 47.20 | 29.68 | > 50 mm |
-| 25 % | > 50 mm | > 50 mm | 47.20 | 29.68 | > 50 mm |
-| 50 % | > 50 mm | > 50 mm | 47.20 | 29.68 | > 50 mm |
-| 75 % | > 50 mm | > 50 mm | 35.26 | 29.68 | > 50 mm |
-| 90 % | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-| 100 % | > 50 mm | > 50 mm | 29.68 | 29.68 | > 50 mm |
-
-</details>
 
 </details>
 
