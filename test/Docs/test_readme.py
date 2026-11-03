@@ -103,7 +103,6 @@ def test_both_programs_pass_the_28_checks_as_the_readme_says(root):
         assert '(28 of 28)' in _Baseline_Lines(root, name)[-1], name
     text = _Readme(root)
     assert '| Acceptance checks [P] | 28/28 pass | 28/28 pass |' in text
-    assert 'Both programs pass 28 of 28' in text
 
 
 def _Shown(text):

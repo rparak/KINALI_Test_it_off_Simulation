@@ -65,7 +65,7 @@ Key results (simulation only; deterministic on one machine, one run per program)
 - Of the 11.256 s saved, 6.940 s is robot motion and 4.316 s robot waiting for the loader; the insert gate costs 0.432 s
   (v1.0 numbers: their tool is removed, README > The v1.0 comparison).
 - Any loader job slowed up to 2 x, or the robot overridden down to 10 %: the closest robot - loader distance stays 29.68
-  mm (kinematic; README > Verification).
+  mm (kinematic; README > The v1.0 comparison).
 - Cycle times include the 2.0 s placeholder test and depend on the 60 % speed and the assumed accelerations.
 - Baselines captured at `05556c4` (2026-10-25, macOS arm64, Python 3.11.2, MuJoCo 3.16.0; `baseline_environment.json`).
 
@@ -162,9 +162,9 @@ program, ±10 %. Ask for a perturbation or sweep before calling a difference nea
 **Module C. Sim-to-real.** To calibrate: the base pose, the TCP, the joint conventions, the MG06 and loader positions
 against the CAD deviations. Not modelled: vacuum dynamics, lateral bellows compliance, cables, sensor noise and latency,
 the real loader controller, any human in the cell (so nothing about collaborative safety). The reality gap is unmeasured.
-Planned order (README > Main limitations): reduced speed, the controller's safety limits active, one moving object at a
-time - the loader jobs alone, the robot's transfers with the loader parked, the LOCKED parts, the parallel parts last; the
-`Loader.Start` / `Loader.WaitDone` handshake tested first on its own.
+Planned order (the README's Main limitations at `55b2b98`, removed 2026-11-03): reduced speed, the controller's safety
+limits active, one moving object at a time - the loader jobs alone, the robot's transfers with the loader parked, the LOCKED
+parts, the parallel parts last; the `Loader.Start` / `Loader.WaitDone` handshake tested first on its own.
 
 **Module D. Safety and compliance.** The operating mode (fenced or collaborative; the simulation assumes no fence) and the
 risk assessment are open. Standards that may apply, each to verify the current version and applicability: ISO 10218-1
