@@ -836,7 +836,7 @@ Pinned by `test/Configuration/test_program_parser.py::test_signals_contacts_and_
 
 **Decision.** `Constants.yaml` declares `T_FORK`, `Flange_Offset [0.12, 0.07, 0.015, 0, 0, 0]` - the model site
 `aubo/tool/fork_center` as it is, with the flange's axes (X across the fork slot, Y along it with +Y towards its mouth, Z
-along the engaged bar) - and the nine wrist-down points (`P_VIA_HOME_MG06`, every `P_MG06_*`) are on it; their `Joints`
+along the engaged bar) - and the eight wrist-down points (`P_VIA_HOME_MG06`, every `P_MG06_*`) are on it; their `Joints`
 are unchanged and their `Pose` is the fork site's. `P_MG06_SLOT_EXIT` is derived: `P_MG06_BAR_CENTRE` + [0, −0.090, 0]
 (90 mm along the slot, 0.025 mm from its target); `P_MG06_WAIT` stays a root. `Robot.MovePath` keeps its IK on the flange
 site: the recorded rows are flange poses (owner, 2026-11-03, Part A questions 1-6).

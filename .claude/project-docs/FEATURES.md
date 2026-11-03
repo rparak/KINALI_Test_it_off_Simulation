@@ -13,7 +13,7 @@ F6, F8, F8.5, F9, F10, F11) are there. The specification is [SPEC.md](SPEC.md).
       take waits at P_LOADER_WAIT).
 - [~] The PCB mesh split into board and components (F2's optional follow-up; KNOWN_ISSUES.md).
 - [ ] F24, the fork tool `T_FORK` (owner, 2026-11-03; Part A approved 2026-11-03, questions 1-6 all yes, the SPEC's 2.5 mm
-      and the KNOWN_ISSUES TCP item added): built, Open until the owner accepts. The nine wrist-down points on the model site
+      and the KNOWN_ISSUES TCP item added): built, Open until the owner accepts. The eight wrist-down points on the model site
       `aubo/tool/fork_center` (flange [0.12, 0.07, 0.015] m, the flange's axes), `T_FLANGE` removed, `P_MG06_SLOT_EXIT`
       derived (`P_MG06_BAR_CENTRE` + [0, -0.090, 0]), `cell.py point` naming the point's tool; Joints unchanged, the
       recorded paths flange poses. Commits `1f5538a` (the change), `872a47e` (the golden: `robot_q`, `robot_qd` at most
