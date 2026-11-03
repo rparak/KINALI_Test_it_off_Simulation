@@ -48,8 +48,8 @@ the v1.0 programs. F21 (accepted 2026-10-29): the four skills take F20's procedu
 of what can go, the README ordered by the user's path, accepting an intended change with `cell.py all --recapture` (the
 re-captured files in their own commit straight after the change; feature-manager's project reference). F22: the
 known MuJoCo attach warning filtered at every compile (the full suite 0 warnings). F23 (closed): the `cell.py all` test's
-split gains 40 s only with custom xdist scheduling. The owner rewrote the README on 2026-11-03: About short, Usage visible
-with the architecture figure.
+split gains 40 s only with custom xdist scheduling. The owner rewrote the README on 2026-11-03: Usage visible with the
+architecture figure.
 
 Key results (simulation only; deterministic on one machine, one run per program):
 

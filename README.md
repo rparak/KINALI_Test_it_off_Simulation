@@ -121,13 +121,40 @@ Commit them right after the change, on their own, with the reason. It refuses wh
 An internal research project of JIC Smart Factory, part of its internal research supporting small and medium-sized
 enterprises in advanced simulation. Developed in collaboration with KINALI for the development of the
 [Test-it-off](https://www.testitoff.cz/en/about-test-it-off/) system, an automated workcell for testing assembled printed
-circuit boards (PCBA). This repository models that cell in MuJoCo (an AUBO i5 robot with an OnRobot VGC10 vacuum gripper
-and a fork, a two-axis loader, the MG06 test fixture, an input and an output crate), built from KINALI's CAD with three
-documented deviations (*How the model was built*, under [Architecture](#architecture)), for engineers who write its robot
-program and want to verify it before it runs anywhere else. It ships two programs for the same process: the *Default
-program*, taught as an operator would teach it, and the *Optimized program*, with planned robot moves and the loader working
-in parallel under interlocks. Everything it produces is a simulation result and is not validated for the real cell (the
-warning at the top).
+circuit boards (PCBA).
+
+In the Test-it-off cell, an AUBO i5 robot with an OnRobot VGC10 vacuum gripper and a fork takes each PCB from an input
+crate and hands it to a two-axis loader, which inserts it into the MG06 test fixture. The robot closes and opens the fixture
+with the fork and places the tested PCB into an output crate. This repository models that cell in MuJoCo and provides:
+
+- **Two robot programs for the same process.** The *Default program* is taught as an operator would teach it: named points,
+  sequential steps, and the robot and the loader never move at the same time. The *Optimized program* plans its free-space
+  moves and runs the loader in parallel under interlocks.
+- **Checks at two levels.** Each program is built into a 4 ms trajectory and checked kinematically (exact clearances, joint
+  limits, speeds). Its physics run must pass 28 acceptance checks.
+- **A measured comparison** of the two programs at v1.0, with figures and videos, every number tagged with its source.
+
+**From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
+Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
+final and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco)
+(MIT), the VGC10 with the fork from the MG06 project. `src/Scene/Core.py` assembles the cell at load time with `mujoco.MjSpec`
+and changes no file on disk. It adds the tool, mounted rigidly on the flange, one body with a bellows spring and an adhesion
+actuator per suction cup, the robot's position servos, the loader's drive lag and the studio look.
+`Example/Maintenance/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
+
+**Collision geometry.** Every part has its own collision set, separate from its visual meshes: simplified and convex-part
+meshes in `models/<part>/assets/collision/` and primitives (the crates as a floor and four walls, the PCB as a board box,
+two corner strips and one component box, each cup as a square pad of its area). The kinematic checks use a planning model
+that adds the table top as two boxes. The physics model has no table.
+
+**Documented CAD deviations.** Three deliberate corrections in `models/scene.xml` make the cycle work in the model: the
+loader shifted +100 mm in Y and +0.95 mm in X, the rear-right holder support lowered by 0.8 mm, and the electrical cabinet
+200 mm deep instead of 300 mm. They must be checked against the real cell before any transfer.
+
+**Physics and dynamics from the datasheets.** The parameters come from the components' datasheets where a datasheet gives
+them. Otherwise, the value is an estimate or an assumption.
+
+The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones).
 
 ## What the cell does
 
@@ -157,11 +184,6 @@ jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
 
 <details>
 <summary><b>Collision structure</b>: the collision geometry and its categories</summary>
-
-**Collision geometry.** Every part has its own collision set, separate from its visual meshes: simplified and convex-part
-meshes in `models/<part>/assets/collision/` and primitives (the crates as a floor and four walls, the PCB as a board box,
-two corner strips and one component box, each cup as a square pad of its area). The kinematic checks use a planning model
-that adds the table top as two boxes. The physics model has no table.
 
 <table>
   <tr>
@@ -291,28 +313,6 @@ the way before `Loader.Start`, or `Loader.WaitDone` before the robot moves in), 
 | I8 | the robot and a carried PCB stay at least 10 + 4 mm from the loader where both may move | parallel motion is safe only where it is checked |
 | I9 | the robot's motion to the take starts after `J_RETURN_Y` is done | the loader's Y is home, whatever the loader's speed |
 | I10 | `J_INSERT` starts after the robot's motion out of the handover is done | the robot has left, whatever the robot's speed |
-
-</details>
-
-<details>
-<summary><b>How the model was built</b>: the sources, the CAD deviations, the physics parameters</summary>
-
-**From CAD to MuJoCo.** The workstation, the MG06 fixture, the loader and the PCB were exported from KINALI's CAD through
-Blender into `models/scene.xml` in the predecessor projects (`mg06_loader_mujoco`, `mg06_cell_mujoco`). That scene is
-finished and is never regenerated. The AUBO i5 comes from [ian-chuang/Manipulator-Mujoco](https://github.com/ian-chuang/Manipulator-Mujoco)
-(MIT), the VGC10 with the fork from the MG06 project. `src/Scene/Core.py` assembles the cell at load time with `mujoco.MjSpec`
-and changes nothing on disk: the tool mounted rigidly on the flange, one body with a bellows spring and an adhesion actuator
-per suction cup, the robot's position servos, the loader's drive lag and the studio look.
-`Example/Maintenance/export_cell_scene.py` writes the assembled cell as one file, `models/cell_scene.xml`.
-
-**Documented CAD deviations.** Three deliberate corrections in `models/scene.xml` make the cycle work in the model: the
-loader shifted +100 mm in Y and +0.95 mm in X, the rear-right holder support lowered by 0.8 mm, and the electrical cabinet
-200 mm deep instead of 300 mm. They must be checked against the real cell before any transfer.
-
-**Physics and dynamics from the datasheets.** The parameters come from the components' datasheets where a datasheet gives
-them. Where it does not, the value is an estimate or an assumption.
-
-The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones).
 
 </details>
 
