@@ -10,7 +10,7 @@ reference > The support-chat brief; support-brief, REFRESH).
 **The repository wins on any disagreement.** Sources of truth: `CLAUDE.md`, `.claude/project-docs/` (`SPEC.md`,
 `design-decisions.md`, `KNOWN_ISSUES.md`, `FEATURES.md`), `README.md`, the baselines in `test/<Domain>/data/`.
 
-State as of commit `3e2441f`, 2026-10-29.
+State as of commit `9fd435b`, 2026-11-03.
 
 ## 1. The project in brief
 
@@ -40,13 +40,16 @@ The process (SPEC §4.5):
 
 ## 2. Current state
 
-Done (FEATURES F1-F21): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
+Done (FEATURES F1-F23): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
 checks, the taught (Default) and planned (Optimized) program, the physics run with 28 acceptance checks and its baselines,
 the README, five shipped skills. F20 (accepted 2026-10-29): one user entry point `Example/cell.py`; the comparison, media
 and logo generators, the archives and six unused dependencies removed (restore point `c43f079`); the committed media show
-the v1.0 programs. F21 (accepted 2026-10-29, the latest): the four skills take F20's procedures - project-optimize's review
+the v1.0 programs. F21 (accepted 2026-10-29): the four skills take F20's procedures - project-optimize's review
 of what can go, the README ordered by the user's path, accepting an intended change with `cell.py all --recapture` (the
-re-captured files in their own commit straight after the change; feature-manager's project reference).
+re-captured files in their own commit straight after the change; feature-manager's project reference). F22: the
+known MuJoCo attach warning filtered at every compile (the full suite 0 warnings). F23 (closed): the `cell.py all` test's
+split gains 40 s only with custom xdist scheduling. The owner rewrote the README on 2026-11-03: About short, Usage visible
+with the architecture figure.
 
 Key results (simulation only; deterministic on one machine, one run per program):
 
@@ -70,9 +73,8 @@ Key results (simulation only; deterministic on one machine, one run per program)
 - Baselines captured at `05556c4` (2026-10-25, macOS arm64, Python 3.11.2, MuJoCo 3.16.0; `baseline_environment.json`).
 
 Open (FEATURES): a candidate experiment, `J_INSERT` during the handover's last MoveL (at most −1.5 s; needs a
-time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional); done: F22, the known attach warning
-through its filter at every compile (the full suite 0 warnings). The real-cell transfer (SPEC
-§17) is planned, with no date and no access to the cell.
+time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual, optional); the real-cell transfer (SPEC
+§17), planned, with no date and no access to the cell.
 
 ## 3. Architecture
 
@@ -162,7 +164,7 @@ program, ±10 %. Ask for a perturbation or sweep before calling a difference nea
 **Module C. Sim-to-real.** To calibrate: the base pose, the TCP, the joint conventions, the MG06 and loader positions
 against the CAD deviations. Not modelled: vacuum dynamics, lateral bellows compliance, cables, sensor noise and latency,
 the real loader controller, any human in the cell (so nothing about collaborative safety). The reality gap is unmeasured.
-Planned order (the README's Main limitations at `55b2b98`, removed 2026-11-03): reduced speed, the controller's safety
+Planned order (`KNOWN_ISSUES.md` > Real-cell validation procedure not defined): reduced speed, the controller's safety
 limits active, one moving object at a time - the loader jobs alone, the robot's transfers with the loader parked, the LOCKED
 parts, the parallel parts last; the `Loader.Start` / `Loader.WaitDone` handshake tested first on its own.
 
@@ -229,7 +231,7 @@ public record.
 
 ## 9. Updates
 
-Last updated 2026-10-29, checked against commit `3e2441f`.
+Last updated 2026-11-03, checked against commit `9fd435b`.
 
 Update in every accepted change that alters the state, numbers, commands, rules, roles, modules or open items
 (feature-manager's project reference > The support-chat brief). Numbers stay exact to their sources: the cycle times,

@@ -21,6 +21,10 @@ to validate an output on the real cell.
   accelerations (the acceleration limits of SPEC §4.4 are assumed), the vacuum and gripper behaviour
   (the adhesion model, the jaw force), and the collision margins (the 3 mm planning clearance), run
   first at reduced speed with the controller's safety limits active.
+- **Planned order** (from the README's Main limitations at `55b2b98`, word for word; moved here 2026-11-03): A first run on
+  the real cell would go at reduced speed with the controller's own safety limits active, one moving object at a time where
+  possible: the loader jobs alone, then the robot's transfers alone with the loader parked, then the LOCKED parts, then the
+  parallel parts last, with the loader's `Loader.Start` / `Loader.WaitDone` handshake tested on its own first.
 
 ## Real-cell verification pending (no access)
 
