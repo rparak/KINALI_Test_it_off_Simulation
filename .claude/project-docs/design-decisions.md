@@ -193,7 +193,8 @@ hides one.
 
 **Alternatives.** One MG06 state per program step: rejected, the state changes along the fork path.
 
-**Revisit if** the fork path is re-recorded.
+**Revisit if** the fork path is re-recorded (when: *The recorded fork path stays; no generator rebuilds it from parameters*,
+F25).
 
 Pinned by `test/Keypoints/test_core.py::test_the_fork_points_in_their_recorded_state_touch_the_bar_at_most_half_a_millimetre`,
 `::test_the_close_end_in_the_wrong_mg06_state_is_reported`.
@@ -648,7 +649,8 @@ measured (`test/Program/data/golden_check_report.txt`).
 **Alternatives.** Every sample measured: the same result, about 1.6x the time. A fixed 1 % speed / acceleration tolerance:
 would hide a MoveL 1 % too fast. The recorded paths held to the assumed limits: the verified motion would fail.
 
-**Revisit if** the acceleration limits are measured on the real robot (KNOWN_ISSUES), or the fork paths are replaced.
+**Revisit if** the acceleration limits are measured on the real robot (KNOWN_ISSUES), or the fork paths are replaced (when:
+*The recorded fork path stays; no generator rebuilds it from parameters*, F25).
 
 Pinned by `test/Program/test_check.py::test_the_default_program_passes_its_check`,
 `::test_a_movej_over_its_rule_limits_is_reported`, `::test_contacts_are_allowed_only_where_declared_and_as_deep_as_configured`,
@@ -867,6 +869,84 @@ Pinned by `test/Program/test_core.py::test_the_constants_are_checked_against_the
 `::test_the_shipped_constants_match_the_model`, `test/Keypoints/test_core.py::test_the_derived_points_are_not_stale`,
 `test/Example/Cell/test_show_keypoint.py::test_headless_posing_prints_the_keypoint_and_its_context`, the golden
 (`test/Program/test_golden.py`).
+
+## The recorded fork path stays; no generator rebuilds it from parameters (F25, closed)
+
+**Decision.** `Data/Paths/fork_close_open_path.npz` stays the verified fork path, played as recorded; no generator is built
+(owner, 2026-11-03: F25 closed, not pursued, option C). The owner's idea was a generator so that the path is changed by
+parameters (hinge axis, bar radius, engagement, handle range, lid coupling, speed profile, approach and leave), its defaults
+regenerating the committed file within 0.05 mm / 0.05 deg per row. Measured in Part A, 2026-11-03, on the committed file
+(the numbers below; the scratch scripts are not kept, the method is given to repeat them).
+
+**Why.** The recording is a physics log, not a planned path, and the parametric model misses it by 1.845 mm / 7.711 mm.
+
+- *Origin.* In the repository since `5e5ee62` (2026-10-24, the initial import from `mg06_cell_mujoco`, `robot_tool/`); moved
+  by `42a6121`, `c6282af`, `50a9793`, its bytes never changed. Both copies of `mg06_cell_mujoco` on the owner's machine hold
+  the identical file (sha1 `442a91bf...`) and replay it on a mocap weld (`test_cycle.py`: the fork alone on a free joint,
+  weld solref 0.004); their README names its source, the MG06 project (`mg06_loader_mujoco`), which is not on the machine.
+  Neither copy holds the recorder or the target path it drove. The data show a physics log: the flange orientation drifts
+  under load (at most 0.031 deg, row 113), and lid, press and handle are the outputs of that project's MG06 model, its lock
+  with 0.5 mm play (*The MG06 lock has 1.5 mm radial play*): the handle settles at 29.253 deg there, 28.65 deg here.
+- *Format* (SPEC §4.9): `log` 906 x 11 float64, `phase` 906 strings; rows 20 ms apart with four shorter steps at segment
+  ends; rows 0-19 unlabelled, 20-305 CLOSE, 306-512 leave, 513-619 return (unused), 620-905 OPEN. The npz is an uncompressed
+  zip, both entries zip64 (version needed 4.5), dated 1980-01-01; `np.savez` of the same arrays with numpy 2.4.6 writes
+  other bytes (version 2.0, no zip64) with the same array data.
+- *Geometry in the `T_FORK` frame* (x across the slot, y along it, z along the bar). Method: `models/scene.xml` through
+  `mujoco.MjSpec`, its keyframes deleted, `models/robot_tool/vgc10_opener_free.xml` body `ee_tool` attached to a world frame
+  with prefix `tool/` (the predecessor's `test_cycle.py` assembly without the weld); per row the qpos of `lid_hinge`,
+  `press_slide`, `handle_hinge` from columns 1-3 and of `tool/tool_free` from columns 4-10, `mj_kinematics`; the bar centre
+  in the fork frame `R^T (geom_xpos[handle_bar] - (p + R [0.12, 0.07, 0.015]))` with the flange's `p`, `R`; the overlap
+  the smallest `mj_geomDistance` (distmax 0.05 m) between the tool's collision meshes and `handle_bar`. The bar stays at z
+  39.49-39.51 mm, its axis within 0.006 deg of the fork's Z. Start (rows 0-23): the bar at (-0.02, 93.9) mm, 37.45 mm
+  clear. Approach (rows 20-108): into the slot along -y, a straight line within 0.93 mm (largest distance from the chord of
+  the flange's y, z). Lid down (rows 118-193): the lid -39.96 -> 0 deg, the handle on its stop (-0.027 to -0.010 deg), the
+  bar at x -2.2 to -3.7, y -7.5 to -8.8 mm. Handle closing (rows 198-305): the lid on its stop (0.002 to 0.019 deg), the
+  handle 0 -> 29.137 deg, the bar at x -4.0 to -4.5, y -6.4 to -8.6 mm. Opening: the other slot wall pushes (x +3.4 to
+  +4.5 mm), the bar slides out along the slot (y -5.3 -> +3.5 mm), and the lid has risen to -2.9 deg before the handle
+  reaches 0.
+- *The 0.539 mm overlap is at row 113* (t 2.262 s, lid -39.62 deg), where the fork meets the bar and the lid starts to move
+  (the flange speed jumps from 128.7 to 154.5 mm/s between rows 108 and 114), not at the end of the closing; 36 rows are
+  deeper than 0.3 mm (rows 113-307).
+- *The join rows.* Row 23, `P_MG06_FORK_START`: lid -39.960, handle -0.014 deg, the bar 37.45 mm clear. Row 286,
+  `P_MG06_CLOSE_END`: handle 29.125, lid 0.002 deg, the fork 0.334 mm in the bar, the bar at (-4.446, -6.473) mm (its axis
+  at y 63.53 mm in the flange frame); `PATH_FORK_CLOSE` runs on to row 305, 0.019 mm further. Row 663, `P_MG06_OPEN_JOIN`:
+  the first OPEN row with handle <= 28.45 deg (row 662: 28.513), handle 28.322, lid -0.125 deg, the bar 0.062 mm clear,
+  the flange at 37.6 mm/s (39.05 mm/s to row 664: the velocity step at the join).
+- *Speed profile* (finite differences of the flange position). The closing moves rest to rest over rows 20-290, 5.400 s,
+  516.84 mm, peak 207.49 mm/s at t 3.102 s (row 155); not minimum jerk in arc length (28.45 mm off at row 191: the time law
+  is on another parameter, not identified). At rest 0.40 s before and 0.30 s after (rows 290-306). The opening (rows
+  620-890) has the same length, duration and speeds in reverse order, but time-reversed (t_open = 12.382 + 5.802 - t_close,
+  linear interpolation) its positions differ by up to 4.150 mm (t 3.082 s): the other wall.
+- *The parametric model and its errors.* Fixed parameters reproduce within the target: the flange orientation constant
+  (0.147016, -0.691655, -0.147016, 0.691655), at most 0.031 deg off (2 acos |q . q0|); the flange x 0.055 m, 0.0003 mm.
+  The hinges from the model at qpos0: the lid's anchor (0, 0.15653, 0.3027) m, the handle's with the lid at 0 (0, -0.1154,
+  0.239229) m, both along world X; the bar radius 15 mm at (0, -0.1838, 0.0392) m in the handle body. Free circle fits
+  (algebraic least squares) of the flange's y, z: rows 122-185 an arc centred 5.9 mm from the lid hinge (residual 0.028
+  mm), rows 202-283 2.8 mm from the handle hinge (0.071 mm), both centres moved to the fork centre by the constant world
+  offset (-0.015, -0.01514, -0.13810) m. The engagement as one constant bar position per phase (the midrange of the bar
+  centre in the fork frame, the worst Euclidean distance; the recorded lid and handle given, so a lower bound): the closing
+  (rows 118-305) 1.845 mm at row 196 (lid down 1.043 mm at row 186, handle 1.169 mm at row 256), the opening (rows 620-805)
+  7.711 mm at row 620 (handle 2.497 mm at row 716, lid 5.710 mm at row 805). The press against the model's coupling
+  0.0104554 handle^3 [m, rad]: 0.145 mm at row 195. The 0.05 mm target is missed at least 37 x; only free curve fits, arc
+  centres 2.8-5.9 mm off the real hinges, come near it, a compressed copy of the recording, not parameters with sources.
+- *So no generator*: none rebuilds the file byte for byte or within the golden's 0 differences, and any generator from
+  parameters writes a new path, which needs the full procedure (the physics re-run, the envelope over the 10
+  perturbations, latching, the 290 N / 13.5 N m bounds, the re-capture in its own commit), with the chaotic contact and the
+  narrow retraction window (0.55-0.60 mm latches, 0.65 mm does not) as its risks.
+
+**Alternatives.** A: a re-recording - the flange path from parameters, lid and handle from a physics replay in today's MG06,
+adopted as a path change through the full procedure: a new path, no reproduction of the verified one; the owner's choice for
+later (below). B: parametric transforms of the recording (retraction, re-timing to the acceleration limits, a ramped join),
+the identity at their defaults (byte-identical with a zip64 writer): the path stays a recording; not chosen. A kinematic
+lid and handle: misses the opening's overlap of lid and handle (-2.9 deg) and the press (0.145 mm).
+
+**Revisit if** (a) `mg06_loader_mujoco` with the recorder and its target path is found (the reproduction becomes a
+measurement), or (b) the real MG06 is calibrated (hinge axes, lock play, bar position) in the real-cell transfer - then
+option A: a re-recording by a physics replay in today's model, the robot driven by IK on `T_FORK`, through the full
+procedure (`KNOWN_ISSUES.md`: the fork's force on the handle bar is chaotic).
+
+Pinned by nothing new (a record of measurements, no code): the recording itself is pinned by its sha256 in
+`Data/Optimized/Program_Optimized.yaml` (`fork_path`) and by the kinematic golden (`test/Program/test_golden.py`).
 
 ## The program's model checks live in the Program layer
 
@@ -1328,7 +1408,8 @@ KNOWN_ISSUES.md).
 
 **Revisit if** the real MG06's handle force limit or the VGC10's force and moment ratings are known, the closing on the real
 cell shows a problem (a force too high, a collision stop, wear of the bar; the real fork and MG06 would need their own sweep;
-owner, 2026-10-25: not the narrow window now), or the path is re-recorded.
+owner, 2026-10-25: not the narrow window now), or the path is re-recorded (when: *The recorded fork path stays; no
+generator rebuilds it from parameters*, F25).
 
 Pinned by `test/Simulation/test_core.py::test_the_fork_force_is_reported_as_net_squeeze_and_hinge_load` and the step 6 bounds.
 

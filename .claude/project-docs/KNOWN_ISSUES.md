@@ -210,7 +210,12 @@ the net force and the hinge load (SPEC §10.1). Retracting the recording off the
 - **Impact:** the outcomes are not well-defined modes; the bounds cover the highest one measured; the real handle could be
   overloaded by a force the simulation accepts. The physics regression compares the fork's metrics with an envelope over 10
   perturbation runs per program (± 10 %; SPEC §10.2); the report gives the contact count for information.
-- **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar.
+- **What would close it:** the MG06 maker's handle force limit; a fork path re-recorded so that it does not press into the bar:
+  a physics replay in today's model, the robot driven by IK on `T_FORK`, through the full acceptance procedure (the
+  physics re-run, the envelope over the 10 perturbations, latching, the 290 N / 13.5 N m bounds, the re-capture in its own
+  commit). No generator rebuilds the current recording from parameters (design-decisions: the recorded fork path stays,
+  F25); re-recording is reopened when `mg06_loader_mujoco` with its recorder and target path is found, or when the real
+  MG06 is calibrated (hinge axes, lock play, bar position) in the real-cell transfer.
 
 ## The simulated fork-handle contact is stiff; the real robot and the VGC10 interface are not checked
 

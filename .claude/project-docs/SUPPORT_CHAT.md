@@ -4,13 +4,12 @@
 
 Paste this whole file as the first message into a new Claude chat, with the latest Claude Code report. The chat is then the
 project's senior technical support: it reviews Claude Code's output, writes prompts for it, helps debug and keeps decisions
-consistent. Claude Code updates this file in every accepted change that alters what it states (feature-manager's project
-reference > The support-chat brief; support-brief, REFRESH).
+consistent. Claude Code updates this file in every accepted change that alters what it states (section 9).
 
 **The repository wins on any disagreement.** Sources of truth: `CLAUDE.md`, `.claude/project-docs/` (`SPEC.md`,
 `design-decisions.md`, `KNOWN_ISSUES.md`, `FEATURES.md`), `README.md`, the baselines in `test/<Domain>/data/`.
 
-State as of commit `fed5c8a`, 2026-11-03.
+State as of commit `30ebb35`, 2026-11-03.
 
 ## 1. The project in brief
 
@@ -40,14 +39,14 @@ The process (SPEC §4.5):
 
 ## 2. Current state
 
-Done (FEATURES F1-F24): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
+Done (FEATURES F1-F25): the RPX layout, the cell program in three YAML files with a strict parser, keypoints with IK and
 checks, the taught (Default) and planned (Optimized) program, the physics run with 28 acceptance checks and its baselines,
-the README, five shipped skills. F20: one user entry point `Example/cell.py`; the by-product generators, archives and six
-unused dependencies removed (restore point `c43f079`); the committed media show the v1.0 programs. F21: the skills take
-F20's procedures (accepting an intended change with `cell.py all --recapture`, the re-captured files in their own commit).
-F22: the MuJoCo attach warning filtered at every compile. F23 (closed): the `cell.py all` test's split, not pursued. F24
-(accepted 2026-11-03): the fork tool `T_FORK` (`aubo/tool/fork_center`) for the eight wrist-down points, Joints unchanged,
-`P_MG06_SLOT_EXIT` derived; the golden, optimized hashes and physics metrics re-captured (moved ~1e-9, reports identical).
+the README, five shipped skills. F20: one user entry point `Example/cell.py`; by-product generators, archives and six
+unused dependencies removed (restore point `c43f079`). F21: the skills take F20's procedures. F22: the MuJoCo attach
+warning filtered at every compile. F23 (closed): the `cell.py all` test's split, not pursued. F24 (accepted 2026-11-03):
+the fork tool `T_FORK` for the eight wrist-down points, Joints unchanged; golden, optimized hashes and physics metrics
+re-captured (moved ~1e-9, reports identical). F25 (closed, not pursued, 2026-11-03): no fork-path generator - the recording
+is a physics log of the predecessor's MG06, missed by 1.845 / 7.711 mm by the best geometric model (design-decisions).
 
 Key results (simulation only; deterministic on one machine, one run per program):
 
@@ -89,7 +88,6 @@ time-dependent check, I2 relaxed, the physics proof); the PCB mesh split (visual
   [--recapture]`; exit 0/1/2), its modules in `Example/Cell/`; maintenance tools (fingerprint, scene export, golden, physics
   baselines) in `Example/Maintenance/`; exact commands in `CLAUDE.md` > Commands. Outputs in `Data/Generated/<Kind>/`, logs
   in `logger/cell_<subcommand>.log` (git-ignored).
-- **Agent docs:** `CLAUDE.md`, `.claude/project-docs/`, `.claude/skills/`.
 - **Verification:** the model fingerprint (1 expected difference, `pcb_vis` rgba), the taught program's golden (0
   differences), the keypoint table (`cell.py check`, 0 FAIL), the physics baselines with drift tolerances and the fork
   envelope (SPEC §10.2), the test tiers, the style and README checkers.
@@ -231,11 +229,11 @@ public record.
 
 ## 9. Updates
 
-Last updated 2026-11-03, checked against commit `fed5c8a`.
+Last updated 2026-11-03, checked against commit `30ebb35`.
 
 Update in every accepted change that alters the state, numbers, commands, rules, roles, modules or open items
-(feature-manager's project reference > The support-chat brief). Numbers stay exact to their sources: the cycle times,
-metrics and envelopes from `test/Simulation/data/baseline_metrics_<program>.json`, the bounds from
-`Configuration/Cell.yaml` and `Optimization.yaml`, the v1.0 comparison from the README, the checks from `CLAUDE.md`.
+(feature-manager's project reference > The support-chat brief; support-brief, REFRESH). Numbers stay exact to their
+sources: the cycle times, metrics and envelopes from `test/Simulation/data/baseline_metrics_<program>.json`, the bounds
+from `Configuration/Cell.yaml` and `Optimization.yaml`, the v1.0 comparison from the README, the checks from `CLAUDE.md`.
 
 If this file disagrees with the repository, fix this file.

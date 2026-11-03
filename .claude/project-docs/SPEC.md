@@ -231,10 +231,15 @@ Robot joints in **rad** (order: pan, lift, elbow, wrist1, wrist2, wrist3), TCP =
 
 ### 4.9 The recorded MG06 fork path (brief §6)
 
-`Data/Paths/fork_close_open_path.npz`, recorded in the MG06 project, stores `t, lid, press, handle, flange_pos[3],
-flange_quat[4]` per row, each row with its phase. `PATH_FORK_CLOSE` is the rows with phase `CLOSE` (≈6.1 s, after the first
-rows that bring the fork from `P_MG06_FORK_START`); `PATH_FORK_OPEN` the rows with phase `OPEN` after the join row (handle
-≤ 28.45°). `Robot.MovePath` follows them with IK on the flange site (§7.9): the rows are flange poses, not a tool's,
+`Data/Paths/fork_close_open_path.npz`, recorded in the MG06 project (a physics log, not a planned path; design-decisions:
+the recorded fork path stays, F25), holds two arrays: `log`, 906 x 11 float64 per row `t` [s], `lid` [rad], `press` [m],
+`handle` [rad], `flange_pos[3]` [m, world], `flange_quat[4]` [w first]; and `phase`, 906 strings. The rows are 20 ms apart
+from t 0.002 s to 18.066 s, except four shorter steps at segment ends (4 ms after rows 290 and 890, 18 ms after rows 397
+and 604). Phases: rows 0-19 no label (at rest at `P_MG06_FORK_START`), 20-305 `CLOSE`, 306-512 `robot leaves (fixture
+closed)` and 513-619 `robot returns (same path / rotation)` - the recording's own leave and return, used by no program
+(the programs leave and return with the bar centred, below) - and 620-905 `OPEN`. `PATH_FORK_CLOSE` is rows 1-305 (≈6.1 s,
+the first rows bringing the fork from `P_MG06_FORK_START`); `PATH_FORK_OPEN` the rows with phase `OPEN` after the join row
+(the first with handle ≤ 28.45°, row 663). `Robot.MovePath` follows them with IK on the flange site (§7.9): the rows are flange poses, not a tool's,
 although the points the paths start and end at are taught on `T_FORK` (F24; the fixed flange -> fork transform is not
 applied to the recording). The legacy planner's joins, the leave / return
 path around the closed handle and its other special moves: `git show f754e2d0379b06ffb43286f4fb7aabf88e25ca5f:legacy/plan_cell.py`.
