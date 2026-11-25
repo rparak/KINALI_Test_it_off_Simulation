@@ -39,36 +39,13 @@ Description:
 # The entries git tracks at the root. Exceptions with their reasons: pytest.ini (the runner reads it at the root); CITATION.cff
 # (GitHub reads it at the root).
 #   Unit [Set<string>]
-CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration', 'docs', 'CHANGELOG.md'}
+CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CHANGELOG.md', '.gitignore', 'install.sh', 'requirements.txt', 'pytest.ini',
+                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration', 'docs'}
 # The public documents, and the files whose citations of them must resolve: a "SPEC §n" to a heading of docs/SPEC.md, an
 # F<n> (or F<n>.<m>) to the feature list of its §2.
 #   Unit [Tuple<string>], [Tuple<string>]
 CONST_DOCS = ('docs/SPEC.md', 'docs/KNOWN_ISSUES.md')
-CONST_CITING = ('src/', 'Example/', 'test/', 'install.sh', 'Configuration/', 'Data/Optimized/')
-# The internal documents, in .claude/project-docs/.
-#   Unit [Tuple<string>]
-CONST_PROJECT_DOCS = ('design-decisions.md', 'FEATURES.md', 'SUPPORT_CHAT.md')
-# The files of the skills the repository ships: the only files tracked under .claude/skills/.
-#   Unit [Set<string>]
-CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/references/project.md',
-                     'feature-manager/assets/handover_template.md', 'project-optimize/SKILL.md', 'project-optimize/references/project.md',
-                     'project-style-rpx/SKILL.md', 'project-style-rpx/references/project.md',
-                     'project-style-rpx/references/check_style.json', 'project-style-rpx/references/mjcf.md',
-                     'project-style-rpx/references/python.md', 'project-style-rpx/references/structure.md',
-                     'project-style-rpx/references/yaml.md', 'project-style-rpx/references/shell.md',
-                     'project-style-rpx/references/markdown.md', 'project-style-rpx/references/figures.md',
-                     'project-style-rpx/assets/header.txt', 'project-style-rpx/assets/module_template.py',
-                     'project-style-rpx/assets/script_template.py', 'project-style-rpx/assets/config_template.yaml',
-                     'project-style-rpx/scripts/check_style.py', 'project-style-rpx/scripts/test_check_style.py',
-                     'readme-writer/SKILL.md', 'readme-writer/references/project.md',
-                     'readme-writer/references/structure.md', 'readme-writer/references/style.md',
-                     'readme-writer/references/figures.md', 'readme-writer/references/checklist.md',
-                     'readme-writer/scripts/check_readme.py', 'readme-writer/scripts/render_readme.py',
-                     'readme-writer/scripts/test_check_readme.py', 'readme-writer/scripts/test_render_readme.py',
-                     'readme-writer/references/check_readme.json', 'support-brief/SKILL.md',
-                     'support-brief/references/project.md'}
-# The files git tracks under Example/ (the no-clutter rule, SPEC §6): the one user entry
+CONST_CITING = ('src/', 'Example/', 'test/', 'install.sh', 'Configuration/', 'Data/Optimized/')# The files git tracks under Example/ (the no-clutter rule, SPEC §6): the one user entry
 # point cell.py, its internal modules in Cell/, the maintenance tools in Maintenance/ (documented in SPEC §6). A new file there
 # fails the test until it is added here on purpose: a user action is a cell.py subcommand, never a new script.
 #   Unit [Set<string>]
@@ -125,28 +102,6 @@ def test_the_docs_resolve_every_citation(root):
             missing += ['%s: F%s' % (path, n) for n in re.findall(r'(?<![\w.])F(\d{1,2}(?:\.\d+)?)(?!\w)', text)
                         if not re.search(r'\bF%s\b' % re.escape(n), features)]
     assert missing == []
-
-
-def test_the_project_docs_are_tracked(root):
-    """
-    Description:
-        The internal documents are tracked in .claude/project-docs/ (a .gitignore rule would leave them out
-        of every clone).
-    """
-
-    tracked = set(_Tracked(root))
-    for name in CONST_PROJECT_DOCS:
-        assert '.claude/project-docs/' + name in tracked, name
-
-
-def test_the_skill_folders_track_only_the_shipped_skills(root):
-    """
-    Description:
-        Under .claude/skills/ git tracks exactly the files of the shipped skills and their licence, nothing else.
-    """
-
-    prefix = '.claude/skills/'
-    assert {p[len(prefix):] for p in _Tracked(root) if p.startswith(prefix)} == CONST_SKILL_FILES
 
 
 def test_example_holds_only_the_entry_point_its_modules_and_the_maintenance_tools(root):

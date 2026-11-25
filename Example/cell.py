@@ -333,7 +333,7 @@ def Recapture(log_name: str) -> int:
         cell.py all --recapture, after check, build and optimize passed: the kinematic golden and the
         physics baselines compared first (what changed is printed), each re-captured when it differs - the baselines refused
         when a perturbation run fails SPEC §10.1 -, then the README's results block regenerated from the baselines (nothing
-        else of the README), the table, and the reminder to commit and to refresh the support-chat brief.
+        else of the README), the table, and the reminder to commit.
 
     Args:
         (1) log_name [string]: The log.
@@ -373,7 +373,6 @@ def Recapture(log_name: str) -> int:
         return CONST_EXIT_OK
     _Say(log_name, '[INFO] Re-captured: %s. Commit them with the change that moved them (in their own commit, the reason in its '
                    'message).' % ', '.join(changed))
-    _Say(log_name, '[INFO] Then refresh the support-chat brief, .claude/project-docs/SUPPORT_CHAT.md (/support-brief REFRESH).')
     _Say(log_name, '[INFO] ' + CONST_SIMULATION_ONLY)
     return CONST_EXIT_OK
 

@@ -54,10 +54,9 @@ CONST_LOGOS = {'Media/JIC_Smart_Factory_Black.svg': 'd3df6501fe45fa0f75321e219d0
 #   Unit [Dict<string, string>]
 CONST_ARCHITECTURE = {'Media/Architecture_light.svg': 'fb52bcce4583a0675479abefb561f2a32218537db182b2d491b51f52ca5cc38d',
                       'Media/Architecture_dark.svg': '63fe255f697570344c9bfc514e627c176f49337fd7ff9aeb29a5bdb5642a1f60'}
-# Never in the README (CLAUDE.md, the readme-writer project reference > Rules; owner, 2026-10-26; the skills named since
-# owner, 2026-10-28).
+# Never in the README: the internal documents and the development tooling, a GUI, a phase.
 #   Unit [List<string>]
-CONST_FORBIDDEN = ['project-docs', 'PyQt', 'Phase 2']
+CONST_FORBIDDEN = ['project-docs', '.claude', 'CLAUDE.md', 'PyQt', 'Phase 2']
 
 
 def _Readme(root):
@@ -143,33 +142,18 @@ def test_every_readme_medium_is_shown(root):
 def test_the_readme_keeps_the_project_rules(root):
     """
     Description:
-        The README names no internal document (of .claude/ only the skills), mentions no GUI or phase, calls the programs the
+        The README names no internal document and no development tooling, mentions no GUI or phase, calls the programs the
         Default program and the Optimized program, and carries the safety alert near the top.
     """
 
     text = _Readme(root)
     for word in CONST_FORBIDDEN:
         assert word not in text, word
-    assert set(re.findall(r'\.claude/([\w-]+)', text)) == {'skills'}
     assert 'taught program' not in text.lower() and 'optimised' not in text.lower()
     assert text.count('Default program') >= 5 and text.count('Optimized program') >= 5
     alert = text.index('> [!WARNING]')
     assert alert < text.index('## Contents')
     assert 'are simulation results and are NOT validated for driving the real cell.' in text[alert:alert + 400]
-
-
-def test_the_readme_names_the_shipped_skills(root):
-    """
-    Description:
-        The README's skills table names exactly the skills git tracks in .claude/skills/ (one SKILL.md each), so a skill
-        added, removed or renamed shows in the README.
-    """
-
-    tracked = subprocess.run(['git', 'ls-files', '.claude/skills'], cwd=root, capture_output=True, text=True, timeout=60)
-    assert tracked.returncode == 0, tracked.stderr
-    shipped = {p.split('/')[2] for p in tracked.stdout.splitlines() if p.endswith('/SKILL.md')}
-    section = _Readme(root).split('## Claude Code skills', 1)[1].split('\n## ', 1)[0]
-    assert set(re.findall(r'(?m)^\| `([\w-]+)` \|', section)) == shipped
 
 
 def test_the_logo_variants_are_pinned(root):

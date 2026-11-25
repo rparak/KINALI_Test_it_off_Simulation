@@ -39,7 +39,7 @@ jaws clamp and the vacuum goes off (real time). Click the image for the video. S
 [About](#about) · [What the cell does](#what-the-cell-does) ·
 [Collision structure](#collision-structure) · [Architecture](#architecture) · [Usage](#usage) ·
 [The v1.0 comparison](#the-v10-comparison) · [Repository layout](#repository-layout) ·
-[Claude Code skills](#claude-code-skills) · [Requirements and platform](#requirements-and-platform) · [Citation](#citation) ·
+[Requirements and platform](#requirements-and-platform) · [Citation](#citation) ·
 [License](#license) · [Authors](#authors)
 
 ## Quick start
@@ -538,37 +538,7 @@ src/             the library, one folder per domain (see Architecture)
 test/            the tests, mirroring src/ and Example/, with the regression baselines in test/<Domain>/data/
 install.sh       creates .venv with Python 3.11 and the pinned requirements
 CHANGELOG.md     the releases
-.claude/skills/  the Claude Code skills the development follows (see Claude Code skills)
 ```
-
-</details>
-
-## Claude Code skills
-
-The repository ships the [Claude Code skills](https://code.claude.com/docs/en/skills) its development follows, in
-`.claude/skills/`. Claude Code loads them when it is started in this folder.
-
-<details>
-<summary>The five skills, their tools and how to use them</summary>
-
-| Skill | What it is for | Its tools |
-|---|---|---|
-| `project-style-rpx` | the code, YAML, installer and Markdown conventions, and this project's layout, file formats and model rules | `check_style.py` |
-| `feature-manager` | how a feature, a behaviour change or a bug fix is made: requirements, the premise checked, a report before building, small commits | - |
-| `project-optimize` | behaviour-preserving work (cleanup, speed, complexity, reliability), proven by byte-identical outputs | - |
-| `readme-writer` | every change to this README: the source of each number, the figures, the statuses | `check_readme.py`, `render_readme.py` |
-| `support-brief` | the brief pasted into a new Claude chat that acts as the project's technical support, created or refreshed from the repository | - |
-
-Claude Code picks a skill by its description, or you name it, for example `/feature-manager <your request>`. The checkers
-run on their own: 0 issues and 0 errors are expected, and `check_readme.py` warns about the README's length.
-
-```bash
-.venv/bin/python .claude/skills/project-style-rpx/scripts/check_style.py
-.venv/bin/python .claude/skills/readme-writer/scripts/check_readme.py README.md
-```
-
-The skills' own tests run with the test suite. A personal skill of the same name (`~/.claude/skills/<name>/`) takes
-precedence over the repository's copy.
 
 </details>
 
@@ -596,8 +566,7 @@ on the repository page. The current release is
 ## License
 
 MIT License, Copyright (c) 2026 JIC Smart Factory, for the code, the configuration, the data and the tests. See
-[LICENSE](LICENSE). The Claude Code skills in `.claude/skills/`: MIT License, Copyright (c) 2026 Roman Parak. See
-[.claude/skills/LICENSE](.claude/skills/LICENSE).
+[LICENSE](LICENSE).
 
 The cell's 3D models in `models/` (the workstation, the MG06 test fixture, the loader and the PCB, from KINALI's CAD), the
 renders, animations and videos in `Media/` and on YouTube, and the JIC Smart Factory and KINALI logos are published with

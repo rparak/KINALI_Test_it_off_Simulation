@@ -192,8 +192,7 @@ def test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_chan
         current), its trajectory built, run - exit 0, 'all passed'. Then, as after an intended change, the golden's check report
         line, a baseline's cycle time and the README's results block are made to differ: all --recapture says what differs,
         re-captures the golden and both baselines and regenerates the block, so each is again the committed one byte for byte
-        (the baseline's environment record aside), the rest of the README untouched; it reminds to commit and to refresh the
-        support-chat brief.
+        (the baseline's environment record aside), the rest of the README untouched; it reminds to commit.
     """
 
     import subprocess
@@ -216,7 +215,7 @@ def test_all_passes_in_a_fresh_tree_and_recapture_restores_what_an_intended_chan
     assert "report line 73: 'keypoints used: 23" in result.stdout
     assert '  diff -program Program: physics run of its trajectory, cycle 70.400 s' in result.stdout
     assert '[INFO] Re-captured: test/Program/data, test/Simulation/data, README.md (the results block).' in result.stdout
-    assert '/support-brief REFRESH' in result.stdout and os.listdir(work) == []
+    assert 'Commit them with the change' in result.stdout and '.claude' not in result.stdout and os.listdir(work) == []
     for path in ('README.md', os.path.join('test', 'Program', 'data', 'golden_check_report.txt'),
                  os.path.join('test', 'Simulation', 'data', 'baseline_report_taught.txt'),
                  os.path.join('test', 'Simulation', 'data', 'baseline_metrics_optimized.json')):
