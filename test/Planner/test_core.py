@@ -33,7 +33,7 @@ from Planner.Core import (Topp, Grid_Times, Spline_Path_Cls, Time_Path, Rrt_Conn
 
 """
 Description:
-    The planner (FEATURES.md F9): TOPP against the closed form (B3), the timed spline within the limits at every sample, the
+    The planner (F9): TOPP against the closed form (B3), the timed spline within the limits at every sample, the
     seeded planner's determinism, the spline's refit. Expected values are the closed-form ones, written here.
 """
 # The limits of the tests: the AUBO i5's at 60 % of the datasheet speeds and the assumed accelerations (Cell.yaml).

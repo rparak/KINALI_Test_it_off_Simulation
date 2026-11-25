@@ -5,6 +5,6 @@ __pycache__/
 .DS_Store
 MUJOCO_LOG.TXT
 
-# Logs, and generated artefacts (design-decisions), created by install.sh and the scripts
+# Logs, and generated artefacts (SPEC §18.17), created by install.sh and the scripts
 logger/
 Data/Generated/

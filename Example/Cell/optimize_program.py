@@ -63,7 +63,7 @@ from Optimizer.Measure import Compare_Locked, Interlocks, Carried_Tilt, Step_Bou
 def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
-        Make the optimized program (FEATURES.md F9): the FREE transfers of Configuration/Program.yaml (Configuration/
+        Make the optimized program (F9): the FREE transfers of Configuration/Program.yaml (Configuration/
         Optimization.yaml) planned, the loader's jobs between them run in parallel, every LOCKED segment copied; the program
         written to Data/Optimized/Program_Optimized.yaml and checked like the taught one. The report (stdout and
         Data/Generated/Reports/optimize_program.txt): per transfer the planner's effort, durations, peaks and the carried PCB's

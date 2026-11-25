@@ -34,7 +34,7 @@ import hashlib
 
 """
 Description:
-    The README against its sources (readme-writer project reference > README tests): the results block against the
+    The README against its sources: the results block against the
     programs' physics baselines (Example/Cell/results.py writes it), the acceptance count, every image it shows present,
     every README medium in Media/ shown, the logo variants' bytes, and the project's README rules.
 """
@@ -42,14 +42,14 @@ Description:
 #   Unit [Dict<string, string>]
 CONST_BASELINES = {'Default program': 'test/Simulation/data/baseline_report_taught.txt',
                    'Optimized program': 'test/Simulation/data/baseline_report_optimized.txt'}
-# The logo variants' sha256 (written once from the owner's originals, F5; their generator is in git at c43f079; design-decisions:
-# the brand, KNOWN_ISSUES: the JIC logo is a recoloured copy).
+# The logo variants' sha256 (written once from the original vector files, F5; their generator is in git at c43f079; SPEC §18.1,
+# KNOWN_ISSUES: the JIC logo is a recoloured copy).
 #   Unit [Dict<string, string>]
 CONST_LOGOS = {'Media/JIC_Smart_Factory_Black.svg': 'd3df6501fe45fa0f75321e219d0abda0d71022f95279b1d176dca86a6e2ab59b',
                'Media/JIC_Smart_Factory_White.svg': '8dbd848c53caca842e8007234de7e89c3266f6827cdaa5d4e4b1f1212ede77bb',
                'Media/KINALI_Black.svg': '17a10180531339376e99b6077126b943919b4eebfe18daf87619de626f0a9305',
                'Media/KINALI_White.svg': 'cdbf9ae4fd375192ac496f549746d246460cb4af62f01b392a2591b506399ba6'}
-# The architecture figure's variants' sha256 (hand-made, no generator; owner, 2026-11-03: updated by hand when the cell.py
+# The architecture figure's variants' sha256 (hand-made, no generator: updated by hand when the cell.py
 # subcommands or the steps change, then re-pinned here).
 #   Unit [Dict<string, string>]
 CONST_ARCHITECTURE = {'Media/Architecture_light.svg': 'fb52bcce4583a0675479abefb561f2a32218537db182b2d491b51f52ca5cc38d',

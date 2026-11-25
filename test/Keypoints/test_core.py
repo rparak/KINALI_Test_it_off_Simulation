@@ -42,7 +42,7 @@ from Kinematics.Core import Robot_Kinematics_Cls, PCB_For_TCP, TCP_For_PCB
 Description:
     Initialization of constants.
 
-    The point check, posing and resolution (SPEC §2 item 3, §7.7; FEATURES.md F6, F10). The limits are the owner's (0.5 mm on
+    The point check, posing and resolution (SPEC §2 item 3, §7.7; F6, F10). The limits are the project's (0.5 mm on
     the recorded fork path, 3 mm clearance, the Pose to 1e-5 m / 1e-3 deg) and SPEC §4.7 (the 1.5 mm press), written out here.
 """
 # The fork points posed in their recorded / settled MG06 state (C1).
@@ -290,7 +290,7 @@ def test_pcb_for_tcp_inverts_tcp_for_pcb():
 def test_the_contact_groups_of_a_pair(planning_model):
     """
     Description:
-        The groups (owner, 2026-10-24): a cup or the cup block on the PCB is cups_pcb; the fork on the handle handle_bar;
+        The groups: a cup or the cup block on the PCB is cups_pcb; the fork on the handle handle_bar;
         the PCB on a crate geom pcb_crate; the PCB on a table box pcb_crate only while the PCB is inside a crate, otherwise
         no group (the 3 mm clearance applies); the PCB on a jaw pcb_jaws; anything else none.
     """

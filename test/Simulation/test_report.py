@@ -184,7 +184,7 @@ def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
         holds), the PCB is never lost, every WaitDI gets the vacuum switch's input, the free transfers keep 1 mm from the loader (a
         LOCKED step at the loader may touch it), the slip <= 1.98 mm, the tracking error <= 0.0189 rad, the fork's net force <=
         290 N, the handle hinge load <= 13.5 N m, the free transfers >= Loader_Free (10 mm), no robot actuator saturated (a wrist
-        3 torque at its 60 N m limit); B work (owner, 2026-10-25), the place into MG06: no jaw closing at L_PLACE, the holder
+        3 torque at its 60 N m limit); the place into MG06: no jaw closing at L_PLACE, the holder
         force <= 1.0 N, the release's penetration <= 0.10 mm (0.09 mm passes) and settled <= 0.0102 mm, no side guide touched, the PCB seated (too
         few supports, a support too far, too fast, too tilted, touching a guide or a jaw), the handover's centring <= 0.5 mm,
         the re-grip's ledge gap 0.3 +- 0.1 mm (both sides), and no place measured fails all eight; each violation (just beyond
@@ -202,7 +202,7 @@ def test_a_program_run_fails_exactly_its_new_criterion(change, criterion):
 def test_the_release_bound_passes_0_09_mm():
     """
     Description:
-        Item 2 (owner, 2026-10-25): the release's transient penetration bound is 0.10 mm - 0.09 mm passes (the margin runs' worst
+        Item 2: the release's transient penetration bound is 0.10 mm - 0.09 mm passes (the margin runs' worst
         was 0.068 mm), 0.11 mm fails (the old pressed place was 0.157 / 0.181 mm).
     """
 

@@ -68,7 +68,7 @@ Description:
 CONST_VERSIONS = {'default': CONST_PROGRAM_YAML, 'optimized': CONST_OPTIMIZED_PROGRAM_YAML}
 # The keys (GLFW codes) and their playback actions: Home pause / resume, Page Down or '.' the next step's start, Page Up the
 # current (or previous) step's start, End the current step's end. Every letter and , / ; ' \\ ` toggles a MuJoCo flag and the
-# viewer binds Space, the arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (FEATURES.md F6).
+# viewer binds Space, the arrows, Tab, Esc, [ ], - =, F1-F5, 0-5; these are in none of them (F6).
 #   Unit [Dict<int, string>]
 CONST_KEY_ACTIONS = {268: 'pause', 267: 'next', 46: 'next', 266: 'previous', 269: 'end'}
 

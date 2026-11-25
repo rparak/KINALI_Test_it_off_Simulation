@@ -102,8 +102,8 @@ CONST_SUCTION_IN_PCB = np.array([-0.00125, 0.0046, 0.0075])
 # The tool axes in the PCB frame: tool +Z = -PCB normal, tool +X = PCB +X.
 #   Unit [Matrix<float> 3x3] (-)
 CONST_R_TOOL_IN_PCB = np.diag([1.0, -1.0, -1.0])
-# The studio look (F7): the default NVIDIA Isaac Sim / Isaac Lab environment, approximated (owner, 2026-10-24).
-# Visual only; nothing here reaches the physics (SPEC §4.7 Look, design-decisions).
+# The studio look (F7): the default NVIDIA Isaac Sim / Isaac Lab environment, approximated.
+# Visual only; nothing here reaches the physics (SPEC §4.10 Look, §18.19).
 # The sky: a gradient from the zenith (rgb1, darker) to the nadir (rgb2). MuJoCo puts the mean of the two at the
 # horizon (measured 2026-10-24), so the nadir is 2 x horizon - zenith; it is below the floor and never seen.
 #   Unit [List<float>] (rgb 0-1)
@@ -139,7 +139,7 @@ CONST_LOOK_FILL_LIGHT = dict(dir=[0.5, 0.4, -0.6], diffuse=[0.18, 0.19, 0.21])
 #   Unit [int] (px, -)
 CONST_LOOK_SHADOW_SIZE, CONST_LOOK_OFFSAMPLES = 8192, 8
 # The offscreen buffer (models/scene.xml has 1280 x 960): 2560 x 1440 holds the comparison's 1440p video frames and its
-# 1080p ones (owner 2026-10-25). Visual only (design-decisions).
+# 1080p ones. Visual only (SPEC §18.19).
 #   Unit [int] (px)
 CONST_LOOK_OFFSCREEN = (2560, 1440)
 # The model statistic: the centre of the cell's bounding box at the default qpos, robot included (x -0.308..0.664,

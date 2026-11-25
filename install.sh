@@ -58,7 +58,7 @@ CONST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # The Python version every pinned requirement was verified with (requirements.txt header).
 #   Unit [string]
 CONST_PYTHON_VERSION="3.11"
-# The MuJoCo version the physics was verified on (design-decisions: MuJoCo is pinned to 3.16.0).
+# The MuJoCo version the physics was verified on (SPEC §18.8).
 #   Unit [string]
 CONST_MUJOCO_VERSION="3.16.0"
 # The interpreters tried on macOS, in order: Homebrew on Apple silicon, Homebrew on Intel, then the
@@ -78,7 +78,7 @@ CONST_INSTALL_LINUX="sudo apt install python3.11 python3.11-venv (Ubuntu; older 
 # The supported platforms, as the failure message names them.
 #   Unit [string]
 CONST_PLATFORMS_TEXT="macOS (Apple silicon), Ubuntu Linux"
-# The folders created for logs and generated artefacts, relative to the root (git-ignored; design-decisions).
+# The folders created for logs and generated artefacts, relative to the root (git-ignored; SPEC §18.17).
 #   Unit [string] (space-separated)
 CONST_RUN_FOLDERS="logger Data/Generated"
 # Width the level is padded to, so the messages line up.

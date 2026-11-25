@@ -23,6 +23,7 @@
 
 # System (Default)
 import os
+import re
 # AST (Abstract syntax trees)
 import ast
 # Subprocess (Subprocess management)
@@ -32,19 +33,23 @@ import subprocess
 Description:
     Initialization of constants.
 
-    The root holds only the declared entries (style project reference > Root, SPEC §6), and each src/ domain only its
-    declared modules, its constants with their readers (style project reference > Layout; design-decisions: the module
-    layout); written out here, never read from the README or the filesystem.
+    The root holds only the declared entries (SPEC §6), and each src/ domain only its declared modules, its constants with
+    their readers (SPEC §6, §18.9); written out here, never read from the README or the filesystem.
 """
 # The entries git tracks at the root. Exceptions with their reasons: pytest.ini (the runner reads it at the root); CITATION.cff
-# (GitHub reads it at the root; owner, 2026-10-26).
+# (GitHub reads it at the root).
 #   Unit [Set<string>]
 CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration'}
+                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration', 'docs'}
+# The public documents, and the files whose citations of them must resolve: a "SPEC §n" to a heading of docs/SPEC.md, an
+# F<n> (or F<n>.<m>) to the feature list of its §2.
+#   Unit [Tuple<string>], [Tuple<string>]
+CONST_DOCS = ('docs/SPEC.md', 'docs/KNOWN_ISSUES.md')
+CONST_CITING = ('src/', 'Example/', 'test/', 'install.sh', 'Configuration/', 'Data/Optimized/')
 # The internal documents, in .claude/project-docs/.
 #   Unit [Tuple<string>]
-CONST_PROJECT_DOCS = ('SPEC.md', 'KNOWN_ISSUES.md', 'design-decisions.md', 'FEATURES.md', 'SUPPORT_CHAT.md')
-# The files of the skills the repository ships (owner, 2026-10-28): the only files tracked under .claude/skills/.
+CONST_PROJECT_DOCS = ('design-decisions.md', 'FEATURES.md', 'SUPPORT_CHAT.md')
+# The files of the skills the repository ships: the only files tracked under .claude/skills/.
 #   Unit [Set<string>]
 CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/references/project.md',
                      'feature-manager/assets/handover_template.md', 'project-optimize/SKILL.md', 'project-optimize/references/project.md',
@@ -63,8 +68,8 @@ CONST_SKILL_FILES = {'LICENSE', 'feature-manager/SKILL.md', 'feature-manager/ref
                      'readme-writer/scripts/test_check_readme.py', 'readme-writer/scripts/test_render_readme.py',
                      'readme-writer/references/check_readme.json', 'support-brief/SKILL.md',
                      'support-brief/references/project.md'}
-# The files git tracks under Example/ (the no-clutter rule, style project reference > Layout; owner, 2026-10-28): the one user entry
-# point cell.py, its internal modules in Cell/, the maintenance tools in Maintenance/ (documented in CLAUDE.md). A new file there
+# The files git tracks under Example/ (the no-clutter rule, SPEC §6): the one user entry
+# point cell.py, its internal modules in Cell/, the maintenance tools in Maintenance/ (documented in SPEC §6). A new file there
 # fails the test until it is added here on purpose: a user action is a cell.py subcommand, never a new script.
 #   Unit [Set<string>]
 CONST_EXAMPLE_FILES = {'cell.py',
@@ -73,7 +78,7 @@ CONST_EXAMPLE_FILES = {'cell.py',
                        'Cell/show_physics.py', 'Cell/results.py',
                        'Maintenance/model_fingerprint.py', 'Maintenance/export_cell_scene.py', 'Maintenance/golden_program.py',
                        'Maintenance/physics_baseline.py'}
-# The modules of each src/ domain (owner, 2026-10-25): Core.py, the domain's primary module; a topic module where the domain
+# The modules of each src/ domain: Core.py, the domain's primary module; a topic module where the domain
 # has a second concern (Program_Parser.py, Check.py, Report.py, Measure.py); Const.py only where more than one of its
 # modules uses a constant.
 #   Unit [Dict<string, Set<string>>]
@@ -96,6 +101,30 @@ def test_the_root_holds_only_the_declared_entries(root):
     """
 
     assert {path.split('/', 1)[0] for path in _Tracked(root)} == CONST_ROOT_ENTRIES
+
+
+def test_the_docs_resolve_every_citation(root):
+    """
+    Description:
+        docs/SPEC.md and docs/KNOWN_ISSUES.md are tracked, every "SPEC §n" the code and the configuration cite is a heading of
+        docs/SPEC.md, and every feature they cite (F<n>, F<n>.<m>) is in its §2 list.
+    """
+
+    tracked = _Tracked(root)
+    assert sorted(set(CONST_DOCS) - set(tracked)) == []
+    with open(os.path.join(root, 'docs', 'SPEC.md'), encoding='utf-8') as handle:
+        spec = handle.read()
+    headings = set(re.findall(r'(?m)^#{2,4} (\d+(?:\.\d+)*)\.? ', spec))
+    features = spec.split('\n## 2. ', 1)[1].split('\n## 3. ', 1)[0]
+    missing = []
+    for path in tracked:
+        if path.startswith(CONST_CITING) and path.endswith(('.py', '.sh', '.yaml')):
+            with open(os.path.join(root, path), encoding='utf-8') as handle:
+                text = handle.read()
+            missing += ['%s: SPEC §%s' % (path, n) for n in re.findall(r'SPEC §(\d+(?:\.\d+)*)', text) if n not in headings]
+            missing += ['%s: F%s' % (path, n) for n in re.findall(r'(?<![\w.])F(\d{1,2}(?:\.\d+)?)(?!\w)', text)
+                        if not re.search(r'\bF%s\b' % re.escape(n), features)]
+    assert missing == []
 
 
 def test_the_project_docs_are_tracked(root):

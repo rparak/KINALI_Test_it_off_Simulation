@@ -54,7 +54,7 @@ Description:
 CONST_LOOK_FLAGS = {mujoco.mjtRndFlag.mjRND_FOG: True, mujoco.mjtRndFlag.mjRND_HAZE: True}
 # The viewer loop: one frame per 1/60 s (the posing and the sync must fit into it; a slower frame skips samples by the wall
 # clock), the overlay text at most every 0.25 s unless the segment changes (mujoco 3.16's set_texts waits for the render
-# thread, design-decisions).
+# thread, SPEC §18.18).
 #   Unit [float] (s)
 CONST_FRAME_PERIOD, CONST_OVERLAY_PERIOD = 1.0 / 60.0, 0.25
 # The playback's key actions.

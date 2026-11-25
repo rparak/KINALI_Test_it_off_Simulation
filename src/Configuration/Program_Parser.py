@@ -43,7 +43,7 @@ from Configuration.Const import CONST_ROOT, CONST_CONFIGURATION, CONST_DATA, CON
 Description:
     Initialization of constants.
 
-    The cell program's three files (SPEC §8, FEATURES.md F10): Configuration/Constants.yaml (every named value of the
+    The cell program's three files (SPEC §8, F10): Configuration/Constants.yaml (every named value of the
     real cell), Configuration/Simulation.yaml (what only the simulation needs) and Configuration/Program.yaml (what the
     cell's controllers run) - their only reader. Load_Constants, Load_Simulation and Load_Program validate everything
     that needs no model (names, types, references, the program's grammar and flow) and return a typed intermediate
@@ -1518,7 +1518,7 @@ def Parse_Commands(lines: tp.Sequence[str], owner: str, constants: Constants_Str
 class Optimization_Str:
     """
     Description:
-        Configuration/Optimization.yaml: the FREE segments and the planner's settings (FEATURES.md F9). Built by
+        Configuration/Optimization.yaml: the FREE segments and the planner's settings (F9). Built by
         Load_Optimization.
     """
 

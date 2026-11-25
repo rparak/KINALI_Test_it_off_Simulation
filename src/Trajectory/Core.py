@@ -39,7 +39,7 @@ from Configuration.Program_Parser import CONST_PCB_LOCATIONS
 Description:
     Initialization of constants.
 
-    The trajectory file (SPEC §9, FEATURES.md F8): a program sampled every 4 ms - the robot joints and speeds, the
+    The trajectory file (SPEC §9, F8): a program sampled every 4 ms - the robot joints and speeds, the
     loader and gripper commands, the vacuum, the step and segment of each sample, and the world state (the PCB's
     location and pose, MG06's lid and handle, the jaws' real position) - as <name>.npz with a CSV export of the per-sample
     columns. This module is the only writer and reader of the format; it knows nothing of MuJoCo and prints nothing.

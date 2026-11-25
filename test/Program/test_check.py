@@ -41,7 +41,7 @@ from Keypoints.Core import Resolve_Keypoint
 
 """
 Description:
-    The program check (FEATURES.md F8; SPEC §7.9): the default program passes it, every rule it holds is broken once and
+    The program check (F8; SPEC §7.9): the default program passes it, every rule it holds is broken once and
     reported - collisions, contact groups and depths, the MoveJ rule limits, the jaws' posing and speed, the handover's
     press, descent and centring, the re-grip - and its report; posing at a sample; the loader's actuator model.
 """
@@ -50,7 +50,7 @@ Description:
 def test_the_posed_jaws_are_the_command_limited_by_the_part(program_built, simulation):
     """
     Description:
-        Item 10 (owner, 2026-10-25): at all four gripper operations (the handover clamp, the release in MG06, the re-grip, the
+        Item 10: at all four gripper operations (the handover clamp, the release in MG06, the re-grip, the
         release at the take) the posed jaw gap is monotonic in the command's direction and never closer than grip with the PCB in
         the jaws; the release in MG06 opens from grip (Jaw_Actual), not from the clamp command (5.75 mm).
     """
@@ -96,7 +96,7 @@ def test_the_old_jaw_posing_is_refused(program_built, simulation):
 def test_the_gripper_ramps_within_the_datasheet_jaw_speed(program_built, cell_configuration):
     """
     Description:
-        Item 3 (owner, 2026-10-25): every Gripper command ramps (29.25 mm per jaw in 0.6 s, min-jerk) at most at
+        Item 3: every Gripper command ramps (29.25 mm per jaw in 0.6 s, min-jerk) at most at
         Motion.Jaw_Speed_Max (100 mm/s, the SCHUNK EGI 040-EI): its peak 91.4 mm/s = 1.875 x 29.25 mm / 0.6 s.
     """
 
@@ -221,7 +221,7 @@ def test_the_descent_measures_the_height_above_the_ledges_only(constants, simula
                                                                check_program):
     """
     Description:
-        Item 1 (owner, 2026-10-25): a handover taught 0.4 mm along the jaw axis (the re-teach's size) passes - along the
+        Item 1: a handover taught 0.4 mm along the jaw axis (the re-teach's size) passes - along the
         descent the jaws are centred on the PCB, so the gap is its height above the finger ledges (with the jaws at grip about
         the uncentred PCB it was -0.186 mm, the board in a jaw's pad corner): the descent's gap is the gap at the point plus the
         PCB's height above it along the plate normal (with the jaws at the physics grip, Jaw_Actual 17.54 mm, beside the board
@@ -278,7 +278,7 @@ def _Regrip(constants, simulation, cell, program_tools, probe_program, check_pro
 def test_the_regrip_keeps_the_board_off_the_ledges(program_checked):
     """
     Description:
-        Item 5 (owner, 2026-10-25): the re-grip from MG06 at L_FETCH has the handover's no-press rule - the PCB-ledge gap with the
+        Item 5: the re-grip from MG06 at L_FETCH has the handover's no-press rule - the PCB-ledge gap with the
         jaws at grip 0.265 mm about the PCB at its MG06 rest pose (0.3 +- 0.1 mm; 0.359 mm settled in physics) - and the open jaws
         keep 7.13 mm from the PCB and the holder over the descent.
     """

@@ -32,13 +32,13 @@ import typing as tp
 Description:
     Initialization of constants.
 
-    The comparison of the two programs that Example/cell.py run prints (owner, 2026-10-29: numbers only): per program its
+    The comparison of the two programs that Example/cell.py run prints (numbers only): per program its
     cycle time, its throughput (3600 s / the cycle time) and its acceptance (the checks of SPEC §10.1 met), and the Optimized
     program's change against the Default program in %. The one formatter of these numbers, and the one writer of the README's
-    results block (between CONST_BLOCK_START and CONST_BLOCK_END; owner, 2026-10-29: cell.py all --recapture regenerates it
+    results block (between CONST_BLOCK_START and CONST_BLOCK_END; cell.py all --recapture regenerates it
     from the physics baselines, nothing else in the README is written by code; test/Docs/test_readme.py compares it).
 """
-# The programs in their order, by their run names, with the names shown (readme-writer project reference > Statuses).
+# The programs in their order, by their run names, with the names shown.
 #   Unit [Dict<string, string>]
 CONST_NAMES = {'taught': 'Default program', 'optimized': 'Optimized program'}
 # Seconds per hour: the throughput is CONST_HOUR / the cycle time.

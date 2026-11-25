@@ -49,7 +49,7 @@ from Configuration.Program_Parser import Load_Constants, Load_Simulation, CONST_
 Description:
     Initialization of constants.
 
-    The one user entry point of the cell (owner, 2026-10-28; design-decisions: one user entry point): a subcommand per user
+    The one user entry point of the cell (SPEC §18.10): a subcommand per user
     action, each calling the internal modules of Example/Cell/ (and the regression tools of Example/Maintenance/ for run).
     The modules print their lines; each subcommand's lines go to logger/cell_<subcommand>.log.
 """
@@ -102,7 +102,7 @@ def _Say(log_name: str, line: str) -> None:
 def Viewer_Launch(platform: str, environ: tp.Mapping[str, str], executable: str) -> tp.Tuple[str, tp.Optional[str]]:
     """
     Description:
-        How a viewer subcommand starts (owner, 2026-10-29): MuJoCo's passive viewer runs on macOS only under mjpython, so on
+        How a viewer subcommand starts: MuJoCo's passive viewer runs on macOS only under mjpython, so on
         macOS outside it cell.py re-launches itself under the mjpython next to the interpreter ('exec'), or names the
         missing launcher ('missing'); anywhere else, or already under mjpython (its launcher sets MJPYTHON_BIN), it runs
         ('run').
@@ -330,7 +330,7 @@ def Show(args: argparse.Namespace, argv: tp.List[str], log_name: str) -> int:
 def Recapture(log_name: str) -> int:
     """
     Description:
-        cell.py all --recapture, after check, build and optimize passed (owner, 2026-10-29): the kinematic golden and the
+        cell.py all --recapture, after check, build and optimize passed: the kinematic golden and the
         physics baselines compared first (what changed is printed), each re-captured when it differs - the baselines refused
         when a perturbation run fails SPEC §10.1 -, then the README's results block regenerated from the baselines (nothing
         else of the README), the table, and the reminder to commit and to refresh the support-chat brief.

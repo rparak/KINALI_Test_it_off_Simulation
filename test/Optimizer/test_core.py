@@ -38,7 +38,7 @@ from Program.Check import Check_Trajectory
 
 """
 Description:
-    The optimized program (FEATURES.md F9) on the shipped files: the FREE transfers, the committed
+    The optimized program (F9) on the shipped files: the FREE transfers, the committed
     Data/Optimized/Program_Optimized.yaml current and passing every check, faster than the taught program, the loader in
     parallel, the free space, the stale and schedule refusals, the waiting point.
 """

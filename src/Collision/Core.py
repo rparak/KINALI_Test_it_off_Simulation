@@ -50,7 +50,7 @@ Description:
 CONST_MARGIN_FACTOR = 2.0
 # The table top, which models/scene.xml has only as visual meshes: its two plates, the bounding boxes (no margin: a
 # plate is a box) of the two large connected components of the visual mesh ws_vis_static_217_214_219 (coincident
-# vertices welded; measured 2026-10-24, FEATURES.md F8; the gap between them holds two rails no higher than the top).
+# vertices welded; measured 2026-10-24, F8; the gap between them holds two rails no higher than the top).
 # Planning and checking only: never in the physics model.
 #   Unit [Dict<string, Tuple<Vector<float> 1x3>>] (name -> lower corner, upper corner, m, MG06 fixture frame)
 CONST_TABLE_BOXES = {'table_left': ((-0.21129, -0.86012, -0.038), (-0.01128, 0.18988, 0.002)),

@@ -52,7 +52,7 @@ Description:
     The compiled cell is the verified one (SPEC §4.3, §10.2). Expected values are written out here from
     SPEC §4.3 / §4.4 and the green-PCB decision.
 """
-# The solder-mask green of the PCB visual (design-decisions: the PCB is drawn in solder-mask green).
+# The solder-mask green of the PCB visual (SPEC §18.20).
 #   Unit [Vector<float> 1x4] (-)
 CONST_GREEN = [0.05, 0.42, 0.18, 1.0]
 # The one accepted difference from the baseline fingerprint (the green PCB).

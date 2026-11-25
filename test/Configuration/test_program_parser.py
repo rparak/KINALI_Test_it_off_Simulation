@@ -40,7 +40,7 @@ import Configuration.Program_Parser as Program_Parser
 Description:
     Initialization of constants.
 
-    The cell program's three files and their parser (SPEC §8, FEATURES.md F10). Each validation error is made by a
+    The cell program's three files and their parser (SPEC §8, F10). Each validation error is made by a
     minimal text edit of a shipped file (its lines keep their numbers) and its message must name the file, the line, the
     segment, job or key and - for a command - the line's text. Expected values are written out here.
 """
@@ -58,7 +58,7 @@ CONST_SPEC_TABLE = {
     'P_MG06_WAIT': [-0.8243, 0.2137, 2.0471, -1.3081, -1.6097, 1.1518], 'P_MG06_OPEN_JOIN': [-0.5034, 0.0542, 2.3958, -0.8000, -1.2887, 1.1520],
     'P_VIA_LOADER_OUTPUT': [0.7093, 0.7032, 1.8349, -0.4944, 1.5158, -0.0734], 'P_OUTPUT_ABOVE': [1.0463, 0.0611, 2.2028, 0.5709, 1.5708, 0.2609],
     'P_OUTPUT_APPROACH': [1.0462, -0.1697, 2.3385, 0.9374, 1.5708, 0.2609], 'P_OUTPUT_PLACE': [1.0462, -0.2120, 2.3510, 0.9922, 1.5708, 0.2609]}
-# The program's segments in order (FEATURES.md F10, the owner's naming).
+# The program's segments in order (F10).
 #   Unit [List<string>]
 CONST_SEGMENTS = ['S1_Approach_Input', 'S2_Pick_Input', 'S3_To_Loader', 'S4_Handover', 'S5_Home_After_Handover', 'S6_Loader_Insert', 'S7_Loader_Park',
                   'S8_To_MG06', 'S9_Close_MG06', 'S10_Leave_MG06', 'S11_Test', 'S12_Return_MG06', 'S13_Open_MG06', 'S14_Home_After_MG06',

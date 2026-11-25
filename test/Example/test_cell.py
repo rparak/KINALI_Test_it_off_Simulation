@@ -32,7 +32,7 @@ import pytest
 
 """
 Description:
-    Example/cell.py, the one user entry point (design-decisions: one user entry point): its command line and help, the
+    Example/cell.py, the one user entry point (SPEC §18.10): its command line and help, the
     viewer's launch decision (headless: no window opens), and its subcommands run as a person runs them (a fresh
     interpreter, an unrelated working directory); the heavy ones in a fresh copy of the repository.
 """

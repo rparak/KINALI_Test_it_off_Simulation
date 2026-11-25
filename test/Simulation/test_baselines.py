@@ -123,7 +123,7 @@ def test_a_drift_beyond_its_tolerance_fails_and_a_report_diff_does_not(tool):
 def test_the_fork_metrics_are_compared_with_the_envelope(tool, key, index, factor, passes):
     """
     Description:
-        Item 1 (owner, 2026-10-25): the fork's net force, the hinge load and the J2 / J3 torques pass inside their program's
+        Item 1: the fork's net force, the hinge load and the J2 / J3 torques pass inside their program's
         envelope +- 10 % ('high': at its max + 9.9 %) and fail outside it ('over': max + 10.1 %, 'under': min - 10.1 %); the other
         torques keep +- 10 % of the baseline run (J1 +9 % passes, +11 % fails).
     """

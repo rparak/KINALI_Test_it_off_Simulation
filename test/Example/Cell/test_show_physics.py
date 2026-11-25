@@ -36,7 +36,7 @@ Description:
     Initialization of constants.
 
     Example/Cell/show_physics.py: headless (a fresh interpreter, an unrelated working directory) and its physics view
-    imported as a module; the viewer itself needs mjpython (checked by hand, FEATURES.md F11).
+    imported as a module; the viewer itself needs mjpython (checked by hand, F11).
 """
 # The script.
 #   Unit [string]

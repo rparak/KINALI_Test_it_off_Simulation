@@ -35,7 +35,7 @@ from Trajectory.Core import Trajectory_Str, Write_Trajectory, Read_Trajectory, T
 Description:
     Initialization of constants.
 
-    The trajectory file format (SPEC §9, FEATURES.md F8) on a small synthetic trajectory: five samples, two steps, two
+    The trajectory file format (SPEC §9, F8) on a small synthetic trajectory: five samples, two steps, two
     segments, the values written out here.
 """
 

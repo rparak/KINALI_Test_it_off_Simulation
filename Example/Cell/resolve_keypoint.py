@@ -55,7 +55,7 @@ def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = No
     Description:
         Resolve a point's joints from its Reference (or PCB_Hold) target (IK on its tool's site, in its family, seeded from
         its own joints or --seed) and print the Joints and Pose lines to paste into Configuration/Constants.yaml. It writes
-        nothing (project-style-rpx references/yaml.md); the check names it when a point is stale.
+        nothing (SPEC §8); the check names it when a point is stale.
 
             Called by Example/cell.py point <name> [--seed <point>].
 

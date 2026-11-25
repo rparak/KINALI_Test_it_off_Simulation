@@ -377,7 +377,7 @@ def Gating_Faults(trajectory: Trajectory_Str, kinematics: Robot_Kinematics_Cls, 
                   cell: Cell_Configuration_Str) -> tp.List[Gating_Fault_Str]:
     """
     Description:
-        The gating rule (owner 2026-10-25, F15; symmetric, F16): while a parallel loader job may run (from its Loader.Start to
+        The gating rule (F15; symmetric, F16): while a parallel loader job may run (from its Loader.Start to
         the end of its Loader.WaitDone) neither object may come where the other has been or will be - the robot (moving or
         holding, with a carried PCB) at least Clearance.Loader_Free from every pose the job sweeps (the loader where its
         actuators put it), every CONST_GATING_STRIDE samples and the last (Swept_Pairs, the robot's repeated poses measured
@@ -589,7 +589,7 @@ def Check_Trajectory(trajectory: Trajectory_Str, program: Program_Str, notes: tp
                      free_steps: tp.Optional[tp.Set[str]] = None) -> Program_Check_Str:
     """
     Description:
-        The check of a program's trajectory (FEATURES.md F8), on the planning model (the table included):
+        The check of a program's trajectory (F8), on the planning model (the table included):
         - every sample where a robot geom, the carried PCB, the loader, the jaws or MG06 may have moved more than
           Clearance.Check_Step since the last measured sample (and every segment end) is posed and measured exactly: the
           robot's geoms, and the PCB's when the cups carry it (to everything else) or the jaws hold it (to the workstation:

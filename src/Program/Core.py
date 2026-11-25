@@ -61,7 +61,7 @@ from Program.Const import CONST_LOADER_HOME
 Description:
     Initialization of constants.
 
-    The program at work (SPEC §2 item 4, FEATURES.md F8): Build_Program turns a program into a trajectory sampled
+    The program at work (SPEC §2 item 4, F8): Build_Program turns a program into a trajectory sampled
     every 4 ms - the robot's motion laws (MoveJ, MoveL, the recorded fork path), the loader and gripper profiles, the
     vacuum events, and the world state they imply (where the PCB is, MG06's lid and handle, the jaws' real position).
     The check of a trajectory and posing the cell at a sample are Program/Check.py. Every robot point is a keypoint's
@@ -550,7 +550,7 @@ class _Builder_Cls(object):
         Description:
             MG06 over a motion: from its state at the motion's start to the Fixture of the motion's target point (Open,
             Closed or its recorded row), along the motion's time law - the handle settles as the fork lets it go
-            (FEATURES.md F8.5).
+            (F8.5).
 
         Args:
             (1) target [string]: The point.

@@ -70,7 +70,7 @@ def Optimized_Stale() -> tp.List[str]:
 def main(argv: tp.Optional[tp.List[str]] = None, log_name: tp.Optional[str] = None) -> int:
     """
     Description:
-        The configuration and programs check of Example/cell.py check (owner, 2026-10-29: fast, no build): the cell, both
+        The configuration and programs check of Example/cell.py check (fast, no build): the cell, both
         programs and the optimizer's settings load (their notes printed); whether the Optimized program and each built
         trajectory are current, each stale or missing one named with the subcommand that makes it again. It writes nothing;
         the kinematic check of a program is its build (cell.py build, cell.py optimize). Exit 1 when a file does not load,

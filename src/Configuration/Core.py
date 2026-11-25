@@ -55,12 +55,11 @@ Description:
 # The cell configuration (SPEC §8).
 #   Unit [string]
 CONST_CELL_YAML = os.path.join(CONST_CONFIGURATION, 'Cell.yaml')
-# The MJCF files and their meshes (style project page mjcf.md).
+# The MJCF files and their meshes (SPEC §6).
 #   Unit [string]
 CONST_MODELS = os.path.join(CONST_ROOT, 'models')
-# Generated artefacts, one subfolder per kind (git-ignored; design-decisions: logs in logger/, generated
-# artefacts in Data/Generated/): Reports/ (the cycle and program reports), Trajectories/ (the program trajectories,
-# step 4).
+# Generated artefacts, one subfolder per kind (git-ignored; SPEC §18.17): Reports/ (the cycle and program reports),
+# Trajectories/ (the program trajectories, step 4).
 #   Unit [string]
 CONST_GENERATED = os.path.join(CONST_ROOT, 'Data', 'Generated')
 CONST_REPORTS = os.path.join(CONST_GENERATED, 'Reports')

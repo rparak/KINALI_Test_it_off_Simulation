@@ -56,7 +56,7 @@ Description:
 #   Unit [string]
 CONST_LID, CONST_HANDLE, CONST_PRESS = 'lid_hinge', 'handle_hinge', 'press_slide'
 # A point's Pose against FK(Joints, Tool): the Pose is written from FK to 9 decimals, so these bound a stale Pose, not
-# rounding (owner, 2026-10-24, F10).
+# rounding (F10).
 #   Unit [float] (m), [float] (rad)
 CONST_POSE_POSITION, CONST_POSE_ANGLE = 1e-5, math.radians(1e-3)
 # A tool's Flange_Offset against its model site (Simulation.yaml Tool_Site), as tight.
@@ -360,7 +360,7 @@ def Contact_Group(names: tp.Set[str], geoms: tp.Set[str], cup_block: str, pcb_in
         The contact group of a pair of bodies (and their geoms), or None for a pair no group covers. cups_pcb is
         the VGC10's face on the PCB: a cup, or the cup block (not the fork, which is on the same tool body);
         pcb_crate the PCB on a crate, and on the table boxes (Collision.CONST_TABLE_BOXES) only while the PCB is
-        inside a crate, its floor between them (owner, 2026-10-24); pcb_jaws the PCB on the loader's jaws.
+        inside a crate, its floor between them; pcb_jaws the PCB on the loader's jaws.
 
     Args:
         (1) names [Set<string>]: The two bodies.

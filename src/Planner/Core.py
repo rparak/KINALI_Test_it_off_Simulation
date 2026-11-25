@@ -36,7 +36,7 @@ from scipy.interpolate import CubicSpline
 Description:
     Initialization of constants.
 
-    Joint-space motion planning for the optimized program (FEATURES.md F9), independent of the cell: a configuration's
+    Joint-space motion planning for the optimized program (F9), independent of the cell: a configuration's
     validity is a function the caller gives. A path through waypoints as a cubic spline over its chord length; its
     time-optimal timing within joint speed and acceleration limits (TOPP by reachability, Pham & Pham 2018: per grid
     point a 2-D linear program, solved in closed form by its vertices - no LP solver); RRT-Connect with a seeded

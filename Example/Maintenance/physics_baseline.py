@@ -75,18 +75,18 @@ from Simulation.Report import Format_Program_Report, Check_Program_Acceptance, F
 Description:
     Initialization of constants.
 
-    The physics baselines of the two programs (step 6, owner 2026-10-25): per program the full report of
+    The physics baselines of the two programs (SPEC §10.2): per program the full report of
     Example/Cell/run_program.py (baseline_report_<program>.txt) and its metrics (baseline_metrics_<program>.json), with
     the environment they were captured in (baseline_environment.json), in test/Simulation/data/. A run FAILS the regression on
     SPEC §10.1 (the acceptance bounds) or when a metric drifts from its baseline beyond CONST_TOLERANCES; the report's diff is
-    printed for information only (contact physics changes with sub-micrometre differences, design-decisions). This script is the
+    printed for information only (contact physics changes with sub-micrometre differences, SPEC §18.15). This script is the
     one reader and writer of the format; test/Simulation/test_baselines.py imports it.
 """
 # The baseline folder and the programs.
 #   Unit [string], [List<string>]
 CONST_BASELINES = os.path.join(CONST_REPO_ROOT, 'test', 'Simulation', 'data')
 CONST_PROGRAMS = ['taught', 'optimized']
-# The drift tolerances per metric (owner, 2026-10-25): (kind, value) - 'exact', 'absolute' (the metric's unit), 'relative'
+# The drift tolerances per metric: (kind, value) - 'exact', 'absolute' (the metric's unit), 'relative'
 # (a fraction of the baseline); a vector metric's every element.
 #   Unit [Dict<string, Tuple<string, float>>]
 CONST_TOLERANCES = {'cycle_time': ('exact', 0.0), 'fault': ('exact', 0.0), 'vacuum_times': ('absolute', 0.004), 'vacuum_cups': ('exact', 0.0),
@@ -101,15 +101,15 @@ CONST_TOLERANCES = {'cycle_time': ('exact', 0.0), 'fault': ('exact', 0.0), 'vacu
 # The fork's contact with the handle bar is chaotic: sub-micrometre differences change its contact points and its forces, and
 # its outcomes do not fall into well-defined modes (2026-10-25: 6 contact points gave 247.3 N / 11.45 N m in the taught
 # program, 222.2 N / 10.01 N m in the optimized one). So these metrics are compared with an envelope instead of the baseline
-# run (owner, 2026-10-25): the min and max over CONST_PERTURBATIONS, stored with the baseline; a run passes within the
+# run: the min and max over CONST_PERTURBATIONS, stored with the baseline; a run passes within the
 # envelope +- CONST_ENVELOPE_MARGIN of it, and always within SPEC §10.1 (the fork's bounds, the actuators). A vector metric's
 # listed elements only (the J2 / J3 torques); its others keep their tolerance. The contact count is reported only.
 #   Unit [Dict<string, Tuple<int>>], [float] (-)
 CONST_ENVELOPE = {'fork_net_force': None, 'handle_load': None, 'joint_torque': (1, 2)}
 CONST_ENVELOPE_MARGIN = 0.10
-# The envelope's perturbation set (owner, 2026-10-25): (the PCB's start along x [m], a settle wait before the closing path [s],
+# The envelope's perturbation set: (the PCB's start along x [m], a settle wait before the closing path [s],
 # the MG06 handle hinge's start [rad]) - the PCB -5 / -1 / 0 / +1 / +5 um without a wait, -5 / 0 / +5 um with a 0.1 s wait,
-# and the handle +-1 urad: 10 runs, the first the baseline run (+-1 um added to the owner's set: in the taught program they
+# and the handle +-1 urad: 10 runs, the first the baseline run (+-1 um added to the first set: in the taught program they
 # give 6 contact points at 247.3 N / 11.45 N m, which the other runs miss, 2026-10-25). The wait goes after the line
 # CONST_WAIT_AFTER names, in a copy of the program.
 #   Unit [List<Tuple<float>>] (m, s, rad), [Dict<string, string>]

@@ -64,7 +64,7 @@ from Trajectory.Core import Trajectory_Str, CONST_DT
 Description:
     Initialization of constants.
 
-    The optimized program at work (FEATURES.md F9): the FREE transfers of the taught program (Configuration/Optimization.yaml)
+    The optimized program at work (F9): the FREE transfers of the taught program (Configuration/Optimization.yaml)
     planned on the planning model - RRT-Connect from a fixed seed, the shortcut, the spline checked and refitted, the
     time-optimal timing - with the loader's jobs between them run in parallel (Loader.Start / Loader.WaitDone); every
     LOCKED segment copied verbatim; the program written as text (Data/Optimized/Program_Optimized.yaml) with the inputs'
@@ -76,7 +76,7 @@ Description:
 CONST_INPUTS = {'program': CONST_PROGRAM_YAML, 'constants': CONST_CONSTANTS_YAML, 'simulation': CONST_SIMULATION_YAML, 'cell': CONST_CELL_YAML,
                 'optimization': CONST_OPTIMIZATION_YAML, 'fork_path': CONST_FORK_PATH}
 # A transfer whose spline meets the loader (I8) or comes where a parallel job has been (the gating rule, F15) runs its spline
-# after the next job's start - after the WaitDone of the job it met, never after a Wait (owner, 2026-10-25); a job that comes
+# after the next job's start - after the WaitDone of the job it met, never after a Wait; a job that comes
 # where the robot has been needs the robot out of its way before its start (an exit point, F16); any other failure takes
 # the next planner margin.
 

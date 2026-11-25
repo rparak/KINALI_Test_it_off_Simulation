@@ -37,7 +37,7 @@ from Configuration.Core import Load_Cell_Configuration, Configuration_Error_Cls,
 Description:
     Initialization of constants.
 
-    Configuration/Cell.yaml and its loader (SPEC §8, project-style-rpx references/yaml.md). The required fields are written
+    Configuration/Cell.yaml and its loader (SPEC §8). The required fields are written
     out here, not read from the loader. (The program's three files: test_program_parser.py.)
 """
 # Every field of Configuration/Cell.yaml (all REQUIRED).

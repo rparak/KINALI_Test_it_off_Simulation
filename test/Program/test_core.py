@@ -44,7 +44,7 @@ from Trajectory.Core import Write_Trajectory, Read_Trajectory
 Description:
     Initialization of constants.
 
-    The program build (FEATURES.md F8, F10): the motion laws, the recorded fork path, the world state, the constants against
+    The program build (F8, F10): the motion laws, the recorded fork path, the world state, the constants against
     the model. Expected values come from the legacy planner's rules (commit f754e2d0379b06ffb43286f4fb7aabf88e25ca5f), the
     reference plan and SPEC §4, written out here.
 """

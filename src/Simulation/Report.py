@@ -165,7 +165,7 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
         loader in every free transfer; step 6's bounds: the slip and the tracking error (Slip_Max, Tracking_Max), the fork's net
         force on the handle bar and the handle hinge load (Fork_Net_Force_Max, Handle_Load_Max), the free transfers at least
         Clearance.Loader_Free from the loader, no robot actuator saturated (CONST_TORQUE_SATURATION of the model's limits); the B
-        work's place into MG06 (owner, 2026-10-25; Place_Checks): no jaw closing at L_PLACE, no press there, the release's
+        work's place into MG06 (Place_Checks): no jaw closing at L_PLACE, no press there, the release's
         transient and settled penetration, no side guide touched on the way down, the PCB seated, the handover's centring and the
         re-grip's ledge gap.
 
@@ -210,7 +210,7 @@ def Check_Program_Acceptance(result: Cycle_Result_Str, cell: Cell_Configuration_
 def Place_Checks(place: tp.Optional[Place_Physics_Str], cell: Cell_Configuration_Str) -> tp.List[Acceptance_Check_Str]:
     """
     Description:
-        The place into MG06 and the gripper operations around it (B work, items 7 and 9; owner, 2026-10-25): from reaching
+        The place into MG06 and the gripper operations around it (SPEC §10.1 items 18-25): from reaching
         L_PLACE to the open command the jaw gap never shrinks (CONST_JAW_STILL) and the PCB - holder force stays within
         Place_Holder_Force; after the release the deepest penetration within Release_Penetration while it drops and within
         Rest_Penetration + Settle_Margin settled; no side guide touched from the travel height to the release; Seat_Time after the
@@ -271,7 +271,7 @@ def Free_Loader_Distance(result: Cycle_Result_Str) -> tp.Optional[tp.Tuple[float
 def Program_Warnings(result: Cycle_Result_Str, cell: Cell_Configuration_Str) -> tp.List[str]:
     """
     Description:
-        The warnings of a program's run, which never fail it (F11, owner): a step whose PCB slip or robot tracking error exceeds
+        The warnings of a program's run, which never fail it (F11): a step whose PCB slip or robot tracking error exceeds
         Acceptance.Slip_Max / Tracking_Max (1.5 x the legacy run's; also an acceptance failure), a free transfer closer to the loader than
         Clearance.Loader_Free.
 

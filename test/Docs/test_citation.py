@@ -84,7 +84,7 @@ def test_the_citation_follows_the_cff_1_2_0_schema(root):
 def test_the_citation_matches_the_repository(root):
     """
     Description:
-        The title is the README's, version 1.0 (owner, 2026-10-26), the licence the LICENSE's MIT, the repository the one the
+        The title is the README's, version 1.0, the licence the LICENSE's MIT, the repository the one the
         README's release link names, and the authors those of the README's Authors table, in its order.
     """
 

@@ -101,7 +101,7 @@ def test_exact_distances_find_a_near_box_pair_whatever_contacts_are_generated(ce
         Posed at P_OUTPUT_PLACE, the carried PCB's board is 1.02 mm above the crate floor. Whether MuJoCo generates a
         contact for it (6 mm margin on the PCB) depends on unrelated geometry: none in the cell with the margin, 16 once
         one more geom - here a box 5 m away - sits on the workstation body (measured 2026-10-24: the workstation body's
-        mid-phase, not the box-box collider). Close_Pairs measures the pair exactly in both models (design-decisions).
+        mid-phase, not the box-box collider). Close_Pairs measures the pair exactly in both models (SPEC §18.11).
     """
 
     import mujoco
@@ -251,7 +251,7 @@ def test_the_physics_model_has_no_table_collision(cell_model):
 def test_the_table_is_close_only_to_a_pcb_on_a_crate_floor(cell_configuration, constants, simulation):
     """
     Description:
-        Measured 2026-10-24 (FEATURES.md F8): the carried PCB at P_OUTPUT_PLACE is 3.02 mm above the table, and a PCB on a
+        Measured 2026-10-24 (F8): the carried PCB at P_OUTPUT_PLACE is 3.02 mm above the table, and a PCB on a
         crate floor (P_INPUT_PICK, PCB in the input crate) 2.00 mm - the crate floor's thickness.
     """
 
