@@ -492,7 +492,6 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 ([`Default_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Default_Mosaic_1440p.mp4),
 [`Optimized_Mosaic_1440p.mp4`](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/download/v1.0/Optimized_Mosaic_1440p.mp4)).
 
-<details>
 <summary><b>The stations close up</b>: the crates, the loader handover and MG06</summary>
 
 <table>
@@ -516,8 +515,6 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 </table>
 
 All close views are from the Optimized program's physics run, rendered from the simulation model.
-
-</details>
 
 ## Repository layout
 
