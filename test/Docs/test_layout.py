@@ -40,7 +40,7 @@ Description:
 # (GitHub reads it at the root).
 #   Unit [Set<string>]
 CONST_ROOT_ENTRIES = {'README.md', 'LICENSE', 'CITATION.cff', 'CLAUDE.md', '.gitignore', '.claude', 'install.sh', 'requirements.txt', 'pytest.ini',
-                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration', 'docs'}
+                      'src', 'test', 'Example', 'models', 'Data', 'Media', 'Configuration', 'docs', 'CHANGELOG.md'}
 # The public documents, and the files whose citations of them must resolve: a "SPEC §n" to a heading of docs/SPEC.md, an
 # F<n> (or F<n>.<m>) to the feature list of its §2.
 #   Unit [Tuple<string>], [Tuple<string>]

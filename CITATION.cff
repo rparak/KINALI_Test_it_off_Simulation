@@ -1,15 +1,32 @@
 # The citation metadata of this repository (Citation File Format 1.2.0). Roles (CFF 1.2.0 has no role field): Roman Parak,
-# author; Lukas Moravansky, contributor. date-released is the v1.0 release's date. Checked by test/Docs/test_citation.py.
+# author; Lukas Moravansky, contributor. date-released is the v1.1 release's date. Checked by test/Docs/test_citation.py.
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "Test-it-off Simulation – Automated PCBA Testing Cell in MuJoCo"
+abstract: >-
+  A MuJoCo simulation of KINALI's Test-it-off PCBA test cell (an AUBO i5 robot with a vacuum gripper and a fork, a
+  two-axis loader, the MG06 test fixture) in which a robot program for the whole process is written, checked
+  kinematically, run with full physics and compared: a taught Default program and an Optimized program with planned
+  free moves and the loader in parallel under interlocks. Every output is a simulation result; nothing is validated for
+  driving the real cell.
 authors:
   - given-names: Roman
     family-names: Parak
+    name-suffix: "Ph.D."
+    affiliation: "JIC Smart Factory"
   - given-names: Lukas
     family-names: Moravansky
-version: "1.0"
-date-released: 2026-10-26
+    affiliation: "JIC Smart Factory"
+version: "1.1"
+date-released: 2026-11-25
 license: MIT
 repository-code: "https://github.com/rparak/KINALI_Test_it_off_Simulation"
+keywords:
+  - MuJoCo
+  - robotics
+  - robot simulation
+  - motion planning
+  - AUBO i5
+  - PCBA testing
+  - physics simulation

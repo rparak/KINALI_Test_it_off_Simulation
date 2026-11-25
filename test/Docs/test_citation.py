@@ -84,16 +84,17 @@ def test_the_citation_follows_the_cff_1_2_0_schema(root):
 def test_the_citation_matches_the_repository(root):
     """
     Description:
-        The title is the README's, version 1.0, the licence the LICENSE's MIT, the repository the one the
+        The title is the README's, version 1.1, the licence the LICENSE's MIT, the repository the one the
         README's release link names, and the authors those of the README's Authors table, in its order.
     """
 
     cff, readme = _Citation(root), _Readme(root)
     assert '# %s\n' % cff['title'] == readme.splitlines(keepends=True)[0]
-    assert cff['version'] == '1.0'
+    assert cff['version'] == '1.1'
     with open(os.path.join(root, 'LICENSE'), encoding='utf-8') as handle:
         assert cff['license'] == 'MIT' and handle.readline().strip() == 'MIT License'
     assert '%s/releases/tag/v%s' % (cff['repository-code'], cff['version']) in readme
-    names = ['%s %s' % (p['given-names'], p['family-names']) for p in cff['authors']]
+    names = ['%s %s%s' % (p['given-names'], p['family-names'], ', ' + p['name-suffix'] if 'name-suffix' in p else '')
+             for p in cff['authors']]
     shown = re.findall(r'<strong>([^<]+)</strong>', readme[readme.index('## Authors'):])
     assert names == shown

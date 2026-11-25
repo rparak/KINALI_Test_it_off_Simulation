@@ -87,7 +87,7 @@ def test_the_results_block_is_the_one_the_physics_baselines_give(root):
     Description:
         The README's results block (between its markers, once) is what cell.py all --recapture writes from the physics
         baselines: the cycle times (70.404 s, 59.148 s), the throughputs (3600 s / cycle, to 0.1 PCB/h), the changes and 28/28;
-        Figure 1's caption carries no cycle time (the media show the v1.0 programs).
+        Figure 1's caption carries no cycle time (a number the baselines own) and calls its medium a simulation result.
     """
 
     results, text = _Results(root), _Readme(root)
@@ -95,7 +95,7 @@ def test_the_results_block_is_the_one_the_physics_baselines_give(root):
     assert text.count(results.CONST_BLOCK_START) == 1 and block in text
     assert '| Cycle time [s] [P] | 70.404 | 59.148 | \u221216.0 % |' in block
     caption = text.split('**Figure 1:**', 1)[1].split('\n\n', 1)[0]
-    assert not re.search(r'\d+\.\d{3} s', caption) and 'The media show the v1.0 programs.' in caption
+    assert not re.search(r'\d+\.\d{3} s', caption) and 'Simulation results.' in caption
 
 
 def test_both_programs_pass_the_28_checks_as_the_readme_says(root):

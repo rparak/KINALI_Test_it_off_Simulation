@@ -277,6 +277,12 @@ from JIC.
 - **What would close it:** the official monochrome file from JIC replaces the recoloured one in `Media/`, and the pin
   is re-recorded (the recolouring script and the originals are in git at `c43f079`).
 
+## The generated optimized program cites the former FEATURES.md
+
+`Data/Optimized/Program_Optimized.yaml` is hash-pinned and still cites the former `FEATURES.md` in its header ("FEATURES.md
+F9"), as do comments of the hand-edited configuration files; F9 and the other cited features are now listed in
+[SPEC.md](SPEC.md) §2.
+
 ## The PCB is one green mesh: board and components are not told apart
 
 `pcb_vis` is a single mesh; components are drawn in the same green as the board.

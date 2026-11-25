@@ -23,18 +23,19 @@ before it is run anywhere else.
 ![MuJoCo 3.16.0](https://img.shields.io/badge/MuJoCo-3.16.0-blue)
 
 <p align="center">
-  <img src="Media/Cycle_Side_by_Side.gif" alt="Two copies of the cell side by side, the Default program on the left and the Optimized program on the right, each moving a PCB from the input crate through the MG06 tester to the output crate, the right one finishing first" width="100%">
+  <a href="https://www.youtube.com/@RomanParak/videos"><img src="Media/Handover.gif" alt="Close view of the loader handover in the simulated cell: the robot's four suction cups set the green PCB into the loader's open jaws, the jaws clamp and the robot lifts away. Click to watch the video" width="720"></a><br><b>▶ <a href="https://www.youtube.com/@RomanParak/videos">Watch the video (80 s)</a></b>
 </p>
 
-**Figure 1:** The Default program (left) and the Optimized program (right) running the same cycle in physics, at 4 x speed.
-The Optimized program finishes first. The media show the v1.0 programs. Simulation results.
+**Figure 1:** The handover in the Optimized program's physics run: the robot sets the PCB into the loader's open jaws, the
+jaws clamp and the vacuum goes off (real time). Click the image for the video. Simulation results.
 
 > [!WARNING]
 > **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
 
 ## Contents
 
-[Quick start](#quick-start) · [Results](#results) · [Change the key points](#change-the-key-points) · [Files](#files) ·
+[Quick start](#quick-start) · [Results](#results) · [How it works](#how-it-works) ·
+[Change the key points](#change-the-key-points) · [Files](#files) ·
 [About](#about) · [What the cell does](#what-the-cell-does) ·
 [Collision structure](#collision-structure) · [Architecture](#architecture) · [Usage](#usage) ·
 [The v1.0 comparison](#the-v10-comparison) · [Repository layout](#repository-layout) ·
@@ -82,7 +83,52 @@ intended change. Throughput = 3600 s / cycle time. Simulation results.
 | Acceptance checks [P] | 28/28 pass | 28/28 pass | equal |
 <!-- results:end -->
 
-The media in this README (the GIF previews, the renders and the charts) show the v1.0 programs.
+The video, the GIFs, the diagrams and the stills show the current programs. The renders in *What the cell does* and
+*Collision structure* and the charts in *The v1.0 comparison* show the v1.0 programs.
+
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Media/Process_dark.png">
+  <img src="Media/Process_light.png" alt="Diagram of the process in two lanes: the robot picks the PCB from the input crate and hands it over into the loader's jaws; the loader inserts it into MG06 and parks; the robot closes MG06 with the fork, and after the test opens it; the loader fetches the PCB and brings it back; the robot takes it and places it into the output crate" width="100%">
+</picture>
+
+**Figure 2:** The process in six steps, the robot (top) and the loader (bottom) handing the PCB between them. The numbers
+follow the PCB.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Media/Optimization_dark.png">
+  <img src="Media/Optimization_light.png" alt="Diagram of the optimization in four boxes: the Default program, taught step by step, 70.4 s and 28 of 28 checks; planned moves with RRT-Connect, shortcut, cubic spline and TOPP for 6 free transfers at 60 percent of the rated speed; the loader in parallel under the interlocks, at least 10 mm from the robot; the physics check, 59.1 s and 28 of 28 checks" width="100%">
+</picture>
+
+**Figure 3:** From the Default program to the Optimized program: the free moves planned, the loader in parallel under the
+interlocks, the result checked in physics. Sources: the physics baselines (`test/Simulation/data/`),
+`Configuration/Cell.yaml`, `Configuration/Optimization.yaml`. Simulation results.
+
+<details>
+<summary><b>The steps close up</b>: the insert into MG06, the handover and the fork</summary>
+
+<p align="center">
+  <img src="Media/MG06_Insert.gif" alt="Close view of MG06 with its lid open: the loader lowers the green PCB into the holder and opens its jaws" width="600">
+</p>
+
+**Figure 4:** The loader places the PCB into the MG06 holder and opens its jaws (the Optimized program's physics run,
+real time).
+
+<table>
+  <tr>
+    <td width="33%"><img src="Media/Still_Handover.png" alt="The robot's four suction cups holding the green PCB above the loader's open jaws, MG06 behind" width="100%">
+    <p><b>Figure 5:</b> The handover: the PCB on the cups over the open jaws.</p></td>
+    <td width="33%"><img src="Media/Still_MG06_Insert.png" alt="The loader's jaws holding the green PCB above the MG06 holder, the lid open" width="100%">
+    <p><b>Figure 6:</b> The PCB in the loader's jaws above the MG06 holder.</p></td>
+    <td width="33%"><img src="Media/Still_MG06_Fork.png" alt="The robot's fork on the MG06 handle bar, the fixture closed, the orange robot arm reaching in from the right" width="100%">
+    <p><b>Figure 7:</b> The fork on the MG06 handle after closing the fixture.</p></td>
+  </tr>
+</table>
+
+The figures of this section are rendered from the simulation model, from the Optimized program's physics run.
+
+</details>
 
 ## Change the key points
 
@@ -167,19 +213,24 @@ The solver runs at a 0.5 ms timestep (Newton solver, elliptic friction cones).
 5. The loader moves back, re-grips the PCB, lifts it and returns home.
 6. The robot takes the PCB from the loader, puts it into the right (output) crate and goes home.
 
+<details>
+<summary><b>The cell and its points</b>: the whole cell and every named robot point (v1.0 renders)</summary>
+
 <p align="center">
   <img src="Media/View_Overview_Right.png" alt="The whole cell from the front right: the grey workstation cabinet with two blue crates, the orange AUBO i5 robot on its pedestal handing a green PCB to the loader in front of the MG06 tester" width="85%">
 </p>
 
-**Figure 2:** The cell during the handover in the Optimized program (physics run, t = 8.45 s): the robot places the PCB into
+**Figure 8:** The cell during the handover in the Optimized program (physics run, t = 8.45 s): the robot places the PCB into
 the loader's jaws in front of the MG06 tester. Rendered from the simulation model.
 
 <p align="center">
   <img src="Media/Key_Points.png" alt="A contact sheet of 25 small renders of the cell, each labelled with a named robot point from P_HOME through the input, loader and MG06 points to P_OUTPUT_PLACE" width="100%">
 </p>
 
-**Figure 3:** The cell posed at every robot point of `Configuration/Constants.yaml`, in program order, with the loader,
+**Figure 9:** The cell posed at every robot point of `Configuration/Constants.yaml`, in program order, with the loader,
 jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
+
+</details>
 
 ## Collision structure
 
@@ -189,9 +240,9 @@ jaws, PCB and MG06 in each point's scene. Rendered from the simulation model.
 <table>
   <tr>
     <td width="50%"><img src="Media/Collision_Overview_Right.png" alt="The whole cell with its collision geometry blended over the visual model in eight colours, with a legend naming each category and its number of collision geoms" width="100%">
-    <p><b>Figure 4:</b> The collision geoms over the visual cell during the handover, the whole cell.</p></td>
+    <p><b>Figure 10:</b> The collision geoms over the visual cell during the handover, the whole cell.</p></td>
     <td width="50%"><img src="Media/Collision_Loader_Handover.png" alt="A close view of the loader jaws and the robot tool at the handover with their collision geometry blended over the visual model in category colours" width="100%">
-    <p><b>Figure 5:</b> The same at the loader handover, close up: the tool, the cups, the PCB and the loader's jaws.</p></td>
+    <p><b>Figure 11:</b> The same at the loader handover, close up: the tool, the cups, the PCB and the loader's jaws.</p></td>
   </tr>
 </table>
 
@@ -328,7 +379,7 @@ the way before `Loader.Start`, or `Loader.WaitDone` before the robot moves in), 
   </picture>
 </p>
 
-**Figure 6:** From a YAML file to a verified cycle: each step with its command, `cell.py all` running steps 02 to 05, and
+**Figure 12:** From a YAML file to a verified cycle: each step with its command, `cell.py all` running steps 02 to 05, and
 the viewer (`cell.py show`), which can be opened at any time on a built trajectory or, with `--physics`, on its physics run.
 
 Every action is a subcommand of one Python script, run with the repository's interpreter:
@@ -410,6 +461,9 @@ The joint-space arc length sums the norm of the six joints' change over the 4 ms
 - **The longer PCB path is accepted.** The optimization minimizes the cycle time, not the PCB path: the +5.5 % PCB arc comes
   from joint-space planning, the clearance kept around the loader and the larger tilt.
 
+<details>
+<summary><b>The v1.0 charts</b>: the comparison and the timeline of every moving object</summary>
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="Media/Default_vs_Optimized_dark.png">
@@ -417,7 +471,7 @@ The joint-space arc length sums the norm of the six joints' change over the 4 ms
   </picture>
 </p>
 
-**Figure 7:** Default vs Optimized: the Optimized program relative to the Default program (100 %), with each value and its
+**Figure 13:** Default vs Optimized: the Optimized program relative to the Default program (100 %), with each value and its
 change. Throughput = 3600 s / cycle time. All values from the kinematic trajectories [K]. Simulation results.
 
 <p align="center">
@@ -427,15 +481,11 @@ change. Throughput = 3600 s / cycle time. All values from the kinematic trajecto
   </picture>
 </p>
 
-**Figure 8:** The timeline of every moving object in both programs: who holds the PCB, when the robot moves or waits (hatched
+**Figure 14:** The timeline of every moving object in both programs: who holds the PCB, when the robot moves or waits (hatched
 by what it waits for), the loader axes and jaws, MG06, and when the robot or the loader is in a shared zone. In the
 Optimized program the loader rows overlap the robot's motion. Kinematic trajectories.
 
-<p align="center">
-  <img src="Media/Cycle_Optimized.gif" alt="The Optimized program's full cycle seen from the front right of the cell, the robot moving while the loader carries the PCB into the MG06 tester and back" width="85%">
-</p>
-
-**Figure 9:** The Optimized program's cycle in physics, Overview_Right view, at 4 x speed.
+</details>
 
 The full-resolution videos (MP4, H.264, real time) are assets of the
 [v1.0 release](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/tag/v1.0): the two programs side by side
@@ -451,19 +501,19 @@ The full-resolution videos (MP4, H.264, real time) are assets of the
 <table>
   <tr>
     <td width="50%"><img src="Media/View_Input_Crate.png" alt="Close view of the input crate with the robot's suction cups above the green PCB lying flat in the blue crate" width="100%">
-    <p><b>Figure 10:</b> The input crate: the pick with four suction cups.</p></td>
+    <p><b>Figure 15:</b> The input crate: the pick with four suction cups.</p></td>
     <td width="50%"><img src="Media/View_Loader_Handover.png" alt="Close view of the loader's two jaws below the robot tool holding the tilted green PCB at the handover" width="100%">
-    <p><b>Figure 11:</b> The loader handover: the PCB placed into the open jaws, tilted 8.94° like the cassette.</p></td>
+    <p><b>Figure 16:</b> The loader handover: the PCB placed into the open jaws, tilted 8.94° like the cassette.</p></td>
   </tr>
   <tr>
     <td width="50%"><img src="Media/View_MG06_Insert.png" alt="Close view of the MG06 tester with its lid open, the green PCB lying in the holder and the loader jaws opened beside it" width="100%">
-    <p><b>Figure 12:</b> MG06: the loader has released the PCB into the holder, 0.15 mm above its seat.</p></td>
+    <p><b>Figure 17:</b> MG06: the loader has released the PCB into the holder, 0.15 mm above its seat.</p></td>
     <td width="50%"><img src="Media/View_MG06_Fork.png" alt="Close view of the closed MG06 tester with the robot's fork on the handle bar, the orange robot arm reaching in from the right" width="100%">
-    <p><b>Figure 13:</b> MG06: the fork on the handle bar after closing the fixture, before it leaves for the test.</p></td>
+    <p><b>Figure 18:</b> MG06: the fork on the handle bar after closing the fixture, before it leaves for the test.</p></td>
   </tr>
   <tr>
     <td width="50%"><img src="Media/View_Output_Crate.png" alt="Close view of the output crate with the robot placing the tested green PCB flat into the blue crate" width="100%">
-    <p><b>Figure 14:</b> The output crate: the place, the PCB released 1 mm above the floor.</p></td>
+    <p><b>Figure 19:</b> The output crate: the place, the PCB released 1 mm above the floor.</p></td>
     <td width="50%"></td>
   </tr>
 </table>
@@ -478,6 +528,7 @@ All close views are from the Optimized program's physics run, rendered from the 
 <summary><b>Repository layout</b>: what each folder holds</summary>
 
 ```text
+docs/            the specification (SPEC.md) and the known issues (KNOWN_ISSUES.md)
 Configuration/   the cell (Cell.yaml), the program (Program.yaml, Constants.yaml, Simulation.yaml), the optimizer (Optimization.yaml)
 Data/            the PCB poses, the recorded MG06 fork path, the committed Optimized program; Generated/ (git-ignored outputs)
 Example/         cell.py, the one command; Cell/ its internal modules; Maintenance/ the regression and scene tools
@@ -486,6 +537,7 @@ models/          the MJCF files and meshes: scene.xml, the AUBO i5, the VGC10 wi
 src/             the library, one folder per domain (see Architecture)
 test/            the tests, mirroring src/ and Example/, with the regression baselines in test/<Domain>/data/
 install.sh       creates .venv with Python 3.11 and the pinned requirements
+CHANGELOG.md     the releases
 .claude/skills/  the Claude Code skills the development follows (see Claude Code skills)
 ```
 
@@ -537,12 +589,23 @@ precedence over the repository's copy.
 ## Citation
 
 If you use this project, cite it with the metadata in [CITATION.cff](CITATION.cff). GitHub shows it as *Cite this repository*
-on the repository page.
+on the repository page. The current release is
+[v1.1](https://github.com/rparak/KINALI_Test_it_off_Simulation/releases/tag/v1.1), and the changes of each release are in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT License, Copyright (c) 2026 JIC Smart Factory. See [LICENSE](LICENSE). The Claude Code skills in `.claude/skills/`: MIT
-License, Copyright (c) 2026 Roman Parak. See [.claude/skills/LICENSE](.claude/skills/LICENSE).
+MIT License, Copyright (c) 2026 JIC Smart Factory, for the code, the configuration, the data and the tests. See
+[LICENSE](LICENSE). The Claude Code skills in `.claude/skills/`: MIT License, Copyright (c) 2026 Roman Parak. See
+[.claude/skills/LICENSE](.claude/skills/LICENSE).
+
+The cell's 3D models in `models/` (the workstation, the MG06 test fixture, the loader and the PCB, from KINALI's CAD), the
+renders, animations and videos in `Media/` and on YouTube, and the JIC Smart Factory and KINALI logos are published with
+KINALI's approval. The MIT grant does not cover them.
+
+Vendor components: the models of the loader's QF12 linear axes and of the OnRobot VGC10 vacuum gripper are derived from
+their manufacturers' CAD. They remain the property of their manufacturers, are included only to run the simulation and are
+not covered by the repository's licence.
 
 Third party:
 
@@ -554,4 +617,6 @@ Third party:
 
 ## Authors
 
-<table><tr><td align="center"><a href="https://github.com/rparak"><img src="https://avatars.githubusercontent.com/rparak" width="120px;" alt="GitHub avatar of Roman Parak, author of the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Roman Parak</strong></a><br />Author</td><td align="center"><a href="https://github.com/LukasMoravansky"><img src="https://avatars.githubusercontent.com/LukasMoravansky" width="120px;" alt="GitHub avatar of Lukas Moravansky, contributor to the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Lukas Moravansky</strong></a><br />Contributor</td></tr></table>
+<table><tr><td align="center"><a href="https://github.com/rparak"><img src="https://avatars.githubusercontent.com/rparak" width="120px;" alt="GitHub avatar of Roman Parak, author of the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Roman Parak, Ph.D.</strong></a><br />Author</td><td align="center"><a href="https://github.com/LukasMoravansky"><img src="https://avatars.githubusercontent.com/LukasMoravansky" width="120px;" alt="GitHub avatar of Lukas Moravansky, contributor to the Test-it-off Simulation repository, JIC Smart Factory"/><br /><strong>Lukas Moravansky</strong></a><br />Contributor</td></tr></table>
+
+JIC Smart Factory · in collaboration with KINALI
