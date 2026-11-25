@@ -105,7 +105,6 @@ follow the PCB.
 interlocks, the result checked in physics. Sources: the physics baselines (`test/Simulation/data/`),
 `Configuration/Cell.yaml`, `Configuration/Optimization.yaml`. Simulation results.
 
-<details>
 <summary><b>The steps close up</b>: the insert into MG06, the handover and the fork</summary>
 
 <p align="center">
@@ -127,8 +126,6 @@ real time).
 </table>
 
 The figures of this section are rendered from the simulation model, from the Optimized program's physics run.
-
-</details>
 
 ## Change the key points
 
