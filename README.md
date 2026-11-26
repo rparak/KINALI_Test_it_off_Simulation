@@ -23,7 +23,7 @@ before it is run anywhere else.
 ![MuJoCo 3.16.0](https://img.shields.io/badge/MuJoCo-3.16.0-blue)
 
 <p align="center">
-  <a href="https://www.youtube.com/@RomanParak/videos"><img src="Media/Workcell_Cycle.gif" alt="The whole simulated cell through one cycle: the orange robot picks the green PCB from the input crate and hands it into the loader's jaws, the loader inserts it into MG06, the robot closes MG06 with its fork for the test and opens it again, the loader brings the PCB back, and the robot places it into the output crate. Click to watch the video" width="720"></a><br><b>▶ <a href="https://www.youtube.com/@RomanParak/videos">Watch the video (80 s)</a></b>
+  <a href="https://www.youtube.com/watch?v=h9ffDUraneA"><img src="Media/Workcell_Cycle.gif" alt="The whole simulated cell through one cycle: the orange robot picks the green PCB from the input crate and hands it into the loader's jaws, the loader inserts it into MG06, the robot closes MG06 with its fork for the test and opens it again, the loader brings the PCB back, and the robot places it into the output crate. Click to watch the video" width="720"></a><br><b>▶ <a href="https://www.youtube.com/watch?v=h9ffDUraneA">Watch the video (80 s)</a></b>
 </p>
 
 **Figure 1:** One cycle of the Optimized program's physics run, the whole cell: pick from the input crate, handover to the
