@@ -23,11 +23,12 @@ before it is run anywhere else.
 ![MuJoCo 3.16.0](https://img.shields.io/badge/MuJoCo-3.16.0-blue)
 
 <p align="center">
-  <a href="https://www.youtube.com/@RomanParak/videos"><img src="Media/Handover.gif" alt="Close view of the loader handover in the simulated cell: the robot's four suction cups set the green PCB into the loader's open jaws, the jaws clamp and the robot lifts away. Click to watch the video" width="720"></a><br><b>▶ <a href="https://www.youtube.com/@RomanParak/videos">Watch the video (80 s)</a></b>
+  <a href="https://www.youtube.com/@RomanParak/videos"><img src="Media/Workcell_Cycle.gif" alt="The whole simulated cell through one cycle: the orange robot picks the green PCB from the input crate and hands it into the loader's jaws, the loader inserts it into MG06, the robot closes MG06 with its fork for the test and opens it again, the loader brings the PCB back, and the robot places it into the output crate. Click to watch the video" width="720"></a><br><b>▶ <a href="https://www.youtube.com/@RomanParak/videos">Watch the video (80 s)</a></b>
 </p>
 
-**Figure 1:** The handover in the Optimized program's physics run: the robot sets the PCB into the loader's open jaws, the
-jaws clamp and the vacuum goes off (real time). Click the image for the video. Simulation results.
+**Figure 1:** One cycle of the Optimized program's physics run, the whole cell: pick from the input crate, handover to the
+loader, insert and test in MG06, sort into the output crate (5 × real time). Click the image for the video.
+Simulation results.
 
 > [!WARNING]
 > **Outputs of this project (keypoints, programs, trajectories) are simulation results and are NOT validated for driving the real cell.** Before any use on real hardware they must go through the real-cell validation procedure (to be defined), with reduced speed and the robot controller's own safety limits active.
